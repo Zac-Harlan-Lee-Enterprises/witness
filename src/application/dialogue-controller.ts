@@ -56,6 +56,9 @@ export class DialogueController {
       return false;
     }
     const character = this.chapter.characters.find((c) => c.id === dialogue.characterId);
+    // Choose the entry BEFORE recording the meeting, so a `met` condition means
+    // "met before this conversation" (otherwise a stranger greets you like a friend).
+    const entry = entryNodeId(dialogue, this.session.state);
     this.session.publish([
       { type: 'ConversationStarted', dialogueId, characterId: character?.id ?? null },
     ]);
@@ -65,7 +68,7 @@ export class DialogueController {
         meet.push({ type: 'unlockJournal', entry: character.journalEntry });
       this.session.dispatch(meet);
     }
-    this.enter(dialogue, entryNodeId(dialogue, this.session.state));
+    this.enter(dialogue, entry);
     return true;
   }
 

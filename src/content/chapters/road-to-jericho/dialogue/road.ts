@@ -1,8 +1,10 @@
 import { INCIDENT_CLUES } from '../clues';
-import { any, chose, flag, has, met, opt, say, solved, type DialogueInput } from './helpers';
+import { any, chose, flag, has, opt, say, solved, type DialogueInput } from './helpers';
 
 const trustAtLeast = (n: number) => ({ type: 'trust' as const, character: 'menashe', gte: n });
 const noWater = 'You have no water left to clean his wounds.';
+/** Menashe recognises the player only if they actually spoke in the market. */
+const MET_IN_MARKET = { type: 'conversationDone' as const, dialogue: 'd-menashe' };
 
 /**
  * The injured-traveler encounter. The decision weighs safety, supplies,
@@ -68,7 +70,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
     entries: [
       { when: chose('choice-traveler'), node: 'after' },
       { when: solved('p-what-happened'), node: 'd0' },
-      { when: met('menashe'), node: 'known0' },
+      { when: MET_IN_MARKET, node: 'known0' },
     ],
     start: 'stranger0',
     nodes: [
@@ -117,7 +119,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         {
           branches: [
             { when: trustAtLeast(2), next: 'friend' },
-            { when: met('menashe'), next: 'known' },
+            { when: MET_IN_MARKET, next: 'known' },
           ],
           next: 'stranger',
         },

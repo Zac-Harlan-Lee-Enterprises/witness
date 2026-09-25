@@ -111,4 +111,48 @@ describe('GameSession + controllers', () => {
     h.controller.handleWorldEvent({ type: 'unreachable', targetId: 'anywhere' });
     expect(h.ui.getState().toasts.at(-1)).toMatchObject({ label: 'Not yet' });
   });
+
+  it('greets you as a stranger the first time, even though meeting him is recorded', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.choose('c-me');
+    await p.finish().catch(() => undefined);
+    h.dialogue.end();
+    await flush();
+    h.ui.setDialogue(null);
+
+    h.dialogue.start('d-menashe-road');
+    await flush();
+    expect(h.ui.getState().dialogue?.nodeId).toBe('stranger0');
+    expect(h.state().metCharacters).toContain('menashe');
+  });
+
+  it('evaluates a `met` entry against who you had met BEFORE this conversation', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.choose('c-me');
+    await p.finish().catch(() => undefined);
+    h.dialogue.end();
+    await flush();
+    h.ui.setDialogue(null);
+    const dialogue = h.chapter.dialogues.find((d) => d.id === 'd-menashe-road');
+    if (!dialogue) throw new Error('missing');
+    const original = dialogue.entries;
+    (dialogue as { entries: typeof original }).entries = [
+      { when: { type: 'met', character: 'menashe' }, node: 'known0' },
+    ];
+    try {
+      h.dialogue.start('d-menashe-road');
+      await flush();
+      expect(h.ui.getState().dialogue?.nodeId).toBe('stranger0');
+      h.dialogue.end();
+      await flush();
+      h.ui.setDialogue(null);
+      h.dialogue.start('d-menashe-road');
+      await flush();
+      expect(h.ui.getState().dialogue?.nodeId).toBe('known0');
+    } finally {
+      (dialogue as { entries: typeof original }).entries = original;
+    }
+  });
 });
