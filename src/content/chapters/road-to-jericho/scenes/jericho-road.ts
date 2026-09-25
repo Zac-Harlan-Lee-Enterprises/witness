@@ -1,0 +1,361 @@
+import type { ChapterInput } from '@/domain/chapter';
+import type { Condition } from '@/domain/conditions';
+import { INCIDENT_CLUES } from '../clues';
+
+const notSolved = (puzzle: string): Condition => ({
+  type: 'not',
+  condition: { type: 'puzzleSolved', puzzle },
+});
+
+const clue = (
+  id: string,
+  label: string,
+  clueId: string,
+  text: string,
+  x: number,
+  y: number,
+  sprite: string,
+  solid = false,
+) => ({
+  id,
+  kind: 'clue' as const,
+  label,
+  x,
+  y,
+  sprite,
+  solid,
+  interaction: {
+    verb: 'examine' as const,
+    effects: [
+      { type: 'discoverClue' as const, clue: clueId },
+      { type: 'showMessage' as const, text },
+    ],
+  },
+});
+
+/**
+ * The road down from Jerusalem. Its details (the fork, the bend, the ridge
+ * path, the cistern) are FICTIONAL — see record rec-hist-road-surface.
+ * The three routes are gated by the route puzzle, not by invisible walls:
+ * the wadi and the bend are blocked by things you can examine.
+ */
+export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
+  id: 'jericho-road',
+  name: 'The road down to Jericho',
+  kind: 'outdoor',
+  description:
+    'A dry, steep road through the wilderness east of Jerusalem, between red rocks and rugged hills.',
+  layout: [
+    'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
+    'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
+    'HHrHHHHHHrHHHHHHHHHHHHHHHHH,HHHHHHHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHr,,,,,,,,k,,,,W,,,,,k,,,,,,,HHHHHHH',
+    'HHHHHHHHHHHHHHH.........................HHHHHHHH',
+    'HHHHHHHHHHHHHHH.........................,,HHHHHH',
+    'HHHHHHHHHHHHHHH.HbHHHHHHrHHbHHbHHHHHHH..,,rrHHHH',
+    'HHHHHHHHHHHHHHH.bHHHHHHHHHHHHHHHHHHHHH..,,..HHHH',
+    'HHHHHHbHHHHHHHH.HHHHHHHHHHHHHHHHHHHHHH..,,..HHHH',
+    'HHHHHHHHHHHHHHH.HHHHHHHHHHHHbHHHHHHHHH..,,..HHHH',
+    'HHHHHHHbHrHHr.k..HHHHHHHHHHHHHHHHHHHHH..HH..bHHH',
+    'HHrHHHHHHHHH.....RRRRRRRRRRRRRRRRRRRHH..HH..HHHH',
+    ',,,,,,,,,,,,.....RRRRRRRRRRRRRRRRRRR.......b..rH',
+    '============.....==================r============',
+    '============.....r=================r============',
+    ',,,,,,,,,,,,.....RRRRRRRRRRRRRRRRRRR...........H',
+    'HHHHHHHHHHHHHHHwHRRRRRRRRRRRRRRRRRRR.........r.H',
+    'HHHHHHHHHHHHHH,w,HHHHHHHHHHHHHHHHHHH.........rrH',
+    'HHHHHHHHHHHHHH,w,HrHrrHHHHHHHHHHHHHH...........H',
+    'HHHHHHHHHHHHHH,w,HbHHHHHHHHHHHHRRRHHr..........H',
+    'HHHHHHHHHHHHHHHwwwwwwwwwmwwwwwwRRRHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHHHwwwwwmwwwwwwwwwwRRRHHHHbrbHHHHHHH',
+    'HHHHHHHHHHHHHHHwwwwwwwwwwwwwwwwRRRHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHRRRHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHHHHHbHHHHHHHHHHHHHHHHHHHHbHHHHHHHHH',
+    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
+    'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH',
+    'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
+    'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
+  ],
+  legend: {
+    R: 'cliff',
+    H: 'hill',
+    ',': 'scrub',
+    '.': 'sand',
+    '=': 'road',
+    r: 'rock',
+    b: 'bush',
+    k: 'cairn',
+    W: 'well',
+    w: 'wadi',
+    m: 'mud',
+  },
+  baseTile: 'scrub',
+  spawns: { 'from-jerusalem': { x: 1, y: 13, facing: 'right' } },
+  entities: [
+    {
+      id: 'back-sign',
+      kind: 'sign',
+      label: 'The road back to Jerusalem',
+      sprite: 'sign',
+      x: 0,
+      y: 12,
+      interaction: {
+        verb: 'read',
+        effects: [
+          {
+            type: 'showMessage',
+            text: 'Jerusalem is behind you now. Rivka is waiting in Jericho.',
+          },
+        ],
+      },
+    },
+    // ── The fork ────────────────────────────────────────────────────────
+    {
+      id: 'crossroads',
+      kind: 'sign',
+      label: 'The crossroads — choose a route',
+      sprite: 'sign',
+      x: 13,
+      y: 12,
+      visibleWhen: notSolved('p-route'),
+      interaction: { verb: 'use', effects: [{ type: 'openPuzzle', puzzle: 'p-route' }] },
+    },
+    {
+      id: 'cairn',
+      kind: 'clue',
+      label: 'Three-stone cairn',
+      x: 14,
+      y: 10,
+      sprite: 'none',
+      solid: true,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          { type: 'discoverClue', clue: 'clue-cairn' },
+          {
+            type: 'showMessage',
+            text: 'Three stones, carefully stacked, beside a narrow path climbing the ridge. Someone keeps this up on purpose.',
+          },
+        ],
+      },
+    },
+    clue(
+      'clouds',
+      'Clouds over the western hills',
+      'clue-clouds',
+      'Dark clouds hang over the hills behind you, to the west. It isn’t raining here — but it may be raining there.',
+      12,
+      11,
+      'clouds',
+      true,
+    ),
+    clue(
+      'wadi-edge',
+      'The dry wadi',
+      'clue-mud-line',
+      'A stony streambed runs down into the rocks. Along its walls: a line of fresh mud, twigs and pebbles. Water rushed through here not long ago.',
+      15,
+      16,
+      'mud-line',
+      true,
+    ),
+    clue(
+      'bend-entrance',
+      'The road into the bend',
+      'clue-empty-road',
+      'The main road narrows between red cliffs. It is completely empty — no other travelers anywhere in sight.',
+      17,
+      13,
+      'stone',
+      true,
+    ),
+    {
+      id: 'red-rocks',
+      kind: 'feature',
+      label: 'Red rocks',
+      sprite: 'stone',
+      x: 16,
+      y: 11,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          { type: 'setFlag', flag: 'read-red-rocks', value: true },
+          {
+            type: 'showMessage',
+            text: 'The cliffs here are streaked with red. The old name for this climb, Adummim, means “red.”',
+          },
+        ],
+      },
+    },
+    {
+      id: 'ridge-path',
+      kind: 'feature',
+      label: 'Shepherds’ path up the ridge',
+      sprite: 'stone',
+      x: 15,
+      y: 9,
+      visibleWhen: notSolved('p-route'),
+      interaction: { verb: 'use', effects: [{ type: 'openPuzzle', puzzle: 'p-route' }] },
+    },
+    // ── The ridge ──────────────────────────────────────────────────────
+    {
+      id: 'cistern',
+      kind: 'feature',
+      label: 'Stone cistern',
+      sprite: 'none',
+      x: 27,
+      y: 3,
+      solid: true,
+      interaction: {
+        verb: 'use',
+        requires: { type: 'not', condition: { type: 'flag', flag: 'refilled' } },
+        blockedText: 'You’ve already filled your water skin here.',
+        effects: [
+          { type: 'setFlag', flag: 'refilled', value: true },
+          { type: 'giveItem', item: 'water-skin', quantity: 1 },
+          { type: 'discoverClue', clue: 'clue-cistern' },
+          {
+            type: 'showMessage',
+            text: 'You draw cool water from the cistern and fill a water skin.',
+          },
+        ],
+      },
+    },
+    // ── Below the bend ─────────────────────────────────────────────────
+    clue(
+      'single-prints',
+      'Sandal prints',
+      'clue-single-prints',
+      'One set of sandal prints comes down the road from the bend.',
+      36,
+      13,
+      'prints',
+    ),
+    clue(
+      'many-prints',
+      'Many footprints',
+      'clue-many-prints',
+      'Several sets of footprints come down from the rocks, trample around, then lead away north up this gully. They don’t come back.',
+      42,
+      11,
+      'prints',
+    ),
+    clue(
+      'broken-jar',
+      'Broken jar',
+      'clue-broken-jar',
+      'A broken oil jar. The spilled oil has soaked into the dust and dried at the edges. This happened hours ago.',
+      40,
+      14,
+      'broken-jar',
+    ),
+    clue(
+      'cut-purse',
+      'Empty purse',
+      'clue-cut-purse',
+      'An empty leather purse. The strings have been cut.',
+      41,
+      13,
+      'purse',
+    ),
+    clue(
+      'torn-cloth',
+      'Torn cloth',
+      'clue-torn-cloth',
+      'A strip of cloth with a blue stripe, caught on a thornbush — as if a cloak was pulled roughly away.',
+      43,
+      12,
+      'cloth',
+      true,
+    ),
+    clue(
+      'drag-marks',
+      'Drag marks',
+      'clue-drag-marks',
+      'Scuffed drag marks lead off the road into the shade. Look closely: they cross OVER the other footprints.',
+      43,
+      16,
+      'drag',
+    ),
+    {
+      id: 'menashe-road',
+      kind: 'npc',
+      label: 'The injured traveler',
+      characterId: 'menashe',
+      x: 44,
+      y: 17,
+      facing: 'up',
+      visibleWhen: { type: 'not', condition: { type: 'flag', flag: 'menashe-with-you' } },
+      interaction: { verb: 'talk', dialogue: 'd-menashe-road' },
+    },
+  ],
+  exits: [
+    {
+      id: 'to-jericho',
+      label: 'the road on to Jericho',
+      x: 47,
+      y: 13,
+      w: 1,
+      h: 2,
+      to: { scene: 'jericho', spawn: 'from-road' },
+      requires: { type: 'choiceMade', choice: 'choice-traveler' },
+      blockedDialogue: 'd-road-exit-blocked',
+      effects: [{ type: 'adjustCounter', counter: 'hour', delta: 1 }],
+    },
+  ],
+  triggers: [
+    {
+      id: 'fork',
+      area: { x: 12, y: 12, w: 2, h: 4 },
+      onceFlag: 'fork-arrived',
+      effects: [{ type: 'startDialogue', dialogue: 'd-fork' }],
+    },
+    {
+      id: 'drink',
+      area: { x: 20, y: 4, w: 1, h: 2 },
+      onceFlag: 'drank',
+      when: { type: 'hasItem', item: 'water-skin' },
+      effects: [
+        { type: 'takeItem', item: 'water-skin', quantity: 1 },
+        {
+          type: 'showMessage',
+          text: 'The sun beats down on the ridge. You drink deeply — and empty a water skin.',
+        },
+      ],
+    },
+    {
+      id: 'cistern-near',
+      area: { x: 24, y: 4, w: 1, h: 2 },
+      onceFlag: 'saw-cistern',
+      effects: [
+        {
+          type: 'showMessage',
+          text: 'Ahead, beside the path: a stone cistern, and a cairn of three stones.',
+        },
+      ],
+    },
+    {
+      id: 'ridge-end',
+      area: { x: 38, y: 9, w: 2, h: 1 },
+      onceFlag: 'ridge-end',
+      effects: [
+        { type: 'setFlag', flag: 'incident-seen', value: true },
+        { type: 'adjustCounter', counter: 'hour', delta: 2 },
+        { type: 'startDialogue', dialogue: 'd-incident-arrival' },
+      ],
+    },
+    // State trigger: offer to piece things together as soon as the third sign is found.
+    {
+      id: 'think',
+      onceFlag: 'think-prompted',
+      when: {
+        type: 'all',
+        of: [{ type: 'cluesFound', clues: INCIDENT_CLUES, min: 3 }, notSolved('p-what-happened')],
+      },
+      effects: [{ type: 'startDialogue', dialogue: 'd-think' }],
+    },
+  ],
+  ambience: 'wind',
+  music: 'journey',
+};
