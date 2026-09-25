@@ -1,0 +1,48 @@
+# Deploy to GitHub Pages — MANUAL and main-only.
+#
+# Deploying is a human decision: this workflow only runs from the Actions tab
+# (workflow_dispatch), and the job is pinned to main BY REF so a dispatch on
+# any other branch cannot publish it. Configure the `github-pages`
+# environment with required reviewers (see harden-github.sh).
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run test:ui
+      - name: Build for a project sub-path
+        run: npm run build
+        env:
+          # https://<owner>.github.io/<repo>/ — see docs/deployment.md
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

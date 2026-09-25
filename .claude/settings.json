@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "ask": [
+      "Bash(git push *)",
+      "Bash(gh pr create *)",
+      "Edit(./.github/**)",
+      "Edit(./.claude/settings.json)",
+      "Edit(./scripts/hooks/**)",
+      "Edit(./scripts/lib/**)",
+      "Edit(./CODEOWNERS)",
+      "Edit(./infra/**)",
+      "Edit(./deploy/**)",
+      "Edit(./cdk/**)",
+      "Edit(./terraform/**)",
+      "Edit(./src/content/scripture/translations.ts)"
+    ],
+    "deny": [
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh release create:*)",
+      "Bash(gh release delete:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(gh workflow enable:*)",
+      "Bash(gh workflow disable:*)",
+      "Bash(gh api --method PUT:*)",
+      "Bash(gh api --method POST:*)",
+      "Bash(gh api --method PATCH:*)",
+      "Bash(gh api --method DELETE:*)",
+      "Bash(gh api -X PUT:*)",
+      "Bash(gh api -X POST:*)",
+      "Bash(gh api -X PATCH:*)",
+      "Bash(gh api -X DELETE:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret delete:*)",
+      "Bash(gh variable set:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fdx:*)",
+      "Bash(git update-ref:*)",
+      "Bash(git filter-branch:*)",
+      "Bash(npm publish:*)",
+      "Bash(aws s3 sync:*)",
+      "Bash(aws s3 rm:*)",
+      "Bash(aws cloudfront create-invalidation:*)",
+      "Bash(cdk deploy:*)",
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/.aws/**)"
+    ]
+  },
+  "_comment": "Sensitive-path Edit rules are ASK (a human approving the prompt IS the approval; commits then need a SECURITY-REVIEW trailer via scripts/hooks/commit-msg). Deny rules are absolute. The translation registry is guarded because enabling Scripture text display is an editorial decision. Deploys (Pages, S3/CloudFront) are human-only. See AGENTS.md.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/scripts/hooks/guard-destructive-commands.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

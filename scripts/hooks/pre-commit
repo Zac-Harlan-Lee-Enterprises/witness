@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# pre-commit — local gate for the harness (install: bash init.sh does it).
+#
+# Fast and path-gated: a commit touching only docs pays for none of the
+# project checks. Runs the SAME commands CI runs (see .github/workflows/ci.yml),
+# just scoped to what changed.
+
+set -uo pipefail
+
+# shellcheck disable=SC1091
+source scripts/lib/policy.sh 2>/dev/null || true
+: "${PROTECTED_BRANCHES_RE:=(main|master|release(/[^[:space:]]*)?|production)}"
+: "${SECRET_RE:=-----BEGIN [A-Z ]*PRIVATE KEY-----}"
+
+EXIT=0
+fail() { printf "\033[1;31m[pre-commit]\033[0m %s\n" "$*" >&2; EXIT=1; }
+note() { printf "\033[1;34m[pre-commit]\033[0m %s\n" "$*"; }
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+# ── 1. Protected branch ────────────────────────────────────────────────────
+# The one exception is the repository's very first (root) commit, which has
+# nowhere else to go. Every later change goes through a feature branch + PR.
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+if git rev-parse --verify -q HEAD >/dev/null; then
+  if [[ "$branch" =~ ^$PROTECTED_BRANCHES_RE$ ]]; then
+    fail "Refusing to commit directly on protected branch '$branch'."
+    echo "  → git switch -c feat/<slug>   # then re-commit" >&2
+  fi
+else
+  note "Root commit on '$branch' allowed (repository has no commits yet)."
+fi
+
+# ── 2. Debug artifacts, conflict markers, secrets (per staged file) ─────────
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  content=$(git show ":$f" 2>/dev/null || true)
+  case "$f" in
+    src/*.ts|src/*.tsx)
+      if printf '%s' "$content" | grep -nE '(console\.log\(|^\s*debugger;?\s*$)' >/dev/null; then
+        fail "Debug artifact (console.log / debugger) in staged file: $f"
+      fi
+      ;;
+  esac
+  if printf '%s' "$content" | grep -nE '^(<<<<<<< |=======$|>>>>>>> )' >/dev/null; then
+    fail "Merge-conflict markers in staged file: $f"
+  fi
+  hits=$(printf '%s' "$content" | grep -nE "$SECRET_RE" | grep -v 'pragma: allowlist-secret' || true)
+  if [[ -n "$hits" ]]; then
+    fail "Possible secret in staged file: $f"
+    echo "$hits" | head -5 | sed 's/^/      /' >&2
+  fi
+done <<< "$STAGED"
+
+# ── 3. Valid JSON ──────────────────────────────────────────────────────────
+if command -v jq >/dev/null 2>&1; then
+  while IFS= read -r f; do
+    case "$f" in
+      *.json|*.webmanifest)
+        git show ":$f" | jq empty >/dev/null 2>&1 || fail "Invalid JSON: $f" ;;
+    esac
+  done <<< "$STAGED"
+fi
+
+# ── 4. Project gates (path-gated, same commands as CI) ──────────────────────
+CODE_RE='^(src/|tests/|e2e/|scripts/.*\.(ts|mjs)$|vite\.config\.ts$|playwright\.config\.ts$|tsconfig\.json$|eslint\.config\.js$|package\.json$)'
+if printf '%s\n' "$STAGED" | grep -qE "$CODE_RE"; then
+  # Staged-vs-worktree gap: the checks read the worktree, so refuse if a gated
+  # file has further unstaged edits (the check would validate the wrong thing).
+  partial=$(git status --porcelain -- src tests e2e scripts | grep -E '^[MARC][MD] ' || true)
+  if [[ -n "$partial" ]]; then
+    fail "Some gated files are partially staged — stage or stash the rest first:"
+    echo "$partial" | sed 's/^/      /' >&2
+  else
+    note "Type-checking…"
+    npx --no-install tsc --noEmit -p tsconfig.json >/dev/null 2>&1 || fail "Type errors — run: npm run typecheck"
+    note "Architecture tests…"
+    npx --no-install vitest run --project unit tests/architecture >/dev/null 2>&1 || fail "Architecture rules broken — run: npm run test:arch"
+    lint_files=$(printf '%s\n' "$STAGED" | grep -E '\.(ts|tsx|js|mjs)$' || true)
+    if [[ -n "$lint_files" ]]; then
+      # shellcheck disable=SC2086
+      npx --no-install eslint --max-warnings=0 $lint_files >/dev/null 2>&1 || fail "Lint errors — run: npm run lint"
+    fi
+  fi
+fi
+# Formatting — CI runs `prettier --check .`, so the hook checks staged files the
+# same way (a hook laxer than CI turns local green into a red main).
+fmt_files=$(printf '%s\n' "$STAGED" | grep -E '\.(ts|tsx|js|mjs|json|css|html)$' || true)
+if [[ -n "$fmt_files" ]]; then
+  # shellcheck disable=SC2086
+  npx --no-install prettier --check --log-level warn $fmt_files >/dev/null 2>&1 || fail "Formatting — run: npm run format"
+fi
+if printf '%s\n' "$STAGED" | grep -qE '^(src/(content|domain)/|scripts/validate-content\.ts$)'; then
+  note "Validating chapter content…"
+  npx --no-install tsx scripts/validate-content.ts >/dev/null 2>&1 || fail "Content validation failed — run: npm run content:validate"
+fi
+
+if (( EXIT != 0 )); then
+  echo
+  echo "Pre-commit checks failed. Fix the issues above (do NOT use --no-verify)." >&2
+fi
+exit "$EXIT"
