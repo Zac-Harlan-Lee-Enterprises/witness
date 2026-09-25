@@ -18,7 +18,7 @@ A story-driven, local-first adventure game set in the world of the Bible, for ag
 Prerequisites: **Node.js 22+** (see `.nvmrc`), npm, git, and macOS/Linux (or WSL) for the shell scripts.
 
 ```bash
-bash init.sh           # installs dependencies, git hooks, validates content, starts http://localhost:5173
+bash init.sh           # installs dependencies, git hooks, validates content, starts http://localhost:5391
 bash init.sh --stop    # stops it
 ```
 
@@ -30,7 +30,7 @@ For the browser tests, once: `npx playwright install chromium`.
 
 | Task | Command |
 |---|---|
-| Dev server | `npm run dev` (port 5173) |
+| Dev server | `npm run dev` (port 5391) |
 | All unit / integration / content / architecture / React tests | `npm test` |
 | Just the Node-side suites · just React UI | `npm run test:unit` · `npm run test:ui` |
 | Architecture rules | `npm run test:arch` |
@@ -40,7 +40,7 @@ For the browser tests, once: `npx playwright install chromium`.
 | Validate chapter content | `npm run content:validate` |
 | Editorial-readiness report | `npm run content:publish-check` |
 | Production build (validates content first) | `npm run build` → `dist/` |
-| Preview the production build | `npm run preview` (port 4173) |
+| Preview the production build | `npm run preview` (port 4391) |
 | Bundle sizes | `npm run perf:bundle` |
 | Dead code | `npm run deadcode` |
 | Status / drift check | `bash agent-status.sh` · `bash quality-sweep.sh` |

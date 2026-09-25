@@ -7,8 +7,8 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
-DEV_PORT=5173
-PREVIEW_PORT=4173
+DEV_PORT="${WITNESS_DEV_PORT:-5391}"
+PREVIEW_PORT="${WITNESS_PREVIEW_PORT:-4391}"
 
 hr() { printf '%.0s─' {1..70}; echo; }
 section() { hr; printf "  %s\n" "$1"; hr; }

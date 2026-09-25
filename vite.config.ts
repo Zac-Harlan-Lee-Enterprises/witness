@@ -24,8 +24,15 @@ export default defineConfig(({ mode }) => {
   const title = env.VITE_GAME_TITLE || 'Witness: A Journey Through Scripture';
   const shortTitle = env.VITE_GAME_SHORT_TITLE || 'Witness';
 
+  // Project-specific ports (override with WITNESS_DEV_PORT / WITNESS_PREVIEW_PORT)
+  // so this game never collides with other local apps on Vite's default 5173.
+  const devPort = Number(process.env.WITNESS_DEV_PORT ?? 5391);
+  const previewPort = Number(process.env.WITNESS_PREVIEW_PORT ?? 4391);
+
   return {
     base,
+    server: { port: devPort, strictPort: true },
+    preview: { port: previewPort, strictPort: true },
     plugins: [
       react(),
       VitePWA({

@@ -9,7 +9,7 @@
 1. **Every change ships with a test.** New behaviour → new tests. Bug fix → failing regression test first. Content change → `npm run content:validate` + `tests/content`.
 2. **Respect the layers** (below). The architecture tests will fail with *what / why / how to fix* — fix the code, not the test.
 3. **Run the full suite after every logical change:** `npm run typecheck && npm run lint && npm test`, plus `npm run test:e2e` for anything a player can see.
-4. **Restart and check health:** `bash init.sh` must end with `[ ok ] http://localhost:5173/ is healthy`.
+4. **Restart and check health:** `bash init.sh` must end with `[ ok ] http://localhost:5391/ is healthy`.
 5. **Never present fiction as Scripture, never invent verses or citations, never add scores of faith/holiness/favor.** See [docs/content-governance.md](docs/content-governance.md).
 6. Log the session in `claude-progress.txt` before you stop.
 
@@ -18,7 +18,7 @@
 ## 🚀 Quick start
 
 ```bash
-bash init.sh             # install (if needed) + hooks + content check + dev server on :5173
+bash init.sh             # install (if needed) + hooks + content check + dev server on :5391
 bash agent-status.sh     # where things stand (always exits 0)
 bash quality-sweep.sh    # drift detector (non-zero on any finding)
 bash init.sh --stop      # stop everything init.sh started
@@ -36,7 +36,7 @@ If `bash init.sh` fails, fixing it **is** the task.
 | App | React 19, Phaser 3.90 (lazy-loaded), Vite 8, vite-plugin-pwa, Zod 4, idb |
 | Tests | Vitest 5 (projects `unit` = node, `ui` = jsdom), React Testing Library, axe-core, Playwright 1.63 (+ @axe-core/playwright) |
 | Quality | TypeScript 6 strict, ESLint 9 (typescript-eslint strict, react-hooks, jsx-a11y strict), Prettier, knip |
-| Ports | 5173 dev (`init.sh`), 4173 preview (Playwright `webServer`) |
+| Ports | 5391 dev (`init.sh`), 4391 preview (Playwright `webServer`) |
 | Backend / DB | **None.** Player data lives in browser IndexedDB (`witness-game`). |
 
 ---
@@ -64,7 +64,7 @@ If `bash init.sh` fails, fixing it **is** the task.
 | `src/domain` | domain (+ zod) | anything else |
 | `src/shared` | shared | anything else |
 | `src/application` | application, domain, shared | React, Phaser, IndexedDB, infrastructure |
-| `src/content` | content, domain, shared (+ `application/ports` types) | engines, UI, storage |
+| `src/content` | content, domain, shared (+ port types from `src/application/ports.ts`) | engines, UI, storage |
 | `src/infrastructure` | infrastructure, application, domain, shared | UI, Phaser |
 | `src/game` | game, application, domain, shared | React, features, storage |
 | `src/features` | features, application, domain, shared | Phaser, IndexedDB, infrastructure |

@@ -14,8 +14,11 @@ IFS=$'\n\t'
 cd "$(dirname "$0")"
 
 PROJECT_NAME="Witness (Road to Jericho)"
-DEV_PORT=5173
-PREVIEW_PORT=4173
+# Project-specific ports (NOT Vite's default 5173, which other local apps use).
+DEV_PORT="${WITNESS_DEV_PORT:-5391}"
+PREVIEW_PORT="${WITNESS_PREVIEW_PORT:-4391}"
+export WITNESS_DEV_PORT="$DEV_PORT" WITNESS_PREVIEW_PORT="$PREVIEW_PORT"
+REPO_DIR="$(pwd -P)"
 HEALTH_URL="http://localhost:${DEV_PORT}/"
 HEALTH_TIMEOUT_SECS=60
 MIN_NODE_MAJOR=22
@@ -25,19 +28,26 @@ ok()   { printf "\033[1;32m[ ok ]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[warn]\033[0m %s\n" "$*" >&2; }
 die()  { printf "\033[1;31m[fail]\033[0m %s\n" "$*" >&2; exit 1; }
 
-kill_port() {
-  local port="$1" pids me
-  pids="$(lsof -ti:"$port" 2>/dev/null || true)"
+# Stop a process on $1 ONLY if it belongs to this project (its working
+# directory is inside this repo). Anything else is another app: in "strict"
+# mode refuse and explain; in "lenient" mode (--stop) just leave it alone.
+# Never kill by port alone — that once stopped an unrelated app on 5173.
+free_port() {
+  local port="$1" mode="${2:-strict}" pids pid cwd cmd
+  pids="$(lsof -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
   [[ -z "$pids" ]] && return 0
-  me="${USER:-$(id -un)}"
   for pid in $pids; do
-    if [[ "$(ps -o user= -p "$pid" 2>/dev/null | tr -d ' ' || true)" == "$me" ]]; then
-      log "Stopping process $pid on port $port"
+    cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n1)"
+    cmd="$(ps -o comm= -p "$pid" 2>/dev/null || echo '?')"
+    if [[ -n "$cwd" && ( "$cwd" == "$REPO_DIR" || "$cwd" == "$REPO_DIR"/* ) ]]; then
+      log "Stopping this project's earlier process $pid on port $port"
       kill "$pid" 2>/dev/null || true
       sleep 0.5
-      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+      if kill -0 "$pid" 2>/dev/null; then kill -9 "$pid" 2>/dev/null || true; fi
+    elif [[ "$mode" == "strict" ]]; then
+      die "Port $port is in use by another application ($cmd, pid $pid, in ${cwd:-unknown}). Not touching it. Choose another port, e.g.: WITNESS_DEV_PORT=5392 bash init.sh"
     else
-      warn "Port $port is held by another user's process ($pid) — not touching it"
+      warn "Port $port is used by another application ($cmd, pid $pid) — leaving it alone"
     fi
   done
 }
@@ -73,8 +83,8 @@ if [[ "${1:-}" == "--stop" ]]; then
       rm -f "$pidfile"
     done
   fi
-  kill_port "$DEV_PORT"
-  kill_port "$PREVIEW_PORT"
+  free_port "$DEV_PORT" lenient
+  free_port "$PREVIEW_PORT" lenient
   ok "Stopped. Safe to re-run: bash init.sh"
   exit 0
 fi
@@ -93,8 +103,8 @@ if [[ -f .env.local ]]; then
   ok "Using .env.local (public build-time settings only — this app has no secrets)"
 fi
 
-# ── 1. Stale processes ─────────────────────────────────────────────────────
-kill_port "$DEV_PORT"
+# ── 1. Stale processes (only this project's) ───────────────────────────────
+free_port "$DEV_PORT" strict
 
 # ── 2. Dependencies (only when the lockfile changed) ────────────────────────
 lock_hash="$(shasum -a 256 package-lock.json | cut -d' ' -f1)"
