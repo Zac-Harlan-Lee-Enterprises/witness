@@ -1,6 +1,6 @@
 /**
  * Policy for a FUTURE retrieval-augmented study guide (not implemented in the
- * vertical slice — see docs/ai-governance.md). The policy is defined now so any
+ * vertical slice — see docs/content-governance.md §6 "AI governance"). The policy is defined now so any
  * future implementation is held to it by tests from day one.
  *
  * A guide answer is acceptable only if it:
