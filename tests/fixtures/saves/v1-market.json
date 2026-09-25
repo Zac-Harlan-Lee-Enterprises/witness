@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "profile_fixture:manual-1",
+  "profileId": "profile_fixture",
+  "slot": "manual-1",
+  "chapterId": "road-to-jericho",
+  "savedAt": 1780000000000,
+  "sceneId": "jerusalem-market",
+  "position": { "x": 5, "y": 5 },
+  "flags": { "chapter:opened": true, "market-intro": true },
+  "inventory": ["remedy", "letter", "coins", "coins", "coins", "water-skin", "water-skin"]
+}

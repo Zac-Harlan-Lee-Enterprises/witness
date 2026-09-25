@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "profile_fixture:auto",
+  "profileId": "profile_fixture",
+  "slot": "auto",
+  "chapterId": "road-to-jericho",
+  "savedAt": 1780000000000,
+  "sceneId": "jerusalem-market",
+  "position": { "x": 5, "y": 5 },
+  "flags": {},
+  "inventory": "not-a-list"
+}

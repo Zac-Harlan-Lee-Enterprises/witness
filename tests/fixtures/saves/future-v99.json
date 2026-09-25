@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 99,
+  "id": "profile_fixture:auto",
+  "profileId": "profile_fixture",
+  "slot": "auto",
+  "futureField": true
+}
