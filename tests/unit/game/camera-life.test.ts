@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { conversationCentre, LOOK_AHEAD, stepLookAhead, zoomFor } from '@/game/systems/camera';
 import {
   crowdSize,
+  departed,
   crowdSpots,
   faceToward,
   mouthOpen,
@@ -82,5 +83,12 @@ describe('signs of life', () => {
   it('pigeons take off only when you come close', () => {
     expect(startles({ x: 5, y: 5 }, { x: 5.5, y: 6 })).toBe(true);
     expect(startles({ x: 5, y: 5 }, { x: 9, y: 5 })).toBe(false);
+  });
+});
+
+describe('people leaving a scene', () => {
+  it('removes someone who is no longer present (e.g. Menashe walking on with you)', () => {
+    expect(departed(['miriam', 'menashe-road'], [{ id: 'miriam' }])).toEqual(['menashe-road']);
+    expect(departed(['miriam'], [{ id: 'miriam' }, { id: 'new' }])).toEqual([]);
   });
 });

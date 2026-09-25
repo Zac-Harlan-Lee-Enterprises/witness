@@ -28,6 +28,7 @@ import { conversationCentre, stepLookAhead, zoomFor, type Vec } from '../systems
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
+import { departed } from '../systems/life';
 import { INITIAL_QUALITY, lightMatters, stepQuality, type QualityState } from '../systems/quality';
 import { Actors, ensureCharacterTexture } from './actors';
 import { AmbientLife } from './ambient';
@@ -208,10 +209,8 @@ export class WorldScene extends Phaser.Scene {
         if (p) p.view = e;
       } else this.addEntity(e);
     }
-    if (actors) {
-      const stale = [...this.actorIds()].filter((id) => !ids.has(id));
-      stale.forEach((id) => actors.remove(id));
-    }
+    // People who are no longer in the scene (e.g. someone who left with you).
+    if (actors) departed(actors.ids(), entities).forEach((id) => actors.remove(id));
     this.feedback?.syncClues(entities);
     this.rebuildBlocked(entities);
   }
@@ -511,10 +510,6 @@ export class WorldScene extends Phaser.Scene {
     if (prop)
       return { x: prop.image.x, y: prop.image.y, top: Math.max(14, prop.image.displayHeight - 6) };
     return null;
-  }
-
-  private *actorIds(): Iterable<string> {
-    for (const e of this.model?.entities ?? []) if (e.appearance) yield e.id;
   }
 
   private addEntity(e: WorldEntityView): void {

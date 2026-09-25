@@ -134,6 +134,11 @@ export class Actors {
     return this.npcs.has(id);
   }
 
+  /** Ids of the people currently shown. */
+  ids(): string[] {
+    return [...this.npcs.keys()];
+  }
+
   sprite(id: string): Phaser.GameObjects.Sprite | null {
     return this.npcs.get(id)?.sprite ?? null;
   }

@@ -600,8 +600,9 @@ legend {
   box-shadow: var(--shadow);
 }
 @media (max-width: 640px) {
+  /* Above the on-screen d-pad (about 190 px tall), never over it. */
   .interaction-prompt {
-    bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    bottom: calc(206px + env(safe-area-inset-bottom));
   }
 }
 .toasts {
@@ -1371,7 +1372,7 @@ legend {
     max-width: none;
     /* Between the HUD and the on-screen controls, never over the menu buttons. */
     top: auto;
-    bottom: calc(210px + env(safe-area-inset-bottom));
+    bottom: calc(270px + env(safe-area-inset-bottom));
   }
 }
 .pause-status {
@@ -1523,9 +1524,7 @@ legend {
   margin-bottom: 0.2rem;
 }
 .dialogue__speaker {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  display: inline-block;
   background: var(--color-accent);
   color: var(--color-accent-text);
   padding: 0.2rem 0.85rem 0.25rem;
@@ -1602,12 +1601,20 @@ legend {
     max-height: 62dvh;
     padding: 1.1rem 0.8rem 0.7rem;
   }
+  /* The portrait sits in the corner, the nameplate beside it. */
   .dialogue__portrait {
-    margin-top: -2rem;
+    position: absolute;
+    top: -1.9rem;
+    left: 0.7rem;
+    margin: 0;
   }
   .dialogue__portrait .portrait {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
+  }
+  .dialogue__header {
+    margin-left: 4.1rem;
+    min-height: 1.8rem;
   }
 }
 

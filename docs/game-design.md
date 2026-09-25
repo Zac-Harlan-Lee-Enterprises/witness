@@ -127,6 +127,19 @@ flowchart LR
 
 There is no way back from the road to Jerusalem, and no exit out of Jericho. The chapter ends there.
 
+### 7.0 How each place looks and feels
+
+The chapter's emotional arc — safe, busy, exposed, relieved — is carried by the places themselves ([ADR-0013](adr/0013-art-direction-system.md)). One original visual language, the "sunlit field sketchbook", runs throughout: one sun from the upper left, soft hue-shifted shadows, ink outlines on people and objects, colour saved for cloth, produce, water and leaves.
+
+| Place | Mood | Feeling | What you see and hear |
+|---|---|---|---|
+| Aunt Miriam's house | `home` | intimate, warm, safe | A tall plastered back wall with herbs, shelves, lamp niches and small windows; shafts of sunlight with dust turning in them; a glowing bread oven; a loom, mats and bedding; dark corners. A crackling hearth. |
+| The lower market | `city` | busy, bright, social | Dressed limestone house fronts that rise above you; cool violet shade; stalls with striped awnings, baskets, sacks and oil jars; dyers' cloth drying; caravan tents and a trough by the gate; passers-by and pigeons that take off when you walk up. Voices and clinking pottery. |
+| The road down | `wilderness` | exposed, harsh, lonely | Chalk hills with rock ledges, fluted red cliffs, long hard shadows, very few people; now and then the shadow of a hawk crosses the road. The robbed traveler lies in the shade. Gusting wind, a soft frame drum. |
+| Jericho | `oasis` | green, golden, relieving | Mudbrick houses with reed roofs and timber beams; palms, a sycamore-fig, reeds by the spring, an irrigation channel feeding garden beds; warm golden light. Birdsong and trickling water. |
+
+People carry what they do (a shepherd's staff, an oil jar, a tray of bread, a spindle, a trader's bundle, a basket of herbs or figs; the player's satchel), blink, turn to face you when you come close, and move their mouths when they speak. The camera leans a little ahead of you while walking and frames both people during a conversation, above the dialogue box.
+
 ### 7.1 Aunt Miriam's house (`miriam-house`)
 
 [`scenes/miriam-house.ts`](../src/content/chapters/road-to-jericho/scenes/miriam-house.ts): indoor, 16×10. A stone room with an oven, tables, jars, a rug, and a door on the south wall.

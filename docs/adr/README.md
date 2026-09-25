@@ -16,6 +16,7 @@ Short records of the decisions that shape **Witness**. They explain *why* the co
 | [0010](0010-no-numeric-spiritual-scoring.md) | No numeric spiritual scoring. Relationships are shown as words, and consequences are concrete facts. | Accepted |
 | [0011](0011-custom-collision-bfs-pathfinding.md) | Custom tile collision and BFS pathfinding instead of Arcade physics (pure, unit-tested) | Accepted |
 | [0012](0012-typed-event-bus-small-stores.md) | Custom typed event bus and small observable stores instead of a state library | Accepted |
+| [0013](0013-art-direction-system.md) | One art-direction system for every place (palette, materials, light, height, density), painted once per scene | Accepted |
 
 Code comments refer to these by number (for example `ADR-0006` in [vite.config.ts](../../vite.config.ts) and `ADR-0007` in [src/domain/settings.ts](../../src/domain/settings.ts)). **Never renumber a record.**
 

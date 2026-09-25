@@ -133,3 +133,12 @@ export function startles(
 ): boolean {
   return Math.hypot(flock.x - player.x, flock.y - player.y) < 1.7;
 }
+
+/** Which people on screen are no longer in the scene (e.g. someone who left with you). */
+export function departed(
+  shown: readonly string[],
+  present: ReadonlyArray<{ id: string }>,
+): string[] {
+  const here = new Set(present.map((e) => e.id));
+  return shown.filter((id) => !here.has(id));
+}
