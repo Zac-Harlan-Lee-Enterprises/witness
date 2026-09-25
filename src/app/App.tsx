@@ -85,17 +85,17 @@ export function App({ services }: { services: AppServices }) {
     setScreen({ name: 'loading' });
     try {
       const chapter = await services.chapters.load(chapterId);
-      let save = null;
+      let restored = null;
       if (saveId) {
         const result = await services.saves.load(saveId);
         if (!result.ok) {
           setScreen({ name: 'error', message: result.message, details: [] });
           return;
         }
-        save = result.save;
+        restored = { save: result.save, fromVersion: result.fromVersion };
       }
       const current = await services.profiles.touch(profile);
-      const runtime = new GameRuntime(services, chapter, current, save, (id) => {
+      const runtime = new GameRuntime(services, chapter, current, restored, (id) => {
         void services.profiles.markChapterComplete(current, id);
       });
       setScreen({ name: 'game', runtime });

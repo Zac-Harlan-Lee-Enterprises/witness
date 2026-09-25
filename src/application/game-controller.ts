@@ -94,9 +94,23 @@ export class GameController {
     }
   }
 
-  /** Record that play resumed from a save (published once subscribers exist). */
-  noteRestored(saveId: string, fromSchemaVersion: number): void {
-    this.deps.session.publish([{ type: 'SaveRestored', saveId, fromSchemaVersion }]);
+  /**
+   * Record that play resumed from a save (published once subscribers exist),
+   * and say so if the save came from a different version of the chapter.
+   */
+  noteRestored(saveId: string, fromSchemaVersion: number, contentVersion: string): void {
+    const { session, ui, logger } = this.deps;
+    session.publish([{ type: 'SaveRestored', saveId, fromSchemaVersion }]);
+    if (contentVersion !== session.chapter.contentVersion) {
+      logger.info(
+        `Save ${saveId} was made with content ${contentVersion}; chapter is ${session.chapter.contentVersion}`,
+      );
+      ui.pushToast(
+        'This save was made with an earlier version of this chapter. If anything seems out of place, starting the chapter again will fix it.',
+        'info',
+        'Note',
+      );
+    }
   }
 
   detachWorld(): void {

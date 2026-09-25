@@ -41,9 +41,11 @@ export class GameRuntime {
     readonly services: AppServices,
     readonly chapter: Chapter,
     readonly profile: PlayerProfile,
-    save: SaveGame | null,
+    /** A loaded save and the schema version it was stored in (before migration). */
+    restored: { save: SaveGame; fromVersion: number } | null,
     onChapterComplete: (chapterId: string) => void,
   ) {
+    const save = restored?.save ?? null;
     const { logger, clock, settings, audio, analytics } = services;
     this.bus = new TypedEventBus<DomainEvent>((error, event) =>
       logger.error(`Event handler failed for ${event.type}`, error),
@@ -82,7 +84,13 @@ export class GameRuntime {
           'Save failed',
         );
     });
-    if (save) this.controller.noteRestored(save.id, save.schemaVersion);
+    if (restored) {
+      this.controller.noteRestored(
+        restored.save.id,
+        restored.fromVersion,
+        restored.save.contentVersion,
+      );
+    }
     if (!services.repositories.status.persistent) {
       this.ui.setStorageWarning(services.repositories.status.reason);
     }

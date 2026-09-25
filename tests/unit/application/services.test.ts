@@ -31,11 +31,25 @@ describe('SaveService', () => {
     const { saves: list } = await saves.list('p1');
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({
-      id: saveId('p1', 'manual-1'),
+      id: saveId('p1', 'road-to-jericho', 'manual-1'),
       sceneName: 'Aunt Miriam’s house',
     });
-    const loaded = await saves.load(saveId('p1', 'manual-1'));
+    const loaded = await saves.load(saveId('p1', 'road-to-jericho', 'manual-1'));
     expect(loaded.ok && loaded.save.state).toEqual(h.session.state);
+  });
+
+  it('keeps one save per chapter and slot, tidying the older id format once replaced', async () => {
+    const h = await createHarness();
+    const repo = new MemorySaveRepository();
+    const saves = new SaveService(repo, clock, logger);
+    const old = saves.build('p1', 'auto', h.chapter, h.session.state);
+    repo.records.set('p1:auto', { ...old, id: 'p1:auto' });
+    repo.records.set('p1:manual-1', { ...old, id: 'p1:manual-1', chapterId: 'another-chapter' });
+    await saves.save('p1', 'auto', h.chapter, h.session.state);
+    expect([...repo.records.keys()].sort()).toEqual([
+      'p1:manual-1', // a different chapter's save is left alone
+      'p1:road-to-jericho:auto',
+    ]);
   });
 
   it('migrates old saves on load and writes back the upgraded form', async () => {

@@ -164,4 +164,18 @@ describe('GameSession + controllers', () => {
     await h.controller.attachWorld(h.world);
     expect(h.events.filter((e) => e.type === 'ChapterStarted')).toHaveLength(1);
   });
+
+  it('records the original save version on restore and flags saves from older chapter content', async () => {
+    const h = await createHarness({ analyticsConsent: true });
+    h.controller.noteRestored('p1:road-to-jericho:auto', 1, h.chapter.contentVersion);
+    expect(h.events.at(-1)).toEqual({
+      type: 'SaveRestored',
+      saveId: 'p1:road-to-jericho:auto',
+      fromSchemaVersion: 1,
+    });
+    expect(h.ui.getState().messages.some((m) => /earlier version/.test(m.text))).toBe(false);
+
+    h.controller.noteRestored('p1:road-to-jericho:auto', 2, 'legacy-v1');
+    expect(h.ui.getState().toasts.at(-1)?.text).toMatch(/earlier version of this chapter/);
+  });
 });

@@ -26,7 +26,7 @@ How **Witness** stores player progress on the device: the schema, the storage la
 | Object store | Key (out-of-line) | Value | Index | Written by | Read by |
 |---|---|---|---|---|---|
 | `profiles` | `profile.id` | `PlayerProfile` | — | `ProfileService.create / rename / touch / markChapterComplete` | `ProfileService.list()`, which validates each record with `PlayerProfileSchema` and skips invalid ones with a warning |
-| `saves` | `save.id` = `` `${profileId}:${slot}` `` | `SaveGame` (any version) | `byProfile` on key path `profileId` | `SaveService.save()`, the write-back after migration in `SaveService.load()`, and `ProfileService.remove()` (deletes all of a profile's saves through a cursor over `byProfile`) | `SaveService.list()` (through `byProfile`), `SaveService.load()` |
+| `saves` | `save.id` = `` `${profileId}:${chapterId}:${slot}` `` | `SaveGame` (any version) | `byProfile` on key path `profileId` | `SaveService.save()`, the write-back after migration in `SaveService.load()`, and `ProfileService.remove()` (deletes all of a profile's saves through a cursor over `byProfile`) | `SaveService.list()` (through `byProfile`), `SaveService.load()` |
 | `settings` | the constant `'device'` | `GameSettings` | — | `SettingsService.update / reset` | `SettingsService.load()`, which uses `parseSettings` with a field-by-field fallback |
 
 Records are stored as plain structured-clone data. The repository interfaces (`SaveRepository`, `ProfileRepository`, `SettingsRepository` in [ports.ts](../src/application/ports.ts)) deliberately return **raw `unknown`** from reads, so nothing can skip validation.
@@ -44,7 +44,7 @@ The message appears on the title screen and as a floating notice in-game.
 | `auto` | Autosave (§5), "Save and quit to title" | "Autosave" |
 | `manual-1`, `manual-2`, `manual-3` | Pause menu → "Save to slot 1/2/3" | "Save slot 1/2/3" |
 
-- A save's id is `saveId(profileId, slot)` = `` `${profileId}:${slot}` ``, so each profile has **at most four saves**, and writing a slot overwrites it.
+- A save's id is `saveId(profileId, chapterId, slot)` = `` `${profileId}:${chapterId}:${slot}` ``, so each profile has **at most four saves per chapter**, and writing a slot overwrites it. Saves written before chapter scoping used `` `${profileId}:${slot}` ``; they still list and load, and the first save to the same chapter and slot under the new id deletes the old one.
 - The id does **not** include the chapter. With a single playable chapter this is invisible, but a second chapter would share the same four slots per profile (see §8).
 - The chapter-select screen groups a profile's saves by `chapterId`. **Continue** loads the most recent one (by `savedAt`), and **Load a saved game** lists them all in slot order (`auto`, `manual-1..3`) with scene name, play time, save time and current objective.
 - Starting a **New game** when saves exist asks for confirmation. The existing `auto` slot is overwritten the first time the new game autosaves, and manual slots are kept.
@@ -57,7 +57,7 @@ The message appears on the title screen and as a floating notice in-game.
 | Field | Type / constraint | Meaning |
 |---|---|---|
 | `schemaVersion` | literal `2` (`CURRENT_SAVE_VERSION`) | Save format version. Anything else is migrated or rejected. |
-| `id` | non-empty string | `` `${profileId}:${slot}` ``. It is also the IndexedDB key. |
+| `id` | non-empty string | `` `${profileId}:${chapterId}:${slot}` `` (older saves: `` `${profileId}:${slot}` ``). It is also the IndexedDB key. |
 | `profileId` | non-empty string | Owning `PlayerProfile.id`. Indexed by `byProfile`. |
 | `slot` | `auto` · `manual-1` · `manual-2` · `manual-3` | See §2. |
 | `chapterId` | non-empty string | Chapter this run belongs to (for example `road-to-jericho`). |

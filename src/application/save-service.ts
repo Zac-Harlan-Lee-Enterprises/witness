@@ -36,9 +36,13 @@ export interface UnreadableSave {
 export type LoadResult =
   { ok: true; save: SaveGame; fromVersion: number } | { ok: false; message: string };
 
-export function saveId(profileId: string, slot: SaveSlot): string {
-  return `${profileId}:${slot}`;
+/** One save per profile, chapter and slot (Chapter 2's autosave must not replace Chapter 1's). */
+export function saveId(profileId: string, chapterId: string, slot: SaveSlot): string {
+  return `${profileId}:${chapterId}:${slot}`;
 }
+
+/** The id format before saves were scoped by chapter. */
+const legacySaveId = (profileId: string, slot: SaveSlot): string => `${profileId}:${slot}`;
 
 export class SaveService {
   constructor(
@@ -51,7 +55,7 @@ export class SaveService {
     const scene = chapter.scenes.find((s) => s.id === state.sceneId);
     return {
       schemaVersion: CURRENT_SAVE_VERSION,
-      id: saveId(profileId, slot),
+      id: saveId(profileId, chapter.id, slot),
       profileId,
       slot,
       chapterId: chapter.id,
@@ -73,10 +77,24 @@ export class SaveService {
   ): Promise<boolean> {
     try {
       await this.repo.put(this.build(profileId, slot, chapter, state));
-      return true;
     } catch (error) {
       this.logger.error('Save failed', error);
       return false;
+    }
+    await this.removeLegacy(profileId, slot, chapter.id);
+    return true;
+  }
+
+  /** Once a save exists under the new id, drop the same chapter's save under the old one. */
+  private async removeLegacy(profileId: string, slot: SaveSlot, chapterId: string): Promise<void> {
+    const id = legacySaveId(profileId, slot);
+    try {
+      const raw = await this.repo.getRaw(id);
+      if (raw && typeof raw === 'object' && 'chapterId' in raw && raw.chapterId === chapterId) {
+        await this.repo.delete(id);
+      }
+    } catch (error) {
+      this.logger.warn(`Could not tidy old save ${id}`, error);
     }
   }
 

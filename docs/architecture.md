@@ -933,7 +933,7 @@ sequenceDiagram
     AS->>AS: debounced, one write 600 ms after the last request
   end
   AS->>SS: save(profileId, 'auto', chapter, session.state), chained after any in-flight write
-  SS->>SS: build SaveGame v2, id profileId:auto, label = scene name + current objective
+  SS->>SS: build SaveGame v2, id profileId:chapterId:auto, label = scene name + current objective
   SS->>R: put(save)
   R->>R: IndexedDB put into the saves store under key save.id
   alt write failed

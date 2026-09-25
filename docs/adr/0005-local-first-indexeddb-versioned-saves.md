@@ -13,7 +13,7 @@ The game is for families, churches and classrooms, including children. It should
 - Storage sits behind small ports (`SaveRepository`, `ProfileRepository`, `SettingsRepository`) whose read methods return **raw `unknown` data**. Validation and migration happen in the application layer on **every** read.
 - **Saves are versioned.** `SaveGame.schemaVersion` is a literal equal to `CURRENT_SAVE_VERSION` (2). Every older version has a migration in `MIGRATIONS` (today `1 → 2`). `migrateSave(raw)` never throws: it returns `ok` or one of `corrupt`, `unsupported-version` or `migration-failed`. `describeLoadError` turns each into player-facing wording without internals.
 - A save loaded from an older version is **written back** in the current format, so migration runs once.
-- **Four slots** per profile (`auto`, `manual-1..3`), with ids `${profileId}:${slot}`. Autosave writes the `auto` slot (debounced 600 ms, immediately on chapter completion). Manual slots are written from the pause menu.
+- **Four slots** per profile and chapter (`auto`, `manual-1..3`), with ids `${profileId}:${chapterId}:${slot}` (before chapter scoping: `${profileId}:${slot}`, tidied away on the next save). Autosave writes the `auto` slot (debounced 600 ms, immediately on chapter completion). Manual slots are written from the pause menu.
 - If IndexedDB cannot open, `createRepositories()` falls back to **in-memory repositories** and reports `persistent: false` with a user-visible warning. It also calls `navigator.storage.persist()` on a best-effort basis.
 - Save **schema** versioning is independent of the IndexedDB **database** version, which changes only when stores or indexes change.
 

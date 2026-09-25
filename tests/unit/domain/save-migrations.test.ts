@@ -50,6 +50,13 @@ describe('save migrations', () => {
     });
   });
 
+  it('reports the unrelated-JSON fixture as corrupt', () => {
+    expect(migrateSave(fixture('garbage.json'))).toMatchObject({
+      ok: false,
+      error: { kind: 'corrupt' },
+    });
+  });
+
   it('refuses saves from a newer version with a helpful message', () => {
     const result = migrateSave(fixture('future-v99.json'));
     expect(result).toMatchObject({
