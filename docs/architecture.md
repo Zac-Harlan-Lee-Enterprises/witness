@@ -745,11 +745,11 @@ The fixpoint loop repeats until a whole pass (every quest, then journal auto-unl
 
 **Publication.** The only place that emits onto the bus is `GameSession.publish()`. Controllers and the runtime hand it their events. It uses a FIFO queue: events published while another event is being delivered are appended and delivered afterwards, which gives a deterministic, breadth-first order even when a handler dispatches more effects. `dispatch()` commits the new state **before** publishing, so handlers always see the state the event describes. The bus isolates handlers: an exception in one handler goes to `onHandlerError` (the runtime logs `Event handler failed for <type>`) and the other handlers still run. React never subscribes to the bus. It renders stores (§10).
 
-**All 31 event types.** The *Owner* column is copied from `EVENT_OWNERS`. *Constructed in* lists where the code actually builds the event (see §16 for the three places where they differ).
+**All 31 event types.** The *Owner* column is copied from `EVENT_OWNERS`, the list of modules that build each event. [tests/unit/domain/event-owners.test.ts](../tests/unit/domain/event-owners.test.ts) scans `src/` and fails if the code builds an event anywhere else (or no longer builds it where the list says).
 
 | Event | Family | Payload | Owner (`EVENT_OWNERS`) | Constructed in | Consumed by |
 |---|---|---|---|---|---|
-| `ChapterStarted` | fact | `chapterId` | application/game-session | `GameSession.newGame` | analytics mapping (see §16) |
+| `ChapterStarted` | fact | `chapterId` | application/game-controller | `GameController.attachWorld`, once, when the opening runs (after every subscriber is listening) | analytics |
 | `ChapterCompleted` | fact | `chapterId` | domain/effects | `completeChapter` effect | analytics, `onChapterComplete` → `ProfileService.markChapterComplete` |
 | `SceneEntered` | fact | `sceneId`, `spawnId` | application/game-session | `GameSession.enterScene` | state-trigger re-check |
 | `ItemCollected` | fact | `itemId`, `quantity`, `total` | domain/effects | `giveItem` | toast "Received", `item` sound, state-trigger re-check |
@@ -762,7 +762,7 @@ The fixpoint loop repeats until a whole pass (every quest, then journal auto-unl
 | `QuestCompleted` | fact | `questId`, `outcomeId` | domain/quests | `stepQuest` | toast "Quest resolved", `quest` sound, analytics `OptionalQuestCompleted` for side quests |
 | `QuestFailed` | fact | `questId`, `outcomeId` | domain/quests | `stepQuest` | toast "Quest resolved", `quest` sound |
 | `ChoiceRecorded` | fact | `choiceId`, `optionId` | domain/effects | `recordChoice` | state-trigger re-check |
-| `JournalEntryUnlocked` | fact | `entryId` | domain/journal | `autoUnlockJournal` **and** the `unlockJournal` effect | toast "Journal" (not for `people` entries) |
+| `JournalEntryUnlocked` | fact | `entryId` | domain/effects, domain/journal | `autoUnlockJournal` **and** the `unlockJournal` effect | toast "Journal" (not for `people` entries) |
 | `ClueDiscovered` | fact | `clueId` | domain/effects | `discoverClue` | toast "New clue", `journal` sound, state-trigger re-check |
 | `CharacterMet` | fact | `characterId` | domain/effects | `meetCharacter` | — |
 | `TrustChanged` | fact | `characterId`, `from`, `to` | domain/effects | `adjustTrust` | — |
@@ -772,8 +772,8 @@ The fixpoint loop repeats until a whole pass (every quest, then journal auto-unl
 | `PuzzleAttempted` | fact | `puzzleId`, `correct`, `attempt` | application/puzzle-controller | `PuzzleController` submit methods | analytics |
 | `PuzzleCompleted` | fact | `puzzleId`, `attempts`, `hintsUsed` | application/puzzle-controller | `PuzzleController.complete` | `solved` sound, analytics, state-trigger re-check |
 | `HintRequested` | fact | `puzzleId`, `tier` | application/puzzle-controller | `PuzzleController.requestHint` | analytics |
-| `SaveRequested` | fact | `reason`: `scene-change, quest-progress, puzzle, chapter-complete, manual` | application/game-session | `GameSession` (scene-change, manual), `domain/quests` (quest-progress), `domain/effects` (chapter-complete), `PuzzleController` (puzzle) | `Autosaver` |
-| `SaveRestored` | fact | `saveId`, `fromSchemaVersion` | application/save-service | `GameRuntime` constructor ([src/app/game-runtime.ts](../src/app/game-runtime.ts)) | analytics |
+| `SaveRequested` | fact | `reason`: `scene-change, quest-progress, puzzle, chapter-complete, manual` | application/game-session, application/puzzle-controller, domain/effects, domain/quests | `GameSession` (scene-change, manual), `domain/quests` (quest-progress), `domain/effects` (chapter-complete), `PuzzleController` (puzzle) | `Autosaver` |
+| `SaveRestored` | fact | `saveId`, `fromSchemaVersion` | application/game-controller | `GameController.noteRestored`, called by the `GameRuntime` constructor once the controller is subscribed | analytics |
 | `SceneTransitionRequested` | request | `sceneId`, `spawnId` | domain/effects | `transition` | deferred queue → `changeScene` |
 | `PuzzleRequested` | request | `puzzleId` | domain/effects | `openPuzzle` | deferred queue → `PuzzleController.open` |
 | `DialogueRequested` | request | `dialogueId` | domain/effects | `startDialogue` | deferred queue → `DialogueController.start` |
@@ -985,7 +985,7 @@ sequenceDiagram
     SS-->>App: ok with save and fromVersion
     App->>App: profiles.touch(profile)
     App->>RT: new GameRuntime(services, chapter, profile, save)
-    RT->>RT: GameSession.restore(chapter, save.state), then publish SaveRestored
+    RT->>RT: GameSession.restore(chapter, save.state), then controller.noteRestored → SaveRestored
     App->>GV: render GameScreen
     GV->>RT: mountWorld(element), which lazy-imports Phaser
     RT->>GC: attachWorld(port), then loadCurrentScene()
@@ -1118,8 +1118,6 @@ The ports make the whole game run headless. [tests/support/harness.ts](../tests/
 
 These are facts about the current code, recorded so that nobody relies on behaviour that does not exist.
 
-- **`EVENT_OWNERS` differs from the code in three places.** `JournalEntryUnlocked` is also built by `domain/effects` (the `unlockJournal` effect). `SaveRequested` is also built by `domain/quests`, `domain/effects` and `application/puzzle-controller`. `SaveRestored` is built in `src/app/game-runtime.ts`, not in `application/save-service`. The unit test only checks that every owner string starts with `domain/` or `application/`.
-- **`ChapterStarted` reaches no subscriber in the running app.** `GameSession.newGame` publishes it before `GameController` subscribes (in both `GameRuntime` and the test harness), so the `ChapterStarted` analytics event is never tracked.
 - **State triggers are not re-checked when a scene finishes loading.** The re-check queued by `SceneEntered` runs as a microtask while `transitioning` is still `true` and returns early. State triggers are next evaluated on the following qualifying event (`ClueDiscovered`, `FlagChanged`, `ItemCollected`, `ItemRemoved`, `PuzzleCompleted`, `ChoiceRecorded`, `SceneEntered`).
 - The `interact` `WorldEvent` is handled but never emitted by the Phaser adapter.
 - The `EntitySchema` comment says an interaction is "checked in order: dialogue, then effects". `GameController.interact` actually dispatches `interaction.effects` first and then starts the dialogue.

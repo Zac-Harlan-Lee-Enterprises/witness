@@ -14,9 +14,12 @@ import { DEFAULT_SETTINGS, keyLabel, parseSettings, rebindKey } from '@/domain/s
 import { makeState } from '../../support/state';
 
 describe('events', () => {
-  it('gives every event type exactly one owner', () => {
+  it('gives every event type at least one owner in the domain or application layer', () => {
     expect(ALL_EVENT_TYPES.length).toBeGreaterThan(20);
-    ALL_EVENT_TYPES.forEach((t) => expect(EVENT_OWNERS[t]).toMatch(/^(domain|application)\//));
+    ALL_EVENT_TYPES.forEach((t) => {
+      expect(EVENT_OWNERS[t].length).toBeGreaterThan(0);
+      EVENT_OWNERS[t].forEach((owner) => expect(owner).toMatch(/^(domain|application)\//));
+    });
   });
 });
 

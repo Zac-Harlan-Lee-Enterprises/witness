@@ -59,9 +59,9 @@ export class GameSession {
       counters: chapter.initial.counters,
       inventory: chapter.initial.inventory,
     });
-    const session = new GameSession(chapter, state, bus, clock, logger);
-    session.publish([{ type: 'ChapterStarted', chapterId: chapter.id }]);
-    return session;
+    // ChapterStarted is published by the GameController when the opening runs,
+    // once every subscriber (analytics, autosave) is listening.
+    return new GameSession(chapter, state, bus, clock, logger);
   }
 
   static restore(

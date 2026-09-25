@@ -82,11 +82,7 @@ export class GameRuntime {
           'Save failed',
         );
     });
-    if (save) {
-      this.session.publish([
-        { type: 'SaveRestored', saveId: save.id, fromSchemaVersion: save.schemaVersion },
-      ]);
-    }
+    if (save) this.controller.noteRestored(save.id, save.schemaVersion);
     if (!services.repositories.status.persistent) {
       this.ui.setStorageWarning(services.repositories.status.reason);
     }

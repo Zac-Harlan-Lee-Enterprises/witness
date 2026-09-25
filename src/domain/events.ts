@@ -3,8 +3,8 @@
  *
  * Every cross-system message is one of these — the event bus is not an
  * untyped dumping ground. Each event has exactly one OWNER (the only module
- * allowed to emit it); `EVENT_OWNERS` records that and a unit test asserts
- * every event type is owned.
+ * allowed to emit it); `EVENT_OWNERS` records that and a unit test checks
+ * it against where the source actually constructs each event.
  *
  * Two families:
  *  - Facts: something happened in the story world (ItemCollected, …).
@@ -55,39 +55,47 @@ export type SaveReason =
 export type PanelId = 'scripture-connection' | 'reflection' | 'summary' | 'journal' | 'satchel';
 export type MessageTone = 'narration' | 'info' | 'warning';
 
-/** Which module is allowed to emit each event. Documented in docs/architecture.md. */
-export const EVENT_OWNERS: Record<DomainEventType, string> = {
-  ChapterStarted: 'application/game-session',
-  ChapterCompleted: 'domain/effects',
-  SceneEntered: 'application/game-session',
-  ItemCollected: 'domain/effects',
-  ItemRemoved: 'domain/effects',
-  ConversationStarted: 'application/dialogue-controller',
-  ConversationCompleted: 'application/dialogue-controller',
-  QuestStarted: 'domain/quests',
-  QuestObjectiveCompleted: 'domain/quests',
-  QuestStageAdvanced: 'domain/quests',
-  QuestCompleted: 'domain/quests',
-  QuestFailed: 'domain/quests',
-  ChoiceRecorded: 'domain/effects',
-  JournalEntryUnlocked: 'domain/journal',
-  ClueDiscovered: 'domain/effects',
-  CharacterMet: 'domain/effects',
-  TrustChanged: 'domain/effects',
-  FlagChanged: 'domain/effects',
-  CounterChanged: 'domain/effects',
-  PuzzleStarted: 'application/puzzle-controller',
-  PuzzleAttempted: 'application/puzzle-controller',
-  PuzzleCompleted: 'application/puzzle-controller',
-  HintRequested: 'application/puzzle-controller',
-  SaveRequested: 'application/game-session',
-  SaveRestored: 'application/save-service',
-  SceneTransitionRequested: 'domain/effects',
-  PuzzleRequested: 'domain/effects',
-  DialogueRequested: 'domain/effects',
-  PanelRequested: 'domain/effects',
-  MessageRequested: 'domain/effects',
-  SoundRequested: 'domain/effects',
+/**
+ * Which modules construct each event. Documented in docs/architecture.md and
+ * checked against the source by tests/unit/domain/event-owners.test.ts.
+ */
+export const EVENT_OWNERS: Record<DomainEventType, readonly string[]> = {
+  ChapterStarted: ['application/game-controller'],
+  ChapterCompleted: ['domain/effects'],
+  SceneEntered: ['application/game-session'],
+  ItemCollected: ['domain/effects'],
+  ItemRemoved: ['domain/effects'],
+  ConversationStarted: ['application/dialogue-controller'],
+  ConversationCompleted: ['application/dialogue-controller'],
+  QuestStarted: ['domain/quests'],
+  QuestObjectiveCompleted: ['domain/quests'],
+  QuestStageAdvanced: ['domain/quests'],
+  QuestCompleted: ['domain/quests'],
+  QuestFailed: ['domain/quests'],
+  ChoiceRecorded: ['domain/effects'],
+  JournalEntryUnlocked: ['domain/effects', 'domain/journal'],
+  ClueDiscovered: ['domain/effects'],
+  CharacterMet: ['domain/effects'],
+  TrustChanged: ['domain/effects'],
+  FlagChanged: ['domain/effects'],
+  CounterChanged: ['domain/effects'],
+  PuzzleStarted: ['application/puzzle-controller'],
+  PuzzleAttempted: ['application/puzzle-controller'],
+  PuzzleCompleted: ['application/puzzle-controller'],
+  HintRequested: ['application/puzzle-controller'],
+  SaveRequested: [
+    'application/game-session',
+    'application/puzzle-controller',
+    'domain/effects',
+    'domain/quests',
+  ],
+  SaveRestored: ['application/game-controller'],
+  SceneTransitionRequested: ['domain/effects'],
+  PuzzleRequested: ['domain/effects'],
+  DialogueRequested: ['domain/effects'],
+  PanelRequested: ['domain/effects'],
+  MessageRequested: ['domain/effects'],
+  SoundRequested: ['domain/effects'],
 };
 
 export const ALL_EVENT_TYPES = Object.keys(EVENT_OWNERS) as DomainEventType[];

@@ -64,6 +64,7 @@ export class GameController {
   private entitiesKey = '';
   private lastStoryState: GameState | null = null;
   private disposed = false;
+  private chapterStarted = false;
 
   constructor(private readonly deps: GameControllerDeps) {
     const { bus, session, ui } = deps;
@@ -78,14 +79,24 @@ export class GameController {
   async attachWorld(world: WorldPort): Promise<void> {
     this.world = world;
     this.applyMotionSettings();
-    await this.loadCurrentScene();
     const { session } = this.deps;
-    if (!session.state.flags['chapter:opened']) {
+    const opening = !session.state.flags['chapter:opened'];
+    if (opening && !this.chapterStarted) {
+      this.chapterStarted = true;
+      session.publish([{ type: 'ChapterStarted', chapterId: session.chapter.id }]);
+    }
+    await this.loadCurrentScene();
+    if (opening && !session.state.flags['chapter:opened']) {
       session.dispatch([
         { type: 'setFlag', flag: 'chapter:opened', value: true },
         ...session.chapter.opening,
       ]);
     }
+  }
+
+  /** Record that play resumed from a save (published once subscribers exist). */
+  noteRestored(saveId: string, fromSchemaVersion: number): void {
+    this.deps.session.publish([{ type: 'SaveRestored', saveId, fromSchemaVersion }]);
   }
 
   detachWorld(): void {

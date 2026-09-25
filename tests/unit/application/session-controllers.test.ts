@@ -155,4 +155,13 @@ describe('GameSession + controllers', () => {
       (dialogue as { entries: typeof original }).entries = original;
     }
   });
+
+  it('publishes ChapterStarted once everyone is listening, so analytics (when allowed) sees it', async () => {
+    const h = await createHarness({ analyticsConsent: true });
+    expect(h.analytics.map((e) => e.name)).toContain('ChapterStarted');
+    expect(h.events.filter((e) => e.type === 'ChapterStarted')).toHaveLength(1);
+    // Re-attaching the world (a remount) does not start the chapter again.
+    await h.controller.attachWorld(h.world);
+    expect(h.events.filter((e) => e.type === 'ChapterStarted')).toHaveLength(1);
+  });
 });
