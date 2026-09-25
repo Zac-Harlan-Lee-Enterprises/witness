@@ -135,7 +135,7 @@ Sensitive paths are listed in one place, `SENSITIVE_PATH_PATTERNS` in [`scripts/
 
 | # | Recommendation | Notes |
 |---|---|---|
-| R1 | **Content-Security-Policy headers at the host** | Not configured anywhere yet. The suggested starting policy below is **untested**. Deploy it as `Content-Security-Policy-Report-Only` first, play the whole chapter (including offline and **Update now**), and only then enforce it. |
+| R1 | **Content-Security-Policy headers at the host** | Not configured anywhere yet. The suggested starting policy below passes an automated browser test of the opening ([`e2e/csp.spec.ts`](../e2e/csp.spec.ts)) but has not run on a real host. Deploy it as `Content-Security-Policy-Report-Only` first, play the whole chapter (including offline and **Update now**), and only then enforce it. |
 | R2 | **Other security headers** | `X-Content-Type-Options: nosniff`; `Referrer-Policy: no-referrer` (source links then send no referrer); `Permissions-Policy: camera=(), microphone=(), geolocation=()` (the game uses none of these; leave gamepad alone); HSTS on a custom domain. |
 | R3 | **Subresource Integrity (SRI): not applicable** | Every script and stylesheet is same-origin and deployed together, with no CDN. If a third-party CDN is ever added, use SRI. |
 | R4 | **Dependency auditing in CI** | CI has no `npm audit` step, and `init.sh` installs with `--no-audit`. Add `npm audit --omit=dev --audit-level=high` (or Dependabot or Renovate) to CI, and review alerts regularly. |
