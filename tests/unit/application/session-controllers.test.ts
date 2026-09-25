@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { emphasisFor } from '@/application/game-controller';
 import { createHarness, flush, Player } from '../../support/harness';
 
 describe('GameSession + controllers', () => {
@@ -185,5 +186,44 @@ describe('GameSession + controllers', () => {
     const restored = await createHarness({ restore: state });
     const model = restored.world.scenes.at(-1);
     expect(model?.player).toMatchObject({ x: 6, y: 2 }); // (5,2) holds grain sacks
+  });
+
+  it('stages conversations for the world: who you talk with and who is speaking', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    // The opening begins with narration inside Miriam's conversation.
+    expect(h.world.conversations.at(-1)).toEqual({ with: 'miriam', speaking: null });
+    await p.advance();
+    expect(h.world.conversations.some((c) => c?.speaking === 'miriam')).toBe(true);
+    await p.choose('c-me');
+    await p.finish().catch(() => undefined);
+    h.dialogue.end();
+    await flush();
+    h.ui.setDialogue(null);
+    expect(h.world.conversations.at(-1)).toBeNull();
+  });
+
+  it('asks the world for a flourish where a clue is found, and for items, solved puzzles and objectives', async () => {
+    expect(emphasisFor({ type: 'ClueDiscovered', clueId: 'c' }, 'broken-jar')).toEqual({
+      kind: 'clue',
+      at: 'broken-jar',
+    });
+    expect(
+      emphasisFor({ type: 'ItemCollected', itemId: 'i', quantity: 1, total: 1 }, null),
+    ).toEqual({
+      kind: 'item',
+      at: null,
+    });
+    expect(
+      emphasisFor({ type: 'PuzzleCompleted', puzzleId: 'p', attempts: 1, hintsUsed: 0 }, null)
+        ?.kind,
+    ).toBe('solved');
+    expect(emphasisFor({ type: 'QuestStarted', questId: 'q' }, null)?.kind).toBe('objective');
+    expect(emphasisFor({ type: 'FlagChanged', flag: 'f', value: true }, null)).toBeNull();
+    const h = await createHarness();
+    h.session.dispatch([{ type: 'takeItem', item: 'lamp' }]);
+    h.session.dispatch([{ type: 'giveItem', item: 'lamp' }]);
+    await flush();
+    expect(h.world.emphases.at(-1)).toEqual({ kind: 'item', at: null });
   });
 });
