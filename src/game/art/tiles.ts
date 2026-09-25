@@ -148,19 +148,32 @@ export function groundUnder(grid: TileGrid, tx: number, ty: number, fallback: Ti
   return best;
 }
 
-/** Paint a whole scene into two textures: ground (below characters) and canopy (above). */
+/** A tree top drawn above characters; x/y is the canvas's top-left in world units. */
+export interface CanopyPiece {
+  x: number;
+  y: number;
+  canvas: HTMLCanvasElement;
+}
+
+/** Canopy canvases cover the tree's tile plus overhang (see paintCanopy). */
+const CANOPY_BOX = { left: 16, top: 24, width: 64, height: 56 };
+
+/**
+ * Paint a whole scene: one ground texture (below characters) and a small
+ * texture per tree top (above characters). Per-tree canopies keep texture
+ * memory proportional to the number of trees rather than the map size.
+ */
 export function paintSceneLayers(
   grid: TileGrid,
   baseTile: TileKind,
   doc: Document = document,
-): { ground: HTMLCanvasElement; canopy: HTMLCanvasElement } {
+): { ground: HTMLCanvasElement; canopies: CanopyPiece[] } {
   const w = grid.width * TILE;
   const h = grid.height * TILE;
   const ground = makeCanvas(w, h, doc);
-  const canopy = makeCanvas(w, h, doc);
+  const canopies: CanopyPiece[] = [];
   const g = ground.ctx;
-  const c = canopy.ctx;
-  if (!g || !c) return { ground: ground.canvas, canopy: canopy.canvas };
+  if (!g) return { ground: ground.canvas, canopies };
 
   const kindAt = (x: number, y: number): TileKind => tileAt(grid, x, y);
   const groundAt = (x: number, y: number): TileKind => {
@@ -248,9 +261,16 @@ export function paintSceneLayers(
     const k = kindAt(x, y);
     if (!PROP_TILES.has(k)) return;
     paintProp(g, k, x, y);
-    if (hasCanopy(k)) paintCanopy(c, k, x, y);
+    if (!hasCanopy(k)) return;
+    const piece = makeCanvas(CANOPY_BOX.width, CANOPY_BOX.height, doc);
+    if (!piece.ctx) return;
+    const left = x * TILE - CANOPY_BOX.left;
+    const top = y * TILE - CANOPY_BOX.top;
+    piece.ctx.translate(-left, -top);
+    paintCanopy(piece.ctx, k, x, y);
+    canopies.push({ x: left, y: top, canvas: piece.canvas });
   });
-  return { ground: ground.canvas, canopy: canopy.canvas };
+  return { ground: ground.canvas, canopies };
 }
 
 // ── Ground ────────────────────────────────────────────────────────────────

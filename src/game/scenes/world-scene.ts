@@ -68,6 +68,7 @@ export class WorldScene extends Phaser.Scene {
   private model: WorldSceneModel | null = null;
   private blocked: Blocked = () => true;
   private layers: Phaser.GameObjects.GameObject[] = [];
+  private sceneTextures: string[] = [];
   private fx: Phaser.GameObjects.GameObject[] = [];
   private tweensOwned: Phaser.Tweens.Tween[] = [];
   private readonly entitySprites = new Map<string, EntitySprite>();
@@ -112,17 +113,21 @@ export class WorldScene extends Phaser.Scene {
     this.model = model;
     this.lighting = model.lighting;
 
-    const { ground, canopy } = paintSceneLayers(model.grid, model.baseTile);
+    const { ground, canopies } = paintSceneLayers(model.grid, model.baseTile);
     const groundKey = `ground-${this.generation}`;
-    const canopyKey = `canopy-${this.generation}`;
     this.textures.addCanvas(groundKey, ground);
-    this.textures.addCanvas(canopyKey, canopy);
+    this.sceneTextures.push(groundKey);
     this.layers.push(
       this.add.image(0, 0, groundKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.ground),
     );
-    this.layers.push(
-      this.add.image(0, 0, canopyKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.canopy),
-    );
+    canopies.forEach((piece, i) => {
+      const key = `canopy-${this.generation}-${i}`;
+      this.textures.addCanvas(key, piece.canvas);
+      this.sceneTextures.push(key);
+      this.layers.push(
+        this.add.image(piece.x, piece.y, key).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.canopy),
+      );
+    });
 
     this.rebuildBlocked(model.entities);
     model.entities.forEach((e) => this.addEntity(e));
@@ -726,9 +731,9 @@ export class WorldScene extends Phaser.Scene {
     this.vignette = null;
     this.lampGlow?.destroy();
     this.lampGlow = null;
-    const gen = this.generation;
-    [`ground-${gen}`, `canopy-${gen}`].forEach((k) => {
+    this.sceneTextures.forEach((k) => {
       if (this.textures.exists(k)) this.textures.remove(k);
     });
+    this.sceneTextures = [];
   }
 }
