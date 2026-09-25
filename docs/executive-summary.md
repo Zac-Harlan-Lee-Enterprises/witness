@@ -77,7 +77,7 @@ Data flows **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 | Accessibility basics | axe-core WCAG 2.2 AA scans (including colour contrast and high-contrast mode) in jsdom and in a real browser. Keyboard-only and touch E2E tests. |
 | Offline play | After one visit, the app relaunches with no network and starts a chapter from the precache (Chromium) |
 | Bundle size | 143 KB gzip initial. Phaser and the chapter are lazy-loaded (≈356 KB gzip). |
-| Frame rate | **51.5 fps measured under headless software rendering** (no GPU). 60 fps on real devices has **not yet been confirmed**. |
+| Frame rate | **38 fps walking in the market under headless software rendering** (no GPU), with automatic simpler effects on slow devices. 60 fps on real devices has **not yet been confirmed**. |
 | Content integrity rules | Content tests: schema and integrity; every character fictional; no Jesus character; no scoring language; no motive given for the priest or Levite; nothing self-approved; only retrieved sources cited |
 | Feature registry | **24 of 28 entries passing.** Open: WebKit E2E, translation approval, editorial approval, GitHub branch protection. |
 

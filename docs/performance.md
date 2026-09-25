@@ -2,7 +2,7 @@
 
 This page lists **measured results only**. Anything not measured is labelled as such under [Not measured yet](#5-not-measured-yet).
 
-The numbers come from the build of 2026-09-24. The sizes were re-checked with `npm run perf:bundle` against the current `dist/` while writing this page. The frame rate and DOMContentLoaded are from that build session's run of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts).
+Sizes come from the build of 2026-09-24 (re-checked with `npm run perf:bundle`). The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
 
 ---
 
@@ -41,10 +41,14 @@ The Phaser engine is the largest single item. Fonts are about a quarter of the s
 
 | Metric | Result | Conditions |
 |---|---|---|
-| **Frame rate** | **51.5 fps** | `requestAnimationFrame` callbacks counted over 3 s in **headless Chromium with software rendering (no GPU)**, on the production build served by `vite preview`, with the Phaser world running |
-| **DOMContentLoaded** | **56 ms** | Same run, `localhost`, so no network latency |
+| **Frame rate, walking in the market** | **38.3 fps** (full effects) | `requestAnimationFrame` callbacks counted over 3 s while holding → in the market (the largest busy scene, with drifting dust and several people), in **headless Chromium with software rendering (no GPU)**, production build served by `vite preview` |
+| **DOMContentLoaded** | **60–86 ms** | Same runs, `localhost`, so no network latency |
 
-**What the frame-rate test actually measures.** [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) creates a profile, starts a new game, waits for the world canvas, and then counts frames. At that point the player is in the **opening scene (Aunt Miriam's house)** with the opening conversation on screen, and **not moving**. The test's name and comment say "while walking in the market", but the code neither walks nor visits the market (see [§6](#6-next-steps)). The assertion is only a floor (`fps > 20`), because CI runs without a GPU.
+**What changed with the art upgrade (same conditions).** The first version of the new lighting used two full-screen layers (a colour grade and a vignette) and measured **28.8 fps**; hiding both gave **51.6 fps**. Merging them into one multiply layer, redrawn only when the time of day changes, gave **38.3 fps**. Full-screen blending is costly without a GPU and cheap with one.
+
+**Automatic quality.** If the world runs below 34 fps for two 2-second samples in a row (after a 3-second warm-up), it switches to simpler effects for the rest of the session: no drifting dust, birds or water glints, and the light layer only when the light means something (sunset, dusk, night). It logs a warning (shown in *Copy diagnostics*) and marks the canvas `data-effects="reduced"`. The second test in [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) slows the CPU 8× through the DevTools Protocol and checks that the switch happens. The decision is a pure function, [`src/game/systems/quality.ts`](../src/game/systems/quality.ts), with unit tests.
+
+The frame-rate assertion is only a floor (`fps > 20`), because CI runs without a GPU.
 
 A headless, software-rendered frame rate says little about real devices. It is useful only as a regression signal.
 
@@ -57,7 +61,7 @@ npm run build && npm run perf:bundle
 # Frame rate + DOMContentLoaded (builds and serves on :4391 via Playwright's webServer)
 npx playwright install chromium          # once
 npx playwright test e2e/perf.spec.ts --project=desktop-chromium
-# look for:  [perf] rAF frame rate over 3s: NN.N fps; DOMContentLoaded: NN ms
+# look for:  [perf] rAF frame rate over 3s: NN.N fps (full effects); DOMContentLoaded: NN ms
 ```
 
 `perf:bundle` reports sizes but has **no budget thresholds**. It won't fail a build that grows.
@@ -79,15 +83,13 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 
 ## 5. Not measured yet
 
-- **60 fps on typical phones has NOT been measured on real devices.** The only figure is 51.5 fps in headless, software-rendered Chromium. Real devices have GPUs and may do better, but that is an expectation, not a measurement.
+- **60 fps on typical phones has NOT been measured on real devices.** The only figures are from headless, software-rendered Chromium (above). Real devices have GPUs and may do better, but that is an expectation, not a measurement.
 - **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈356 KB gzip of lazy chunks unless the service worker has already cached them.
-- The frame rate **while walking**, and in the busiest scene (the market).
-- Memory use, battery drain, CPU-throttled or low-end devices, WebKit/Safari, and Lighthouse scores.
+- Memory use (the largest ground texture is about 24 MB at 2×), battery drain, real low-end devices, WebKit/Safari, and Lighthouse scores. CPU throttling is used only to check that automatic quality switches on.
 
 ## 6. Next steps
 
-1. **Make `e2e/perf.spec.ts` match its name:** walk through the market (for example, go to the market and hold an arrow key) while counting frames. Add CPU throttling through the Chrome DevTools Protocol for a low-end profile.
-2. **Measure on hardware:** a mid-range Android phone (Chrome remote debugging, Performance panel) and an older iPad (Safari Web Inspector). Record the results here.
-3. **Throttled-network run** for first load and chapter start. If it is slow, add a loading progress indicator.
-4. **Size budgets:** make `perf:bundle` fail above agreed limits, for example initial JS+CSS at 160 KB gzip.
-5. **Optional trims, after measuring:** a custom Phaser build without unused systems. Caching OpenDyslexic only once it is selected, rather than precaching it, would save about 230 KB of `woff2` for most players but means it isn't available offline until chosen.
+1. **Measure on hardware:** a mid-range Android phone (Chrome remote debugging, Performance panel) and an older iPad (Safari Web Inspector). Record the results here.
+2. **Throttled-network run** for first load and chapter start. If it is slow, add a loading progress indicator.
+3. **Size budgets:** make `perf:bundle` fail above agreed limits, for example initial JS+CSS at 160 KB gzip.
+4. **Optional trims, after measuring:** a custom Phaser build without unused systems. Caching OpenDyslexic only once it is selected, rather than precaching it, would save about 230 KB of `woff2` for most players but means it isn't available offline until chosen.

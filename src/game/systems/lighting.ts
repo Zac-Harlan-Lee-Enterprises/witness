@@ -1,7 +1,8 @@
 /**
  * Time-of-day lighting as a pure function of the story clock (the chapter's
- * hour counter). The world applies it as a multiply-blend colour grade plus a
- * vignette; at night a carried lamp adds a warm glow around the player.
+ * hour counter). The world applies it as ONE multiply-blend layer (colour
+ * grade in the middle, darker towards the edges — see `gradeColors`); at
+ * night a carried lamp adds a warm glow around the player.
  * Pure and Phaser-free so it can be unit-tested.
  */
 export interface Lighting {
@@ -32,4 +33,26 @@ export function lightingFor(hour: number | null, indoor: boolean): Lighting {
   if (h < 18) return { tint: 0xff8c4a, alpha: 0.26, vignette: 0.4, night: false, label: 'sunset' };
   if (h < 19) return { tint: 0x8a6aa8, alpha: 0.36, vignette: 0.5, night: true, label: 'dusk' };
   return { tint: 0x243366, alpha: 0.52, vignette: 0.6, night: true, label: 'night' };
+}
+
+export type Rgb = readonly [number, number, number];
+
+/**
+ * The two colours of the single multiply layer. Multiplying by `center` is
+ * the same as a `tint` overlay at `alpha`; `edge` additionally darkens by the
+ * vignette strength. One full-screen pass instead of two keeps the frame rate
+ * up on weak or software-rendered GPUs.
+ */
+export function gradeColors(l: Lighting): { center: Rgb; edge: Rgb } {
+  const channel = (shift: number): number => (l.tint >> shift) & 255;
+  const graded = (shift: number): number =>
+    Math.round(255 * (1 - l.alpha) + channel(shift) * l.alpha);
+  const center: Rgb = [graded(16), graded(8), graded(0)];
+  const keep = 1 - 0.85 * l.vignette;
+  const edge: Rgb = [
+    Math.round(center[0] * keep),
+    Math.round(center[1] * keep),
+    Math.round(center[2] * keep),
+  ];
+  return { center, edge };
 }

@@ -31,7 +31,8 @@ import { paintProp } from '../art/props';
 import { paintSceneLayers } from '../art/tiles';
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
-import { lightingFor } from '../systems/lighting';
+import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
+import { INITIAL_QUALITY, lightMatters, stepQuality, type QualityState } from '../systems/quality';
 
 /**
  * The single Phaser scene that renders whichever map the application asks
@@ -60,7 +61,6 @@ const DEPTH = {
   canopy: 100_000,
   fx: 100_500,
   light: 101_000,
-  vignette: 101_500,
   marker: 102_000,
 };
 
@@ -81,8 +81,8 @@ export class WorldScene extends Phaser.Scene {
   } = { x: 0, y: 0, facing: 'down', sprite: null, walk: 0 };
   private focusId: string | null = null;
   private focusMarker: Phaser.GameObjects.Image | null = null;
-  private tint: Phaser.GameObjects.Rectangle | null = null;
-  private vignette: Phaser.GameObjects.Image | null = null;
+  /** Colour grade + vignette in one multiply layer (texture redrawn only when the light changes). */
+  private light: Phaser.GameObjects.Image | null = null;
   private lampGlow: Phaser.GameObjects.Image | null = null;
   private lighting: WorldLighting = { hour: null, lamp: false };
   private path: Tile[] | null = null;
@@ -94,6 +94,9 @@ export class WorldScene extends Phaser.Scene {
   private insideExit: string | null = null;
   private generation = 0;
   private elapsed = 0;
+  /** Automatic quality: decorative effects are dropped if frames stay slow. */
+  private quality: QualityState = INITIAL_QUALITY;
+  private fxTweens: Phaser.Tweens.Tween[] = [];
 
   constructor(private readonly opts: WorldSceneOptions) {
     super('world');
@@ -250,6 +253,10 @@ export class WorldScene extends Phaser.Scene {
   // ── Frame loop ──────────────────────────────────────────────────────────
   override update(_time: number, deltaMs: number): void {
     if (!this.model || !this.player.sprite) return;
+    if (!this.quality.lowPower) {
+      this.quality = stepQuality(this.quality, this.game.loop.rawDelta);
+      if (this.quality.lowPower) this.enterLowPower();
+    }
     const dt = Math.min(deltaMs, 50) / 1000;
     this.elapsed += dt;
     let moving = false;
@@ -522,22 +529,28 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ── Atmosphere: light, vignette, ambient life ────────────────────────────
-  private buildAtmosphere(model: WorldSceneModel): void {
+  private clearFx(): void {
+    this.fxTweens.forEach((t) => t.remove());
+    this.fxTweens = [];
     this.fx.forEach((o) => o.destroy());
     this.fx = [];
-    this.tint?.destroy();
-    this.vignette?.destroy();
+  }
+
+  private enterLowPower(): void {
+    // Recorded in "Copy diagnostics", and visible to tests as data-effects="reduced".
+    this.opts.logger.warn('Frame rate is low: switching to simpler effects');
+    this.game.canvas.dataset.effects = 'reduced';
+    this.clearFx();
+    this.applyLighting();
+  }
+
+  private buildAtmosphere(model: WorldSceneModel): void {
+    this.clearFx();
+    this.light?.destroy();
     this.lampGlow?.destroy();
 
-    this.tint = this.add
-      .rectangle(0, 0, 10, 10, 0xffffff, 0)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.light);
-    this.tint.setBlendMode(Phaser.BlendModes.MULTIPLY);
-    this.vignette = this.add
-      .image(0, 0, this.makeVignetteTexture())
-      .setScrollFactor(0)
-      .setDepth(DEPTH.vignette);
+    this.light = this.add.image(0, 0, this.lightTexture()).setScrollFactor(0).setDepth(DEPTH.light);
+    this.light.setBlendMode(Phaser.BlendModes.MULTIPLY);
     this.lampGlow = this.add
       .image(0, 0, 'lamp-glow')
       .setScale(INV)
@@ -546,7 +559,7 @@ export class WorldScene extends Phaser.Scene {
     this.lampGlow.setBlendMode(Phaser.BlendModes.ADD);
     this.applyLighting();
 
-    if (this.reducedMotion) return;
+    if (this.reducedMotion || this.quality.lowPower) return;
     const mapW = model.grid.width * TILE;
     const mapH = model.grid.height * TILE;
     if (model.ambience === 'wind' || model.ambience === 'market') {
@@ -572,7 +585,7 @@ export class WorldScene extends Phaser.Scene {
           .setDepth(DEPTH.fx)
           .setAlpha(0.8);
         this.fx.push(bird);
-        this.tweensOwned.push(
+        this.fxTweens.push(
           this.tweens.add({
             targets: bird,
             x: mapW + 40,
@@ -597,7 +610,7 @@ export class WorldScene extends Phaser.Scene {
           .setAlpha(0);
         glint.setBlendMode(Phaser.BlendModes.ADD);
         this.fx.push(glint);
-        this.tweensOwned.push(
+        this.fxTweens.push(
           this.tweens.add({
             targets: glint,
             alpha: 0.8,
@@ -612,37 +625,49 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private applyLighting(): void {
-    if (!this.model || !this.tint || !this.vignette) return;
+    if (!this.model || !this.light) return;
     const l = lightingFor(this.lighting.hour, this.model.kind === 'indoor');
-    this.tint.setFillStyle(l.tint, l.alpha);
-    this.vignette.setAlpha(l.vignette);
+    // In low-power mode only light that means something (dusk, night) is drawn.
+    const show = !this.quality.lowPower || lightMatters(l.alpha);
+    this.light.setVisible(show);
+    if (show) this.paintLight(l);
     this.lampGlow?.setVisible(l.night && this.lighting.lamp);
   }
 
-  private makeVignetteTexture(): string {
-    const key = 'vignette';
-    if (this.textures.exists(key)) return key;
-    const size = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const g = ctx.createRadialGradient(
-        size / 2,
-        size / 2,
-        size * 0.28,
-        size / 2,
-        size / 2,
-        size * 0.72,
-      );
-      g.addColorStop(0, 'rgba(30,18,8,0)');
-      g.addColorStop(1, 'rgba(30,18,8,0.85)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, size, size);
+  private static readonly LIGHT_KEY = 'light-grade';
+  private static readonly LIGHT_SIZE = 128;
+
+  private lightTexture(): string {
+    const key = WorldScene.LIGHT_KEY;
+    if (!this.textures.exists(key)) {
+      const canvas = document.createElement('canvas');
+      canvas.width = WorldScene.LIGHT_SIZE;
+      canvas.height = WorldScene.LIGHT_SIZE;
+      this.textures.addCanvas(key, canvas);
     }
-    this.textures.addCanvas(key, canvas);
     return key;
+  }
+
+  /** Redraw the grade texture: `center` colour in the middle, `edge` at the rim. */
+  private paintLight(l: Lighting): void {
+    const texture = this.textures.get(WorldScene.LIGHT_KEY) as Phaser.Textures.CanvasTexture;
+    const ctx = texture.getContext?.();
+    if (!ctx) return;
+    const size = WorldScene.LIGHT_SIZE;
+    const { center, edge } = gradeColors(l);
+    const g = ctx.createRadialGradient(
+      size / 2,
+      size / 2,
+      size * 0.28,
+      size / 2,
+      size / 2,
+      size * 0.72,
+    );
+    g.addColorStop(0, `rgb(${center.join(',')})`);
+    g.addColorStop(1, `rgb(${edge.join(',')})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    texture.refresh();
   }
 
   private rebuildBlocked(entities: readonly WorldEntityView[]): void {
@@ -705,18 +730,13 @@ export class WorldScene extends Phaser.Scene {
     const by = mapH < viewH ? (mapH - viewH) / 2 : 0;
     cam.setBounds(bx, by, Math.max(mapW, viewW), Math.max(mapH, viewH));
     // Screen-space overlays: sized in world units so they exactly cover the view at this zoom.
-    this.tint
-      ?.setPosition(w / 2, h / 2)
-      .setSize(viewW + 4, viewH + 4)
-      .setOrigin(0.5);
-    this.vignette?.setPosition(w / 2, h / 2).setDisplaySize(viewW + 4, viewH + 4);
+    this.light?.setPosition(w / 2, h / 2).setDisplaySize(viewW + 4, viewH + 4);
   }
 
   private clear(): void {
     this.tweensOwned.forEach((t) => t.remove());
     this.tweensOwned = [];
-    this.fx.forEach((o) => o.destroy());
-    this.fx = [];
+    this.clearFx();
     this.layers.forEach((l) => l.destroy());
     this.layers = [];
     this.entitySprites.forEach((es) => es.sprite.destroy());
@@ -725,10 +745,8 @@ export class WorldScene extends Phaser.Scene {
     this.player.sprite = null;
     this.focusMarker?.destroy();
     this.focusMarker = null;
-    this.tint?.destroy();
-    this.tint = null;
-    this.vignette?.destroy();
-    this.vignette = null;
+    this.light?.destroy();
+    this.light = null;
     this.lampGlow?.destroy();
     this.lampGlow = null;
     this.sceneTextures.forEach((k) => {

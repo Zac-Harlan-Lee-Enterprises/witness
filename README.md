@@ -110,7 +110,7 @@ No personal information is requested (a nickname and a chosen look). Saves, sett
 Summarised from [docs/deferred-features.md](docs/deferred-features.md):
 
 - Bible verse text is off until proofread; educational content awaits human editorial approval.
-- Only Chromium has been tested (desktop, phone and tablet emulation) — Safari/WebKit and real devices still need testing; 60 fps on phones is not yet measured on hardware (51.5 fps measured headless with software rendering).
+- Only Chromium has been tested (desktop, phone and tablet emulation) — Safari/WebKit and real devices still need testing; 60 fps on phones is not yet measured on hardware (38 fps measured walking in the market, headless with software rendering; slow devices get simpler effects automatically).
 - No testing yet with screen-reader users or players with disabilities.
 - Placeholder (procedural) art and audio; no voice-over; English only; one chapter.
 - Browsers can evict local data after long inactivity; installing the app helps.
