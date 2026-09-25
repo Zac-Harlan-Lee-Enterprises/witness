@@ -101,3 +101,8 @@ NEXT   : Review the screenshot tour on real devices (iPad Safari, a mid-range An
          for the reference set, then measure fps on hardware (docs/performance.md §5).
 BLOCKED: Unchanged — guarded files await the owner's own commit with a SECURITY-REVIEW trailer
          (the agent may not add it); translations.ts must be committed for clean checkouts.
+UPDATE 2026-09-25: The owner (Zac Harlan) committed the guarded files (32bbe91, trailer
+         SECURITY-REVIEW: Zac Harlan). A fresh checkout now type-checks, passes 304 Vitest tests
+         and builds. Still open for the owner: the deploy-pages VITE_BASE_PATH change and the
+         other items put on hold; WEB translation proofreading; editorial approval; pushing and
+         running harden-github.sh.
