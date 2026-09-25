@@ -135,6 +135,8 @@ export function ContentBlock({
                 {s.url ? (
                   <a href={s.url} target="_blank" rel="noopener noreferrer">
                     {s.title}
+                    <span className="visually-hidden"> (opens in a new tab)</span>
+                    <span aria-hidden="true"> ↗</span>
                   </a>
                 ) : (
                   s.title

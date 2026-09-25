@@ -134,6 +134,13 @@ export function rebindKey(
 }
 
 /** Human-friendly key names for help text. */
+/** Key name for `aria-keyshortcuts` (UI Events key values, e.g. "Escape", "ArrowUp", "J"). */
+export function ariaKeyName(code: string): string {
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code; // ArrowUp, Escape, Enter, Space… are already valid names.
+}
+
 export function keyLabel(code: string): string {
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);

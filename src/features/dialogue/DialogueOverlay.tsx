@@ -14,12 +14,29 @@ import { prefersReducedMotionSetting } from '../game/motion';
  * The conversation box. Text reveals at the chosen speed (or instantly), but
  * the complete line is always available to screen readers immediately.
  * Choices are real buttons; unavailable choices stay visible with the reason.
+ *
+ * Each line is announced through ONE permanently mounted live region. (The
+ * box itself is re-created for every line, and a live region that appears
+ * already holding text is not reliably announced.)
  */
 export function DialogueOverlay({ runtime }: { runtime: GameRuntimeLike }) {
   const ui = useStore(runtime.ui);
   const view = ui.dialogue;
-  if (!view) return null;
-  return <DialogueBox key={`${view.dialogueId}/${view.nodeId}`} view={view} runtime={runtime} />;
+  const spoken = view ? `${speakerLabel(view) ? `${speakerLabel(view)}: ` : ''}${view.text}` : '';
+  return (
+    <>
+      <p className="visually-hidden" aria-live="polite" data-testid="dialogue-announcer">
+        {spoken}
+      </p>
+      {view && (
+        <DialogueBox key={`${view.dialogueId}/${view.nodeId}`} view={view} runtime={runtime} />
+      )}
+    </>
+  );
+}
+
+function speakerLabel(view: DialogueView): string | null {
+  return view.speaker.kind === 'narrator' ? null : view.speaker.name;
 }
 
 function useTypewriter(text: string): { shown: string; done: boolean; skip: () => void } {
@@ -43,6 +60,7 @@ function useTypewriter(text: string): { shown: string; done: boolean; skip: () =
 function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRuntimeLike }) {
   const { shown, done, skip } = useTypewriter(view.text);
   const firstAction = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLElement>(null);
   const settings = useSettings();
 
   useEffect(() => {
@@ -50,8 +68,11 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
   }, [view.nodeId, done]);
 
   useEffect(() => {
+    // Number keys pick a choice — only while focus is inside the conversation,
+    // so they never fire from elsewhere on the page (WCAG 2.1.4).
     const onKey = (event: KeyboardEvent) => {
       if (!/^Digit[1-9]$/.test(event.code) || !done) return;
+      if (!(event.target instanceof Node) || !box.current?.contains(event.target)) return;
       const choice = view.choices[Number(event.code.slice(5)) - 1];
       if (choice?.available) runtime.dialogue.choose(choice.id);
     };
@@ -59,16 +80,16 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
     return () => window.removeEventListener('keydown', onKey);
   }, [view, done, runtime.dialogue]);
 
-  const speakerName = view.speaker.kind === 'narrator' ? null : view.speaker.name;
+  const speakerName = speakerLabel(view);
   const refs = view.record?.scripture?.map(formatScriptureRef).join('; ');
 
   return (
     <section
+      ref={box}
       className={`dialogue dialogue--${view.speaker.kind}`}
       role="dialog"
       aria-modal="false"
       aria-labelledby="dialogue-speaker"
-      aria-describedby="dialogue-text-full"
     >
       <div className="dialogue__portrait">
         <Portrait appearance={view.speaker.appearance} size={settings.textScale > 1.4 ? 56 : 72} />
@@ -93,7 +114,7 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
           {shown}
           {!done && <span className="dialogue__caret">▍</span>}
         </p>
-        <p id="dialogue-text-full" className="visually-hidden" aria-live="polite">
+        <p id="dialogue-text-full" className="visually-hidden">
           {speakerName ? `${speakerName}: ` : ''}
           {view.text}
         </p>

@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { timeOfDayLabel } from '@/application/time-of-day';
 import type { UiState } from '@/application/ui-store';
 import { unseenCount } from '@/domain/journal';
 import { currentObjective } from '@/domain/quests';
-import { keyLabel, type InputAction } from '@/domain/settings';
+import { ariaKeyName, keyLabel, type InputAction } from '@/domain/settings';
 import { useSettings, useStore } from '../common/hooks';
 import { useServices } from '../common/services';
 import type { GameRuntimeLike } from '../game/types';
 
-function useKey(action: InputAction): string {
+interface KeyHint {
+  /** What to show on screen, e.g. "Esc" or "↑". */
+  label: string;
+  /** What to put in aria-keyshortcuts, e.g. "Escape" or "ArrowUp". */
+  aria: string;
+}
+
+function useKey(action: InputAction): KeyHint {
   const settings = useSettings();
   const first = settings.keyBindings[action]?.[0];
-  return first ? keyLabel(first) : '';
+  return first ? { label: keyLabel(first), aria: ariaKeyName(first) } : { label: '', aria: '' };
 }
 
 /** Always-visible HTML heads-up display: where you are, what to do, and menu buttons. */
@@ -35,12 +42,12 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
       <div className="hud__status">
         <p className="hud__scene">{scene?.name}</p>
         {objective && (
-          <p className="hud__objective">
+          <p className="hud__objective hud__detail">
             <span className="hud__label">Next:</span> {objective}
           </p>
         )}
         {hour !== undefined && (
-          <p className="hud__time">
+          <p className="hud__time hud__detail">
             <span className="hud__label">Time:</span> {timeOfDayLabel(hour)}
           </p>
         )}
@@ -51,16 +58,19 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
           label="Journal"
           shortcut={keys.journal}
           badge={newEntries}
+          secondary
           onClick={() => ui.toggleOverlay('journal')}
         />
         <HudButton
           label="Satchel"
           shortcut={keys.satchel}
+          secondary
           onClick={() => ui.toggleOverlay('satchel')}
         />
         <HudButton
           label="Quests"
           shortcut={keys.quests}
+          secondary
           onClick={() => ui.toggleOverlay('quests')}
         />
         <HudButton label="Menu" shortcut={keys.pause} onClick={() => ui.toggleOverlay('pause')} />
@@ -73,19 +83,22 @@ function HudButton({
   label,
   shortcut,
   badge,
+  secondary,
   onClick,
 }: {
   label: string;
-  shortcut: string;
+  shortcut: KeyHint;
   badge?: number;
+  /** Also reachable from the pause menu; hidden on small screens with large text. */
+  secondary?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      className="hud-button"
+      className={secondary ? 'hud-button hud-button--secondary' : 'hud-button'}
       onClick={onClick}
-      aria-keyshortcuts={shortcut || undefined}
+      aria-keyshortcuts={shortcut.aria || undefined}
     >
       {label}
       {badge ? (
@@ -93,9 +106,9 @@ function HudButton({
           {badge} <span className="visually-hidden">new</span>
         </span>
       ) : null}
-      {shortcut && (
+      {shortcut.label && (
         <kbd className="hud-button__key" aria-hidden="true">
-          {shortcut}
+          {shortcut.label}
         </kbd>
       )}
     </button>
@@ -125,9 +138,9 @@ export function InteractionPrompt({ runtime }: { runtime: GameRuntimeLike }) {
     <>
       <span aria-hidden="true">✋ </span>
       {ui.focus.verb} {ui.focus.label}
-      {key && !touch && (
+      {key.label && !touch && (
         <kbd className="interaction-prompt__key" aria-hidden="true">
-          {key}
+          {key.label}
         </kbd>
       )}
     </>
@@ -140,6 +153,7 @@ export function InteractionPrompt({ runtime }: { runtime: GameRuntimeLike }) {
         <button
           type="button"
           className="button button--primary interaction-prompt__button"
+          aria-keyshortcuts={key.aria || undefined}
           onClick={() => runtime.controller.interactFocused()}
         >
           {content}
@@ -219,10 +233,26 @@ const TOAST_MS = 4500;
 /** Notifications (new clue, item received…) with a text label — never colour alone. */
 export function Toasts({ ui }: { ui: GameRuntimeLike['ui'] }) {
   const state: UiState = useStore(ui);
+  // One timer per toast, started when it appears. (Restarting every timer when
+  // any toast arrives would keep a busy stream of notices on screen forever.)
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   useEffect(() => {
-    const timers = state.toasts.map((t) => setTimeout(() => ui.dismissToast(t.id), TOAST_MS));
-    return () => timers.forEach(clearTimeout);
+    const live = timers.current;
+    state.toasts.forEach((t) => {
+      if (!live.has(t.id))
+        live.set(
+          t.id,
+          setTimeout(() => ui.dismissToast(t.id), TOAST_MS),
+        );
+    });
   }, [state.toasts, ui]);
+  useEffect(() => {
+    const live = timers.current;
+    return () => {
+      live.forEach(clearTimeout);
+      live.clear();
+    };
+  }, []);
   return (
     <div className="toasts" role="status" aria-live="polite">
       {state.toasts.map((t) => (

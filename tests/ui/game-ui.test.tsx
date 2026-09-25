@@ -1,9 +1,10 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChapterSummary, ScriptureConnection } from '@/features/chapter/ChapterEnding';
 import { DialogueOverlay } from '@/features/dialogue/DialogueOverlay';
-import { Hud, InteractionPrompt, PlaceBanner } from '@/features/hud/Hud';
+import { Hud, InteractionPrompt, PlaceBanner, Toasts } from '@/features/hud/Hud';
+import { MessageLog } from '@/features/hud/MessageLog';
 import { SatchelOverlay } from '@/features/inventory/SatchelOverlay';
 import { JournalOverlay } from '@/features/journal/JournalOverlay';
 import { GoToList } from '@/features/navigation/GoToList';
@@ -49,6 +50,34 @@ describe('Dialogue overlay', () => {
         screen.getByText(/That’s my brave one/, { selector: '#dialogue-text-full' }),
       ).toBeInTheDocument(),
     );
+  });
+
+  it('announces every line through one lasting live region; number keys work only from inside the conversation', async () => {
+    const user = userEvent.setup();
+    const { runtime } = await makeRuntime();
+    await renderWithServices(
+      <>
+        <button type="button">Outside</button>
+        <DialogueOverlay runtime={runtime} />
+      </>,
+      await instantText(),
+    );
+    const announcer = screen.getByTestId('dialogue-announcer');
+    expect(announcer).toHaveAttribute('aria-live', 'polite');
+    expect(announcer).toHaveTextContent(/Jerusalem, early morning/);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /Me\? All the way/ })).toHaveLength(1),
+    );
+    // Same element, new words: screen readers hear each line.
+    expect(screen.getByTestId('dialogue-announcer')).toBe(announcer);
+    expect(announcer).toHaveTextContent(/^Aunt Miriam:/);
+
+    screen.getByRole('button', { name: 'Outside' }).focus();
+    await user.keyboard('2');
+    expect(screen.getAllByRole('button', { name: /Me\? All the way/ })).toHaveLength(1);
   });
 
   it('shows impossible options with the reason instead of hiding them', async () => {
@@ -101,8 +130,15 @@ describe('HUD and navigation', () => {
     ['Go to…', 'Journal', 'Satchel', 'Quests', 'Menu'].forEach((name) =>
       expect(screen.getByRole('button', { name: new RegExp(`^${name}`) })).toBeInTheDocument(),
     );
+    expect(screen.getByRole('button', { name: /^Menu/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Escape',
+    );
     act(() => harness.ui.setFocus({ entityId: 'miriam', label: 'Aunt Miriam', verb: 'Talk to' }));
-    expect(screen.getByRole('button', { name: /Talk to Aunt Miriam/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Talk to Aunt Miriam/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'E',
+    );
   });
 
   it('lists every person, object and exit in the “Go to…” list', async () => {
@@ -273,5 +309,44 @@ describe('Place banner', () => {
     await waitFor(() =>
       expect(screen.getByTestId('place-banner')).toHaveTextContent('The lower market'),
     );
+  });
+});
+
+describe('Recent messages', () => {
+  it('keeps notices after they fade, newest first', async () => {
+    const { runtime } = await makeRuntime();
+    act(() => {
+      runtime.ui.pushToast('The gate is shut for the night.', 'info', 'Not yet');
+      runtime.ui.pushToast('Bread and dates', 'success', 'Received');
+      runtime.ui.dismissToast(runtime.ui.getState().toasts[0]?.id ?? -1);
+    });
+    const { container } = await renderWithServices(<MessageLog runtime={runtime} />);
+    const items = within(screen.getByRole('dialog', { name: 'Recent messages' })).getAllByRole(
+      'listitem',
+    );
+    expect(items[0]).toHaveTextContent('Received: Bread and dates');
+    expect(items.at(-1)).toHaveTextContent('Not yet: The gate is shut for the night.');
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('Toasts', () => {
+  it('gives each notice its own few seconds, even when more keep arriving', async () => {
+    const { runtime } = await makeRuntime();
+    act(() => runtime.ui.getState().toasts.forEach((t) => runtime.ui.dismissToast(t.id)));
+    await renderWithServices(<Toasts ui={runtime.ui} />);
+    vi.useFakeTimers();
+    try {
+      act(() => void runtime.ui.pushToast('First', 'info', 'Note'));
+      act(() => vi.advanceTimersByTime(3000));
+      act(() => void runtime.ui.pushToast('Second', 'info', 'Note'));
+      act(() => vi.advanceTimersByTime(1600));
+      expect(screen.queryByText('First')).not.toBeInTheDocument();
+      expect(screen.getByText('Second')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(3000));
+      expect(screen.queryByText('Second')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

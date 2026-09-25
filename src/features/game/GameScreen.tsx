@@ -16,11 +16,13 @@ import {
 } from '../hud/Hud';
 import { SatchelOverlay } from '../inventory/SatchelOverlay';
 import { JournalOverlay } from '../journal/JournalOverlay';
+import { MessageLog } from '../hud/MessageLog';
 import { GoToList } from '../navigation/GoToList';
 import { PauseMenu } from '../pause/PauseMenu';
 import { PuzzleHost } from '../puzzles/PuzzleHost';
 import { QuestLog } from '../quests/QuestLog';
 import { GameViewport } from './GameViewport';
+import { useSystemReducedMotion } from './motion';
 import type { GameRuntimeLike } from './types';
 
 export interface KeyboardAttacher {
@@ -88,9 +90,10 @@ export function GameScreen({
       document.removeEventListener('visibilitychange', flush);
     };
   }, [runtime]);
+  const systemReducedMotion = useSystemReducedMotion();
   useEffect(() => {
     runtime.controller.applyMotionSettings();
-  }, [runtime, settings.movementSpeed, settings.reducedMotion]);
+  }, [runtime, settings.movementSpeed, settings.reducedMotion, systemReducedMotion]);
 
   // Unlock audio on the first interaction (autoplay policies).
   useEffect(() => {
@@ -126,6 +129,7 @@ export function GameScreen({
       {ui.overlay === 'quests' && <QuestLog runtime={runtime} />}
       {ui.overlay === 'goto' && <GoToList runtime={runtime} />}
       {ui.overlay === 'history' && <DialogueHistory runtime={runtime} />}
+      {ui.overlay === 'messages' && <MessageLog runtime={runtime} />}
       {ui.overlay === 'pause' && (
         <PauseMenu runtime={runtime} onSettings={onOpenSettings} onQuit={onQuit} />
       )}

@@ -4,7 +4,7 @@ import type { GameSettings } from '@/domain/settings';
 import type { PlayerProfile } from '@/domain/profile';
 import { useStore } from '@/features/common/hooks';
 import { GameScreen } from '@/features/game/GameScreen';
-import { prefersReducedMotionSetting } from '@/features/game/motion';
+import { prefersReducedMotionSetting, useSystemReducedMotion } from '@/features/game/motion';
 import { ChapterSelect } from '@/features/menu/ChapterSelect';
 import { TitleScreen } from '@/features/menu/TitleScreen';
 import { ProfileScreen } from '@/features/profiles/ProfileScreen';
@@ -33,6 +33,8 @@ export function applySettingsToDocument(
   root.dataset.font = settings.font;
   root.dataset.motion = prefersReducedMotionSetting(settings.reducedMotion) ? 'reduce' : 'full';
   root.style.setProperty('--text-scale', String(settings.textScale));
+  // CSS can't compare a custom property, so large text gets its own flag.
+  root.dataset.text = settings.textScale >= 1.5 ? 'large' : 'normal';
 }
 
 function createKeyboardAttacher(services: AppServices) {
@@ -49,9 +51,11 @@ export function App({ services }: { services: AppServices }) {
   }, [settingsOpen]);
   const settings = useStore(services.settings.store);
 
+  // Re-apply when the device's reduced-motion preference changes, too.
+  const systemReducedMotion = useSystemReducedMotion();
   useEffect(() => {
     applySettingsToDocument(settings);
-  }, [settings]);
+  }, [settings, systemReducedMotion]);
 
   // The gamepad drives menus and dialogue whenever the world isn't taking movement.
   const screenRef = useRef(screen);

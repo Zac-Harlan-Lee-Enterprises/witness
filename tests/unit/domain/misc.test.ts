@@ -10,7 +10,13 @@ import {
 } from '@/domain/journal';
 import { approachTiles, facingToward, findPath } from '@/domain/navigation';
 import { checkDisplayName } from '@/domain/profile';
-import { DEFAULT_SETTINGS, keyLabel, parseSettings, rebindKey } from '@/domain/settings';
+import {
+  ariaKeyName,
+  DEFAULT_SETTINGS,
+  keyLabel,
+  parseSettings,
+  rebindKey,
+} from '@/domain/settings';
 import { makeState } from '../../support/state';
 
 describe('events', () => {
@@ -90,6 +96,11 @@ describe('settings', () => {
     expect(b.interact).not.toContain('KeyE');
     expect(keyLabel('KeyJ')).toBe('J');
     expect(keyLabel('ArrowUp')).toBe('↑');
+    // aria-keyshortcuts needs key names, not the on-screen symbols.
+    expect(ariaKeyName('ArrowUp')).toBe('ArrowUp');
+    expect(ariaKeyName('Escape')).toBe('Escape');
+    expect(ariaKeyName('KeyJ')).toBe('J');
+    expect(ariaKeyName('Digit2')).toBe('2');
   });
   it('defaults to anonymous analytics OFF', () => {
     expect(DEFAULT_SETTINGS.analyticsConsent).toBe(false);

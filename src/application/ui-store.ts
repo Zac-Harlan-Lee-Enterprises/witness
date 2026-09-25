@@ -9,7 +9,8 @@ import { Store } from '@/shared/store';
  * notifications. It is ephemeral (never saved) and separate from GameState.
  * React renders it; the application layer writes it. Phaser never sees it.
  */
-export type OverlayId = 'journal' | 'satchel' | 'quests' | 'pause' | 'goto' | 'history';
+export type OverlayId =
+  'journal' | 'satchel' | 'quests' | 'pause' | 'goto' | 'history' | 'messages';
 
 export interface DialogueSpeakerView {
   id: string;
@@ -53,6 +54,8 @@ export interface UiState {
   panel: Exclude<PanelId, 'journal' | 'satchel'> | null;
   focus: FocusPrompt | null;
   toasts: Toast[];
+  /** Every notification this session (newest last), so short notices can be re-read. */
+  messages: Toast[];
   /** Polite screen-reader announcement (scene changes, arrivals). */
   announcement: string;
   /** Visual place-name banner shown on arrival (seq changes each time). */
@@ -69,6 +72,7 @@ export const INITIAL_UI_STATE: UiState = {
   panel: null,
   focus: null,
   toasts: [],
+  messages: [],
   announcement: '',
   place: null,
   transitioning: false,
@@ -77,6 +81,7 @@ export const INITIAL_UI_STATE: UiState = {
 };
 
 const MAX_TOASTS = 4;
+const MAX_MESSAGES = 50;
 
 export class UiStore extends Store<UiState> {
   private toastId = 0;
@@ -130,6 +135,7 @@ export class UiStore extends Store<UiState> {
     this.setState((s) => ({
       ...s,
       toasts: [...s.toasts, { id, text, tone, label }].slice(-MAX_TOASTS),
+      messages: [...s.messages, { id, text, tone, label }].slice(-MAX_MESSAGES),
     }));
     return id;
   }

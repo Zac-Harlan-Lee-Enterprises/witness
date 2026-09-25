@@ -276,42 +276,46 @@ function KeyBindings({
     return () => window.removeEventListener('keydown', onKey, { capture: true });
   }, [listening, bindings, onChange]);
 
+  // Its own sideways scroll at very large text on narrow screens, so the rest of
+  // Settings still reflows (tables are allowed to scroll under WCAG 1.4.10).
   return (
-    <table className="key-table">
-      <caption className="visually-hidden">Keyboard controls</caption>
-      <thead>
-        <tr>
-          <th scope="col">Action</th>
-          <th scope="col">Keys</th>
-          <th scope="col">
-            <span className="visually-hidden">Change</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {INPUT_ACTIONS.map((action) => (
-          <tr key={action}>
-            <th scope="row">{INPUT_ACTION_LABELS[action]}</th>
-            <td>{(bindings[action] ?? []).map(keyLabel).join(', ') || 'None'}</td>
-            <td>
-              <button
-                type="button"
-                className="button button--small"
-                aria-live="polite"
-                onClick={() => setListening(action)}
-                aria-label={
-                  listening === action
-                    ? `Press a key for ${INPUT_ACTION_LABELS[action]}`
-                    : `Change key for ${INPUT_ACTION_LABELS[action]}`
-                }
-              >
-                {listening === action ? 'Press a key…' : 'Change'}
-              </button>
-            </td>
+    <div className="table-scroll">
+      <table className="key-table">
+        <caption className="visually-hidden">Keyboard controls</caption>
+        <thead>
+          <tr>
+            <th scope="col">Action</th>
+            <th scope="col">Keys</th>
+            <th scope="col">
+              <span className="visually-hidden">Change</span>
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {INPUT_ACTIONS.map((action) => (
+            <tr key={action}>
+              <th scope="row">{INPUT_ACTION_LABELS[action]}</th>
+              <td>{(bindings[action] ?? []).map(keyLabel).join(', ') || 'None'}</td>
+              <td>
+                <button
+                  type="button"
+                  className="button button--small"
+                  aria-live="polite"
+                  onClick={() => setListening(action)}
+                  aria-label={
+                    listening === action
+                      ? `Press a key for ${INPUT_ACTION_LABELS[action]}`
+                      : `Change key for ${INPUT_ACTION_LABELS[action]}`
+                  }
+                >
+                  {listening === action ? 'Press a key…' : 'Change'}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
