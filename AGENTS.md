@@ -54,7 +54,7 @@ If `bash init.sh` fails, fixing it **is** the task.
                                     │   (ports, controllers, session)  │
                                     ▼                                  ▼
                                  domain/  (pure rules + Zod schemas) ◄─┘
-                                    shared/ ← everyone (event bus, store, logger)
+                                    shared/ ← every layer except domain (event bus, store, logger)
 ```
 
 **Layer rules — enforced by [tests/architecture/layers.test.ts](tests/architecture/layers.test.ts):**
@@ -64,13 +64,13 @@ If `bash init.sh` fails, fixing it **is** the task.
 | `src/domain` | domain (+ zod) | anything else |
 | `src/shared` | shared | anything else |
 | `src/application` | application, domain, shared | React, Phaser, IndexedDB, infrastructure |
-| `src/content` | content, domain, shared (+ port types from `src/application/ports.ts`) | engines, UI, storage |
+| `src/content` | content, domain, shared (+ `import type` from `src/application/ports.ts` only) | engines, UI, storage |
 | `src/infrastructure` | infrastructure, application, domain, shared | UI, Phaser |
 | `src/game` | game, application, domain, shared | React, features, storage |
 | `src/features` | features, application, domain, shared | Phaser, IndexedDB, infrastructure |
 | `src/app` | everything | — |
 
-Also enforced: `phaser` only in `src/game`; `idb`/`indexedDB`/`localStorage` only in `src/infrastructure/persistence`; React only in `src/features` + `src/app`; `src/game` and chapter folders only via dynamic `import()` (bundle size); no `fetch`/`eval`/`any`/`console.log` in `src`.
+Also enforced (these scan `src/` only, not tests or scripts): `phaser` only in `src/game`; `idb`/`indexedDB`/`localStorage` only in `src/infrastructure/persistence`; React only in `src/features` + `src/app`; `src/game` and chapter folders only via dynamic `import()` (bundle size); no `fetch`/`eval`/`any`/`console.log` in `src`. Each domain event is built only by the modules listed in `EVENT_OWNERS` ([tests/unit/domain/event-owners.test.ts](tests/unit/domain/event-owners.test.ts)). The pre-commit hook also runs prettier on staged files.
 
 Data flow: **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ `GameSession` (domain rules) ⇄ typed `DomainEvent` bus ⇄ `UiStore` ⇄ React.** Details: [docs/architecture.md](docs/architecture.md).
 
@@ -141,7 +141,7 @@ Editing them prompts in Claude Code (ask rules); committing them requires a `SEC
 
 **Actions** — `.claude/settings.json` denies PR merges/reviews, releases, workflow dispatch, mutating `gh api`, force-push, hard reset, `npm publish`, S3/CloudFront/CDK/Terraform deploys; `git push` always asks. `scripts/hooks/guard-destructive-commands.sh` backs this up (`--self-test` proves it blocks and allows correctly). Deployment (`.github/workflows/deploy-pages.yml`) is manual and main-only. Server-side protection: `harden-github.sh` (run by a human after the repo is on GitHub).
 
-**Hooks** (installed by `init.sh`): `pre-commit` (debug artifacts, secrets, JSON, and — path-gated — typecheck, architecture tests, lint, content validation), `commit-msg` (sensitive-path trailer), `pre-push` (no direct pushes to `main`). Never use `--no-verify`.
+**Hooks** (installed by `init.sh`): `pre-commit` (debug artifacts, secrets, JSON, and — path-gated — typecheck, architecture tests, lint, prettier, content validation), `commit-msg` (sensitive-path trailer), `pre-push` (no direct pushes to `main`). Never use `--no-verify`.
 
 **Content integrity** — never invent Bible verses, citations or historical claims; never mark content `approved` (only named humans do); keep Scripture text behind the provider (placeholder by default). See [docs/content-governance.md](docs/content-governance.md).
 
@@ -176,7 +176,7 @@ Editing them prompts in Claude Code (ask rules); committing them requires a `SEC
 
 - **Single responsibility** — rules in `domain`, orchestration in `application`, rendering in `game`, views in `features`.
 - **Open/closed** — new puzzle type = schema + checker + view; new chapter = content only.
-- **Liskov** — memory and IndexedDB repositories are interchangeable (same contract, same tests).
+- **Liskov** — memory and IndexedDB repositories are interchangeable: one contract suite runs against both ([tests/unit/infrastructure/repository-contract.test.ts](tests/unit/infrastructure/repository-contract.test.ts)).
 - **Interface segregation** — small ports (`SaveRepository`, `AudioPort`, `WorldPort`…).
 - **Dependency inversion** — application depends on ports; `src/app/services.ts` injects implementations. Clocks are injected for deterministic tests.
 
