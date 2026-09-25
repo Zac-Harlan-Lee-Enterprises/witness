@@ -8,7 +8,7 @@ import {
   unlockedByCategory,
   unseenCount,
 } from '@/domain/journal';
-import { approachTiles, facingToward, findPath } from '@/domain/navigation';
+import { approachTiles, facingToward, findPath, nearestOpen } from '@/domain/navigation';
 import { checkDisplayName } from '@/domain/profile';
 import {
   ariaKeyName,
@@ -111,6 +111,11 @@ describe('navigation', () => {
   const walls = new Set(['1,0', '1,1']);
   const blocked = (x: number, y: number) =>
     x < 0 || y < 0 || x > 3 || y > 3 || walls.has(`${x},${y}`);
+  it('finds the nearest open tile for a player saved inside something solid', () => {
+    expect(nearestOpen({ x: 2, y: 2 }, blocked)).toEqual({ x: 2, y: 2 });
+    expect(nearestOpen({ x: 1, y: 0 }, blocked)).toEqual({ x: 0, y: 0 });
+    expect(nearestOpen({ x: 1, y: 1 }, blocked)).toEqual({ x: 0, y: 1 });
+  });
   it('finds the shortest path around walls', () => {
     expect(findPath({ x: 0, y: 0 }, [{ x: 2, y: 0 }], blocked)).toEqual([
       { x: 0, y: 1 },

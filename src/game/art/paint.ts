@@ -162,3 +162,69 @@ export function speckle(
     ctx.fillRect(x + r() * (w - s), y + r() * (h - s), s, s);
   }
 }
+
+/** Smooth, deterministic value noise in [0, 1]. */
+export function noise(x: number, y: number, seed = 0): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const u = smooth(x - xi);
+  const v = smooth(y - yi);
+  const h = (a: number, b: number): number => (hash(a, b, seed) & 0xffff) / 0xffff;
+  const a = h(xi, yi);
+  const b = h(xi + 1, yi);
+  const c = h(xi, yi + 1);
+  const d = h(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+
+const smooth = (t: number): number => t * t * (3 - 2 * t);
+
+/** Two octaves of noise: broad shapes with a little finer breakup. */
+export function fbm(x: number, y: number, seed = 0): number {
+  return noise(x, y, seed) * 0.7 + noise(x * 2.3, y * 2.3, seed + 7) * 0.3;
+}
+
+/**
+ * Draw something with a thin dark outline around its silhouette (the
+ * "ink line" of the art style). `paint` draws in local units into a scratch
+ * canvas `w`×`h`; the result is stamped at (x, y) on `ctx`.
+ */
+export function withOutline(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  outline: string,
+  paint: (c: Ctx) => void,
+  doc: Document = document,
+  width = 0.7,
+): void {
+  const fig = makeCanvas(w, h, doc);
+  const sil = makeCanvas(w, h, doc);
+  if (!fig.ctx || !sil.ctx) return;
+  paint(fig.ctx);
+  sil.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  sil.ctx.drawImage(fig.canvas, 0, 0);
+  sil.ctx.globalCompositeOperation = 'source-in';
+  sil.ctx.fillStyle = outline;
+  sil.ctx.fillRect(0, 0, sil.canvas.width, sil.canvas.height);
+  for (const [dx, dy] of [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ] as const) {
+    ctx.drawImage(sil.canvas, x + dx * width, y + dy * width, w, h);
+  }
+  ctx.drawImage(fig.canvas, x, y, w, h);
+}
+
+/** Materials shared by every place (wood, fired clay, field stone). */
+export const MATERIAL = {
+  wood: '#8a623c',
+  woodDark: '#573b22',
+  clay: '#bc7248',
+  clayDark: '#8c5231',
+  rock: '#aa9474',
+} as const;

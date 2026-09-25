@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { VirtualInput } from '@/application/input';
 import type {
+  WorldConversation,
+  WorldEmphasis,
   WorldEntityView,
   WorldLighting,
   WorldListener,
@@ -17,29 +19,30 @@ import {
 import type { Direction } from '@/domain/state/game-state';
 import { inRect } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
-import {
-  appearanceKey,
-  CHAR_H,
-  CHAR_W,
-  DIRECTION_ROWS,
-  frameName,
-  FRAMES_PER_DIRECTION,
-  paintCharacterSheet,
-} from '../art/characters';
-import { ART_SCALE, makeCanvas, TILE } from '../art/paint';
+import { FRAME, frameName } from '../art/characters';
+import { ART_SCALE, TILE } from '../art/paint';
 import { paintProp } from '../art/props';
-import { paintSceneLayers } from '../art/tiles';
+import { paintScene, type CanopyPiece } from '../art/scene-painter';
+import type { LightSpot } from '../art/site';
+import { conversationCentre, stepLookAhead, zoomFor, type Vec } from '../systems/camera';
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
 import { INITIAL_QUALITY, lightMatters, stepQuality, type QualityState } from '../systems/quality';
+import { Actors, ensureCharacterTexture } from './actors';
+import { AmbientLife } from './ambient';
+import { Feedback } from './feedback';
+import { makeSharedTextures, TEX } from './textures';
 
 /**
- * The single Phaser scene that renders whichever map the application asks
- * for. It owns ONLY ephemeral presentation state (sprites, camera, walk
- * animation, lighting, ambient effects, current path). It never evaluates
- * story conditions and never touches React: it receives a WorldSceneModel
- * and reports WorldEvents.
+ * The single Phaser scene that renders whichever place the application asks
+ * for. It owns ONLY presentation state (sprites, camera, animation, light,
+ * ambient life, the current walking path). It never evaluates story
+ * conditions and never touches React: it receives a WorldSceneModel and
+ * reports WorldEvents.
+ *
+ * Helpers: Actors (people's behaviour), AmbientLife (crowds, birds, light
+ * flicker…), Feedback (focus ring, exits, discovery flourishes).
  */
 export interface WorldSceneOptions {
   input: VirtualInput;
@@ -48,13 +51,8 @@ export interface WorldSceneOptions {
   onReady: () => void;
 }
 
-interface EntitySprite {
-  view: WorldEntityView;
-  sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
-}
-
 const INV = 1 / ART_SCALE;
-const WALK_CYCLE = [1, 0, 2, 0];
+const WALK_CYCLE = [FRAME.stepA, FRAME.stand, FRAME.stepB, FRAME.stand];
 const DEPTH = {
   ground: 0,
   actors: 10,
@@ -63,28 +61,36 @@ const DEPTH = {
   light: 101_000,
   marker: 102_000,
 };
+const depthFor = (y: number): number => DEPTH.actors + y * 100;
 
 export class WorldScene extends Phaser.Scene {
   private model: WorldSceneModel | null = null;
   private blocked: Blocked = () => true;
   private layers: Phaser.GameObjects.GameObject[] = [];
   private sceneTextures: string[] = [];
-  private fx: Phaser.GameObjects.GameObject[] = [];
-  private tweensOwned: Phaser.Tweens.Tween[] = [];
-  private readonly entitySprites = new Map<string, EntitySprite>();
+  private canopies: Array<{ image: Phaser.GameObjects.Image; piece: CanopyPiece }> = [];
+  private lightSpots: LightSpot[] = [];
+  private readonly props = new Map<
+    string,
+    { view: WorldEntityView; image: Phaser.GameObjects.Image }
+  >();
+  private actors: Actors | null = null;
+  private ambient: AmbientLife | null = null;
+  private feedback: Feedback | null = null;
   private player: {
     x: number;
     y: number;
     facing: Direction;
     sprite: Phaser.GameObjects.Sprite | null;
     walk: number;
-  } = { x: 0, y: 0, facing: 'down', sprite: null, walk: 0 };
+    moving: boolean;
+  } = { x: 0, y: 0, facing: 'down', sprite: null, walk: 0, moving: false };
   private focusId: string | null = null;
-  private focusMarker: Phaser.GameObjects.Image | null = null;
   /** Colour grade + vignette in one multiply layer (texture redrawn only when the light changes). */
   private light: Phaser.GameObjects.Image | null = null;
   private lampGlow: Phaser.GameObjects.Image | null = null;
   private lighting: WorldLighting = { hour: null, lamp: false };
+  private conversation: WorldConversation | null = null;
   private path: Tile[] | null = null;
   private pathTarget: { id: string; kind: 'entity' | 'exit' | 'tile' } | null = null;
   private controlsEnabled = true;
@@ -93,10 +99,10 @@ export class WorldScene extends Phaser.Scene {
   private lastTile = { x: -1, y: -1 };
   private insideExit: string | null = null;
   private generation = 0;
-  private elapsed = 0;
+  private lookAhead: Vec = { x: 0, y: 0 };
+  private cameraCentre: Vec | null = null;
   /** Automatic quality: decorative effects are dropped if frames stay slow. */
   private quality: QualityState = INITIAL_QUALITY;
-  private fxTweens: Phaser.Tweens.Tween[] = [];
 
   constructor(private readonly opts: WorldSceneOptions) {
     super('world');
@@ -105,7 +111,7 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     this.scale.on('resize', () => this.fitCamera());
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.onPointer(pointer));
-    this.makeSharedTextures();
+    makeSharedTextures(this.textures);
     this.opts.onReady();
   }
 
@@ -115,27 +121,39 @@ export class WorldScene extends Phaser.Scene {
     this.generation++;
     this.model = model;
     this.lighting = model.lighting;
+    const still = this.reducedMotion;
 
-    const { ground, canopies } = paintSceneLayers(model.grid, model.baseTile);
+    const painted = paintScene(model.grid, model.baseTile, model.mood, model.kind === 'indoor');
+    this.lightSpots = painted.lights;
     const groundKey = `ground-${this.generation}`;
-    this.textures.addCanvas(groundKey, ground);
+    this.textures.addCanvas(groundKey, painted.ground);
     this.sceneTextures.push(groundKey);
     this.layers.push(
       this.add.image(0, 0, groundKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.ground),
     );
-    canopies.forEach((piece, i) => {
+    painted.canopies.forEach((piece, i) => {
       const key = `canopy-${this.generation}-${i}`;
       this.textures.addCanvas(key, piece.canvas);
       this.sceneTextures.push(key);
-      this.layers.push(
-        this.add.image(piece.x, piece.y, key).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.canopy),
-      );
+      const image = this.add
+        .image(piece.x, piece.y, key)
+        .setOrigin(0, 0)
+        .setScale(INV)
+        .setDepth(DEPTH.canopy);
+      this.layers.push(image);
+      this.canopies.push({ image, piece });
     });
 
+    this.actors = new Actors(this, depthFor, () => this.reducedMotion);
+    this.feedback = new Feedback(
+      this,
+      { ground: DEPTH.ground, marker: DEPTH.marker },
+      () => this.reducedMotion,
+    );
     this.rebuildBlocked(model.entities);
     model.entities.forEach((e) => this.addEntity(e));
 
-    const pKey = this.ensureCharacterTexture(model.player.appearance);
+    const pKey = ensureCharacterTexture(this, model.player.appearance);
     this.player = {
       x: model.player.x + 0.5,
       y: model.player.y + 0.5,
@@ -145,26 +163,30 @@ export class WorldScene extends Phaser.Scene {
         .setOrigin(0.5, 1)
         .setScale(INV),
       walk: 0,
+      moving: false,
     };
     this.placePlayer();
     this.lastTile = { x: Math.floor(this.player.x), y: Math.floor(this.player.y) };
     this.insideExit = this.exitAt(this.lastTile.x, this.lastTile.y);
-
-    this.focusMarker = this.add
-      .image(0, 0, 'focus-marker')
-      .setScale(INV)
-      .setDepth(DEPTH.marker)
-      .setVisible(false);
     this.focusId = null;
     this.path = null;
     this.pathTarget = null;
+    this.lookAhead = { x: 0, y: 0 };
+    this.cameraCentre = null;
 
-    this.buildAtmosphere(model);
+    this.feedback.build(model);
+    this.buildLight();
+    this.buildAmbient();
     this.fitCamera();
+    this.updateCamera(1);
     const cam = this.cameras.main;
-    const lerp = this.reducedMotion ? 1 : 0.12;
-    cam.startFollow(this.player.sprite as Phaser.GameObjects.Sprite, true, lerp, lerp);
-    if (!this.reducedMotion) cam.fadeIn(260, 24, 16, 8);
+    if (!still) {
+      // Arrival: fade up from dark while the view settles in slightly.
+      cam.fadeIn(420, 24, 16, 8);
+      const zoom = cam.zoom;
+      cam.setZoom(zoom * 1.06);
+      this.tweens.add({ targets: cam, zoom, duration: 900, ease: 'Sine.easeOut' });
+    }
     this.opts.onEvent({ type: 'sceneReady', sceneId: model.sceneId });
   }
 
@@ -172,18 +194,25 @@ export class WorldScene extends Phaser.Scene {
     if (!this.model) return;
     this.model = { ...this.model, entities };
     const ids = new Set(entities.map((e) => e.id));
-    for (const [id, es] of this.entitySprites) {
+    for (const [id, p] of this.props) {
       if (!ids.has(id)) {
-        this.tweens.killTweensOf(es.sprite);
-        es.sprite.destroy();
-        this.entitySprites.delete(id);
+        p.image.destroy();
+        this.props.delete(id);
       }
     }
-    entities.forEach((e) => {
-      const existing = this.entitySprites.get(e.id);
-      if (!existing) this.addEntity(e);
-      else existing.view = e;
-    });
+    const actors = this.actors;
+    for (const e of this.model.entities) {
+      if (actors?.has(e.id)) actors.setView(e);
+      else if (this.props.has(e.id)) {
+        const p = this.props.get(e.id);
+        if (p) p.view = e;
+      } else this.addEntity(e);
+    }
+    if (actors) {
+      const stale = [...this.actorIds()].filter((id) => !ids.has(id));
+      stale.forEach((id) => actors.remove(id));
+    }
+    this.feedback?.syncClues(entities);
     this.rebuildBlocked(entities);
   }
 
@@ -240,9 +269,7 @@ export class WorldScene extends Phaser.Scene {
     const changed = this.reducedMotion !== options.reducedMotion;
     this.reducedMotion = options.reducedMotion;
     this.tilesPerSecond = options.tilesPerSecond;
-    const lerp = this.reducedMotion ? 1 : 0.12;
-    this.cameras.main?.setLerp(lerp, lerp);
-    if (changed && this.model) this.buildAtmosphere(this.model);
+    if (changed && this.model) this.buildAmbient();
   }
 
   setLighting(lighting: WorldLighting): void {
@@ -250,16 +277,27 @@ export class WorldScene extends Phaser.Scene {
     this.applyLighting();
   }
 
+  setConversation(conversation: WorldConversation | null): void {
+    this.conversation = conversation;
+    this.actors?.setConversation(conversation, this.time.now);
+    if (conversation?.with) this.actors?.faceNow(conversation.with, this.mover());
+  }
+
+  emphasize(emphasis: WorldEmphasis): void {
+    const at = (emphasis.at && this.anchorFor(emphasis.at)) || this.playerAnchor();
+    if (at) this.feedback?.emphasize(emphasis, at);
+  }
+
   // ── Frame loop ──────────────────────────────────────────────────────────
-  override update(_time: number, deltaMs: number): void {
+  override update(time: number, deltaMs: number): void {
     if (!this.model || !this.player.sprite) return;
     if (!this.quality.lowPower) {
       this.quality = stepQuality(this.quality, this.game.loop.rawDelta);
       if (this.quality.lowPower) this.enterLowPower();
     }
     const dt = Math.min(deltaMs, 50) / 1000;
-    this.elapsed += dt;
     let moving = false;
+    let dir: Vec = { x: 0, y: 0 };
 
     if (this.controlsEnabled) {
       const { dx, dy } = this.opts.input.direction();
@@ -270,24 +308,89 @@ export class WorldScene extends Phaser.Scene {
         const step = this.tilesPerSecond * dt;
         const next = moveWithCollision(this.player, n.x * step, n.y * step, this.blocked);
         moving = next.x !== this.player.x || next.y !== this.player.y;
+        if (moving) dir = { x: n.x, y: n.y };
         this.player.x = next.x;
         this.player.y = next.y;
         this.player.facing =
           Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
       } else if (this.path && this.path.length > 0) {
+        const before = { x: this.player.x, y: this.player.y };
         moving = this.followPath(dt);
+        const len = Math.hypot(this.player.x - before.x, this.player.y - before.y);
+        if (len > 0)
+          dir = { x: (this.player.x - before.x) / len, y: (this.player.y - before.y) / len };
       }
     }
 
+    this.player.moving = moving;
     this.player.walk = moving ? this.player.walk + dt : 0;
-    const frame = moving
-      ? (WALK_CYCLE[Math.floor(this.player.walk / 0.12) % WALK_CYCLE.length] ?? 0)
-      : 0;
+    const walkFrame =
+      WALK_CYCLE[Math.floor(this.player.walk / 0.12) % WALK_CYCLE.length] ?? FRAME.stand;
+    const frame = this.actors?.playerFrame(time, this.mover(), walkFrame) ?? walkFrame;
     this.player.sprite.setFrame(frameName(this.player.facing, frame));
     this.placePlayer();
     if (moving) this.afterStep(false);
+
+    this.actors?.update(time, this.mover());
     this.updateFocus();
-    this.animateIdle();
+    this.ambient?.update(dt);
+    this.feedback?.update(dt, this.player);
+    if (!this.reducedMotion) this.lookAhead = stepLookAhead(this.lookAhead, dir, dt);
+    this.updateCamera(dt);
+    if (this.lampGlow?.visible && !this.reducedMotion) {
+      const t = time / 1000;
+      this.lampGlow.setScale(INV * (1 + Math.sin(t * 7) * 0.03 + Math.sin(t * 13) * 0.02));
+    }
+  }
+
+  // ── Camera ──────────────────────────────────────────────────────────────
+  private updateCamera(dt: number): void {
+    const cam = this.cameras.main;
+    if (!cam || !this.player.sprite) return;
+    const px = this.player.x * TILE;
+    const py = this.player.y * TILE;
+    let target: Vec;
+    const c = this.conversation;
+    if (c) {
+      const partner = c.with ? this.anchorFor(c.with) : null;
+      // The dialogue box covers roughly the bottom third (more on small screens).
+      const box = this.scale.height < 700 ? 0.42 : 0.34;
+      target = conversationCentre(
+        { x: px, y: py - 20 },
+        partner ? { x: partner.x, y: partner.y - 20 } : null,
+        cam.height / cam.zoom,
+        box,
+      );
+    } else {
+      target = { x: px + this.lookAhead.x, y: py - 8 + this.lookAhead.y };
+    }
+    const snap = this.reducedMotion || !this.cameraCentre || dt >= 1;
+    const k = snap ? 1 : 1 - Math.exp(-dt * (c ? 3 : 6));
+    const from = this.cameraCentre ?? target;
+    this.cameraCentre = {
+      x: from.x + (target.x - from.x) * k,
+      y: from.y + (target.y - from.y) * k,
+    };
+    cam.centerOn(this.cameraCentre.x, this.cameraCentre.y);
+  }
+
+  private fitCamera(): void {
+    const model = this.model;
+    const cam = this.cameras.main;
+    if (!model || !cam) return;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    cam.setZoom(zoomFor(w, h));
+    const mapW = model.grid.width * TILE;
+    const mapH = model.grid.height * TILE;
+    const viewW = w / cam.zoom;
+    const viewH = h / cam.zoom;
+    // Centre small maps instead of pinning them to the corner.
+    const bx = mapW < viewW ? (mapW - viewW) / 2 : 0;
+    const by = mapH < viewH ? (mapH - viewH) / 2 : 0;
+    cam.setBounds(bx, by, Math.max(mapW, viewW), Math.max(mapH, viewH));
+    // The light layer is screen-space, sized in world units to cover the view at this zoom.
+    this.light?.setPosition(w / 2, h / 2).setDisplaySize(viewW * 1.1 + 4, viewH * 1.1 + 4);
   }
 
   // ── Movement internals ──────────────────────────────────────────────────
@@ -330,7 +433,7 @@ export class WorldScene extends Phaser.Scene {
         if (here.x !== entity.x || here.y !== entity.y)
           this.player.facing = facingToward(here, entity);
         this.placePlayer();
-        this.faceNpcToPlayer(entity.id);
+        this.actors?.faceNow(entity.id, this.mover());
       }
       this.opts.onEvent({ type: 'arrived', targetId: target.id });
     } else if (target.kind === 'exit' && this.insideExit === target.id) {
@@ -362,99 +465,74 @@ export class WorldScene extends Phaser.Scene {
 
   private updateFocus(): void {
     const model = this.model;
-    if (!model || !this.focusMarker) return;
+    if (!model) return;
     const candidates = model.entities.filter((e) => e.interactive);
     const id = this.controlsEnabled ? pickFocus(this.player, candidates) : null;
     if (id !== this.focusId) {
       this.focusId = id;
       this.opts.onEvent({ type: 'focusChanged', entityId: id });
     }
-    const focused = id ? this.entitySprites.get(id) : undefined;
-    if (!focused) {
-      this.focusMarker.setVisible(false);
-      return;
-    }
-    const bob = this.reducedMotion ? 0 : Math.sin(this.elapsed * 4) * 2;
-    const top = focused.view.appearance ? CHAR_H - 4 : focused.sprite.displayHeight;
-    this.focusMarker
-      .setVisible(true)
-      .setPosition(focused.sprite.x, focused.sprite.y - top - 6 + bob);
+    const view = id ? model.entities.find((e) => e.id === id) : undefined;
+    const anchor = id ? this.anchorFor(id) : null;
+    this.feedback?.focus(view && anchor ? { ...anchor, verb: view.verb } : null);
   }
 
-  private animateIdle(): void {
-    if (this.reducedMotion) return;
-    for (const es of this.entitySprites.values()) {
-      if (es.view.kind === 'clue') es.sprite.setAlpha(0.78 + Math.sin(this.elapsed * 3) * 0.22);
-    }
-    if (this.lampGlow?.visible) {
-      this.lampGlow.setScale(
-        INV * (1 + Math.sin(this.elapsed * 7) * 0.03 + Math.sin(this.elapsed * 13) * 0.02),
-      );
-    }
+  private mover(): { x: number; y: number; facing: Direction; moving: boolean } {
+    return {
+      x: this.player.x,
+      y: this.player.y,
+      facing: this.player.facing,
+      moving: this.player.moving,
+    };
   }
 
   private placePlayer(): void {
     const s = this.player.sprite;
     if (!s) return;
     s.setPosition(this.player.x * TILE, this.player.y * TILE + 12);
-    s.setDepth(DEPTH.actors + this.player.y * 100);
+    s.setDepth(depthFor(this.player.y));
     this.lampGlow?.setPosition(s.x, s.y - 18);
   }
 
-  private addEntity(e: WorldEntityView): void {
-    let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
-    if (e.appearance) {
-      const key = this.ensureCharacterTexture(e.appearance);
-      sprite = this.add.sprite(0, 0, key, frameName(e.facing, 0)).setOrigin(0.5, 1).setScale(INV);
-      if (!this.reducedMotion) {
-        // A gentle breathing motion so people feel alive (feet stay planted).
-        this.tweensOwned.push(
-          this.tweens.add({
-            targets: sprite,
-            scaleY: INV * 1.02,
-            duration: 1400 + ((e.x * 37 + e.y * 11) % 600),
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-          }),
-        );
-      }
-    } else {
-      const key = this.ensurePropTexture(e.sprite ?? (e.kind === 'clue' ? 'marker' : 'sign'));
-      sprite = this.add.image(0, 0, key).setOrigin(0.5, 1).setScale(INV);
+  private playerAnchor(): { x: number; y: number; top: number } | null {
+    const s = this.player.sprite;
+    return s ? { x: s.x, y: s.y, top: 40 } : null;
+  }
+
+  /** Where something stands (feet) and how tall it is, in world units. */
+  private anchorFor(id: string): { x: number; y: number; top: number } | null {
+    const actor = this.actors?.sprite(id);
+    if (actor) {
+      const view = this.model?.entities.find((e) => e.id === id);
+      const top = view?.pose === 'lie' ? 18 : view?.pose === 'sit' ? 30 : 42;
+      return { x: actor.x, y: view ? (view.y + 1) * TILE : actor.y, top };
     }
-    const baseY = (e.y + 1) * TILE + (e.appearance ? 1 : 0);
-    sprite.setPosition((e.x + 0.5) * TILE, baseY).setDepth(DEPTH.actors + (e.y + 0.5) * 100);
-    this.entitySprites.set(e.id, { view: e, sprite });
+    const prop = this.props.get(id);
+    if (prop)
+      return { x: prop.image.x, y: prop.image.y, top: Math.max(14, prop.image.displayHeight - 6) };
+    return null;
   }
 
-  private faceNpcToPlayer(entityId: string): void {
-    const es = this.entitySprites.get(entityId);
-    if (!es?.view.appearance || !(es.sprite instanceof Phaser.GameObjects.Sprite)) return;
-    const dir = facingToward(
-      { x: es.view.x, y: es.view.y },
-      { x: Math.floor(this.player.x), y: Math.floor(this.player.y) },
-    );
-    es.sprite.setFrame(frameName(dir, 0));
+  private *actorIds(): Iterable<string> {
+    for (const e of this.model?.entities ?? []) if (e.appearance) yield e.id;
   }
 
-  // ── Textures ────────────────────────────────────────────────────────────
-  private ensureCharacterTexture(appearance: WorldSceneModel['player']['appearance']): string {
-    const key = appearanceKey(appearance);
-    if (this.textures.exists(key)) return key;
-    const tex = this.textures.addCanvas(key, paintCharacterSheet(appearance));
-    if (!tex) return key;
-    const fw = CHAR_W * ART_SCALE;
-    const fh = CHAR_H * ART_SCALE;
-    DIRECTION_ROWS.forEach((dir, row) => {
-      for (let f = 0; f < FRAMES_PER_DIRECTION; f++)
-        tex.add(frameName(dir, f), 0, f * fw, row * fh, fw, fh);
-    });
-    return key;
+  private addEntity(e: WorldEntityView): void {
+    if (e.appearance) {
+      this.actors?.add(e);
+      return;
+    }
+    const key = this.ensurePropTexture(e.sprite ?? (e.kind === 'clue' ? 'marker' : 'sign'));
+    const image = this.add
+      .image((e.x + 0.5) * TILE, (e.y + 1) * TILE, key)
+      .setOrigin(0.5, 1)
+      .setScale(INV)
+      .setDepth(depthFor(e.y + 0.5));
+    this.props.set(e.id, { view: e, image });
   }
 
   private ensurePropTexture(name: string): string {
-    const key = `prop2-${name}`;
+    const key = `prop3-${name}`;
     if (this.textures.exists(key)) return key;
     const { canvas, known } = paintProp(name);
     if (!known) this.opts.logger.warn(`Unknown prop sprite '${name}' — using fallback marker`);
@@ -462,176 +540,66 @@ export class WorldScene extends Phaser.Scene {
     return key;
   }
 
-  private makeSharedTextures(): void {
-    const add = (
-      key: string,
-      w: number,
-      h: number,
-      paint: (ctx: CanvasRenderingContext2D) => void,
-    ): void => {
-      if (this.textures.exists(key)) return;
-      const { canvas, ctx } = makeCanvas(w, h);
-      if (ctx) paint(ctx);
-      this.textures.addCanvas(key, canvas);
-    };
-    add('focus-marker', 22, 24, (ctx) => {
-      ctx.fillStyle = '#fff8e8';
-      ctx.strokeStyle = '#6b3f22';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.roundRect(2, 2, 18, 15, 5);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(8, 16.5);
-      ctx.lineTo(11, 21.5);
-      ctx.lineTo(14, 16.5);
-      ctx.fill();
-      ctx.fillStyle = '#6b3f22';
-      [7, 11, 15].forEach((x) => {
-        ctx.beginPath();
-        ctx.arc(x, 9.5, 1.4, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    });
-    add('mote', 6, 6, (ctx) => {
-      const g = ctx.createRadialGradient(3, 3, 0, 3, 3, 3);
-      g.addColorStop(0, 'rgba(255,245,220,0.9)');
-      g.addColorStop(1, 'rgba(255,245,220,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 6, 6);
-    });
-    add('bird', 12, 6, (ctx) => {
-      ctx.strokeStyle = '#3a2c20';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(1, 4);
-      ctx.quadraticCurveTo(3.5, 0.5, 6, 3.5);
-      ctx.quadraticCurveTo(8.5, 0.5, 11, 4);
-      ctx.stroke();
-    });
-    add('glint', 32, 32, (ctx) => {
-      const g = ctx.createLinearGradient(0, 0, 32, 32);
-      g.addColorStop(0.35, 'rgba(255,255,255,0)');
-      g.addColorStop(0.5, 'rgba(230,248,255,0.55)');
-      g.addColorStop(0.65, 'rgba(255,255,255,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 32, 32);
-    });
-    add('lamp-glow', 160, 160, (ctx) => {
-      const g = ctx.createRadialGradient(80, 80, 4, 80, 80, 80);
-      g.addColorStop(0, 'rgba(255,214,140,0.75)');
-      g.addColorStop(0.45, 'rgba(255,170,80,0.28)');
-      g.addColorStop(1, 'rgba(255,150,60,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 160, 160);
-    });
+  // ── Light and ambient life ──────────────────────────────────────────────
+  private buildLight(): void {
+    this.light?.destroy();
+    this.lampGlow?.destroy();
+    this.light = this.add.image(0, 0, this.lightTexture()).setScrollFactor(0).setDepth(DEPTH.light);
+    this.light.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.lampGlow = this.add
+      .image(0, 0, TEX.glow)
+      .setScale(INV)
+      .setDepth(DEPTH.light + 1)
+      .setVisible(false)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.applyLighting();
   }
 
-  // ── Atmosphere: light, vignette, ambient life ────────────────────────────
-  private clearFx(): void {
-    this.fxTweens.forEach((t) => t.remove());
-    this.fxTweens = [];
-    this.fx.forEach((o) => o.destroy());
-    this.fx = [];
+  private buildAmbient(): void {
+    const model = this.model;
+    if (!model) return;
+    this.ambient?.destroy();
+    this.ambient = new AmbientLife({
+      scene: this,
+      model,
+      canopies: this.canopies,
+      lights: this.lightSpots,
+      blocked: () => this.blocked,
+      player: () => ({ x: this.player.x, y: this.player.y }),
+      depthFor,
+      depths: { ground: DEPTH.ground, fx: DEPTH.fx, light: DEPTH.light },
+      reducedMotion: this.reducedMotion,
+      lowPower: this.quality.lowPower,
+    });
   }
 
   private enterLowPower(): void {
     // Recorded in "Copy diagnostics", and visible to tests as data-effects="reduced".
     this.opts.logger.warn('Frame rate is low: switching to simpler effects');
     this.game.canvas.dataset.effects = 'reduced';
-    this.clearFx();
+    this.ambient?.reduce();
     this.applyLighting();
-  }
-
-  private buildAtmosphere(model: WorldSceneModel): void {
-    this.clearFx();
-    this.light?.destroy();
-    this.lampGlow?.destroy();
-
-    this.light = this.add.image(0, 0, this.lightTexture()).setScrollFactor(0).setDepth(DEPTH.light);
-    this.light.setBlendMode(Phaser.BlendModes.MULTIPLY);
-    this.lampGlow = this.add
-      .image(0, 0, 'lamp-glow')
-      .setScale(INV)
-      .setDepth(DEPTH.light + 1)
-      .setVisible(false);
-    this.lampGlow.setBlendMode(Phaser.BlendModes.ADD);
-    this.applyLighting();
-
-    if (this.reducedMotion || this.quality.lowPower) return;
-    const mapW = model.grid.width * TILE;
-    const mapH = model.grid.height * TILE;
-    if (model.ambience === 'wind' || model.ambience === 'market') {
-      const emitter = this.add.particles(0, 0, 'mote', {
-        x: { min: 0, max: mapW },
-        y: { min: 0, max: mapH },
-        lifespan: 7000,
-        speedX: { min: model.ambience === 'wind' ? 6 : 1, max: model.ambience === 'wind' ? 16 : 5 },
-        speedY: { min: -3, max: 2 },
-        scale: { min: 0.25, max: 0.6 },
-        alpha: { start: 0.55, end: 0 },
-        frequency: model.ambience === 'wind' ? 90 : 220,
-        blendMode: 'ADD',
-      });
-      emitter.setDepth(DEPTH.fx);
-      this.fx.push(emitter);
-    }
-    if (model.ambience === 'oasis') {
-      for (let i = 0; i < 4; i++) {
-        const bird = this.add
-          .image(-20, 20 + i * 40, 'bird')
-          .setScale(INV)
-          .setDepth(DEPTH.fx)
-          .setAlpha(0.8);
-        this.fx.push(bird);
-        this.fxTweens.push(
-          this.tweens.add({
-            targets: bird,
-            x: mapW + 40,
-            y: { from: 30 + i * 35, to: 10 + i * 45 },
-            duration: 14000 + i * 2500,
-            delay: i * 3500,
-            repeat: -1,
-            repeatDelay: 4000 + i * 1500,
-          }),
-        );
-      }
-    }
-    // Water shimmer.
-    for (let y = 0; y < model.grid.height; y++) {
-      for (let x = 0; x < model.grid.width; x++) {
-        if (model.grid.tiles[y]?.[x] !== 'water') continue;
-        const glint = this.add
-          .image(x * TILE, y * TILE, 'glint')
-          .setOrigin(0, 0)
-          .setScale(INV)
-          .setDepth(DEPTH.ground + 1)
-          .setAlpha(0);
-        glint.setBlendMode(Phaser.BlendModes.ADD);
-        this.fx.push(glint);
-        this.fxTweens.push(
-          this.tweens.add({
-            targets: glint,
-            alpha: 0.8,
-            duration: 1600,
-            delay: ((x * 7 + y * 13) % 10) * 250,
-            yoyo: true,
-            repeat: -1,
-          }),
-        );
-      }
-    }
   }
 
   private applyLighting(): void {
     if (!this.model || !this.light) return;
-    const l = lightingFor(this.lighting.hour, this.model.kind === 'indoor');
+    const base = lightingFor(this.lighting.hour, this.model.kind === 'indoor');
+    const l = this.withMood(base);
     // In low-power mode only light that means something (dusk, night) is drawn.
     const show = !this.quality.lowPower || lightMatters(l.alpha);
     this.light.setVisible(show);
     if (show) this.paintLight(l);
     this.lampGlow?.setVisible(l.night && this.lighting.lamp);
+  }
+
+  /** The place's own light: warmer at home and in Jericho, harsher on the open road. */
+  private withMood(l: Lighting): Lighting {
+    const mood = this.model?.mood;
+    if (mood === 'home') return { ...l, vignette: Math.max(l.vignette, 0.62) };
+    if (mood === 'wilderness') return { ...l, vignette: Math.min(l.vignette, 0.24) };
+    if (mood === 'oasis' && !l.night)
+      return { ...l, tint: 0xffe2a8, alpha: Math.max(l.alpha, 0.1) };
+    return l;
   }
 
   private static readonly LIGHT_KEY = 'light-grade';
@@ -709,46 +677,25 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private fitCamera(): void {
-    const model = this.model;
-    const cam = this.cameras.main;
-    if (!model || !cam) return;
-    const w = this.scale.width;
-    const h = this.scale.height;
-    // Fewer, bigger tiles on phones and portrait tablets (easier to see and tap).
-    const portrait = h > w;
-    const tilesW = w < 640 ? 9 : portrait ? 12 : 17;
-    const tilesH = h < 640 ? 9 : 11;
-    const zoom = Math.max(1, Math.min(3, Math.min(w / (tilesW * TILE), h / (tilesH * TILE))));
-    cam.setZoom(Math.round(zoom * 4) / 4);
-    const mapW = model.grid.width * TILE;
-    const mapH = model.grid.height * TILE;
-    const viewW = w / cam.zoom;
-    const viewH = h / cam.zoom;
-    // Center small maps instead of pinning them to the corner.
-    const bx = mapW < viewW ? (mapW - viewW) / 2 : 0;
-    const by = mapH < viewH ? (mapH - viewH) / 2 : 0;
-    cam.setBounds(bx, by, Math.max(mapW, viewW), Math.max(mapH, viewH));
-    // Screen-space overlays: sized in world units so they exactly cover the view at this zoom.
-    this.light?.setPosition(w / 2, h / 2).setDisplaySize(viewW + 4, viewH + 4);
-  }
-
   private clear(): void {
-    this.tweensOwned.forEach((t) => t.remove());
-    this.tweensOwned = [];
-    this.clearFx();
+    this.ambient?.destroy();
+    this.ambient = null;
+    this.feedback?.destroy();
+    this.feedback = null;
+    this.actors?.clear();
+    this.actors = null;
+    this.props.forEach((p) => p.image.destroy());
+    this.props.clear();
     this.layers.forEach((l) => l.destroy());
     this.layers = [];
-    this.entitySprites.forEach((es) => es.sprite.destroy());
-    this.entitySprites.clear();
+    this.canopies = [];
     this.player.sprite?.destroy();
     this.player.sprite = null;
-    this.focusMarker?.destroy();
-    this.focusMarker = null;
     this.light?.destroy();
     this.light = null;
     this.lampGlow?.destroy();
     this.lampGlow = null;
+    this.conversation = null;
     this.sceneTextures.forEach((k) => {
       if (this.textures.exists(k)) this.textures.remove(k);
     });

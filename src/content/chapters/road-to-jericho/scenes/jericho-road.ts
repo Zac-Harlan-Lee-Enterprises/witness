@@ -286,6 +286,7 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
       x: 44,
       y: 17,
       facing: 'up',
+      pose: 'lie',
       visibleWhen: { type: 'not', condition: { type: 'flag', flag: 'menashe-with-you' } },
       interaction: { verb: 'talk', dialogue: 'd-menashe-road' },
     },
@@ -357,5 +358,6 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
     },
   ],
   ambience: 'wind',
+  mood: 'wilderness',
   music: 'journey',
 };

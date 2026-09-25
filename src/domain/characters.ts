@@ -18,6 +18,10 @@ export const AppearanceSchema = z.object({
   headwearColor: HexColor,
   beard: z.boolean(),
   build: z.enum(['child', 'adult', 'elder']),
+  /** Something the person usually carries — it makes roles readable at a glance. */
+  carry: z
+    .enum(['none', 'staff', 'basket', 'jar', 'bundle', 'bread', 'spindle', 'satchel'])
+    .default('none'),
 });
 export type Appearance = z.infer<typeof AppearanceSchema>;
 
@@ -63,6 +67,7 @@ export const PLAYER_APPEARANCES: Record<PlayerLook, Appearance> = {
     headwearColor: '#e8dcc0',
     beard: false,
     build: 'child',
+    carry: 'satchel',
   },
   'look-2': {
     skin: '#8d5a3a',
@@ -73,6 +78,7 @@ export const PLAYER_APPEARANCES: Record<PlayerLook, Appearance> = {
     headwearColor: '#c96f3b',
     beard: false,
     build: 'child',
+    carry: 'satchel',
   },
   'look-3': {
     skin: '#c08a5e',
@@ -83,6 +89,7 @@ export const PLAYER_APPEARANCES: Record<PlayerLook, Appearance> = {
     headwearColor: '#8a2f2f',
     beard: false,
     build: 'child',
+    carry: 'satchel',
   },
   'look-4': {
     skin: '#6f4630',
@@ -93,5 +100,6 @@ export const PLAYER_APPEARANCES: Record<PlayerLook, Appearance> = {
     headwearColor: '#6b5a8e',
     beard: false,
     build: 'child',
+    carry: 'satchel',
   },
 };

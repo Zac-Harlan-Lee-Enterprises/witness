@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TileGrid, TileKind } from '@/domain/world';
-import { groundUnder, hasCanopy, isPropTile } from '@/game/art/tiles';
+import { groundUnder, hasCanopy, isPropTile } from '@/game/art/site';
 
 const grid = (rows: TileKind[][]): TileGrid => ({
   width: rows[0]?.length ?? 0,

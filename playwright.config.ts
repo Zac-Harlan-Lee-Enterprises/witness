@@ -9,6 +9,8 @@ const DEV_PORT = Number(process.env.WITNESS_DEV_PORT ?? 5391);
  */
 export default defineConfig({
   testDir: './e2e',
+  // The visual tour only captures screenshots for review (E2E_SHOTS=1).
+  testIgnore: process.env.E2E_SHOTS ? [] : ['**/visual-tour.spec.ts'],
   timeout: 180_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,

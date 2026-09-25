@@ -9,7 +9,7 @@ import type { Logger } from '@/shared/logger';
 import type { AnalyticsService } from './analytics';
 import type { DialogueController } from './dialogue-controller';
 import type { GameSession } from './game-session';
-import type { AudioPort, WorldEvent, WorldPort } from './ports';
+import type { AudioPort, WorldConversation, WorldEmphasis, WorldEvent, WorldPort } from './ports';
 import type { PuzzleController } from './puzzle-controller';
 import { timeOfDayLabel } from './time-of-day';
 import type { UiStore } from './ui-store';
@@ -65,6 +65,8 @@ export class GameController {
   private lastStoryState: GameState | null = null;
   private disposed = false;
   private chapterStarted = false;
+  /** The last thing interacted with — where a discovery is shown in the world. */
+  private lastInteracted: string | null = null;
 
   constructor(private readonly deps: GameControllerDeps) {
     const { bus, session, ui } = deps;
@@ -188,6 +190,7 @@ export class GameController {
     const entity = scene.entities.find((e) => e.id === entityId);
     if (!entity?.interaction || !evaluate(entity.visibleWhen, session.state)) return;
     audio.playSfx('interact');
+    this.lastInteracted = entityId;
     const { interaction } = entity;
     if (!evaluate(interaction.requires, session.state)) {
       ui.pushToast(interaction.blockedText ?? 'Not right now.', 'info', 'Note');
@@ -354,6 +357,8 @@ export class GameController {
   private onDomainEvent(event: DomainEvent): void {
     const { ui, audio, session, analytics } = this.deps;
     const chapter = session.chapter;
+    const emphasis = emphasisFor(event, this.lastInteracted);
+    if (emphasis) this.world?.emphasize(emphasis);
     analytics.fromDomainEvent(event, {
       playTimeMs: session.state.playTimeMs,
       isSideQuest: (id) => chapter.quests.some((q) => q.id === id && q.kind === 'side'),
@@ -499,6 +504,39 @@ export class GameController {
 
   private syncControls(): void {
     this.world?.setControlsEnabled(this.deps.ui.explorationAllowed);
+    this.syncConversation();
+  }
+
+  private conversationKey = '';
+
+  /** Tell the world who is in the open conversation and who is speaking. */
+  private syncConversation(): void {
+    const { ui, session } = this.deps;
+    const view = ui.getState().dialogue;
+    let conversation: WorldConversation | null = null;
+    if (view) {
+      const scene = findScene(session.chapter, session.state.sceneId);
+      const dialogue = session.chapter.dialogues.find((d) => d.id === view.dialogueId);
+      const entityFor = (characterId: string | undefined): string | null =>
+        characterId
+          ? (scene.entities.find(
+              (e) => e.characterId === characterId && evaluate(e.visibleWhen, session.state),
+            )?.id ?? null)
+          : null;
+      conversation = {
+        with: entityFor(dialogue?.characterId),
+        speaking:
+          view.speaker.kind === 'player'
+            ? 'player'
+            : view.speaker.kind === 'character'
+              ? entityFor(view.speaker.id)
+              : null,
+      };
+    }
+    const key = JSON.stringify(conversation);
+    if (key === this.conversationKey) return;
+    this.conversationKey = key;
+    this.world?.setConversation(conversation);
   }
 }
 
@@ -519,4 +557,24 @@ const STORY_KEYS: ReadonlyArray<keyof GameState> = [
 
 function storyChanged(a: GameState, b: GameState): boolean {
   return STORY_KEYS.some((k) => a[k] !== b[k]);
+}
+
+/** Which moments get a small flourish in the world (text feedback always comes too). */
+export function emphasisFor(
+  event: DomainEvent,
+  lastInteracted: string | null,
+): WorldEmphasis | null {
+  switch (event.type) {
+    case 'ClueDiscovered':
+      return { kind: 'clue', at: lastInteracted };
+    case 'ItemCollected':
+      return { kind: 'item', at: null };
+    case 'PuzzleCompleted':
+      return { kind: 'solved', at: null };
+    case 'QuestStarted':
+    case 'QuestStageAdvanced':
+      return { kind: 'objective', at: null };
+    default:
+      return null;
+  }
 }

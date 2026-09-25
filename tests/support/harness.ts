@@ -4,6 +4,8 @@ import { GameController } from '@/application/game-controller';
 import { GameSession } from '@/application/game-session';
 import type {
   AnalyticsEvent,
+  WorldConversation,
+  WorldEmphasis,
   WorldEntityView,
   WorldPort,
   WorldSceneModel,
@@ -50,6 +52,14 @@ export class FakeWorld implements WorldPort {
   lighting: { hour: number | null; lamp: boolean } | null = null;
   setLighting(lighting: { hour: number | null; lamp: boolean }): void {
     this.lighting = lighting;
+  }
+  conversations: Array<WorldConversation | null> = [];
+  setConversation(conversation: WorldConversation | null): void {
+    this.conversations.push(conversation);
+  }
+  emphases: WorldEmphasis[] = [];
+  emphasize(emphasis: WorldEmphasis): void {
+    this.emphases.push(emphasis);
   }
   destroy(): void {}
   get currentScene(): string | undefined {

@@ -1,5 +1,12 @@
-import { ellipse, makeCanvas, rgba, shade, softShadow, type Ctx } from './paint';
-import { PALETTE } from './tiles';
+import {
+  ellipse,
+  makeCanvas,
+  MATERIAL as PALETTE,
+  rgba,
+  shade,
+  softShadow,
+  type Ctx,
+} from './paint';
 
 /**
  * Original prop sprites for placed entities (signs, clues, vessels…),

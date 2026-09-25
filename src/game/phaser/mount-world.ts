@@ -68,6 +68,8 @@ function createPort(scene: WorldScene, destroy: () => void): WorldPort {
     setControlsEnabled: (enabled) => scene.setControlsEnabled(enabled),
     setMotion: (options) => scene.setMotion(options),
     setLighting: (lighting) => scene.setLighting(lighting),
+    setConversation: (conversation) => scene.setConversation(conversation),
+    emphasize: (emphasis) => scene.emphasize(emphasis),
     destroy,
   };
 }

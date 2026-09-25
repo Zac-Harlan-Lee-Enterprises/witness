@@ -78,3 +78,30 @@ export function facingToward(from: Tile, to: Tile): 'up' | 'down' | 'left' | 'ri
   if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
   return dy > 0 ? 'down' : 'up';
 }
+
+/**
+ * The closest open tile to `start` (itself if open), searching outward.
+ * Keeps old saves playable when a map is re-dressed: a player saved where
+ * a wall now stands is placed on the nearest free tile instead of inside it.
+ */
+export function nearestOpen(start: Tile, blocked: Blocked, maxRadius = 12): Tile {
+  if (!blocked(start.x, start.y)) return start;
+  for (let r = 1; r <= maxRadius; r++) {
+    let best: Tile | null = null;
+    let bestD = Infinity;
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const t = { x: start.x + dx, y: start.y + dy };
+        if (blocked(t.x, t.y)) continue;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) {
+          best = t;
+          bestD = d;
+        }
+      }
+    }
+    if (best) return best;
+  }
+  return start;
+}

@@ -5,7 +5,7 @@ import type { ScriptureRef, Translation } from '@/domain/scripture';
 import type { GameSettings } from '@/domain/settings';
 import type { GuideAnswer } from '@/domain/guide-policy';
 import type { Direction } from '@/domain/state/game-state';
-import type { Entity, Exit, TileGrid } from '@/domain/world';
+import type { Entity, Exit, Scene, TileGrid } from '@/domain/world';
 import type { Appearance } from '@/domain/characters';
 
 /**
@@ -72,7 +72,13 @@ export interface WorldEntityView {
   appearance: Appearance | null;
   sprite: string | null;
   interactive: boolean;
+  /** What interacting does (shown as a small symbol over the focused thing). */
+  verb: NonNullable<Entity['interaction']>['verb'] | null;
+  pose: Entity['pose'];
 }
+
+/** Art direction of a place: palette, materials, light and ambient life. */
+export type SceneMood = NonNullable<Scene['mood']>;
 
 export interface WorldLighting {
   /** Story clock hour (null when the chapter has no clock). */
@@ -86,6 +92,7 @@ export interface WorldSceneModel {
   name: string;
   kind: 'indoor' | 'outdoor';
   ambience: 'market' | 'wind' | 'indoor' | 'oasis' | 'none';
+  mood: SceneMood;
   lighting: WorldLighting;
   grid: TileGrid;
   baseTile: TileGrid['tiles'][number][number];
@@ -112,7 +119,27 @@ export interface WorldPort {
   setMotion(options: { reducedMotion: boolean; tilesPerSecond: number }): void;
   /** Time-of-day colour grade and lamp glow. */
   setLighting(lighting: WorldLighting): void;
+  /**
+   * Stage a conversation: who it is with (framed by the camera) and who is
+   * speaking now (animated). `null` when no conversation is open.
+   */
+  setConversation(conversation: WorldConversation | null): void;
+  /** A brief, decorative flourish for something that just happened (never the only feedback). */
+  emphasize(emphasis: WorldEmphasis): void;
   destroy(): void;
+}
+
+export interface WorldConversation {
+  /** Entity id of the person you're talking with, if they are in this scene. */
+  with: string | null;
+  /** Entity id of whoever is speaking now, `'player'`, or null for narration. */
+  speaking: string | null;
+}
+
+export interface WorldEmphasis {
+  kind: 'clue' | 'item' | 'solved' | 'objective';
+  /** Where it happened (an entity id); otherwise at the player. */
+  at: string | null;
 }
 
 export type WorldListener = (event: WorldEvent) => void;

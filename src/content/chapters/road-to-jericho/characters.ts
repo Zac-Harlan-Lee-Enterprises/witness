@@ -22,6 +22,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#efe3c8',
       beard: false,
       build: 'adult',
+      carry: 'basket',
     },
   },
   {
@@ -40,6 +41,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#c9b48a',
       beard: true,
       build: 'adult',
+      carry: 'bundle',
     },
   },
   {
@@ -58,6 +60,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#e8dcc0',
       beard: true,
       build: 'elder',
+      carry: 'staff',
     },
   },
   {
@@ -94,6 +97,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#d9b25f',
       beard: false,
       build: 'adult',
+      carry: 'spindle',
     },
   },
   {
@@ -112,6 +116,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#f0e6d0',
       beard: true,
       build: 'adult',
+      carry: 'bread',
     },
   },
   {
@@ -130,6 +135,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#d8c8a0',
       beard: true,
       build: 'adult',
+      carry: 'jar',
     },
   },
   {
@@ -166,6 +172,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#d8c8a8',
       beard: false,
       build: 'adult',
+      carry: 'jar',
     },
   },
   {
@@ -220,6 +227,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#c9b48a',
       beard: true,
       build: 'adult',
+      carry: 'basket',
     },
   },
 ];

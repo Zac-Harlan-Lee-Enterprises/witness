@@ -178,4 +178,12 @@ describe('GameSession + controllers', () => {
     h.controller.noteRestored('p1:road-to-jericho:auto', 2, 'legacy-v1');
     expect(h.ui.getState().toasts.at(-1)?.text).toMatch(/earlier version of this chapter/);
   });
+
+  it('places a player saved inside a wall (an older map) on the nearest open tile', async () => {
+    const h = await createHarness();
+    const state = { ...h.state(), player: { ...h.state().player, x: 5, y: 1 } }; // the house's back wall
+    const restored = await createHarness({ restore: state });
+    const model = restored.world.scenes.at(-1);
+    expect(model?.player).toMatchObject({ x: 6, y: 2 }); // (5,2) holds grain sacks
+  });
 });

@@ -2,8 +2,9 @@ import type { Chapter } from '@/domain/chapter';
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
 import type { GameState } from '@/domain/state/game-state';
+import { blockedFn, nearestOpen } from '@/domain/navigation';
 import { parseLayout, type Entity, type Scene } from '@/domain/world';
-import type { WorldEntityView, WorldLighting, WorldSceneModel } from './ports';
+import type { SceneMood, WorldEntityView, WorldLighting, WorldSceneModel } from './ports';
 
 /**
  * Translates content + state into the render model the world adapter draws.
@@ -48,8 +49,19 @@ export function visibleEntities(
         appearance: character?.appearance ?? null,
         sprite: e.sprite ?? null,
         interactive: e.interaction !== undefined,
+        verb: e.interaction?.verb ?? null,
+        pose: e.pose,
       };
     });
+}
+
+/** The scene's art direction; when content doesn't name one it follows the ambience. */
+export function moodOf(scene: Pick<Scene, 'mood' | 'ambience' | 'kind'>): SceneMood {
+  if (scene.mood) return scene.mood;
+  if (scene.kind === 'indoor' || scene.ambience === 'indoor') return 'home';
+  if (scene.ambience === 'wind') return 'wilderness';
+  if (scene.ambience === 'oasis') return 'oasis';
+  return 'city';
 }
 
 export function lightingOf(chapter: Chapter, state: GameState): WorldLighting {
@@ -64,17 +76,28 @@ export function buildSceneModel(
   playerAppearance: Appearance,
 ): WorldSceneModel {
   const scene = findScene(chapter, state.sceneId);
+  const grid = parseLayout(scene);
+  const entities = visibleEntities(chapter, scene, state);
+  // Never start inside something solid (e.g. an old save after a map was re-dressed).
+  const open = nearestOpen(
+    { x: state.player.x, y: state.player.y },
+    blockedFn(
+      grid,
+      entities.filter((e) => e.solid).map((e) => ({ x: e.x, y: e.y })),
+    ),
+  );
   return {
     sceneId: scene.id,
     name: scene.name,
     kind: scene.kind,
     ambience: scene.ambience,
+    mood: moodOf(scene),
     lighting: lightingOf(chapter, state),
-    grid: parseLayout(scene),
+    grid,
     baseTile: scene.baseTile,
-    entities: visibleEntities(chapter, scene, state),
+    entities,
     exits: scene.exits.map(({ id, label, x, y, w, h }) => ({ id, label, x, y, w, h })),
-    player: { ...state.player, appearance: playerAppearance },
+    player: { ...state.player, x: open.x, y: open.y, appearance: playerAppearance },
   };
 }
 

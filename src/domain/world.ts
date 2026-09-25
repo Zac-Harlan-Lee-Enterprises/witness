@@ -18,6 +18,10 @@ export const TILE_KINDS = {
   wadi: { solid: false },
   mud: { solid: false },
   steps: { solid: false },
+  grass: { solid: false },
+  soil: { solid: false },
+  mat: { solid: false },
+  bedroll: { solid: false },
   door: { solid: false },
   gate: { solid: false },
   wall: { solid: true },
@@ -36,6 +40,17 @@ export const TILE_KINDS = {
   cairn: { solid: true },
   fence: { solid: true },
   oven: { solid: true },
+  crate: { solid: true },
+  sacks: { solid: true },
+  basket: { solid: true },
+  loom: { solid: true },
+  cart: { solid: true },
+  tent: { solid: true },
+  trough: { solid: true },
+  crops: { solid: true },
+  reeds: { solid: true },
+  fig: { solid: true },
+  cloth: { solid: true },
   void: { solid: true },
 } as const;
 export type TileKind = keyof typeof TILE_KINDS;
@@ -68,6 +83,8 @@ export const EntitySchema = z.object({
   sprite: z.string().optional(),
   visibleWhen: ConditionSchema.optional(),
   solid: z.boolean().default(true),
+  /** How a character is shown (e.g. an injured traveler lying in the shade). */
+  pose: z.enum(['stand', 'sit', 'lie']).default('stand'),
   /** What interacting does: if `requires` holds, apply `effects`, then start `dialogue`. */
   interaction: z
     .object({
@@ -152,6 +169,12 @@ export const SceneSchema = z.object({
   triggers: z.array(TriggerSchema).default([]),
   onEnter: z.array(EffectSchema).default([]),
   ambience: z.enum(['market', 'wind', 'indoor', 'oasis', 'none']).default('none'),
+  /**
+   * Art direction for the place (palette, materials, light, ambient life):
+   * a home interior, a stone city, open wilderness or a green oasis town.
+   * When omitted it follows the ambience.
+   */
+  mood: z.enum(['home', 'city', 'wilderness', 'oasis']).optional(),
   music: z.enum(['home', 'journey', 'tension', 'reflection', 'none']).default('none'),
 });
 export type Scene = z.infer<typeof SceneSchema>;
