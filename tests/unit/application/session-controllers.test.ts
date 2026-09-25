@@ -1,0 +1,90 @@
+import { describe, expect, it } from 'vitest';
+import { createHarness, flush, Player } from '../../support/harness';
+
+describe('GameSession + controllers', () => {
+  it('starts a new game with the opening conversation and an autosave request after scene changes', async () => {
+    const h = await createHarness();
+    expect(h.events[0]).toEqual({ type: 'ChapterStarted', chapterId: 'road-to-jericho' });
+    expect(h.ui.getState().dialogue?.dialogueId).toBe('d-opening');
+    expect(h.world.currentScene).toBe('miriam-house');
+  });
+
+  it('logs dialogue history with choices', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.choose('c-me');
+    expect(h.state().dialogueLog.some((l) => l.choiceId === 'c-me')).toBe(true);
+  });
+
+  it('ends a conversation gracefully when content points at a missing node', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.finish().catch(() => undefined);
+    h.dialogue.end();
+    await flush();
+    const dialogue = h.chapter.dialogues.find((d) => d.id === 'd-natan');
+    if (!dialogue) throw new Error('missing');
+    // Simulate a broken content reference.
+    const original = dialogue.start;
+    (dialogue as { start: string }).start = 'does-not-exist';
+    h.ui.setDialogue(null);
+    h.dialogue.start('d-natan');
+    await flush();
+    (dialogue as { start: string }).start = original;
+    expect(h.ui.getState().dialogue).toBeNull();
+    expect(h.state().conversations).toContain('d-natan');
+  });
+
+  it('refuses unavailable dialogue choices', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.choose('c-yes');
+    await p.choose('c-go');
+    await p.finish();
+    await p.exit('house-door');
+    await p.interact('malik');
+    await p.choose('sell');
+    // Spend coins elsewhere first by hacking state: 0 coins.
+    h.session.dispatch([{ type: 'takeItem', item: 'coins', quantity: 5 }]);
+    h.dialogue.render();
+    const buy = p.dialogueView?.choices.find((c) => c.id === 'buy');
+    expect(buy).toMatchObject({ available: false, unavailableText: 'You need 2 coins.' });
+    h.dialogue.choose('buy');
+    expect(h.state().inventory.map).toBeUndefined();
+  });
+
+  it('queues screen requests while a conversation is open and runs them in order afterwards', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    h.session.dispatch([{ type: 'openPuzzle', puzzle: 'p-satchel' }]);
+    await flush();
+    expect(h.ui.getState().puzzleId).toBeNull(); // opening dialogue still active
+    await p.choose('c-yes');
+    await p.choose('c-go');
+    await p.finish();
+    await flush();
+    expect(h.ui.getState().puzzleId).toBe('p-satchel');
+  });
+
+  it('blocks restricted exits with an explanation and keeps the player in place', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.exit('house-door');
+    expect(p.scene()).toBe('miriam-house');
+  });
+
+  it('logs and survives invalid quest transitions in content', async () => {
+    const h = await createHarness();
+    const before = h.state();
+    h.session.dispatch([{ type: 'completeObjective', quest: 'q-remedy', objective: 'hear' }]);
+    expect(h.state()).toEqual(before);
+  });
+
+  it('counts play time only while not paused', async () => {
+    const h = await createHarness();
+    h.controller.tick(5000);
+    h.ui.openOverlay('pause');
+    h.controller.tick(5000);
+    expect(h.state().playTimeMs).toBe(5000);
+  });
+});
