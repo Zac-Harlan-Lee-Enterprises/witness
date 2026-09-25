@@ -1,6 +1,8 @@
 import { useStore } from '../common/hooks';
+import { Icon } from '../common/Icon';
 import { Modal } from '../common/Modal';
 import type { GameRuntimeLike } from '../game/types';
+import { toastIcon } from './Hud';
 
 /**
  * Every notification shown this session, newest first. Notices disappear
@@ -18,6 +20,7 @@ export function MessageLog({ runtime }: { runtime: GameRuntimeLike }) {
         <ol className="message-log">
           {newestFirst.map((m) => (
             <li key={m.id} className={`toast toast--${m.tone}`}>
+              <Icon name={toastIcon(m.label)} className="toast__icon" />
               <strong className="toast__label">{m.label}:</strong> {m.text}
             </li>
           ))}

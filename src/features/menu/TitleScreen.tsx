@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
+import { JourneyArt } from './JourneyArt';
 
 export function TitleScreen({
   onPlay,
@@ -15,18 +16,7 @@ export function TitleScreen({
   return (
     <main className="screen title-screen" aria-labelledby="game-title">
       <div className="title-screen__art" aria-hidden="true">
-        <svg viewBox="0 0 400 160" className="title-screen__svg" focusable="false">
-          <circle cx="300" cy="46" r="26" fill="var(--color-sun)" />
-          <path d="M0 120 Q 80 70 160 100 T 400 90 V160 H0 Z" fill="var(--color-hill-far)" />
-          <path d="M0 140 Q 120 100 220 128 T 400 118 V160 H0 Z" fill="var(--color-hill-near)" />
-          <path
-            d="M40 160 C 120 130, 170 130, 210 110 S 300 92, 360 96"
-            stroke="var(--color-road)"
-            strokeWidth="7"
-            fill="none"
-            strokeLinecap="round"
-          />
-        </svg>
+        <JourneyArt className="title-screen__svg" />
       </div>
       <h1 id="game-title" className="title-screen__title">
         {config.title}

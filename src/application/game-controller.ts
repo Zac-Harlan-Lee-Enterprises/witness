@@ -415,7 +415,7 @@ export class GameController {
       case 'ClueDiscovered': {
         const clue = chapter.clues.find((c) => c.id === event.clueId);
         ui.pushToast(clue?.title ?? 'A new clue', 'success', 'New clue');
-        audio.playSfx('journal');
+        audio.playSfx('discover');
         break;
       }
       case 'JournalEntryUnlocked': {

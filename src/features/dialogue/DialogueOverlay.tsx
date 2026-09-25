@@ -92,7 +92,7 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
       aria-labelledby="dialogue-speaker"
     >
       <div className="dialogue__portrait">
-        <Portrait appearance={view.speaker.appearance} size={settings.textScale > 1.4 ? 56 : 72} />
+        <Portrait appearance={view.speaker.appearance} size={settings.textScale > 1.4 ? 64 : 88} />
       </div>
       <div className="dialogue__main">
         <div className="dialogue__header">

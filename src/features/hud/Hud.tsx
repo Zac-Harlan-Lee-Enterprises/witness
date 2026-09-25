@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { timeOfDayLabel } from '@/application/time-of-day';
+import { moodOf } from '@/application/world-model';
 import type { UiState } from '@/application/ui-store';
 import { unseenCount } from '@/domain/journal';
 import { currentObjective } from '@/domain/quests';
 import { ariaKeyName, keyLabel, type InputAction } from '@/domain/settings';
 import { useSettings, useStore } from '../common/hooks';
+import { Icon, type IconName } from '../common/Icon';
 import { useServices } from '../common/services';
 import type { GameRuntimeLike } from '../game/types';
 
@@ -19,6 +21,19 @@ function useKey(action: InputAction): KeyHint {
   const settings = useSettings();
   const first = settings.keyBindings[action]?.[0];
   return first ? { label: keyLabel(first), aria: ariaKeyName(first) } : { label: '', aria: '' };
+}
+
+const EMBLEMS: Record<ReturnType<typeof moodOf>, IconName> = {
+  home: 'home',
+  city: 'city',
+  wilderness: 'hills',
+  oasis: 'palm',
+};
+
+function timeIcon(hour: number): IconName {
+  if (hour < 5 || hour >= 19) return 'moon';
+  if (hour >= 17 || hour < 7) return 'dusk';
+  return 'sun';
 }
 
 /** Always-visible HTML heads-up display: where you are, what to do, and menu buttons. */
@@ -39,23 +54,34 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
 
   return (
     <header className="hud" aria-label="Game status">
-      <div className="hud__status">
-        <p className="hud__scene">{scene?.name}</p>
+      <div className="hud__status" data-mood={scene ? moodOf(scene) : undefined}>
+        <p className="hud__scene">
+          {scene && <Icon name={EMBLEMS[moodOf(scene)]} className="hud__emblem" />}
+          {scene?.name}
+        </p>
         {objective && (
           <p className="hud__objective hud__detail">
+            <Icon name="flag" className="hud__icon" />
             <span className="hud__label">Next:</span> {objective}
           </p>
         )}
         {hour !== undefined && (
           <p className="hud__time hud__detail">
+            <Icon name={timeIcon(hour)} className="hud__icon" />
             <span className="hud__label">Time:</span> {timeOfDayLabel(hour)}
           </p>
         )}
       </div>
       <nav className="hud__buttons" aria-label="Game menus">
-        <HudButton label="Go to…" shortcut={keys.goto} onClick={() => ui.toggleOverlay('goto')} />
+        <HudButton
+          label="Go to…"
+          icon="goto"
+          shortcut={keys.goto}
+          onClick={() => ui.toggleOverlay('goto')}
+        />
         <HudButton
           label="Journal"
+          icon="journal"
           shortcut={keys.journal}
           badge={newEntries}
           secondary
@@ -63,17 +89,24 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
         />
         <HudButton
           label="Satchel"
+          icon="satchel"
           shortcut={keys.satchel}
           secondary
           onClick={() => ui.toggleOverlay('satchel')}
         />
         <HudButton
           label="Quests"
+          icon="quests"
           shortcut={keys.quests}
           secondary
           onClick={() => ui.toggleOverlay('quests')}
         />
-        <HudButton label="Menu" shortcut={keys.pause} onClick={() => ui.toggleOverlay('pause')} />
+        <HudButton
+          label="Menu"
+          icon="menu"
+          shortcut={keys.pause}
+          onClick={() => ui.toggleOverlay('pause')}
+        />
       </nav>
     </header>
   );
@@ -81,12 +114,14 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
 
 function HudButton({
   label,
+  icon,
   shortcut,
   badge,
   secondary,
   onClick,
 }: {
   label: string;
+  icon: IconName;
   shortcut: KeyHint;
   badge?: number;
   /** Also reachable from the pause menu; hidden on small screens with large text. */
@@ -100,6 +135,7 @@ function HudButton({
       onClick={onClick}
       aria-keyshortcuts={shortcut.aria || undefined}
     >
+      <Icon name={icon} className="hud-button__icon" />
       {label}
       {badge ? (
         <span className="hud-button__badge">
@@ -230,6 +266,30 @@ export function TouchControls({ runtime }: { runtime: GameRuntimeLike }) {
 
 const TOAST_MS = 4500;
 
+/** A symbol for each kind of notice (the text label always says the same thing). */
+export function toastIcon(label: string): IconName {
+  switch (label) {
+    case 'New clue':
+      return 'lens';
+    case 'Received':
+    case 'Used':
+      return 'satchel';
+    case 'New quest':
+    case 'Side quest':
+    case 'Quest resolved':
+    case 'Next step':
+      return 'quests';
+    case 'Journal':
+      return 'journal';
+    case 'Careful':
+      return 'warning';
+    case 'Time passes':
+      return 'sun';
+    default:
+      return 'info';
+  }
+}
+
 /** Notifications (new clue, item received…) with a text label — never colour alone. */
 export function Toasts({ ui }: { ui: GameRuntimeLike['ui'] }) {
   const state: UiState = useStore(ui);
@@ -257,6 +317,7 @@ export function Toasts({ ui }: { ui: GameRuntimeLike['ui'] }) {
     <div className="toasts" role="status" aria-live="polite">
       {state.toasts.map((t) => (
         <div key={t.id} className={`toast toast--${t.tone}`}>
+          <Icon name={toastIcon(t.label)} className="toast__icon" />
           <strong className="toast__label">{t.label}:</strong> {t.text}
         </div>
       ))}

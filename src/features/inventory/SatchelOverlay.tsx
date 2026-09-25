@@ -2,6 +2,7 @@ import { listItems } from '@/domain/inventory';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import type { GameRuntimeLike } from '../game/types';
+import { ItemIcon } from '../common/Icon';
 
 /** A small, purposeful inventory: every item matters to a decision. */
 export function SatchelOverlay({ runtime }: { runtime: GameRuntimeLike }) {
@@ -30,7 +31,7 @@ export function SatchelOverlay({ runtime }: { runtime: GameRuntimeLike }) {
           {items.map(({ item, quantity }) => (
             <li key={item.id} className="satchel__item">
               <span className="satchel__icon" aria-hidden="true">
-                {item.icon}
+                <ItemIcon icon={item.icon} />
               </span>
               <div>
                 <p className="satchel__name">

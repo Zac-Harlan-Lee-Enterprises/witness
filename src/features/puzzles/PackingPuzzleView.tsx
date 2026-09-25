@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { PackingCheck, PackingPuzzle } from '@/domain/puzzles';
 import type { GameRuntimeLike } from '../game/types';
+import { ItemIcon } from '../common/Icon';
 
 /** Satchel packing: a stepper per item, a live load meter and a live rules checklist. */
 export function PackingPuzzleView({
@@ -57,7 +58,7 @@ export function PackingPuzzleView({
           return (
             <li key={item.id} className="packing__item">
               <span className="packing__icon" aria-hidden="true">
-                {item.icon}
+                <ItemIcon icon={item.icon} />
               </span>
               <div className="packing__info">
                 <p className="packing__name">

@@ -5,6 +5,8 @@ import type { PlayerProfile } from '@/domain/profile';
 import { Modal } from '../common/Modal';
 import { Portrait } from '../common/Portrait';
 import { useServices } from '../common/services';
+import { Icon } from '../common/Icon';
+import { JourneyArt } from './JourneyArt';
 
 const SLOT_LABELS: Record<string, string> = {
   auto: 'Autosave',
@@ -63,6 +65,7 @@ export function ChapterSelect({
               key={meta.id}
               className={`chapter-card ${meta.available ? '' : 'chapter-card--locked'}`}
             >
+              {meta.available && <JourneyArt className="chapter-card__art" />}
               <h2 className="chapter-card__title">
                 <span className="chapter-card__number">Chapter {meta.number}</span> {meta.title}
               </h2>
@@ -94,7 +97,7 @@ export function ChapterSelect({
                 </div>
               ) : (
                 <p className="meta-note">
-                  <span aria-hidden="true">🔒</span> Not available yet
+                  <Icon name="lock" /> Not available yet
                 </p>
               )}
               {meta.available && chapterSaves.length > 0 && (

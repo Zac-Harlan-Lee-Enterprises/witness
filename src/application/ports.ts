@@ -148,7 +148,7 @@ export type WorldListener = (event: WorldEvent) => void;
 export type AmbienceId = 'market' | 'wind' | 'indoor' | 'oasis' | 'none';
 export type MusicId = 'home' | 'journey' | 'tension' | 'reflection' | 'none';
 export type SfxId =
-  'interact' | 'item' | 'journal' | 'quest' | 'solved' | 'error' | 'page' | 'door';
+  'interact' | 'item' | 'journal' | 'discover' | 'quest' | 'solved' | 'error' | 'page' | 'door';
 
 export interface AudioPort {
   /** Must be called from a user gesture to satisfy autoplay policies. */
