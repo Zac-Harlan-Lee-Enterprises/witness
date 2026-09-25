@@ -3,8 +3,9 @@ import type { InputAction } from '@/domain/settings';
 
 /**
  * Standard-mapping gamepad → VirtualInput (d-pad/left stick move, A interact,
- * Start pause, Y journal, X satchel, Select quests). Polled on animation
- * frames only while a pad is connected.
+ * B back, Start pause, Y journal, X satchel, Select quests, LB "Go to…").
+ * Polled on animation frames only while a pad is connected. Menus and
+ * dialogue are driven by gamepad-navigation.ts from the same actions.
  */
 const BUTTONS: Array<[number, InputAction]> = [
   [12, 'up'],
@@ -12,11 +13,14 @@ const BUTTONS: Array<[number, InputAction]> = [
   [14, 'left'],
   [15, 'right'],
   [0, 'interact'],
+  [1, 'pause'],
   [9, 'pause'],
   [3, 'journal'],
   [2, 'satchel'],
   [8, 'quests'],
+  [4, 'goto'],
 ];
+const ACTIONS: readonly InputAction[] = [...new Set(BUTTONS.map(([, action]) => action))];
 const DEADZONE = 0.4;
 
 export function attachGamepad(input: VirtualInput, win: Window = window): () => void {
@@ -40,19 +44,7 @@ export function attachGamepad(input: VirtualInput, win: Window = window): () => 
     if (ax > DEADZONE) active.add('right');
     if (ay < -DEADZONE) active.add('up');
     if (ay > DEADZONE) active.add('down');
-    (
-      [
-        'up',
-        'down',
-        'left',
-        'right',
-        'interact',
-        'pause',
-        'journal',
-        'satchel',
-        'quests',
-      ] as InputAction[]
-    ).forEach((action) =>
+    ACTIONS.forEach((action) =>
       active.has(action) ? input.press('gamepad', action) : input.release('gamepad', action),
     );
     frame = win.requestAnimationFrame(poll);

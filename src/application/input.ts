@@ -6,7 +6,8 @@ import type { InputAction } from '@/domain/settings';
  * reads held directions and the app listens for edge-triggered actions.
  * Nothing else needs to know which device the player is using.
  */
-export type ActionListener = (action: InputAction) => void;
+/** `source` names the device ('keyboard', 'gamepad', 'touch'…) for the few listeners that care. */
+export type ActionListener = (action: InputAction, source: string) => void;
 
 export class VirtualInput {
   private readonly held = new Map<string, Set<InputAction>>();
@@ -17,7 +18,7 @@ export class VirtualInput {
     const wasActive = this.isActive(action);
     set.add(action);
     this.held.set(source, set);
-    if (!wasActive) this.listeners.forEach((l) => l(action));
+    if (!wasActive) this.listeners.forEach((l) => l(action, source));
   }
 
   release(source: string, action: InputAction): void {
@@ -27,11 +28,6 @@ export class VirtualInput {
   releaseAll(source?: string): void {
     if (source === undefined) this.held.clear();
     else this.held.delete(source);
-  }
-
-  /** Fire an edge action without holding it (taps, clicks). */
-  trigger(action: InputAction): void {
-    this.listeners.forEach((l) => l(action));
   }
 
   isActive(action: InputAction): boolean {

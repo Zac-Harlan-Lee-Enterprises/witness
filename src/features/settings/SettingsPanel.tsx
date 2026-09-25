@@ -128,7 +128,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <h3 id="set-keys">Keyboard controls</h3>
         <KeyBindings bindings={s.keyBindings} onChange={(keyBindings) => update({ keyBindings })} />
         <p className="hint">
-          Gamepads work too: d-pad or stick to move, A to talk/examine, Start for the menu.
+          Gamepads work too: d-pad or stick to move (and to pick buttons in menus), A to talk,
+          examine or press, B to go back, Start for the menu, LB for “Go to…”.
         </p>
       </section>
 

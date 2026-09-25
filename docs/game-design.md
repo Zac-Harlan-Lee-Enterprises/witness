@@ -84,15 +84,16 @@ Every action has a keyboard, touch and pointer route. The **"Go to…" list** ma
 |---|---|---|---|---|
 | Move | Arrow keys or W A S D | On-screen d-pad | D-pad or left stick | Click or tap a tile to walk there (pathfinding) |
 | Talk / examine / use | E, Space, Enter | ✋ action button | A (button 0) | Click or tap a person or object, or the on-screen prompt |
-| Pause menu | Esc, P | HUD button | Start | HUD button |
+| Pause menu | Esc, P | HUD button | Start (B also goes back / closes) | HUD button |
 | Journal | J | HUD button | Y | HUD button |
 | Satchel | I | HUD button | X | HUD button |
 | Quest log | Q | HUD button | Select | HUD button |
-| "Go to…" list | G | HUD button | *(none)* | HUD button |
+| "Go to…" list | G | HUD button | LB (button 4) | HUD button |
+| Menus, dialogue, puzzles | Tab / Shift+Tab, Enter or Space, Esc | Tap | D-pad or stick moves between buttons (left/right also steps a drop-down), A presses, B goes back | Click or tap |
 
 - Keys are remapped in **Settings** by pressing the new key. Each action keeps up to three keys, and a key can belong to only one action ([`src/domain/settings.ts`](../src/domain/settings.ts)).
 - Touch controls are `auto` by default and can be forced on or off.
-- The gamepad adapter ([`gamepad-source.ts`](../src/infrastructure/input/gamepad-source.ts)) is implemented but has not been tried with a physical controller (see [deferred-features.md](deferred-features.md)).
+- The gamepad adapter ([`gamepad-source.ts`](../src/infrastructure/input/gamepad-source.ts)) and menu navigation ([`gamepad-navigation.ts`](../src/infrastructure/input/gamepad-navigation.ts)) are unit-tested with a simulated pad, so the whole chapter can be played with a controller, but they have not been tried with a physical controller (see [deferred-features.md](deferred-features.md)).
 - Dialogue choices are real buttons. Choices that exist but can't be taken right now stay visible, disabled, with the reason (for example, "You need 2 coins.").
 
 **Accessibility settings** (device-level, shared by all profiles): text size (1×–2×), font (standard, Atkinson Hyperlegible, OpenDyslexic), high contrast, reduced motion (system/on/off), dialogue text speed (instant to slow), walking speed, instant travel, touch controls, sound captions, mute and five volume channels, and anonymous statistics (off by default).

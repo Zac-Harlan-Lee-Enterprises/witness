@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChapterLoadError } from '@/content';
 import type { GameSettings } from '@/domain/settings';
 import type { PlayerProfile } from '@/domain/profile';
@@ -9,6 +9,7 @@ import { ChapterSelect } from '@/features/menu/ChapterSelect';
 import { TitleScreen } from '@/features/menu/TitleScreen';
 import { ProfileScreen } from '@/features/profiles/ProfileScreen';
 import { SettingsPanel } from '@/features/settings/SettingsPanel';
+import { attachGamepadNavigation } from '@/infrastructure/input/gamepad-navigation';
 import { attachGamepad } from '@/infrastructure/input/gamepad-source';
 import { attachKeyboard } from '@/infrastructure/input/keyboard-source';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -42,15 +43,36 @@ function createKeyboardAttacher(services: AppServices) {
 export function App({ services }: { services: AppServices }) {
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsOpenRef = useRef(settingsOpen);
+  useEffect(() => {
+    settingsOpenRef.current = settingsOpen;
+  }, [settingsOpen]);
   const settings = useStore(services.settings.store);
 
   useEffect(() => {
     applySettingsToDocument(settings);
   }, [settings]);
 
+  // The gamepad drives menus and dialogue whenever the world isn't taking movement.
+  const screenRef = useRef(screen);
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
   useEffect(() => {
     document.title = services.config.title;
-    return attachGamepad(services.input);
+    const detachPad = attachGamepad(services.input);
+    const detachNav = attachGamepadNavigation(
+      services.input,
+      () => {
+        const s = screenRef.current;
+        return s.name === 'game' && s.runtime.ui.explorationAllowed && !settingsOpenRef.current;
+      },
+      () => screenRef.current.name === 'game' && !settingsOpenRef.current,
+    );
+    return () => {
+      detachNav();
+      detachPad();
+    };
   }, [services]);
 
   const keyboard = useMemo(() => createKeyboardAttacher(services), [services]);
