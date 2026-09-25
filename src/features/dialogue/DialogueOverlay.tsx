@@ -1,0 +1,209 @@
+import { useEffect, useRef, useState } from 'react';
+import type { DialogueView } from '@/application/ui-store';
+import { findNode, interpolate } from '@/domain/dialogue';
+import { formatScriptureRef } from '@/domain/scripture';
+import { DIALOGUE_SPEEDS } from '@/domain/settings';
+import { ContentKindBadge } from '../common/ContentBlock';
+import { useSettings, useStore } from '../common/hooks';
+import { Modal } from '../common/Modal';
+import { Portrait } from '../common/Portrait';
+import type { GameRuntimeLike } from '../game/types';
+import { prefersReducedMotionSetting } from '../game/motion';
+
+/**
+ * The conversation box. Text reveals at the chosen speed (or instantly), but
+ * the complete line is always available to screen readers immediately.
+ * Choices are real buttons; unavailable choices stay visible with the reason.
+ */
+export function DialogueOverlay({ runtime }: { runtime: GameRuntimeLike }) {
+  const ui = useStore(runtime.ui);
+  const view = ui.dialogue;
+  if (!view) return null;
+  return <DialogueBox key={`${view.dialogueId}/${view.nodeId}`} view={view} runtime={runtime} />;
+}
+
+function useTypewriter(text: string): { shown: string; done: boolean; skip: () => void } {
+  const settings = useSettings();
+  const instant =
+    settings.dialogueSpeed === 'instant' || prefersReducedMotionSetting(settings.reducedMotion);
+  const msPerChar = DIALOGUE_SPEEDS[settings.dialogueSpeed];
+  const [count, setCount] = useState(instant ? text.length : 0);
+  useEffect(() => {
+    if (instant || count >= text.length) return;
+    const t = setTimeout(() => setCount((c) => Math.min(text.length, c + 2)), msPerChar * 2);
+    return () => clearTimeout(t);
+  }, [count, instant, msPerChar, text.length]);
+  return {
+    shown: text.slice(0, count),
+    done: count >= text.length,
+    skip: () => setCount(text.length),
+  };
+}
+
+function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRuntimeLike }) {
+  const { shown, done, skip } = useTypewriter(view.text);
+  const firstAction = useRef<HTMLButtonElement>(null);
+  const settings = useSettings();
+
+  useEffect(() => {
+    firstAction.current?.focus();
+  }, [view.nodeId, done]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!/^Digit[1-9]$/.test(event.code) || !done) return;
+      const choice = view.choices[Number(event.code.slice(5)) - 1];
+      if (choice?.available) runtime.dialogue.choose(choice.id);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, done, runtime.dialogue]);
+
+  const speakerName = view.speaker.kind === 'narrator' ? null : view.speaker.name;
+  const refs = view.record?.scripture?.map(formatScriptureRef).join('; ');
+
+  return (
+    <section
+      className={`dialogue dialogue--${view.speaker.kind}`}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="dialogue-speaker"
+      aria-describedby="dialogue-text-full"
+    >
+      <div className="dialogue__portrait">
+        <Portrait appearance={view.speaker.appearance} size={settings.textScale > 1.4 ? 56 : 72} />
+      </div>
+      <div className="dialogue__main">
+        <div className="dialogue__header">
+          <h2 id="dialogue-speaker" className="dialogue__speaker">
+            {speakerName ?? 'Narration'}
+            {view.speaker.role && <span className="dialogue__role"> · {view.speaker.role}</span>}
+          </h2>
+          {view.kind !== 'fiction' && <ContentKindBadge kind={view.kind} />}
+        </div>
+        {view.kind === 'paraphrase' && (
+          <p className="dialogue__note">
+            {view.speaker.kind === 'character'
+              ? `${view.speaker.name} is retelling Scripture in their own words`
+              : 'A retelling in our own words'}
+            {refs ? ` (${refs})` : ''} — not a direct quotation.
+          </p>
+        )}
+        <p className="dialogue__text" aria-hidden="true">
+          {shown}
+          {!done && <span className="dialogue__caret">▍</span>}
+        </p>
+        <p id="dialogue-text-full" className="visually-hidden" aria-live="polite">
+          {speakerName ? `${speakerName}: ` : ''}
+          {view.text}
+        </p>
+        <div className="dialogue__actions">
+          {!done ? (
+            <button ref={firstAction} type="button" className="button" onClick={skip}>
+              Show all text
+            </button>
+          ) : view.choices.length > 0 ? (
+            <ol className="dialogue__choices">
+              {view.choices.map((c, i) => (
+                <li key={c.id}>
+                  <button
+                    ref={i === 0 ? firstAction : undefined}
+                    type="button"
+                    className={`choice ${c.available ? '' : 'choice--unavailable'}`}
+                    aria-disabled={c.available ? undefined : true}
+                    aria-describedby={c.available ? undefined : `why-${c.id}`}
+                    onClick={() => c.available && runtime.dialogue.choose(c.id)}
+                  >
+                    <span className="choice__number" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    {c.text}
+                  </button>
+                  {!c.available && (
+                    <p id={`why-${c.id}`} className="choice__why">
+                      <span aria-hidden="true">✗ </span>
+                      {c.unavailableText}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <button
+              ref={firstAction}
+              type="button"
+              className="button button--primary"
+              onClick={() => runtime.dialogue.advance()}
+            >
+              {view.isLast ? 'End conversation' : 'Continue'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="button button--ghost button--small"
+            onClick={() => runtime.ui.openOverlay('history')}
+          >
+            Conversation history
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Everything said so far in this chapter, reconstructed from the dialogue log. */
+export function DialogueHistory({ runtime }: { runtime: GameRuntimeLike }) {
+  const state = useStore(runtime.session.store);
+  const { chapter, profile } = runtime;
+  const lines = state.dialogueLog.slice(-120).flatMap((entry, index) => {
+    const dialogue = chapter.dialogues.find((d) => d.id === entry.dialogueId);
+    if (!dialogue) return [];
+    try {
+      const node = findNode(dialogue, entry.nodeId);
+      if (entry.choiceId) {
+        const choice = node.choices.find((c) => c.id === entry.choiceId);
+        return choice
+          ? [{ key: index, who: profile.displayName, text: choice.text, kind: 'choice' }]
+          : [];
+      }
+      const who =
+        node.speaker === 'narrator'
+          ? 'Narration'
+          : node.speaker === 'player'
+            ? profile.displayName
+            : (chapter.characters.find((c) => c.id === node.speaker)?.name ?? node.speaker);
+      return [
+        {
+          key: index,
+          who,
+          text: interpolate(node.text, { player: profile.displayName }),
+          kind: node.kind,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  });
+  return (
+    <Modal
+      title="Conversation history"
+      onClose={() => runtime.ui.closeOverlay()}
+      className="modal--wide"
+    >
+      {lines.length === 0 ? (
+        <p>No conversations yet.</p>
+      ) : (
+        <ol className="history">
+          {lines.map((l) => (
+            <li key={l.key} className={`history__line history__line--${l.kind}`}>
+              <strong>{l.who}:</strong> {l.text}
+              {l.kind === 'paraphrase' && (
+                <span className="meta-note"> (paraphrase of Scripture)</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </Modal>
+  );
+}
