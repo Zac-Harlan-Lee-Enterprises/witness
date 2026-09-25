@@ -82,9 +82,11 @@ for doc in AGENTS.md README.md; do
   broken=0
   while IFS= read -r ref; do
     [[ -z "$ref" ]] && continue
-    case "$ref" in http*|*' '*|*'<'*|*'*'*|*'{'*|@/*|~/*) continue ;; esac
+    case "$ref" in http*|*' '*|*'<'*|*'*'*|*'{'*|*'='*|@/*|~/*) continue ;; esac
     ref="${ref%%#*}"; ref="${ref%%:*}"
     [[ -z "$ref" ]] && continue
+    # Generated output (gitignored) is created by commands, not stored in the repo.
+    git check-ignore -q "$ref" 2>/dev/null && continue
     if [[ ! -e "$ref" ]]; then fail "$doc references '$ref' — not found"; broken=1; fi
   done < <({ grep -oE '`[^`]+/[^`]+`' "$doc" | tr -d '`'; grep -oE 'bash [a-zA-Z0-9_./-]+\.sh' "$doc" | awk '{print $2}'; grep -oE '\]\((docs|src|tests|e2e|scripts)/[^)#]+' "$doc" | sed 's/^](//'; } 2>/dev/null | sort -u)
   (( broken == 0 )) && ok "$doc references all resolve"

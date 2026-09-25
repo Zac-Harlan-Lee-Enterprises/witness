@@ -16,7 +16,8 @@ import { contentReport, reachabilityIssues } from '../src/content/validation';
 const env = { ...loadEnv('production', process.cwd(), 'VITE_'), ...process.env };
 const strictBuild = env.VITE_CONTENT_MODE === 'strict';
 const publishCheck = process.argv.includes('--publish-check') || strictBuild;
-if (strictBuild) console.log('VITE_CONTENT_MODE=strict: unapproved educational content will fail the build.');
+if (strictBuild)
+  console.log('VITE_CONTENT_MODE=strict: unapproved educational content will fail the build.');
 
 async function main(): Promise<number> {
   let failed = false;
