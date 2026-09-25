@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ChapterSummary, ScriptureConnection } from '@/features/chapter/ChapterEnding';
 import { DialogueOverlay } from '@/features/dialogue/DialogueOverlay';
 import { Hud, InteractionPrompt, PlaceBanner, Toasts } from '@/features/hud/Hud';
+import { GameScreen } from '@/features/game/GameScreen';
 import { MessageLog } from '@/features/hud/MessageLog';
 import { SatchelOverlay } from '@/features/inventory/SatchelOverlay';
 import { JournalOverlay } from '@/features/journal/JournalOverlay';
@@ -348,5 +349,23 @@ describe('Toasts', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('Game screen', () => {
+  it('warns during play when progress cannot be saved on this device', async () => {
+    const { runtime, harness } = await makeRuntime();
+    await renderWithServices(
+      <GameScreen
+        runtime={runtime}
+        attachKeyboard={() => () => undefined}
+        onOpenSettings={vi.fn()}
+        onQuit={vi.fn()}
+      />,
+    );
+    act(() => harness.ui.setStorageWarning('Saving is turned off in this browser.'));
+    expect(
+      screen.getAllByRole('status').some((el) => /Saving is turned off/.test(el.textContent ?? '')),
+    ).toBe(true);
   });
 });

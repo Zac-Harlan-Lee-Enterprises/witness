@@ -30,6 +30,24 @@ describe('Title screen', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(about).toHaveFocus(); // focus returns to the opener
   });
+
+  it('tells the player about storage problems and offers a waiting update', async () => {
+    const user = userEvent.setup();
+    const services = await makeServices();
+    const applyUpdate = vi.fn().mockResolvedValue(undefined);
+    services.applyUpdate = applyUpdate;
+    services.notices.setState((n) => ({
+      ...n,
+      updateAvailable: true,
+      storageWarning: 'Progress can’t be kept on this device (private browsing).',
+    }));
+    await renderWithServices(<TitleScreen onPlay={vi.fn()} onSettings={vi.fn()} />, services);
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(/private browsing/);
+    expect(status).toHaveTextContent('A new version of the game is ready.');
+    await user.click(screen.getByRole('button', { name: 'Update now' }));
+    expect(applyUpdate).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('Profiles', () => {
