@@ -16,10 +16,10 @@ An honest inventory of what is **not** done in this vertical slice: what it is, 
 | Item | Why | Impact | Next step |
 |---|---|---|---|
 | **WebKit / iOS & iPadOS Safari** | Only Chromium was installed and tested (desktop, Pixel 7 phone and 820×1180 tablet emulation). | iPhone/iPad are likely targets for families; unknown issues (audio unlock, IndexedDB eviction, canvas sizing) are possible. | Add a `desktop-webkit` project to `playwright.config.ts`, `npx playwright install webkit`, run smoke + chapter specs; test on a real iPad. Registry: `e2e-webkit-safari`. |
-| **60 fps on real phones** | Frame rate was measured at 38 fps walking in the market in headless Chromium with *software* rendering (no GPU); the world switches to simpler effects automatically if it runs slowly. | Real devices with GPUs should do better, but it is unmeasured. | Measure on a mid-range Android phone and an older iPad; see [performance.md](performance.md). |
+| **60 fps on real phones** | Frame rate was measured at 34–40 fps walking in the market in headless Chromium with *software* rendering (no GPU); the world switches to simpler effects automatically if it runs slowly. | Real devices with GPUs should do better, but it is unmeasured. | Measure on a mid-range Android phone and an older iPad; see [performance.md](performance.md). |
 | **Assistive-technology testing with people** | Automated axe checks (jsdom + real browser, WCAG 2.2 AA tags incl. contrast) and keyboard/touch E2E pass; no NVDA/JAWS/VoiceOver/TalkBack sessions or testers with disabilities yet. | Automated checks catch perhaps a third of real barriers. | Screen-reader walkthrough of the whole chapter; a small test with young players, including dyslexic readers. |
 | **Physical gamepad** | The standard-mapping gamepad source and menu navigation are unit-tested with a simulated `navigator.getGamepads`, but were not tried with a real controller. | Probably works; unverified on hardware. | Try an Xbox/PlayStation controller in Chrome and Safari. |
-| **Slow networks** | Offline-after-first-visit is verified; first load over slow 3G is not measured. | The first chapter start downloads ≈363 KB gzip (Phaser + content). | Throttled Playwright run; consider a loading progress bar. |
+| **Slow networks** | Offline-after-first-visit is verified; first load over slow 3G is not measured. | The first chapter start downloads ≈377 KB gzip (Phaser + content). | Throttled Playwright run; consider a loading progress bar. |
 
 ## Deliberately out of scope for the vertical slice
 

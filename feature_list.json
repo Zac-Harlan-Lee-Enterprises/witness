@@ -227,9 +227,18 @@
   {
     "id": "world-art-and-lighting",
     "category": "visual",
-    "description": "Painted art rules (props sit on hills, canopy/prop tiles), time-of-day lighting as one multiply layer, and the automatic-quality decision.",
+    "description": "Art direction per place (palette, materials, light, height, shadows, density), painted-site rules, people (noticing, blinking, talking, poses), camera framing and look-ahead, crowds, time-of-day light and the automatic-quality decision.",
     "verification": "npx --no-install vitest run --project unit tests/unit/game",
     "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "sound-design",
+    "category": "functional",
+    "description": "Each place sounds different (market voices and clinks, hearth crackle, gusts, birdsong and water), moments have distinct sounds (a bell for clues), music plays modal phrases; the synth runs against a fake WebAudio context and captions what is audible.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/infrastructure/audio.test.ts",
+    "priority": 4,
     "hermetic": true,
     "passes": true
   },

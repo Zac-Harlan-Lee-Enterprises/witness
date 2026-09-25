@@ -29,7 +29,13 @@ import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
 import { departed } from '../systems/life';
-import { INITIAL_QUALITY, lightMatters, stepQuality, type QualityState } from '../systems/quality';
+import {
+  INITIAL_QUALITY,
+  lightMatters,
+  restartWarmup,
+  stepQuality,
+  type QualityState,
+} from '../systems/quality';
 import { Actors, ensureCharacterTexture } from './actors';
 import { AmbientLife } from './ambient';
 import { Feedback } from './feedback';
@@ -174,6 +180,7 @@ export class WorldScene extends Phaser.Scene {
     this.pathTarget = null;
     this.lookAhead = { x: 0, y: 0 };
     this.cameraCentre = null;
+    this.quality = restartWarmup(this.quality);
 
     this.feedback.build(model);
     this.buildLight();

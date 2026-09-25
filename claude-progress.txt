@@ -75,3 +75,29 @@ BLOCKED: Human-only (unchanged): review + commit the guarded files with a SECURI
          Proposed guarded change, NOT applied (needs the owner): in .github/workflows/deploy-pages.yml
          use `VITE_BASE_PATH: ${{ vars.PAGES_BASE_PATH || format('/{0}/', github.event.repository.name) }}`
          so a user/organisation site or custom domain can deploy at `/`.
+
+--- 2026-09-25  Claude Opus 5.5 — art direction and presentation overhaul ---
+DONE   : Owner asked for a dramatic, art-directed upgrade of graphics, atmosphere and feel.
+         Baseline first: 5-variant screenshot tour (new e2e/visual-tour.spec.ts, E2E_SHOTS=1),
+         39.0 fps market walk, 146.3/363.3 KB gzip. Audit: flat beige values, no building
+         height, shared materials, empty maps, stiff people, staging contradicting text.
+         Implemented "sunlit field sketchbook" (ADR-0013): Look per mood (home/city/wilderness/
+         oasis); new painter (terrain, architecture with rising fronts, nature, furnishings,
+         one shadow mask, interior light); maps set-dressed with 15 decor tile kinds (all story
+         positions kept, reachability validated; house +1 wall row with nearestOpen save
+         safety); people with carried items, blink/talk frames, sit/lie poses, turning to face
+         you; passers-by, pigeons, hawk shadow, swaying palms, hearth flicker, window dust;
+         camera framing/look-ahead/conversation framing; focus ring + verb symbol, clue glints,
+         exit chevrons, discovery flourishes (WorldPort.setConversation/emphasize); UI: icon set,
+         HUD emblems, dialogue nameplate/portraits/choice cards, title + chapter illustration,
+         summary timeline, drawn item icons; soundscape (per-place layers, distinct cues,
+         modal phrases). Fixed along the way: people leaving a scene, phone prompt over d-pad,
+         scene-load hitches counted as slowness.
+TESTS  : Vitest 277 → 304 (32 files). Playwright 23 passed + 1 intentional skip (all projects).
+         Frame rate like-for-like (worktree of 2256d22): before 35.2–39.0, after 33.6–40.3 fps
+         full effects (same range; not an improvement). Bundle 152.6 KB initial / 377.1 KB lazy.
+NEXT   : Review the screenshot tour on real devices (iPad Safari, a mid-range Android phone):
+         `E2E_SHOTS=1 npx playwright test e2e/visual-tour.spec.ts --project=desktop-chromium`
+         for the reference set, then measure fps on hardware (docs/performance.md §5).
+BLOCKED: Unchanged — guarded files await the owner's own commit with a SECURITY-REVIEW trailer
+         (the agent may not add it); translations.ts must be committed for clean checkouts.

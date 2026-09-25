@@ -20,7 +20,7 @@ The player carries a fever remedy from Jerusalem down the dangerous road to Jeri
 | Educational content | 50 content records: 10 Scripture references, 3 paraphrases, 12 historical, 1 reconstruction, 5 interpretation, 19 fiction. 33 cited sources. **0 human-approved.** |
 | Endings | Every branch completes. The remedy is delivered before nightfall, by lamplight, or at dawn, depending on choices and what was packed. |
 | Platform | Static PWA with no backend. Progress lives in the browser's IndexedDB. Works offline after one visit. |
-| Size | 146 KB gzip initial download. Phaser and the chapter load lazily (≈363 KB gzip) when a game starts. |
+| Size | 153 KB gzip initial download. Phaser and the chapter load lazily (≈377 KB gzip) when a game starts. |
 
 ## What was built
 
@@ -70,14 +70,14 @@ Data flows **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 
 | Claim | Evidence |
 |---|---|
-| The engine, content and UI behave as designed | **277 Vitest tests passing in 29 files**: unit, integration, content, architecture and React UI (jsdom + axe-core) |
+| The engine, content and UI behave as designed | **304 Vitest tests passing in 32 files**: unit, integration, content, architecture and React UI (jsdom + axe-core) |
 | Every major branch can be completed | Four complete headless playthroughs through the real application layer: caravan help with an on-time delivery; hurrying past and telling the innkeeper; tending and walking, arriving after dark, resting, and a dawn delivery; leaving supplies and sending help ([`playthrough.test.ts`](../tests/integration/playthrough.test.ts)) |
 | It works in a real browser, on three form factors | **23 Playwright tests passing, 1 intentionally skipped** (keyboard-only play on the phone profile), across desktop Chromium, mobile Chromium (Pixel 7), tablet Chromium (820×1180) and the development server |
 | The full chapter can be played in a browser, with save and restore | [`e2e/chapter.spec.ts`](../e2e/chapter.spec.ts): new profile → quest → item → puzzle → choice and consequence → **save → reload → restore** → continue → complete → summary → Scripture references |
 | Accessibility basics | axe-core WCAG 2.2 AA scans (including colour contrast and high-contrast mode) in jsdom and in a real browser. Keyboard-only and touch E2E tests. |
 | Offline play | After one visit, the app relaunches with no network and starts a chapter from the precache (Chromium) |
-| Bundle size | 146 KB gzip initial. Phaser and the chapter are lazy-loaded (≈363 KB gzip). |
-| Frame rate | **38 fps walking in the market under headless software rendering** (no GPU), with automatic simpler effects on slow devices. 60 fps on real devices has **not yet been confirmed**. |
+| Bundle size | 153 KB gzip initial. Phaser and the chapter are lazy-loaded (≈377 KB gzip). |
+| Frame rate | **34–40 fps walking in the market under headless software rendering** (no GPU), with automatic simpler effects on slow devices. 60 fps on real devices has **not yet been confirmed**. |
 | Content integrity rules | Content tests: schema and integrity; every character fictional; no Jesus character; no scoring language; no motive given for the priest or Levite; nothing self-approved; only retrieved sources cited |
 | Feature registry | **24 of 28 entries passing.** Open: WebKit E2E, translation approval, editorial approval, GitHub branch protection. |
 

@@ -12,15 +12,15 @@ From `npm run perf:bundle` ([`scripts/report-bundle.mjs`](../scripts/report-bund
 
 | Asset | Raw | Gzip | Loaded |
 |---|---:|---:|---|
-| `index-*.js`: React UI, application and domain code, Zod | 472.2 KB | 140.6 KB | initial |
-| `index-*.css` | 22.5 KB | 5.5 KB | initial |
-| **Initial JS + CSS** | **494.8 KB** | **146.1 KB** | first visit |
-| `mount-world-*.js`: **Phaser 3 world engine** and the procedural art | 1,216.0 KB | **324.5 KB** | lazy, when a chapter starts |
-| `road-to-jericho-*.js`: **Chapter 1 content** | 119.3 KB | **36.0 KB** | lazy, when the chapter starts |
+| `index-*.js`: React UI, application and domain code, Zod | 488.9 KB | 145.8 KB | initial |
+| `index-*.css` | 28.9 KB | 6.7 KB | initial |
+| **Initial JS + CSS** | **517.8 KB** | **152.6 KB** | first visit |
+| `mount-world-*.js`: **Phaser 3 world engine** and the procedural art | 1,258.8 KB | **338.0 KB** | lazy, when a chapter starts |
+| `road-to-jericho-*.js`: **Chapter 1 content** | 119.7 KB | **36.3 KB** | lazy, when the chapter starts |
 | `workbox-window` + `virtual_pwa-register` | 6.8 KB | 2.8 KB | lazy, after start-up |
-| **Lazy total** | | **363.3 KB** | |
+| **Lazy total** | | **377.1 KB** | |
 
-**The whole deployable site is ≈ 2.5 MB** (2,542.6 KB) excluding source maps. By category:
+**The whole deployable site is ≈ 2.6 MB** (2,608.9 KB) excluding source maps. By category:
 
 | Category | Size (raw) | Share |
 |---|---:|---:|
@@ -41,10 +41,12 @@ The Phaser engine is the largest single item. Fonts are about a quarter of the s
 
 | Metric | Result | Conditions |
 |---|---|---|
-| **Frame rate, walking in the market** | **38.3 fps** (full effects) | `requestAnimationFrame` callbacks counted over 3 s while holding → in the market (the largest busy scene, with drifting dust and several people), in **headless Chromium with software rendering (no GPU)**, production build served by `vite preview` |
+| **Frame rate, walking in the market** | **33.6–40.3 fps** with full effects (six runs, 2026-09-25) | `requestAnimationFrame` callbacks counted over 3 s while holding → in the market (the largest busy scene, with drifting dust and several people), in **headless Chromium with software rendering (no GPU)**, production build served by `vite preview` |
 | **DOMContentLoaded** | **60–86 ms** | Same runs, `localhost`, so no network latency |
 
-**What changed with the art upgrade (same conditions).** The first version of the new lighting used two full-screen layers (a colour grade and a vignette) and measured **28.8 fps**; hiding both gave **51.6 fps**. Merging them into one multiply layer, redrawn only when the time of day changes, gave **38.3 fps**. Full-screen blending is costly without a GPU and cheap with one.
+**The art-direction overhaul ([ADR-0013](adr/0013-art-direction-system.md)), measured like for like.** The pre-overhaul build (commit `2256d22`, run from a worktree) measured 35.2–39.0 fps with full effects; the new build — painted places, passers-by, pigeons, swaying palms, a closer camera — measured 33.6–40.3 fps. That is the same range within run-to-run noise, not a measured improvement. In some runs *both* builds switched to simpler effects, because headless software rendering hovers around the 34 fps threshold; the new build no longer counts the one-off hitch of loading a scene toward that switch (`restartWarmup` in [`quality.ts`](../src/game/systems/quality.ts)). Download size grew by 6.5 KB gzip initially (icon set, title illustration, styles) and by 13.8 KB gzip lazily (the new painters).
+
+**What changed with the first lighting pass (same conditions).** The first version of the new lighting used two full-screen layers (a colour grade and a vignette) and measured **28.8 fps**; hiding both gave **51.6 fps**. Merging them into one multiply layer, redrawn only when the time of day changes, gave **38.3 fps**. Full-screen blending is costly without a GPU and cheap with one.
 
 **Automatic quality.** If the world runs below 34 fps for two 2-second samples in a row (after a 3-second warm-up), it switches to simpler effects for the rest of the session: no drifting dust, birds or water glints, and the light layer only when the light means something (sunset, dusk, night). It logs a warning (shown in *Copy diagnostics*) and marks the canvas `data-effects="reduced"`. The second test in [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) slows the CPU 8× through the DevTools Protocol and checks that the switch happens. The decision is a pure function, [`src/game/systems/quality.ts`](../src/game/systems/quality.ts), with unit tests.
 
@@ -84,7 +86,7 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 ## 5. Not measured yet
 
 - **60 fps on typical phones has NOT been measured on real devices.** The only figures are from headless, software-rendered Chromium (above). Real devices have GPUs and may do better, but that is an expectation, not a measurement.
-- **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈363 KB gzip of lazy chunks unless the service worker has already cached them.
+- **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈377 KB gzip of lazy chunks unless the service worker has already cached them.
 - Memory use (the largest ground texture is about 24 MB at 2×), battery drain, real low-end devices, WebKit/Safari, and Lighthouse scores. CPU throttling is used only to check that automatic quality switches on.
 
 ## 6. Next steps

@@ -47,6 +47,15 @@ export function stepQuality(s: QualityState, deltaMs: number): QualityState {
   };
 }
 
+/**
+ * A new scene is being painted and uploaded: that one-off hitch isn't the
+ * device being slow, so start measuring again after a fresh warm-up.
+ * (Once low-power, stay low-power.)
+ */
+export function restartWarmup(s: QualityState): QualityState {
+  return s.lowPower ? s : INITIAL_QUALITY;
+}
+
 /** Whether the light layer is worth drawing in low-power mode (strong light carries meaning). */
 export function lightMatters(alpha: number): boolean {
   return alpha >= 0.2;

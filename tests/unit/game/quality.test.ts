@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { INITIAL_QUALITY, lightMatters, QUALITY, stepQuality } from '@/game/systems/quality';
+import {
+  INITIAL_QUALITY,
+  lightMatters,
+  QUALITY,
+  restartWarmup,
+  stepQuality,
+} from '@/game/systems/quality';
 
 function run(fps: number, seconds: number) {
   let s = INITIAL_QUALITY;
@@ -25,5 +31,15 @@ describe('automatic quality', () => {
   it('keeps night, dusk and sunset light even in low-power mode', () => {
     expect(lightMatters(0.52)).toBe(true);
     expect(lightMatters(0.04)).toBe(false);
+  });
+
+  it('does not count the hitch of loading a new scene, but never undoes low-power mode', () => {
+    let s = run(58, 6);
+    s = { ...s, strikes: 1 };
+    const fresh = restartWarmup(s);
+    expect(fresh.strikes).toBe(0);
+    expect(fresh.elapsedMs).toBe(0);
+    const low = { ...INITIAL_QUALITY, lowPower: true };
+    expect(restartWarmup(low)).toBe(low);
   });
 });
