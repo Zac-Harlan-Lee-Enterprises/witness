@@ -34,7 +34,7 @@ export async function continueDialogue(page: Page): Promise<void> {
   for (let i = 0; i < 40; i++) {
     const box = dialogueBox(page);
     if ((await box.count()) === 0) return;
-    const next = box.getByRole('button', { name: /^(Continue|End conversation)$/ });
+    const next = box.getByRole('button', { name: /^(Continue|End conversation|Show all text)$/ });
     if (await next.isVisible().catch(() => false)) {
       await next.click();
       continue;

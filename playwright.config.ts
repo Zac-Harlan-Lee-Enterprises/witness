@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+const PORT = Number(process.env.WITNESS_PREVIEW_PORT ?? 4391);
+const DEV_PORT = Number(process.env.WITNESS_DEV_PORT ?? 5391);
 
 /**
  * E2E runs against the PRODUCTION build (vite preview) so the service worker,
@@ -20,6 +21,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
+    {
+      name: 'dev-server-chromium',
+      use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${DEV_PORT}` },
+      testMatch: /world\.spec\.ts/,
+    },
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
     {
       name: 'mobile-chromium',
@@ -32,10 +38,19 @@ export default defineConfig({
       testMatch: /(smoke|mobile)\.spec\.ts/,
     },
   ],
-  webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 240_000,
-  },
+  webServer: [
+    {
+      command: 'npm run build && npx vite preview',
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+    },
+    {
+      // Development server (React StrictMode) for dev-only regressions.
+      command: 'npx vite',
+      url: `http://localhost:${DEV_PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

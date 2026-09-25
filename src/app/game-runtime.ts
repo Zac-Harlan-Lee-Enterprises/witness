@@ -11,7 +11,14 @@ import type { PlayerProfile } from '@/domain/profile';
 import type { SaveGame, SaveSlot } from '@/domain/save';
 import { prefersReducedMotionSetting } from '@/features/game/motion';
 import { TypedEventBus } from '@/shared/event-bus';
+import type { mountWorld as mountWorldFn } from '@/game/phaser/mount-world';
 import type { AppServices } from './services';
+
+export type WorldLoader = () => Promise<typeof mountWorldFn>;
+
+/** Default loader: Phaser and the world scene download only when a chapter starts. */
+const loadPhaserWorld: WorldLoader = () =>
+  import('@/game/phaser/mount-world').then((m) => m.mountWorld);
 
 /**
  * Everything that lives for exactly one chapter run: the session, its
@@ -28,6 +35,7 @@ export class GameRuntime {
   readonly autosaver: Autosaver;
   private disposed = false;
   private unmountWorld: (() => void) | null = null;
+  private mountGeneration = 0;
 
   constructor(
     readonly services: AppServices,
@@ -84,25 +92,45 @@ export class GameRuntime {
     }
   }
 
-  /** Lazy-load Phaser and attach the world to a DOM element. */
-  async mountWorld(parent: HTMLElement): Promise<void> {
-    const { mountWorld } = await import('@/game/phaser/mount-world');
-    if (this.disposed) return;
-    const port = await mountWorld({
+  /**
+   * Lazy-load Phaser and attach the world to a DOM element.
+   *
+   * Only the most recent mount ever survives. React (StrictMode in
+   * development, or a fast remount) can mount → unmount → mount before the
+   * first engine has finished loading; without this guard two Phaser
+   * canvases end up stacked and the visible one is frozen. See
+   * tests/ui/game-runtime.test.tsx.
+   */
+  async mountWorld(parent: HTMLElement, loadWorld: WorldLoader = loadPhaserWorld): Promise<void> {
+    const generation = ++this.mountGeneration;
+    this.unmountWorld?.();
+    const isStale = (): boolean => this.disposed || generation !== this.mountGeneration;
+    const mount = await loadWorld();
+    if (isStale()) return;
+    const port = await mount({
       parent,
       input: this.services.input,
       onEvent: this.controller.handleWorldEvent,
       logger: this.services.logger,
     });
-    if (this.disposed) {
+    if (isStale()) {
       port.destroy();
       return;
     }
-    this.unmountWorld = () => {
+    const unmount = (): void => {
+      if (this.unmountWorld !== unmount) return;
+      this.unmountWorld = null;
       this.controller.detachWorld();
       port.destroy();
     };
+    this.unmountWorld = unmount;
     await this.controller.attachWorld(port);
+  }
+
+  /** Tear down the world (and cancel any mount still loading). */
+  releaseWorld(): void {
+    this.mountGeneration++;
+    this.unmountWorld?.();
   }
 
   async saveTo(slot: SaveSlot): Promise<boolean> {

@@ -18,5 +18,7 @@ export interface GameRuntimeLike {
   controller: GameController;
   autosaver: { flush(): void };
   mountWorld(parent: HTMLElement): Promise<void>;
+  /** Tear the world down (called when the viewport unmounts). */
+  releaseWorld(): void;
   saveTo(slot: SaveSlot): Promise<boolean>;
 }

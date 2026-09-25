@@ -25,6 +25,9 @@ export function GameViewport({ runtime }: { runtime: GameRuntimeLike }) {
       });
     return () => {
       alive = false;
+      // Essential: without this, a remount (e.g. React StrictMode in development)
+      // leaves a second, frozen canvas on screen.
+      runtime.releaseWorld();
     };
   }, [runtime]);
 

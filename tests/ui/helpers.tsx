@@ -56,6 +56,7 @@ export async function makeRuntime(): Promise<{ runtime: GameRuntimeLike; harness
     controller: harness.controller,
     autosaver: { flush: () => undefined },
     mountWorld: async () => undefined,
+    releaseWorld: () => undefined,
     saveTo: async () => true,
   };
   return { runtime, harness };
