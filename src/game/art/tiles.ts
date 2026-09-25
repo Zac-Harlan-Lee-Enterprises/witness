@@ -88,7 +88,7 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set([
 ]);
 const TALL: ReadonlySet<TileKind> = new Set(['wall', 'roof', 'cliff', 'hill']);
 
-/** Which ground material spreads over which at a boundary (higher wins). */
+/** Which ground material spreads over which at a boundary (higher wins). Rugs keep crisp edges. */
 const SPREAD: Partial<Record<TileKind, number>> = {
   scrub: 6,
   sand: 5,
@@ -98,7 +98,6 @@ const SPREAD: Partial<Record<TileKind, number>> = {
   paving: 2,
   steps: 2,
   floor: 1,
-  rug: 0,
 };
 
 const GROUND_COLOR: Partial<Record<TileKind, string>> = {
