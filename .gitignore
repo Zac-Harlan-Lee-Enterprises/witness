@@ -1,0 +1,38 @@
+# Local-only secrets — NEVER commit.
+.env
+.env.*
+!.env.example
+
+# Credentials
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+.aws/
+.azure/
+
+# Runtime artifacts (init.sh)
+.logs/
+.pids/
+
+# Dependencies / build output
+node_modules/
+dist/
+dev-dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+.vite/
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+
+# Harness scratch output
+.content-validation.log
+.sweep-*.log
+dist-subpath/

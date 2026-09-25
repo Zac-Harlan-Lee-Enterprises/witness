@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Witness">
+  <rect width="512" height="512" rx="96" fill="#6b3f22"/>
+  <circle cx="352" cy="170" r="62" fill="#e9b949"/>
+  <path d="M0 330 Q 120 250 250 300 T 512 280 V512 H0 Z" fill="#c9a877"/>
+  <path d="M0 380 Q 160 320 300 360 T 512 350 V512 H0 Z" fill="#a9825a"/>
+  <path d="M120 512 C 190 440, 250 430, 290 390 S 380 330, 470 336" stroke="#f3e4c2" stroke-width="30" fill="none" stroke-linecap="round"/>
+</svg>
