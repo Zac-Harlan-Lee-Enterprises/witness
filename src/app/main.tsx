@@ -1,3 +1,4 @@
+import './zod-config';
 import '@fontsource/alegreya/latin-400.css';
 import '@fontsource/alegreya/latin-700.css';
 import '@fontsource/atkinson-hyperlegible/latin-400.css';

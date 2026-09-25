@@ -143,7 +143,7 @@ Sensitive paths are listed in one place, `SENSITIVE_PATH_PATTERNS` in [`scripts/
 | R6 | **Review `AccessibilityFeatureEnabled` and per-device consent** before connecting any analytics provider (§4). | |
 | R7 | **Legal review for children's privacy laws — needs counsel.** | The game targets ages 10+ and may be used in schools and families in several countries. Questions to put to a qualified lawyer, **not answered here**: which children's-privacy and data-protection laws apply in the target countries; whether local-only storage of a nickname and reflections counts as "collection" under them; how consent should work (including a child switching on analytics) if a provider is ever connected; what school or district agreements may require; and what the privacy notice must say. The in-game About dialog has a short privacy summary, but **there is no formal privacy notice yet**. |
 
-**Suggested CSP starting point (R1, untested):**
+**Suggested CSP starting point (R1).** Tested in a browser: [`e2e/csp.spec.ts`](../e2e/csp.spec.ts) plays the opening under exactly this policy (as a response header) and fails on any violation report. Still try it in Report-Only mode on the real host first.
 
 ```
 default-src 'self';
@@ -166,7 +166,7 @@ Why each part:
 - **`script-src 'self'`:** the production `index.html` has no inline scripts, because the PWA register is `injectRegister: false` and is imported as a module.
 - **`img-src data: blob:`:** a check of the built Phaser chunk found `data:image/…` URIs and `URL.createObjectURL` calls.
 - **`style-src 'self'`:** React `style` props and `--text-scale` are applied through the CSSOM, which CSP does not block. Confirm this in Report-Only mode.
-- **Zod 4 probe:** at startup, Zod 4 tries `new Function("")` to decide whether to JIT-compile parsers. Without `'unsafe-eval'` it falls back to normal parsing, which works, but the probe **will show up as a violation report**. To avoid that, call `z.config({ jitless: true })` at startup (not done yet: that is a code change).
+- **Zod 4 probe:** Zod 4 would try `new Function("")` to decide whether to JIT-compile parsers, which shows up as a `script-src` violation. [`src/app/zod-config.ts`](../src/app/zod-config.ts) sets `z.config({ jitless: true })` before anything else runs, so it never tries (the CSP test fails without it).
 - **Where to set it:**
   - `frame-ancestors` works only as an HTTP header, not in a `<meta>` tag.
   - **GitHub Pages can't set custom headers.** There you can only use a `<meta http-equiv="Content-Security-Policy">` tag, without `frame-ancestors`.
