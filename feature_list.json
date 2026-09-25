@@ -1,0 +1,254 @@
+[
+  {
+    "id": "harness-bootstrap",
+    "category": "quality",
+    "description": "bash init.sh installs what's missing, installs git hooks, validates content, starts the Vite dev server and waits for a real 200 serving the app shell.",
+    "verification": "bash init.sh >/dev/null && curl -fsS http://localhost:5173/ | grep -q 'id=\"root\"'",
+    "priority": 1,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "architecture-rules",
+    "category": "quality",
+    "description": "Executable layer rules: domain/application/content/infrastructure/game/features boundaries; Phaser only in src/game; IndexedDB only in persistence; React only in UI; Phaser and chapters lazy; no network, eval, any or console.log.",
+    "verification": "npx --no-install vitest run --project unit tests/architecture",
+    "priority": 1,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "guardrails-block",
+    "category": "quality",
+    "description": "The PreToolUse guard blocks destructive/deploy commands and allows routine work — verified by its two-directional self-test (never an inline probe).",
+    "verification": "bash scripts/hooks/guard-destructive-commands.sh --self-test",
+    "priority": 1,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "strict-typescript",
+    "category": "quality",
+    "description": "Strict TypeScript (noUncheckedIndexedAccess, no implicit any) type-checks cleanly.",
+    "verification": "npm run --silent typecheck",
+    "priority": 1,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "lint-and-format",
+    "category": "quality",
+    "description": "ESLint (typescript-eslint strict, react-hooks, jsx-a11y strict) with zero warnings, and Prettier formatting.",
+    "verification": "npm run --silent lint && npm run --silent format:check",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "content-validation",
+    "category": "functional",
+    "description": "Road to Jericho content passes Zod schemas, referential integrity, reachability from every spawn, and governance rules (no embedded verse text, cited history, labelled paraphrase).",
+    "verification": "npm run --silent content:validate && npx --no-install vitest run --project unit tests/content",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "declarative-conditions-effects",
+    "category": "functional",
+    "description": "Content predicates and effects are declarative data evaluated by pure, tested functions (no executable code in content).",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/conditions.test.ts tests/unit/domain/effects.test.ts tests/unit/domain/inventory.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "quest-engine",
+    "category": "functional",
+    "description": "Deterministic quest engine: stages, objectives, optional objectives, prerequisites, outcomes with rewards, alternate/fail outcomes, journal hooks.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/quests.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "dialogue-engine",
+    "category": "functional",
+    "description": "Branching dialogue: conditional entries, hidden and visibly-unavailable choices with reasons, once-only choices, conditional branches, history, graceful missing-node handling.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/dialogue.test.ts tests/unit/application/session-controllers.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "four-puzzle-types",
+    "category": "functional",
+    "description": "Packing (resource allocation), measuring (environmental logic), deduction (evidence-backed route choice) and sequence (ordering evidence + an explicitly uncertain conclusion), with tiered hints.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/puzzles.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "save-migrations",
+    "category": "functional",
+    "description": "Versioned saves with step-by-step migrations, tested against v1 fixtures, corrupt data, tampered data and future versions.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/save-migrations.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "content-governance-model",
+    "category": "functional",
+    "description": "Content records carry kind, sources, confidence, sensitivity, review status and version history; AI drafts cannot skip steps to approval; approval needs a named human.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/governance.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "chapter-playthroughs",
+    "category": "functional",
+    "description": "Headless playthroughs of every major branch (caravan help, walk + night + dawn delivery, send help, hurry past) complete the chapter through the real application layer.",
+    "verification": "npx --no-install vitest run --project unit tests/integration",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "local-first-persistence",
+    "category": "functional",
+    "description": "IndexedDB repositories for profiles, saves (indexed per profile) and settings; memory fallback; autosave debouncing; profile deletion removes its saves.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/infrastructure/persistence.test.ts tests/unit/application/services.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "scripture-placeholder-default",
+    "category": "functional",
+    "description": "No Bible text displays unless a public-domain/licensed translation is approved; the exact placeholder shows otherwise. WEB Luke 10:25-37 is stored but disabled.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/infrastructure/scripture.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "react-ui-accessible",
+    "category": "quality",
+    "description": "React UI tests (menus, profiles, settings incl. key remapping, journal tabs, quest log, dialogue, puzzles, Scripture Connection, summary) with axe-core checks.",
+    "verification": "npm run --silent test:ui",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "no-dead-code",
+    "category": "quality",
+    "description": "knip finds no unused files, exports or dependencies (domain-model types are marked @public).",
+    "verification": "npx --no-install knip --no-progress",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "production-build",
+    "category": "functional",
+    "description": "Production build with PWA manifest and service worker; Phaser and chapter content split into lazy chunks.",
+    "verification": "npx --no-install vite build >/dev/null && test -f dist/sw.js && test -f dist/manifest.webmanifest && ls dist/assets | grep -q '^mount-world' && ls dist/assets | grep -q '^road-to-jericho'",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "subpath-deployment",
+    "category": "functional",
+    "description": "Builds for a repository sub-path (GitHub Pages): assets, icons, manifest scope and service-worker fallback all use the base path.",
+    "verification": "VITE_BASE_PATH=/witness/ npx --no-install vite build --outDir dist-subpath --emptyOutDir >/dev/null && grep -q '/witness/assets/' dist-subpath/index.html && grep -q '\"scope\":\"/witness/\"' dist-subpath/manifest.webmanifest && grep -q '/witness/index.html' dist-subpath/sw.js; rc=$?; rm -rf dist-subpath; exit $rc",
+    "priority": 4,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "e2e-full-chapter",
+    "category": "functional",
+    "description": "Browser E2E: create profile, start chapter, conversation, quest, item, puzzle, choice + consequence, save, reload, restore, continue, complete, summary, Scripture references.",
+    "verification": "npx --no-install playwright test e2e/chapter.spec.ts --project=desktop-chromium",
+    "priority": 4,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "e2e-devices-and-saves",
+    "category": "functional",
+    "description": "Smoke on desktop, phone and tablet viewports; manifest; keyboard-only play; touch controls; legacy v1 save restore + corrupt-save handling via the UI.",
+    "verification": "npx --no-install playwright test e2e/smoke.spec.ts e2e/mobile.spec.ts e2e/saves.spec.ts",
+    "priority": 4,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "e2e-wcag-axe",
+    "category": "quality",
+    "description": "axe-core WCAG 2.2 AA scans in a real browser (incl. colour contrast and high-contrast mode) of title, settings, chapter select, dialogue, HUD, journal and quests.",
+    "verification": "npx --no-install playwright test e2e/a11y.spec.ts --project=desktop-chromium",
+    "priority": 4,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "pwa-offline",
+    "category": "functional",
+    "description": "After one visit, the installed app relaunches with no network and starts a chapter (Phaser + content from the precache).",
+    "verification": "npx --no-install playwright test e2e/pwa.spec.ts --project=desktop-chromium",
+    "priority": 4,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "perf-measured",
+    "category": "performance",
+    "description": "Frame rate is measured while the world runs (floor 20 fps under headless software rendering; ~51 fps measured). On-device 60 fps confirmation is a separate entry.",
+    "verification": "npx --no-install playwright test e2e/perf.spec.ts --project=desktop-chromium",
+    "priority": 5,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "e2e-webkit-safari",
+    "category": "quality",
+    "description": "Run the smoke and full-chapter E2E on WebKit (the iOS/iPadOS Safari engine). Needs a webkit project in playwright.config.ts and: npx playwright install webkit.",
+    "verification": "npx --no-install playwright test e2e/smoke.spec.ts e2e/chapter.spec.ts --project=desktop-webkit",
+    "priority": 6,
+    "hermetic": false,
+    "passes": false
+  },
+  {
+    "id": "scripture-translation-approved",
+    "category": "functional",
+    "description": "HUMAN: a named editor proofreads the stored WEB text of Luke 10:25-37 against ebible.org and sets approvedForDisplay: true (sensitive path; needs a SECURITY-REVIEW trailer).",
+    "verification": "npx --no-install tsx -e \"import { TRANSLATIONS } from './src/content/scripture/translations.ts'; process.exit(TRANSLATIONS.some((t) => t.approvedForDisplay) ? 0 : 1)\"",
+    "priority": 7,
+    "hermetic": true,
+    "passes": false
+  },
+  {
+    "id": "content-editorially-approved",
+    "category": "quality",
+    "description": "HUMAN: every educational record (Scripture, paraphrase, history, reconstruction, interpretation) is reviewed and approved by a named human, so strict publish mode passes.",
+    "verification": "npm run --silent content:publish-check",
+    "priority": 7,
+    "hermetic": true,
+    "passes": false
+  },
+  {
+    "id": "github-branch-protection",
+    "category": "quality",
+    "description": "HUMAN: after pushing to GitHub, apply server-side protection (REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo> for a solo maintainer) so main changes only via PRs with green CI.",
+    "verification": "gh api \"repos/$(git remote get-url origin | sed -E 's#.*github\\.com[:/]([^/]+/[^/.]+)(\\.git)?#\\1#')/branches/main/protection\" | jq -e '.enforce_admins.enabled == true'",
+    "priority": 7,
+    "hermetic": false,
+    "passes": false
+  }
+]

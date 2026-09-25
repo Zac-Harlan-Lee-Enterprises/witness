@@ -1,0 +1,45 @@
+claude-progress.txt — session continuity log (newest last)
+
+Format per session:
+--- YYYY-MM-DD  <model / session label> ---
+DONE   : <completed items>
+TESTS  : <counts before → after>
+NEXT   : <exact next action — file, function, or command>
+BLOCKED: <anything requiring human input, or "none">
+
+Compaction rule: past ~150 lines, summarise everything except the last two
+session blocks into a short "History" section.
+
+--- 2026-09-24  Claude Opus 5.5 (Claude Code) / initial build: harness + Road to Jericho vertical slice ---
+DONE   : Greenfield repo. Phase 1 foundation (Vite 8, React 19, Phaser 3.90 lazy, TS 6 strict,
+         ESLint/Prettier, Vitest 5 projects, Playwright, PWA). Phase 2 engine (typed event bus,
+         VirtualInput + keyboard/gamepad/touch, tile collision + BFS pathfinding, WorldPort adapter,
+         IndexedDB repos + memory fallback). Phase 3 narrative systems (declarative conditions/effects,
+         rules runner, quests, dialogue w/ branches, inventory, journal, clues, 4 puzzle types, choices,
+         content-governance model, save v1→v2 migrations). Phase 4 Chapter 1 content (4 scenes, 12
+         fictional characters, 2 quests, 4 puzzles, 50 content records, 33 retrieved sources; WEB
+         Luke 10:25-37 stored but DISABLED pending proofreading). Phase 5 quality (a11y features, axe
+         in jsdom + browser, mobile/tablet E2E, offline PWA E2E, perf measurement, knip). Phase 6
+         (README, AGENTS.md, docs/, ADRs, CI + manual main-only Pages deploy, harness scripts).
+         Harness: init.sh (+--stop), agent-status.sh, quality-sweep.sh, feature_list.json (24/28),
+         policy.sh, pre-commit/commit-msg/pre-push, guard hook (+ project probes), .claude/settings.json,
+         harden-github.sh (REQUIRED_REVIEWS env for solo maintainers), SECURITY.md.
+         Bugs found+fixed by tests: instant travel skipped story triggers; think-prompt needed state
+         triggers; locked chapter cards failed WCAG contrast; duplicate touch controls; sprite frame
+         bleed; strict content mode claimed but unimplemented; pre-push blocked first publication;
+         registry verification false-positive (grep matched a comment).
+         Sensitive paths created this session (.github/workflows/*, .claude/settings.json,
+         scripts/hooks/*, scripts/lib/policy.sh, src/content/scripture/translations.ts) were created
+         because the project owner's initial prompt explicitly requested CI, the AI harness and
+         Scripture-translation handling. The owner must review them before the root commit
+         (commit-msg requires a SECURITY-REVIEW trailer naming the reviewer).
+TESTS  : 0 → 198 Vitest (19 files) passing; 0 → 17 Playwright passing (+1 intentional skip) on
+         desktop-chromium, mobile-chromium (Pixel 7), tablet-chromium (820x1180).
+NEXT   : 1) Add a WebKit project to playwright.config.ts, `npx playwright install webkit`, run
+            `npx playwright test e2e/smoke.spec.ts e2e/chapter.spec.ts --project=desktop-webkit`,
+            fix issues, flip `e2e-webkit-safari` in feature_list.json.
+         2) Measure fps on a real phone/tablet (see docs/performance.md) and record it.
+BLOCKED: Human-only: proofread + enable the WEB translation (docs/content-governance.md §3);
+         editorial approval of 31 educational records (`npm run content:publish-check`);
+         review guarded files, make the root commit, push to GitHub, run
+         `REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>`.
