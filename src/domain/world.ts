@@ -68,7 +68,7 @@ export const EntitySchema = z.object({
   sprite: z.string().optional(),
   visibleWhen: ConditionSchema.optional(),
   solid: z.boolean().default(true),
-  /** What interacting does. Checked in order: dialogue, then effects. */
+  /** What interacting does: if `requires` holds, apply `effects`, then start `dialogue`. */
   interaction: z
     .object({
       verb: z.enum(['talk', 'examine', 'read', 'open', 'take', 'use', 'enter']),

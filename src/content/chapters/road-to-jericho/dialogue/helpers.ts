@@ -42,5 +42,9 @@ export const chose = (choice: string, option?: string): Condition =>
 export const not = (condition: Condition): Condition => ({ type: 'not', condition });
 export const all = (...of: Condition[]): Condition => ({ type: 'all', of });
 export const any = (...of: Condition[]): Condition => ({ type: 'any', of });
+/**
+ * @public Chapter-authoring helper. In a dialogue's `entries`, "met" means met
+ * before this conversation started.
+ */
 export const met = (character: string): Condition => ({ type: 'met', character });
 export const solved = (puzzle: string): Condition => ({ type: 'puzzleSolved', puzzle });

@@ -10,6 +10,7 @@ import {
 import { useSettings } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
+import { formatDiagnostics } from './diagnostics';
 
 /**
  * Settings: every option is a native, labelled form control. Changes apply
@@ -142,6 +143,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           onChange={(v) => update({ analyticsConsent: v })}
         />
       </section>
+
+      <Diagnostics />
 
       <div className="button-row">
         <button type="button" className="button" onClick={() => void service.reset()}>
@@ -309,5 +312,45 @@ function KeyBindings({
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** "Copy diagnostics" for bug reports; falls back to a selectable text box. */
+function Diagnostics() {
+  const { config, logger } = useServices();
+  const [status, setStatus] = useState<'idle' | 'copied' | 'manual'>('idle');
+  const text = () => formatDiagnostics(config, logger.entries(), navigator.userAgent);
+  const copy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text());
+      setStatus('copied');
+    } catch {
+      setStatus('manual');
+    }
+  };
+  return (
+    <section aria-labelledby="set-diagnostics">
+      <h3 id="set-diagnostics">Something not working?</h3>
+      <p className="hint">
+        Copy technical details to paste into a bug report: the game version, your browser and recent
+        error messages. They never include player names, reflections or journal text.
+      </p>
+      <button type="button" className="button" onClick={() => void copy()}>
+        Copy diagnostics
+      </button>
+      <p role="status" className="hint">
+        {status === 'copied' ? 'Copied.' : ''}
+      </p>
+      {status === 'manual' && (
+        <textarea
+          className="diagnostics"
+          aria-label="Diagnostics (select all and copy)"
+          readOnly
+          rows={6}
+          value={text()}
+          onFocus={(e) => e.currentTarget.select()}
+        />
+      )}
+    </section>
   );
 }

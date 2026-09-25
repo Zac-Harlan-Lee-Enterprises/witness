@@ -133,6 +133,24 @@ describe('Settings', () => {
     expect(screen.getByText(/never names, reflections or journal text/)).toBeInTheDocument();
   });
 
+  it('copies diagnostics for a bug report, or shows them to copy by hand', async () => {
+    const user = userEvent.setup();
+    const { services } = await renderWithServices(<SettingsPanel onClose={vi.fn()} />);
+    services.logger.error('Scene failed to load', new Error('boom'));
+    await user.click(screen.getByRole('button', { name: 'Copy diagnostics' }));
+    expect(await screen.findByText('Copied.')).toBeInTheDocument();
+    const copied = await navigator.clipboard.readText();
+    expect(copied).toContain(services.config.version);
+    expect(copied).toContain('ERROR Scene failed to load');
+
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValueOnce(new Error('denied'));
+    await user.click(screen.getByRole('button', { name: 'Copy diagnostics' }));
+    const box = await screen.findByLabelText<HTMLTextAreaElement>(
+      'Diagnostics (select all and copy)',
+    );
+    expect(box.value).toContain('Scene failed to load');
+  });
+
   it('applies text scale through a CSS variable', () => {
     const root = document.createElement('div');
     applySettingsToDocument({ ...DEFAULT_SETTINGS, textScale: 1.5 }, root);

@@ -1309,3 +1309,8 @@ legend {
     justify-self: end;
   }
 }
+.diagnostics {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}

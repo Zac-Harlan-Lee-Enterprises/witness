@@ -18,7 +18,7 @@ The game is an installable, offline-capable PWA. A service worker precaches the 
 
 - A running chapter never changes code under the player. The version in memory and the chunks it loads stay consistent until the player chooses to update.
 - A player who stays in a chapter keeps the running version for the whole session, and it stays usable offline. The in-app prompt never forces activation. Beyond that, the browser's standard service-worker lifecycle decides when a waiting worker activates by itself (once no page is still controlled by the old one).
-- `UiStore` has an `updateAvailable` field and a `setUpdateAvailable()` method intended for an in-game notice. Nothing calls them yet, so no in-game prompt exists. If one is added, it must still leave the swap to an explicit player action (after an autosave), which keeps this decision.
+- There is no in-game update notice; the prompt appears on the title screen. If one is added, it must still leave the swap to an explicit player action (after an autosave), which keeps this decision.
 - The e2e test [pwa.spec.ts](../../e2e/pwa.spec.ts) proves that a second launch works fully offline, including starting a chapter (Phaser and the chapter content come from the precache).
 
 ## Alternatives considered

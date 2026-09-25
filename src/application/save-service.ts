@@ -138,14 +138,4 @@ export class SaveService {
     }
     return { ok: true, save: result.save, fromVersion: result.fromVersion };
   }
-
-  /** Most recently written save for the profile, if any. */
-  async latest(profileId: string): Promise<SaveSummary | null> {
-    const { saves } = await this.list(profileId);
-    return [...saves].sort((a, b) => b.savedAt.localeCompare(a.savedAt))[0] ?? null;
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
-  }
 }

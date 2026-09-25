@@ -145,9 +145,6 @@ export class GameController {
       case 'focusChanged':
         this.updateFocus(event.entityId);
         break;
-      case 'interact':
-        this.interact(event.entityId);
-        break;
       case 'exitReached':
         this.useExit(event.exitId);
         break;

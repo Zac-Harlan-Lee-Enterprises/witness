@@ -60,7 +60,6 @@ export interface UiState {
   transitioning: boolean;
   fatalError: string | null;
   storageWarning: string | null;
-  updateAvailable: boolean;
 }
 
 export const INITIAL_UI_STATE: UiState = {
@@ -75,7 +74,6 @@ export const INITIAL_UI_STATE: UiState = {
   transitioning: false,
   fatalError: null,
   storageWarning: null,
-  updateAvailable: false,
 };
 
 const MAX_TOASTS = 4;
@@ -158,10 +156,6 @@ export class UiStore extends Store<UiState> {
 
   setStorageWarning(message: string | null): void {
     this.setState((s) => ({ ...s, storageWarning: message }));
-  }
-
-  setUpdateAvailable(updateAvailable: boolean): void {
-    this.setState((s) => ({ ...s, updateAvailable }));
   }
 
   reset(): void {

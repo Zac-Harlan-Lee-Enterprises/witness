@@ -1,7 +1,7 @@
 /**
  * Developer diagnostics. Messages go to the console in development and are
- * kept in a small ring buffer that the in-game "Copy diagnostics" button can
- * export — useful for bug reports without exposing internals to players.
+ * kept in a small ring buffer that Settings → "Copy diagnostics" exports for
+ * bug reports, without exposing internals to players.
  * Never log player free text (reflections, names) here.
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

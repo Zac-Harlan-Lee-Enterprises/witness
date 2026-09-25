@@ -1118,8 +1118,4 @@ The ports make the whole game run headless. [tests/support/harness.ts](../tests/
 
 These are facts about the current code, recorded so that nobody relies on behaviour that does not exist.
 
-- **State triggers are not re-checked when a scene finishes loading.** The re-check queued by `SceneEntered` runs as a microtask while `transitioning` is still `true` and returns early. State triggers are next evaluated on the following qualifying event (`ClueDiscovered`, `FlagChanged`, `ItemCollected`, `ItemRemoved`, `PuzzleCompleted`, `ChoiceRecorded`, `SceneEntered`).
-- The `interact` `WorldEvent` is handled but never emitted by the Phaser adapter.
-- The `EntitySchema` comment says an interaction is "checked in order: dialogue, then effects". `GameController.interact` actually dispatches `interaction.effects` first and then starts the dialogue.
-- `UiStore.updateAvailable` / `setUpdateAvailable`, `GameSession.requestSave()` and `VirtualInput.trigger()` exist but have no callers in `src/`. The update prompt is shown only on the title screen (see [ADR-0006](adr/0006-pwa-prompt-updates.md)).
-- The logger's comment mentions an in-game "Copy diagnostics" button. No such button exists yet, and `Logger.entries()` has no caller in `src/`.
+- The update prompt is shown only on the title screen (see [ADR-0006](adr/0006-pwa-prompt-updates.md)); a player mid-chapter learns about a new version when they next return to the title.

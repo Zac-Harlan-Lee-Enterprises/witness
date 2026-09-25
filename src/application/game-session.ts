@@ -168,10 +168,6 @@ export class GameSession {
     this.store.setState((s) => ({ ...s, playTimeMs: s.playTimeMs + ms }));
   }
 
-  requestSave(): void {
-    this.publish([{ type: 'SaveRequested', reason: 'manual' }]);
-  }
-
   /** Publish events emitted by application services that belong to this session. */
   publish(events: readonly DomainEvent[]): void {
     this.queue.push(...events);

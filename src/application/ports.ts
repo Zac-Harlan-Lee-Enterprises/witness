@@ -95,7 +95,6 @@ export interface WorldSceneModel {
 }
 
 export type WorldEvent =
-  | { type: 'interact'; entityId: string }
   | { type: 'exitReached'; exitId: string }
   | { type: 'tileEntered'; x: number; y: number }
   | { type: 'focusChanged'; entityId: string | null }
