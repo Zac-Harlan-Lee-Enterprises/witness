@@ -2,7 +2,7 @@
 
 This page lists **measured results only**. Anything not measured is labelled as such under [Not measured yet](#5-not-measured-yet).
 
-Sizes come from the build of 2026-09-24 (re-checked with `npm run perf:bundle`). The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
+Sizes come from the build of 2026-09-25 (`npm run perf:bundle`); the category breakdown and precache figures below are from 2026-09-24. The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
 
 ---
 
@@ -12,15 +12,15 @@ From `npm run perf:bundle` ([`scripts/report-bundle.mjs`](../scripts/report-bund
 
 | Asset | Raw | Gzip | Loaded |
 |---|---:|---:|---|
-| `index-*.js`: React UI, application and domain code, Zod | 464.7 KB | 138.2 KB | initial |
-| `index-*.css` | 20.6 KB | 5.0 KB | initial |
-| **Initial JS + CSS** | **485.3 KB** | **143.3 KB** | first visit |
-| `mount-world-*.js`: **Phaser 3 world engine** | 1,193.1 KB | **317.1 KB** | lazy, when a chapter starts |
-| `road-to-jericho-*.js`: **Chapter 1 content** | 119.0 KB | **35.9 KB** | lazy, when the chapter starts |
+| `index-*.js`: React UI, application and domain code, Zod | 472.2 KB | 140.6 KB | initial |
+| `index-*.css` | 22.5 KB | 5.5 KB | initial |
+| **Initial JS + CSS** | **494.8 KB** | **146.1 KB** | first visit |
+| `mount-world-*.js`: **Phaser 3 world engine** and the procedural art | 1,216.0 KB | **324.5 KB** | lazy, when a chapter starts |
+| `road-to-jericho-*.js`: **Chapter 1 content** | 119.3 KB | **36.0 KB** | lazy, when the chapter starts |
 | `workbox-window` + `virtual_pwa-register` | 6.8 KB | 2.8 KB | lazy, after start-up |
-| **Lazy total** | | **355.8 KB** | |
+| **Lazy total** | | **363.3 KB** | |
 
-**The whole deployable site is ≈ 2.5 MB** (2,510.0 KB) excluding source maps. By category:
+**The whole deployable site is ≈ 2.5 MB** (2,542.6 KB) excluding source maps. By category:
 
 | Category | Size (raw) | Share |
 |---|---:|---:|
@@ -84,7 +84,7 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 ## 5. Not measured yet
 
 - **60 fps on typical phones has NOT been measured on real devices.** The only figures are from headless, software-rendered Chromium (above). Real devices have GPUs and may do better, but that is an expectation, not a measurement.
-- **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈356 KB gzip of lazy chunks unless the service worker has already cached them.
+- **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈363 KB gzip of lazy chunks unless the service worker has already cached them.
 - Memory use (the largest ground texture is about 24 MB at 2×), battery drain, real low-end devices, WebKit/Safari, and Lighthouse scores. CPU throttling is used only to check that automatic quality switches on.
 
 ## 6. Next steps

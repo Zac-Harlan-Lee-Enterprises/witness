@@ -209,10 +209,55 @@
   {
     "id": "perf-measured",
     "category": "performance",
-    "description": "Frame rate is measured while the world runs (floor 20 fps under headless software rendering; ~51 fps measured). On-device 60 fps confirmation is a separate entry.",
+    "description": "Frame rate is measured while walking in the market (floor 20 fps under headless software rendering; 38 fps measured), and a CPU-throttled run checks that automatic simpler effects switch on. On-device 60 fps confirmation is a separate entry.",
     "verification": "npx --no-install playwright test e2e/perf.spec.ts --project=desktop-chromium",
     "priority": 5,
     "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "world-responds",
+    "category": "functional",
+    "description": "Exactly one world canvas; keyboard walking changes the picture and changing place redraws the world — on the production build AND the dev server (React StrictMode once left a frozen duplicate canvas).",
+    "verification": "npx --no-install playwright test e2e/world.spec.ts --project=desktop-chromium --project=dev-server-chromium",
+    "priority": 2,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "world-art-and-lighting",
+    "category": "visual",
+    "description": "Painted art rules (props sit on hills, canopy/prop tiles), time-of-day lighting as one multiply layer, and the automatic-quality decision.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/game",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "gamepad-play",
+    "category": "functional",
+    "description": "A gamepad can play the whole chapter: d-pad/stick moves focus in menus, dialogue and puzzles, A presses, B goes back, LB opens Go to (simulated pad).",
+    "verification": "npx --no-install vitest run --project ui tests/ui/gamepad.test.tsx",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "strict-csp",
+    "category": "quality",
+    "description": "The opening plays under the strict Content-Security-Policy recommended in docs/security-privacy.md with no violation reports (Zod runs jitless).",
+    "verification": "npx --no-install playwright test e2e/csp.spec.ts --project=desktop-chromium",
+    "priority": 4,
+    "hermetic": false,
+    "passes": true
+  },
+  {
+    "id": "contracts-events-and-repositories",
+    "category": "quality",
+    "description": "Domain events are built only where EVENT_OWNERS says; memory and IndexedDB repositories pass one shared contract.",
+    "verification": "npx --no-install vitest run --project unit tests/unit/domain/event-owners.test.ts tests/unit/infrastructure/repository-contract.test.ts",
+    "priority": 3,
+    "hermetic": true,
     "passes": true
   },
   {

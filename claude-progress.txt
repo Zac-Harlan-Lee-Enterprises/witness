@@ -43,3 +43,35 @@ BLOCKED: Human-only: proofread + enable the WEB translation (docs/content-govern
          editorial approval of 31 educational records (`npm run content:publish-check`);
          review guarded files, make the root commit, push to GitHub, run
          `REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>`.
+
+--- 2026-09-25  Claude Opus 5.5 — play feedback: keyboard, graphics, "screen never changed" ---
+DONE   : Owner played and reported: couldn't walk with the keyboard, very basic graphics, the
+         screen never changed between places; also port 5173 clashed with their budget app.
+         Root cause of walking/screen: React StrictMode (dev only) mounted two Phaser canvases and
+         left a frozen one on top; fixed with generation-guarded mounting + dev-server E2E project.
+         Ports moved to 5391 (dev) / 4391 (preview); init.sh never stops another app's process.
+         Art overhaul: 2x-resolution painted tiles without grid seams, raised hills with ledges,
+         buildings/trees/water, larger outlined characters with walk cycle, time-of-day lighting
+         (one multiply layer), lamp glow, ambient life, place banner + fade; per-tree canopies.
+         Automatic simpler effects on slow devices (tested under 8x CPU throttling).
+         Fixes: first-meeting dialogue entry (Menashe), ChapterStarted never reached analytics,
+         EVENT_OWNERS lists + source-scan test, SaveRestored version, chapter-scoped save ids
+         (legacy tidy-up), older-content note, Zod jitless + strict-CSP browser test, gamepad play
+         of menus/dialogue, a11y (200% text at 320px layout, in-game high contrast scan, one
+         dialogue live region, focus-scoped number keys, aria-keyshortcuts names, Recent messages,
+         per-toast timers, live reduced-motion, new-tab links), Copy diagnostics, dead code,
+         repository contract suite, Strabo/Augustine wording re-checked against the texts.
+TESTS  : Vitest 198 (19 files) → 277 (29 files). Playwright 17 (+1 skip) → 23 (+1 skip) on
+         desktop/mobile/tablet Chromium + dev server. quality-sweep clean. Registry 24/28 → 29/33.
+NEXT   : 1) Add a WebKit project to playwright.config.ts, `npx playwright install webkit`, run
+            `npx playwright test e2e/smoke.spec.ts e2e/chapter.spec.ts --project=desktop-webkit`,
+            fix issues, flip `e2e-webkit-safari` in feature_list.json.
+         2) Measure fps on a real phone/tablet (docs/performance.md §5) and record it.
+BLOCKED: Human-only (unchanged): review + commit the guarded files with a SECURITY-REVIEW trailer
+         (.github/workflows/*, .claude/settings.json, scripts/hooks/*, scripts/lib/policy.sh,
+         src/content/scripture/translations.ts — the branch does not build from a clean checkout
+         until translations.ts is committed); proofread/enable the WEB translation; editorial
+         approval of 31 records; push + `harden-github.sh`.
+         Proposed guarded change, NOT applied (needs the owner): in .github/workflows/deploy-pages.yml
+         use `VITE_BASE_PATH: ${{ vars.PAGES_BASE_PATH || format('/{0}/', github.event.repository.name) }}`
+         so a user/organisation site or custom domain can deploy at `/`.

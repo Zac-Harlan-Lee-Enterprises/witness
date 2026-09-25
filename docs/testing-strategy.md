@@ -3,8 +3,8 @@
 What is tested where, how to run it, and what is **not** tested yet.
 
 **Current results (2026-09-24):**
-- **Vitest:** 198 tests in 19 files pass (`npm test`, re-run while writing this document).
-- **Playwright:** 17 tests pass and 1 is intentionally skipped, across three browser projects. This is the build session's result; `test-results/.last-run.json` records `"status": "passed"`.
+- **Vitest:** 277 tests in 29 files pass (`npm test`, re-run on 2026-09-25).
+- **Playwright:** 23 tests pass and 1 is intentionally skipped, across four browser projects (re-run on 2026-09-25).
 
 ---
 
@@ -12,7 +12,7 @@ What is tested where, how to run it, and what is **not** tested yet.
 
 ```
                  ┌────────────────────────────┐
-                 │  Playwright E2E  (e2e/)    │  18 runs of 7 specs on 3 device projects
+                 │  Playwright E2E  (e2e/)    │  24 runs of 9 specs on 4 projects
                  │  real Chromium, prod build │  → the 15-step journey, a11y, PWA, saves, perf
                  └────────────────────────────┘
             ┌──────────────────────────────────────┐
@@ -55,20 +55,28 @@ Both projects are defined in [`vite.config.ts`](../vite.config.ts) under `test.p
 | [`tests/unit/domain/dialogue.test.ts`](../tests/unit/domain/dialogue.test.ts) | 6 | Entry node chosen by conditions, hidden vs unavailable-with-reason choices, `once` choices, branching, missing nodes, name interpolation. |
 | [`tests/unit/domain/inventory.test.ts`](../tests/unit/domain/inventory.test.ts) | 3 | Stack limits, never negative, weight and stable ordering. |
 | [`tests/unit/domain/puzzles.test.ts`](../tests/unit/domain/puzzles.test.ts) | 13 | All four puzzle checkers (packing, measuring, route deduction, event sequence), tiered hints, explanations that don't give the answer away. |
-| [`tests/unit/domain/save-migrations.test.ts`](../tests/unit/domain/save-migrations.test.ts) | 13 | A migration for every past version, v1 → current, idempotence, corrupt/garbage/newer-version saves, tampered state. |
+| [`tests/unit/domain/save-migrations.test.ts`](../tests/unit/domain/save-migrations.test.ts) | 14 | A migration for every past version, v1 → current, idempotence, corrupt/garbage/newer-version saves, tampered state. |
 | [`tests/unit/domain/governance.test.ts`](../tests/unit/domain/governance.test.ts) | 10 | Content-integrity rules (no verse text in Scripture records, cited paraphrases, sourced history with confidence), the editorial workflow (AI drafts can't self-approve), Scripture reference formatting and the exact placeholder. |
-| [`tests/unit/domain/misc.test.ts`](../tests/unit/domain/misc.test.ts) | 12 | Event ownership, journal auto-unlock and unseen counts, trust wording, nickname validation, settings fallback, key rebinding, analytics off by default, pathfinding, study-guide answer policy. |
-| [`tests/unit/application/services.test.ts`](../tests/unit/application/services.test.ts) | 18 | SaveService (round-trip, migrate-on-load, corrupt neighbours, storage failure), Autosaver, ProfileService (create, rename, remove *with saves*, cap, completion), SettingsService, Analytics (consent, whitelist, **reflection never included**), UiStore, VirtualInput, time-of-day wording, event-bus isolation. |
-| [`tests/unit/application/session-controllers.test.ts`](../tests/unit/application/session-controllers.test.ts) | 8 | GameSession with the dialogue, puzzle and game controllers: opening, dialogue log, missing nodes, unavailable choices, queued screen requests, blocked exits, invalid quest transitions, pause and play time. |
+| [`tests/unit/domain/misc.test.ts`](../tests/unit/domain/misc.test.ts) | 12 | Every event has an owner, journal auto-unlock and unseen counts, trust wording, nickname validation, settings fallback, key rebinding, analytics off by default, pathfinding, study-guide answer policy. |
+| [`tests/unit/domain/event-owners.test.ts`](../tests/unit/domain/event-owners.test.ts) | 31 | One per event type: the modules that build it in `src/` are exactly those listed in `EVENT_OWNERS`. |
+| [`tests/unit/application/services.test.ts`](../tests/unit/application/services.test.ts) | 19 | SaveService (round-trip, one save per chapter and slot with old-id tidy-up, migrate-on-load, corrupt neighbours, storage failure), Autosaver, ProfileService (create, rename, remove *with saves*, cap, completion), SettingsService, Analytics (consent, whitelist, **reflection never included**), UiStore, VirtualInput, time-of-day wording, event-bus isolation. |
+| [`tests/unit/application/session-controllers.test.ts`](../tests/unit/application/session-controllers.test.ts) | 14 | GameSession with the dialogue, puzzle and game controllers: opening, dialogue log, missing nodes, unavailable choices, queued screen requests, blocked exits, invalid quest transitions, pause and play time, place banner and lighting from the story clock and lamp, "can't get there" message, first meetings (`met` means before this conversation), ChapterStarted reaching analytics once, SaveRestored with the original version and the older-content note. |
+| [`tests/unit/application/zod-config.test.ts`](../tests/unit/application/zod-config.test.ts) | 1 | Zod runs without code generation (strict CSP) and the chapter still validates. |
+| [`tests/unit/features/diagnostics.test.ts`](../tests/unit/features/diagnostics.test.ts) | 1 | The *Copy diagnostics* text: version, browser, log lines. |
 | [`tests/unit/infrastructure/persistence.test.ts`](../tests/unit/infrastructure/persistence.test.ts) | 2 | IndexedDB repositories (on `fake-indexeddb`): per-profile save index, persistence across connections. |
+| [`tests/unit/infrastructure/repository-contract.test.ts`](../tests/unit/infrastructure/repository-contract.test.ts) | 8 | One contract run against both the memory and the IndexedDB repositories (saves, profiles, settings, copies not references). |
 | [`tests/unit/infrastructure/scripture.test.ts`](../tests/unit/infrastructure/scripture.test.ts) | 3 | Placeholder by default. Stored text only once approved *and* licensed. |
 | [`tests/unit/game/systems.test.ts`](../tests/unit/game/systems.test.ts) | 3 | Collision and wall sliding, diagonal normalisation, interaction-focus choice within reach. |
+| [`tests/unit/game/lighting.test.ts`](../tests/unit/game/lighting.test.ts), [`quality.test.ts`](../tests/unit/game/quality.test.ts), [`tiles.test.ts`](../tests/unit/game/tiles.test.ts) | 13 | Time-of-day light and its single-layer colour grade, the automatic-quality decision (warm-up, sustained slowness, keeping meaningful light), and tile art rules (props sit on hills). |
 | [`tests/integration/playthrough.test.ts`](../tests/integration/playthrough.test.ts) | 6 | Four complete playthroughs (thorough, hurried, long, send-help), the "can't leave unprepared" rule, and the too-light water plan unless the player learned about the cistern. |
 | [`tests/content/road-to-jericho.test.ts`](../tests/content/road-to-jericho.test.ts) | 12 | Schema and referential integrity, reachability of every object and exit from every spawn, lazy registry load, puzzle and quest variety, no verse text, every retelling labelled, fictional characters only (Jesus is never a character), no scoring language, no invented priest/Levite motives, nothing self-approved, only retrieved sources cited, a real (non-moralistic) choice at the injured traveler. |
 | [`tests/architecture/layers.test.ts`](../tests/architecture/layers.test.ts) | 18 | Layer import rules (8). Phaser, IndexedDB and React containment. Phaser and chapters loaded only lazily. No `fetch`/XHR/`sendBeacon`/WebSocket, no `eval`/`new Function`, no `any`, no `console.log`, and reflection text never reaches infrastructure or analytics. |
-| [`tests/ui/menus.test.tsx`](../tests/ui/menus.test.tsx) | 8 | Title and About dialog (Escape, focus return), profile creation with validation, profile removal, chapter select, settings (applied, persisted), key remapping, statistics off by default, text scale. |
-| [`tests/ui/game-ui.test.tsx`](../tests/ui/game-ui.test.tsx) | 13 | Dialogue (keyboard, number keys, unavailable choices with reasons, paraphrase label), HUD, Go-to list, journal tabs and content labels, quest log text status, satchel, packing and measuring puzzles, tiered hints, Scripture Connection, summary (no grading). |
-| **Total** | **198** | |
+| [`tests/ui/menus.test.tsx`](../tests/ui/menus.test.tsx) | 10 | Title and About dialog (Escape, focus return), storage warning and **Update now**, *Copy diagnostics* (with clipboard fallback), profile creation with validation, profile removal, chapter select, settings (applied, persisted), key remapping, statistics off by default, text scale. |
+| [`tests/ui/game-ui.test.tsx`](../tests/ui/game-ui.test.tsx) | 18 | Dialogue (keyboard, number keys only from inside the conversation, one lasting live region, unavailable choices with reasons, paraphrase label), place banner, Recent messages, per-notice timers, the in-game storage warning, `aria-keyshortcuts` key names, HUD, Go-to list, journal tabs and content labels, quest log text status, satchel, packing and measuring puzzles, tiered hints, Scripture Connection, summary (no grading). |
+| [`tests/ui/game-runtime.test.tsx`](../tests/ui/game-runtime.test.tsx) | 3 | Only the latest world mount survives (React StrictMode), a cancelled boot is destroyed, the viewport releases the world. |
+| [`tests/ui/gamepad.test.tsx`](../tests/ui/gamepad.test.tsx) | 6 | Gamepad focus navigation, A/B, drop-down stepping, keyboard ignored, no HUD clicks without a dialog, advancing a real conversation; button mapping from a simulated pad. |
+| [`tests/ui/motion.test.tsx`](../tests/ui/motion.test.tsx) | 1 | Follows OS reduced-motion changes during play. |
+| **Total** | **277** | |
 
 ## 4. Deterministic test support
 
@@ -85,7 +93,8 @@ Both projects are defined in [`vite.config.ts`](../vite.config.ts) under `test.p
 
 ### Approach
 
-- **It runs the production build.** [`playwright.config.ts`](../playwright.config.ts) starts `npm run build && npx vite preview --port 4391`, so the service worker, the manifest and the lazy chunks are exactly what players get. Locally it reuses a server that is already running; in CI it always builds fresh.
+- **It runs the production build.** [`playwright.config.ts`](../playwright.config.ts) starts `npm run build && npx vite preview` on port 4391, so the service worker, the manifest and the lazy chunks are exactly what players get. Locally it reuses a server that is already running; in CI it always builds fresh.
+- **One spec also runs on the development server** (`dev-server-chromium`, port 5391): React StrictMode in development once mounted two Phaser canvases and left a frozen one on top, which production-only tests could not see.
 - **It drives only the accessible HTML UI.** The helpers in [`e2e/support.ts`](../e2e/support.ts) use roles and labels ("Go to…", dialogue buttons, puzzle controls), the same controls a keyboard or screen-reader player would use. No test clicks canvas coordinates. This keeps the tests stable, and it proves the game can be finished without steering.
 - `setFastSettings` turns on **Instant** dialogue and **Instant travel** to keep runs short. The touch spec leaves Instant travel off, so walking is covered too.
 - **Screenshots for visual review:** `E2E_SHOTS=1 npx playwright test e2e/chapter.spec.ts --project=desktop-chromium` writes 12 stage screenshots to `test-results/shots/` (`snap()` in `support.ts`). Without the variable, `snap()` does nothing.
@@ -98,13 +107,16 @@ Both projects are defined in [`vite.config.ts`](../vite.config.ts) under `test.p
 | [`chapter.spec.ts`](../e2e/chapter.spec.ts): the required 15-step journey | ✓ | — | — |
 | [`smoke.spec.ts`](../e2e/smoke.spec.ts): clean start with no console errors and no horizontal overflow; valid manifest and icons; keyboard-only play | ✓ ✓ ✓ | ✓ ✓ *skip* | ✓ ✓ ✓ |
 | [`mobile.spec.ts`](../e2e/mobile.spec.ts): touch pad, target size, Go-to, dialogue width | ✓ | ✓ | ✓ |
-| [`a11y.spec.ts`](../e2e/a11y.spec.ts): axe WCAG 2.2 AA incl. contrast and high contrast | ✓ | ✓ | — |
+| [`a11y.spec.ts`](../e2e/a11y.spec.ts): axe WCAG 2.2 AA incl. contrast, and high contrast on Settings and inside the game | ✓ | ✓ | — |
 | [`pwa.spec.ts`](../e2e/pwa.spec.ts): service worker, then offline relaunch and play | ✓ | — | — |
 | [`saves.spec.ts`](../e2e/saves.spec.ts): legacy v1 save migrated and restored; corrupt save reported | ✓ | — | — |
-| [`perf.spec.ts`](../e2e/perf.spec.ts): frame rate and DOMContentLoaded (see [performance.md](performance.md)) | ✓ | — | — |
-| **Runs** | 9 | 5 (1 skipped) | 4 |
+| [`perf.spec.ts`](../e2e/perf.spec.ts): frame rate while walking in the market; automatic simpler effects under 8× CPU throttling (see [performance.md](performance.md)) | ✓ ✓ | — | — |
+| [`a11y.spec.ts`](../e2e/a11y.spec.ts) (second test): 200% text at 320 × 640 on every screen, HUD clear of the controls | ✓ | ✓ | — |
+| [`world.spec.ts`](../e2e/world.spec.ts): one canvas, keyboard walking changes the picture, changing place redraws | ✓ (+ dev server) | — | — |
+| [`csp.spec.ts`](../e2e/csp.spec.ts): the opening under the recommended strict CSP, no violations | ✓ | — | — |
+| **Runs** | 13 (+1 on the dev server) | 6 (1 skipped) | 4 |
 
-The one skip is intentional. The keyboard-only test calls `test.skip(isMobile, …)` because a phone profile has no physical keyboard. 9 + 4 + 4 = **17 pass**.
+The one skip is intentional. The keyboard-only test calls `test.skip(isMobile, …)` because a phone profile has no physical keyboard. 13 + 1 + 5 + 4 = **23 pass**.
 
 ### The required 15-step journey ([`e2e/chapter.spec.ts`](../e2e/chapter.spec.ts))
 
