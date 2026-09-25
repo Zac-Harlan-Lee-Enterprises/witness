@@ -158,6 +158,8 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
   if (!ids.quests.has(chapter.mainQuest))
     add('chapter.mainQuest', `unknown quest '${chapter.mainQuest}'`);
   checkEffects('chapter.opening', chapter.opening);
+  if (chapter.lightItem && !ids.items.has(chapter.lightItem))
+    add('chapter.lightItem', `unknown item '${chapter.lightItem}'`);
   Object.keys(chapter.initial.inventory).forEach(
     (i) => !ids.items.has(i) && add('chapter.initial', `unknown item '${i}'`),
   );

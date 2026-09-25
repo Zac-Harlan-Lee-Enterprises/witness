@@ -47,6 +47,10 @@ export class FakeWorld implements WorldPort {
     this.controlsEnabled = enabled;
   }
   setMotion(): void {}
+  lighting: { hour: number | null; lamp: boolean } | null = null;
+  setLighting(lighting: { hour: number | null; lamp: boolean }): void {
+    this.lighting = lighting;
+  }
   destroy(): void {}
   get currentScene(): string | undefined {
     return this.scenes[this.scenes.length - 1]?.sceneId;

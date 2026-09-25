@@ -17,6 +17,7 @@ import {
   buildSceneModel,
   destinations,
   findScene,
+  lightingOf,
   VERB_LABELS,
   visibleEntities,
   type Destination,
@@ -109,6 +110,7 @@ export class GameController {
       audio.setAmbience(scene.ambience);
       audio.setMusic(scene.music);
       ui.announce(`${scene.name}. ${scene.description}`);
+      ui.showPlace(scene.name);
     } catch (error) {
       this.deps.logger.error('Scene failed to load', error);
       ui.setFatalError(
@@ -117,6 +119,8 @@ export class GameController {
     } finally {
       ui.setTransitioning(false);
       this.flushDeferred();
+      // Story state may already satisfy a state trigger in the new place.
+      this.queueStateTriggers();
     }
   }
 
@@ -141,6 +145,9 @@ export class GameController {
         break;
       case 'arrived':
         this.arrived(event.targetId);
+        break;
+      case 'unreachable':
+        this.deps.ui.pushToast('You can’t get there from here yet.', 'info', 'Not yet');
         break;
       case 'sceneReady':
         break;
@@ -434,6 +441,14 @@ export class GameController {
         break;
       default:
         break;
+    }
+    // Keep the world's light in step with the story clock and the lamp.
+    if (
+      (event.type === 'CounterChanged' && event.counter === chapter.timeCounter) ||
+      ((event.type === 'ItemCollected' || event.type === 'ItemRemoved') &&
+        event.itemId === chapter.lightItem)
+    ) {
+      this.world?.setLighting(lightingOf(chapter, session.state));
     }
     // Re-render the dialogue so choice availability tracks state changes.
     if (

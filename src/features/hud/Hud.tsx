@@ -257,3 +257,31 @@ export function LiveAnnouncer({ ui }: { ui: GameRuntimeLike['ui'] }) {
     </div>
   );
 }
+
+const PLACE_MS = 2800;
+
+/**
+ * A large place-name card shown on arrival, so a change of scene is
+ * unmistakable. Purely visual (the LiveAnnouncer already speaks it).
+ */
+export function PlaceBanner({ ui }: { ui: GameRuntimeLike['ui'] }) {
+  const { place } = useStore(ui);
+  const [visibleSeq, setVisibleSeq] = useState<number | null>(null);
+  useEffect(() => {
+    if (!place) return;
+    const show = setTimeout(() => setVisibleSeq(place.seq), 0);
+    const hide = setTimeout(() => setVisibleSeq(null), PLACE_MS);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+  }, [place]);
+  if (!place || visibleSeq !== place.seq) return null;
+  return (
+    <div key={place.seq} className="place-banner" aria-hidden="true" data-testid="place-banner">
+      <span className="place-banner__rule" />
+      <span className="place-banner__name">{place.name}</span>
+      <span className="place-banner__rule" />
+    </div>
+  );
+}

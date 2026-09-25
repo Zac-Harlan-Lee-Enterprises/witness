@@ -87,4 +87,28 @@ describe('GameSession + controllers', () => {
     h.controller.tick(5000);
     expect(h.state().playTimeMs).toBe(5000);
   });
+
+  it('shows the place name on arrival and lights the world from the story clock and lamp', async () => {
+    const h = await createHarness();
+    expect(h.ui.getState().place?.name).toBe('Aunt Miriam’s house');
+    expect(h.world.scenes[0]?.lighting.hour).toBe(h.state().counters.hour);
+
+    h.session.dispatch([{ type: 'setCounter', counter: 'hour', value: 21 }]);
+    await flush();
+    expect(h.world.lighting?.hour).toBe(21);
+
+    h.session.dispatch([{ type: 'takeItem', item: 'lamp' }]);
+    await flush();
+    expect(h.world.lighting).toEqual({ hour: 21, lamp: false });
+
+    h.session.dispatch([{ type: 'giveItem', item: 'lamp' }]);
+    await flush();
+    expect(h.world.lighting).toEqual({ hour: 21, lamp: true });
+  });
+
+  it('tells the player when a destination cannot be reached yet', async () => {
+    const h = await createHarness();
+    h.controller.handleWorldEvent({ type: 'unreachable', targetId: 'anywhere' });
+    expect(h.ui.getState().toasts.at(-1)).toMatchObject({ label: 'Not yet' });
+  });
 });

@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import type { VirtualInput } from '@/application/input';
-import type { WorldEntityView, WorldListener, WorldSceneModel } from '@/application/ports';
+import type {
+  WorldEntityView,
+  WorldLighting,
+  WorldListener,
+  WorldSceneModel,
+} from '@/application/ports';
 import {
   approachTiles,
   blockedFn,
@@ -21,24 +26,19 @@ import {
   FRAMES_PER_DIRECTION,
   paintCharacterSheet,
 } from '../art/characters';
+import { ART_SCALE, makeCanvas, TILE } from '../art/paint';
 import { paintProp } from '../art/props';
-import {
-  groundUnder,
-  hasCanopy,
-  isPropTile,
-  paintCanopy,
-  paintGround,
-  paintPropTile,
-  TILE,
-} from '../art/tiles';
+import { paintSceneLayers } from '../art/tiles';
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
+import { lightingFor } from '../systems/lighting';
 
 /**
  * The single Phaser scene that renders whichever map the application asks
  * for. It owns ONLY ephemeral presentation state (sprites, camera, walk
- * animation, current path). It never evaluates story conditions and never
- * touches React: it receives a WorldSceneModel and reports WorldEvents.
+ * animation, lighting, ambient effects, current path). It never evaluates
+ * story conditions and never touches React: it receives a WorldSceneModel
+ * and reports WorldEvents.
  */
 export interface WorldSceneOptions {
   input: VirtualInput;
@@ -50,13 +50,26 @@ export interface WorldSceneOptions {
 interface EntitySprite {
   view: WorldEntityView;
   sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
-  baseY: number;
 }
+
+const INV = 1 / ART_SCALE;
+const WALK_CYCLE = [1, 0, 2, 0];
+const DEPTH = {
+  ground: 0,
+  actors: 10,
+  canopy: 100_000,
+  fx: 100_500,
+  light: 101_000,
+  vignette: 101_500,
+  marker: 102_000,
+};
 
 export class WorldScene extends Phaser.Scene {
   private model: WorldSceneModel | null = null;
   private blocked: Blocked = () => true;
   private layers: Phaser.GameObjects.GameObject[] = [];
+  private fx: Phaser.GameObjects.GameObject[] = [];
+  private tweensOwned: Phaser.Tweens.Tween[] = [];
   private readonly entitySprites = new Map<string, EntitySprite>();
   private player: {
     x: number;
@@ -64,15 +77,13 @@ export class WorldScene extends Phaser.Scene {
     facing: Direction;
     sprite: Phaser.GameObjects.Sprite | null;
     walk: number;
-  } = {
-    x: 0,
-    y: 0,
-    facing: 'down',
-    sprite: null,
-    walk: 0,
-  };
+  } = { x: 0, y: 0, facing: 'down', sprite: null, walk: 0 };
   private focusId: string | null = null;
   private focusMarker: Phaser.GameObjects.Image | null = null;
+  private tint: Phaser.GameObjects.Rectangle | null = null;
+  private vignette: Phaser.GameObjects.Image | null = null;
+  private lampGlow: Phaser.GameObjects.Image | null = null;
+  private lighting: WorldLighting = { hour: null, lamp: false };
   private path: Tile[] | null = null;
   private pathTarget: { id: string; kind: 'entity' | 'exit' | 'tile' } | null = null;
   private controlsEnabled = true;
@@ -90,7 +101,7 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     this.scale.on('resize', () => this.fitCamera());
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.onPointer(pointer));
-    this.makeMarkerTexture();
+    this.makeSharedTextures();
     this.opts.onReady();
   }
 
@@ -99,68 +110,53 @@ export class WorldScene extends Phaser.Scene {
     this.clear();
     this.generation++;
     this.model = model;
-    const { grid } = model;
+    this.lighting = model.lighting;
 
-    // Ground + props painted once into a single texture (one draw call).
-    const ground = document.createElement('canvas');
-    ground.width = grid.width * TILE;
-    ground.height = grid.height * TILE;
-    const g = ground.getContext('2d');
-    const canopy = document.createElement('canvas');
-    canopy.width = ground.width;
-    canopy.height = ground.height;
-    const c = canopy.getContext('2d');
-    if (g && c) {
-      for (let y = 0; y < grid.height; y++) {
-        for (let x = 0; x < grid.width; x++) {
-          const kind = grid.tiles[y]?.[x] ?? 'void';
-          if (isPropTile(kind)) {
-            paintGround(g, groundUnder(grid, x, y, model.baseTile), x, y, grid);
-            paintPropTile(g, kind, x, y);
-            if (hasCanopy(kind)) paintCanopy(c, kind, x, y);
-          } else {
-            paintGround(g, kind, x, y, grid);
-          }
-        }
-      }
-    }
+    const { ground, canopy } = paintSceneLayers(model.grid, model.baseTile);
     const groundKey = `ground-${this.generation}`;
     const canopyKey = `canopy-${this.generation}`;
     this.textures.addCanvas(groundKey, ground);
     this.textures.addCanvas(canopyKey, canopy);
-    this.layers.push(this.add.image(0, 0, groundKey).setOrigin(0, 0).setDepth(0));
-    this.layers.push(this.add.image(0, 0, canopyKey).setOrigin(0, 0).setDepth(100_000));
+    this.layers.push(
+      this.add.image(0, 0, groundKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.ground),
+    );
+    this.layers.push(
+      this.add.image(0, 0, canopyKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.canopy),
+    );
 
     this.rebuildBlocked(model.entities);
     model.entities.forEach((e) => this.addEntity(e));
 
-    // Player
     const pKey = this.ensureCharacterTexture(model.player.appearance);
     this.player = {
       x: model.player.x + 0.5,
       y: model.player.y + 0.5,
       facing: model.player.facing,
-      sprite: this.add.sprite(0, 0, pKey, frameName(model.player.facing, 0)).setOrigin(0.5, 1),
+      sprite: this.add
+        .sprite(0, 0, pKey, frameName(model.player.facing, 0))
+        .setOrigin(0.5, 1)
+        .setScale(INV),
       walk: 0,
     };
     this.placePlayer();
     this.lastTile = { x: Math.floor(this.player.x), y: Math.floor(this.player.y) };
     this.insideExit = this.exitAt(this.lastTile.x, this.lastTile.y);
 
-    this.focusMarker = this.add.image(0, 0, 'focus-marker').setDepth(100_001).setVisible(false);
+    this.focusMarker = this.add
+      .image(0, 0, 'focus-marker')
+      .setScale(INV)
+      .setDepth(DEPTH.marker)
+      .setVisible(false);
     this.focusId = null;
     this.path = null;
     this.pathTarget = null;
 
+    this.buildAtmosphere(model);
     this.fitCamera();
     const cam = this.cameras.main;
-    cam.startFollow(
-      this.player.sprite as Phaser.GameObjects.Sprite,
-      true,
-      this.reducedMotion ? 1 : 0.12,
-      this.reducedMotion ? 1 : 0.12,
-    );
-    if (!this.reducedMotion) cam.fadeIn(220, 20, 14, 8);
+    const lerp = this.reducedMotion ? 1 : 0.12;
+    cam.startFollow(this.player.sprite as Phaser.GameObjects.Sprite, true, lerp, lerp);
+    if (!this.reducedMotion) cam.fadeIn(260, 24, 16, 8);
     this.opts.onEvent({ type: 'sceneReady', sceneId: model.sceneId });
   }
 
@@ -170,6 +166,7 @@ export class WorldScene extends Phaser.Scene {
     const ids = new Set(entities.map((e) => e.id));
     for (const [id, es] of this.entitySprites) {
       if (!ids.has(id)) {
+        this.tweens.killTweensOf(es.sprite);
         es.sprite.destroy();
         this.entitySprites.delete(id);
       }
@@ -201,6 +198,7 @@ export class WorldScene extends Phaser.Scene {
     const path = findPath(start, goals, this.blocked);
     if (path === null) {
       this.opts.logger.warn(`No path to ${targetId}`);
+      this.opts.onEvent({ type: 'unreachable', targetId });
       return;
     }
     const kind = entity ? 'entity' : 'exit';
@@ -231,10 +229,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setMotion(options: { reducedMotion: boolean; tilesPerSecond: number }): void {
+    const changed = this.reducedMotion !== options.reducedMotion;
     this.reducedMotion = options.reducedMotion;
     this.tilesPerSecond = options.tilesPerSecond;
     const lerp = this.reducedMotion ? 1 : 0.12;
     this.cameras.main?.setLerp(lerp, lerp);
+    if (changed && this.model) this.buildAtmosphere(this.model);
+  }
+
+  setLighting(lighting: WorldLighting): void {
+    this.lighting = lighting;
+    this.applyLighting();
   }
 
   // ── Frame loop ──────────────────────────────────────────────────────────
@@ -263,7 +268,9 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.player.walk = moving ? this.player.walk + dt : 0;
-    const frame = moving ? 1 + (Math.floor(this.player.walk / 0.16) % 2) : 0;
+    const frame = moving
+      ? (WALK_CYCLE[Math.floor(this.player.walk / 0.12) % WALK_CYCLE.length] ?? 0)
+      : 0;
     this.player.sprite.setFrame(frameName(this.player.facing, frame));
     this.placePlayer();
     if (moving) this.afterStep(false);
@@ -271,7 +278,7 @@ export class WorldScene extends Phaser.Scene {
     this.animateIdle();
   }
 
-  // ── Internals ───────────────────────────────────────────────────────────
+  // ── Movement internals ──────────────────────────────────────────────────
   private followPath(dt: number): boolean {
     const next = this.path?.[0];
     if (!next) return false;
@@ -356,37 +363,57 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     const bob = this.reducedMotion ? 0 : Math.sin(this.elapsed * 4) * 2;
+    const top = focused.view.appearance ? CHAR_H - 4 : focused.sprite.displayHeight;
     this.focusMarker
       .setVisible(true)
-      .setPosition(focused.sprite.x, focused.sprite.y - focused.sprite.displayHeight - 6 + bob);
+      .setPosition(focused.sprite.x, focused.sprite.y - top - 6 + bob);
   }
 
   private animateIdle(): void {
     if (this.reducedMotion) return;
     for (const es of this.entitySprites.values()) {
-      if (es.view.kind === 'clue') es.sprite.setAlpha(0.75 + Math.sin(this.elapsed * 3) * 0.25);
+      if (es.view.kind === 'clue') es.sprite.setAlpha(0.78 + Math.sin(this.elapsed * 3) * 0.22);
+    }
+    if (this.lampGlow?.visible) {
+      this.lampGlow.setScale(
+        INV * (1 + Math.sin(this.elapsed * 7) * 0.03 + Math.sin(this.elapsed * 13) * 0.02),
+      );
     }
   }
 
   private placePlayer(): void {
     const s = this.player.sprite;
     if (!s) return;
-    s.setPosition(this.player.x * TILE, this.player.y * TILE + 10);
-    s.setDepth(10 + this.player.y * 100);
+    s.setPosition(this.player.x * TILE, this.player.y * TILE + 12);
+    s.setDepth(DEPTH.actors + this.player.y * 100);
+    this.lampGlow?.setPosition(s.x, s.y - 18);
   }
 
   private addEntity(e: WorldEntityView): void {
     let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
     if (e.appearance) {
       const key = this.ensureCharacterTexture(e.appearance);
-      sprite = this.add.sprite(0, 0, key, frameName(e.facing, 0)).setOrigin(0.5, 1);
+      sprite = this.add.sprite(0, 0, key, frameName(e.facing, 0)).setOrigin(0.5, 1).setScale(INV);
+      if (!this.reducedMotion) {
+        // A gentle breathing motion so people feel alive (feet stay planted).
+        this.tweensOwned.push(
+          this.tweens.add({
+            targets: sprite,
+            scaleY: INV * 1.02,
+            duration: 1400 + ((e.x * 37 + e.y * 11) % 600),
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          }),
+        );
+      }
     } else {
       const key = this.ensurePropTexture(e.sprite ?? (e.kind === 'clue' ? 'marker' : 'sign'));
-      sprite = this.add.image(0, 0, key).setOrigin(0.5, 1);
+      sprite = this.add.image(0, 0, key).setOrigin(0.5, 1).setScale(INV);
     }
-    const baseY = (e.y + 1) * TILE + (e.appearance ? -2 : 0);
-    sprite.setPosition((e.x + 0.5) * TILE, baseY).setDepth(10 + (e.y + 0.5) * 100);
-    this.entitySprites.set(e.id, { view: e, sprite, baseY });
+    const baseY = (e.y + 1) * TILE + (e.appearance ? 1 : 0);
+    sprite.setPosition((e.x + 0.5) * TILE, baseY).setDepth(DEPTH.actors + (e.y + 0.5) * 100);
+    this.entitySprites.set(e.id, { view: e, sprite });
   }
 
   private faceNpcToPlayer(entityId: string): void {
@@ -399,20 +426,23 @@ export class WorldScene extends Phaser.Scene {
     es.sprite.setFrame(frameName(dir, 0));
   }
 
+  // ── Textures ────────────────────────────────────────────────────────────
   private ensureCharacterTexture(appearance: WorldSceneModel['player']['appearance']): string {
     const key = appearanceKey(appearance);
     if (this.textures.exists(key)) return key;
     const tex = this.textures.addCanvas(key, paintCharacterSheet(appearance));
     if (!tex) return key;
+    const fw = CHAR_W * ART_SCALE;
+    const fh = CHAR_H * ART_SCALE;
     DIRECTION_ROWS.forEach((dir, row) => {
       for (let f = 0; f < FRAMES_PER_DIRECTION; f++)
-        tex.add(frameName(dir, f), 0, f * CHAR_W, row * CHAR_H, CHAR_W, CHAR_H);
+        tex.add(frameName(dir, f), 0, f * fw, row * fh, fw, fh);
     });
     return key;
   }
 
   private ensurePropTexture(name: string): string {
-    const key = `prop-${name}`;
+    const key = `prop2-${name}`;
     if (this.textures.exists(key)) return key;
     const { canvas, known } = paintProp(name);
     if (!known) this.opts.logger.warn(`Unknown prop sprite '${name}' — using fallback marker`);
@@ -420,29 +450,194 @@ export class WorldScene extends Phaser.Scene {
     return key;
   }
 
-  private makeMarkerTexture(): void {
-    if (this.textures.exists('focus-marker')) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 22;
-    canvas.height = 24;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
+  private makeSharedTextures(): void {
+    const add = (
+      key: string,
+      w: number,
+      h: number,
+      paint: (ctx: CanvasRenderingContext2D) => void,
+    ): void => {
+      if (this.textures.exists(key)) return;
+      const { canvas, ctx } = makeCanvas(w, h);
+      if (ctx) paint(ctx);
+      this.textures.addCanvas(key, canvas);
+    };
+    add('focus-marker', 22, 24, (ctx) => {
       ctx.fillStyle = '#fff8e8';
       ctx.strokeStyle = '#6b3f22';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.roundRect(2, 2, 18, 15, 5);
       ctx.fill();
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(8, 17);
-      ctx.lineTo(11, 22);
-      ctx.lineTo(14, 17);
+      ctx.moveTo(8, 16.5);
+      ctx.lineTo(11, 21.5);
+      ctx.lineTo(14, 16.5);
       ctx.fill();
       ctx.fillStyle = '#6b3f22';
-      [7, 11, 15].forEach((x) => ctx.fillRect(x - 1, 9, 2.5, 2.5));
+      [7, 11, 15].forEach((x) => {
+        ctx.beginPath();
+        ctx.arc(x, 9.5, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+    add('mote', 6, 6, (ctx) => {
+      const g = ctx.createRadialGradient(3, 3, 0, 3, 3, 3);
+      g.addColorStop(0, 'rgba(255,245,220,0.9)');
+      g.addColorStop(1, 'rgba(255,245,220,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 6, 6);
+    });
+    add('bird', 12, 6, (ctx) => {
+      ctx.strokeStyle = '#3a2c20';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(1, 4);
+      ctx.quadraticCurveTo(3.5, 0.5, 6, 3.5);
+      ctx.quadraticCurveTo(8.5, 0.5, 11, 4);
+      ctx.stroke();
+    });
+    add('glint', 32, 32, (ctx) => {
+      const g = ctx.createLinearGradient(0, 0, 32, 32);
+      g.addColorStop(0.35, 'rgba(255,255,255,0)');
+      g.addColorStop(0.5, 'rgba(230,248,255,0.55)');
+      g.addColorStop(0.65, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 32, 32);
+    });
+    add('lamp-glow', 160, 160, (ctx) => {
+      const g = ctx.createRadialGradient(80, 80, 4, 80, 80, 80);
+      g.addColorStop(0, 'rgba(255,214,140,0.75)');
+      g.addColorStop(0.45, 'rgba(255,170,80,0.28)');
+      g.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 160, 160);
+    });
+  }
+
+  // ── Atmosphere: light, vignette, ambient life ────────────────────────────
+  private buildAtmosphere(model: WorldSceneModel): void {
+    this.fx.forEach((o) => o.destroy());
+    this.fx = [];
+    this.tint?.destroy();
+    this.vignette?.destroy();
+    this.lampGlow?.destroy();
+
+    this.tint = this.add
+      .rectangle(0, 0, 10, 10, 0xffffff, 0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.light);
+    this.tint.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.vignette = this.add
+      .image(0, 0, this.makeVignetteTexture())
+      .setScrollFactor(0)
+      .setDepth(DEPTH.vignette);
+    this.lampGlow = this.add
+      .image(0, 0, 'lamp-glow')
+      .setScale(INV)
+      .setDepth(DEPTH.light + 1)
+      .setVisible(false);
+    this.lampGlow.setBlendMode(Phaser.BlendModes.ADD);
+    this.applyLighting();
+
+    if (this.reducedMotion) return;
+    const mapW = model.grid.width * TILE;
+    const mapH = model.grid.height * TILE;
+    if (model.ambience === 'wind' || model.ambience === 'market') {
+      const emitter = this.add.particles(0, 0, 'mote', {
+        x: { min: 0, max: mapW },
+        y: { min: 0, max: mapH },
+        lifespan: 7000,
+        speedX: { min: model.ambience === 'wind' ? 6 : 1, max: model.ambience === 'wind' ? 16 : 5 },
+        speedY: { min: -3, max: 2 },
+        scale: { min: 0.25, max: 0.6 },
+        alpha: { start: 0.55, end: 0 },
+        frequency: model.ambience === 'wind' ? 90 : 220,
+        blendMode: 'ADD',
+      });
+      emitter.setDepth(DEPTH.fx);
+      this.fx.push(emitter);
     }
-    this.textures.addCanvas('focus-marker', canvas);
+    if (model.ambience === 'oasis') {
+      for (let i = 0; i < 4; i++) {
+        const bird = this.add
+          .image(-20, 20 + i * 40, 'bird')
+          .setScale(INV)
+          .setDepth(DEPTH.fx)
+          .setAlpha(0.8);
+        this.fx.push(bird);
+        this.tweensOwned.push(
+          this.tweens.add({
+            targets: bird,
+            x: mapW + 40,
+            y: { from: 30 + i * 35, to: 10 + i * 45 },
+            duration: 14000 + i * 2500,
+            delay: i * 3500,
+            repeat: -1,
+            repeatDelay: 4000 + i * 1500,
+          }),
+        );
+      }
+    }
+    // Water shimmer.
+    for (let y = 0; y < model.grid.height; y++) {
+      for (let x = 0; x < model.grid.width; x++) {
+        if (model.grid.tiles[y]?.[x] !== 'water') continue;
+        const glint = this.add
+          .image(x * TILE, y * TILE, 'glint')
+          .setOrigin(0, 0)
+          .setScale(INV)
+          .setDepth(DEPTH.ground + 1)
+          .setAlpha(0);
+        glint.setBlendMode(Phaser.BlendModes.ADD);
+        this.fx.push(glint);
+        this.tweensOwned.push(
+          this.tweens.add({
+            targets: glint,
+            alpha: 0.8,
+            duration: 1600,
+            delay: ((x * 7 + y * 13) % 10) * 250,
+            yoyo: true,
+            repeat: -1,
+          }),
+        );
+      }
+    }
+  }
+
+  private applyLighting(): void {
+    if (!this.model || !this.tint || !this.vignette) return;
+    const l = lightingFor(this.lighting.hour, this.model.kind === 'indoor');
+    this.tint.setFillStyle(l.tint, l.alpha);
+    this.vignette.setAlpha(l.vignette);
+    this.lampGlow?.setVisible(l.night && this.lighting.lamp);
+  }
+
+  private makeVignetteTexture(): string {
+    const key = 'vignette';
+    if (this.textures.exists(key)) return key;
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const g = ctx.createRadialGradient(
+        size / 2,
+        size / 2,
+        size * 0.28,
+        size / 2,
+        size / 2,
+        size * 0.72,
+      );
+      g.addColorStop(0, 'rgba(30,18,8,0)');
+      g.addColorStop(1, 'rgba(30,18,8,0.85)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+    }
+    this.textures.addCanvas(key, canvas);
+    return key;
   }
 
   private rebuildBlocked(entities: readonly WorldEntityView[]): void {
@@ -504,9 +699,19 @@ export class WorldScene extends Phaser.Scene {
     const bx = mapW < viewW ? (mapW - viewW) / 2 : 0;
     const by = mapH < viewH ? (mapH - viewH) / 2 : 0;
     cam.setBounds(bx, by, Math.max(mapW, viewW), Math.max(mapH, viewH));
+    // Screen-space overlays: sized in world units so they exactly cover the view at this zoom.
+    this.tint
+      ?.setPosition(w / 2, h / 2)
+      .setSize(viewW + 4, viewH + 4)
+      .setOrigin(0.5);
+    this.vignette?.setPosition(w / 2, h / 2).setDisplaySize(viewW + 4, viewH + 4);
   }
 
   private clear(): void {
+    this.tweensOwned.forEach((t) => t.remove());
+    this.tweensOwned = [];
+    this.fx.forEach((o) => o.destroy());
+    this.fx = [];
     this.layers.forEach((l) => l.destroy());
     this.layers = [];
     this.entitySprites.forEach((es) => es.sprite.destroy());
@@ -515,6 +720,12 @@ export class WorldScene extends Phaser.Scene {
     this.player.sprite = null;
     this.focusMarker?.destroy();
     this.focusMarker = null;
+    this.tint?.destroy();
+    this.tint = null;
+    this.vignette?.destroy();
+    this.vignette = null;
+    this.lampGlow?.destroy();
+    this.lampGlow = null;
     const gen = this.generation;
     [`ground-${gen}`, `canopy-${gen}`].forEach((k) => {
       if (this.textures.exists(k)) this.textures.remove(k);

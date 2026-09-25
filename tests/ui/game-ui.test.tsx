@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { ChapterSummary, ScriptureConnection } from '@/features/chapter/ChapterEnding';
 import { DialogueOverlay } from '@/features/dialogue/DialogueOverlay';
-import { Hud, InteractionPrompt } from '@/features/hud/Hud';
+import { Hud, InteractionPrompt, PlaceBanner } from '@/features/hud/Hud';
 import { SatchelOverlay } from '@/features/inventory/SatchelOverlay';
 import { JournalOverlay } from '@/features/journal/JournalOverlay';
 import { GoToList } from '@/features/navigation/GoToList';
@@ -259,5 +259,19 @@ describe('Chapter ending', () => {
     expect(dialog).toHaveTextContent('Shepherds found Menashe near sunset');
     expect(dialog.textContent).not.toMatch(/score|grade|points|holiness|faith level/i);
     await expectNoAxeViolations(container);
+  });
+});
+
+describe('Place banner', () => {
+  it('shows the new place name visually (hidden from screen readers, which hear the announcement)', async () => {
+    const { runtime } = await makeRuntime();
+    await renderWithServices(<PlaceBanner ui={runtime.ui} />);
+    const banner = await screen.findByTestId('place-banner');
+    expect(banner).toHaveTextContent('Aunt Miriam’s house');
+    expect(banner).toHaveAttribute('aria-hidden', 'true');
+    act(() => runtime.ui.showPlace('The lower market, Jerusalem'));
+    await waitFor(() =>
+      expect(screen.getByTestId('place-banner')).toHaveTextContent('The lower market'),
+    );
   });
 });

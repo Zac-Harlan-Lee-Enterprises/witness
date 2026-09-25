@@ -74,10 +74,19 @@ export interface WorldEntityView {
   interactive: boolean;
 }
 
+export interface WorldLighting {
+  /** Story clock hour (null when the chapter has no clock). */
+  hour: number | null;
+  /** The player carries the chapter's light source. */
+  lamp: boolean;
+}
+
 export interface WorldSceneModel {
   sceneId: string;
   name: string;
   kind: 'indoor' | 'outdoor';
+  ambience: 'market' | 'wind' | 'indoor' | 'oasis' | 'none';
+  lighting: WorldLighting;
   grid: TileGrid;
   baseTile: TileGrid['tiles'][number][number];
   entities: WorldEntityView[];
@@ -92,6 +101,7 @@ export type WorldEvent =
   | { type: 'focusChanged'; entityId: string | null }
   | { type: 'playerMoved'; x: number; y: number; facing: Direction }
   | { type: 'arrived'; targetId: string }
+  | { type: 'unreachable'; targetId: string }
   | { type: 'sceneReady'; sceneId: string };
 
 export interface WorldPort {
@@ -101,6 +111,8 @@ export interface WorldPort {
   travelTo(targetId: string, instant: boolean): void;
   setControlsEnabled(enabled: boolean): void;
   setMotion(options: { reducedMotion: boolean; tilesPerSecond: number }): void;
+  /** Time-of-day colour grade and lamp glow. */
+  setLighting(lighting: WorldLighting): void;
   destroy(): void;
 }
 

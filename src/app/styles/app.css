@@ -629,6 +629,56 @@ legend {
     opacity: 0;
   }
 }
+.place-banner {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  transform: translateX(-50%);
+  z-index: 14;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: place-in 2.8s ease-in-out both;
+}
+.place-banner__name {
+  font-family: var(--font-heading);
+  font-size: clamp(1.4rem, 4.5vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff8e6;
+  text-shadow:
+    0 2px 0 rgb(60 32 12 / 0.9),
+    0 0 18px rgb(40 20 6 / 0.85);
+  background: rgb(40 24 10 / 0.55);
+  padding: 0.25em 0.9em;
+  border-radius: 999px;
+}
+.place-banner__rule {
+  display: block;
+  width: clamp(1.5rem, 8vw, 5rem);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f3d9a4, transparent);
+}
+:root[data-motion='reduce'] .place-banner {
+  animation: none !important;
+}
+@keyframes place-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+}
 .captions {
   position: absolute;
   left: 50%;

@@ -5,7 +5,15 @@ import { useSettings, useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
 import { DialogueHistory, DialogueOverlay } from '../dialogue/DialogueOverlay';
-import { Captions, Hud, InteractionPrompt, LiveAnnouncer, Toasts, TouchControls } from '../hud/Hud';
+import {
+  Captions,
+  Hud,
+  InteractionPrompt,
+  LiveAnnouncer,
+  PlaceBanner,
+  Toasts,
+  TouchControls,
+} from '../hud/Hud';
 import { SatchelOverlay } from '../inventory/SatchelOverlay';
 import { JournalOverlay } from '../journal/JournalOverlay';
 import { GoToList } from '../navigation/GoToList';
@@ -100,6 +108,7 @@ export function GameScreen({
       <h1 className="visually-hidden">{runtime.chapter.title}</h1>
       <GameViewport runtime={runtime} />
       <Hud runtime={runtime} />
+      <PlaceBanner ui={runtime.ui} />
       {ui.storageWarning && (
         <p className="notice notice--warning notice--floating" role="status">
           {ui.storageWarning}

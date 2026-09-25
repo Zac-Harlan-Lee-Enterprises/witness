@@ -42,6 +42,7 @@ export const ROAD_TO_JERICHO: ChapterInput = {
   },
   opening: [{ type: 'startDialogue', dialogue: 'd-opening' }],
   timeCounter: 'hour',
+  lightItem: 'lamp',
   mainQuest: 'q-remedy',
   characters: CHARACTERS,
   items: ITEMS,

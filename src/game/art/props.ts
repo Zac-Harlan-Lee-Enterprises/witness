@@ -1,128 +1,169 @@
+import { ellipse, makeCanvas, rgba, shade, softShadow, type Ctx } from './paint';
 import { PALETTE } from './tiles';
 
 /**
- * Small original prop sprites for placed entities (signs, clues, vessels…).
- * Unknown sprite names fall back to a neutral marker and are reported, so a
- * typo in content never produces an invisible, un-findable object.
+ * Original prop sprites for placed entities (signs, clues, vessels…),
+ * painted at ART_SCALE. Unknown sprite names fall back to a neutral marker
+ * and are reported, so a typo in content never produces an invisible,
+ * un-findable object.
  */
 export const PROP_SIZE = 32;
 
-type Painter = (ctx: CanvasRenderingContext2D) => void;
+type Painter = (ctx: Ctx) => void;
 
-function ellipse(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  rx: number,
-  ry: number,
-  color: string,
-): void {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-const shadow = (ctx: CanvasRenderingContext2D, w = 10): void =>
-  ellipse(ctx, 16, 28, w, 3, 'rgba(60,40,20,0.25)');
+const wood = (ctx: Ctx, x: number, y: number, w: number, h: number): void => {
+  ctx.fillStyle = PALETTE.wood;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = rgba('#ffffff', 0.15);
+  ctx.fillRect(x, y, w, 0.8);
+  ctx.strokeStyle = rgba(PALETTE.woodDark, 0.6);
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + 1, y + (h * i) / 3);
+    ctx.lineTo(x + w - 1, y + (h * i) / 3 + 0.4);
+    ctx.stroke();
+  }
+};
 
 const PAINTERS: Record<string, Painter> = {
   sign: (ctx) => {
-    shadow(ctx, 7);
+    softShadow(ctx, 18, 29, 7, 2.5, 0.35);
     ctx.fillStyle = PALETTE.woodDark;
-    ctx.fillRect(14, 12, 4, 17);
-    ctx.fillStyle = PALETTE.wood;
-    ctx.fillRect(5, 5, 22, 11);
-    ctx.fillStyle = PALETTE.woodDark;
-    for (let i = 0; i < 3; i++) ctx.fillRect(8, 8 + i * 3, 16 - i * 3, 1);
+    ctx.fillRect(14.5, 12, 3, 17);
+    wood(ctx, 4, 4, 24, 12);
+    ctx.strokeStyle = PALETTE.woodDark;
+    ctx.lineWidth = 0.9;
+    ctx.strokeRect(4, 4, 24, 12);
+    ctx.fillStyle = rgba('#3a2412', 0.8);
+    for (let i = 0; i < 3; i++) ctx.fillRect(8, 7.5 + i * 2.8, 16 - i * 4, 1);
   },
   stone: (ctx) => {
-    shadow(ctx, 8);
-    ctx.fillStyle = PALETTE.rock;
-    ctx.fillRect(10, 6, 12, 22);
-    ctx.fillStyle = PALETTE.rockShade;
-    ctx.fillRect(18, 6, 4, 22);
-    ctx.fillStyle = PALETTE.rockLight;
-    for (let i = 0; i < 3; i++) ctx.fillRect(12, 10 + i * 5, 5, 1.5);
+    softShadow(ctx, 18, 29, 9, 3, 0.35);
+    const g = ctx.createLinearGradient(9, 0, 23, 0);
+    g.addColorStop(0, shade(PALETTE.rock, 0.2));
+    g.addColorStop(1, shade(PALETTE.rock, -0.2));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(10, 29);
+    ctx.lineTo(10, 9);
+    ctx.quadraticCurveTo(16, 4, 22, 9);
+    ctx.lineTo(22, 29);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = rgba('#5d4c36', 0.5);
+    ctx.lineWidth = 0.6;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(12, 13 + i * 5);
+      ctx.lineTo(19, 13.5 + i * 5);
+      ctx.stroke();
+    }
   },
   pack: (ctx) => {
-    shadow(ctx, 11);
+    softShadow(ctx, 16, 27, 11, 3.5, 0.35);
     ctx.fillStyle = '#8a6a3e';
     ctx.beginPath();
-    ctx.roundRect(7, 10, 18, 16, 4);
+    ctx.roundRect(6, 10, 20, 16, 5);
     ctx.fill();
-    ctx.fillStyle = '#6a4e2c';
-    ctx.fillRect(7, 14, 18, 3);
-    ctx.strokeStyle = '#5a3f22';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = '#a07e4b';
     ctx.beginPath();
-    ctx.arc(16, 11, 6, Math.PI, 0);
+    ctx.roundRect(6, 10, 20, 7, [5, 5, 1, 1]);
+    ctx.fill();
+    ctx.fillStyle = '#5a3f22';
+    ctx.fillRect(15, 14, 2, 6);
+    ellipse(ctx, 16, 20.5, 1.4, 1.4, '#d9b460');
+    ctx.strokeStyle = '#5a3f22';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(16, 11, 7, Math.PI * 1.05, Math.PI * 1.95);
     ctx.stroke();
   },
   vessels: (ctx) => {
-    shadow(ctx, 13);
-    ellipse(ctx, 11, 18, 8, 10, PALETTE.clay);
-    ellipse(ctx, 11, 9, 4, 2, PALETTE.clayDark);
-    ellipse(ctx, 24, 21, 5, 7, '#c9905e');
-    ellipse(ctx, 24, 15, 2.5, 1.5, PALETTE.clayDark);
+    softShadow(ctx, 16, 28, 14, 3.5, 0.35);
+    const jar = (x: number, y: number, rx: number, ry: number, col: string): void => {
+      ellipse(ctx, x, y, rx, ry, col);
+      ellipse(ctx, x - rx * 0.35, y - ry * 0.3, rx * 0.3, ry * 0.45, rgba('#ffffff', 0.25));
+      ellipse(ctx, x, y - ry, rx * 0.45, ry * 0.18, shade(col, -0.3));
+      ctx.strokeStyle = rgba('#5c3a1f', 0.7);
+      ctx.lineWidth = 0.6;
+      // painted measure marks
+      for (let i = 1; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + rx * 0.55, y - ry + (ry * 2 * i) / 4);
+        ctx.lineTo(x + rx * 0.85, y - ry + (ry * 2 * i) / 4);
+        ctx.stroke();
+      }
+    };
+    jar(11, 18, 8, 10, PALETTE.clay);
+    jar(24, 21, 5, 7, '#c9905e');
   },
   'broken-jar': (ctx) => {
-    ellipse(ctx, 16, 22, 12, 5, 'rgba(120,90,30,0.35)');
+    ellipse(ctx, 16, 22, 12, 5, 'rgba(140,110,40,0.35)');
+    ellipse(ctx, 16, 22, 8, 3, 'rgba(120,95,30,0.25)');
     ctx.fillStyle = PALETTE.clay;
-    ctx.beginPath();
-    ctx.moveTo(8, 20);
-    ctx.lineTo(13, 14);
-    ctx.lineTo(15, 21);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(18, 22);
-    ctx.lineTo(24, 16);
-    ctx.lineTo(26, 23);
-    ctx.fill();
-    ctx.fillStyle = PALETTE.clayDark;
-    ctx.fillRect(14, 24, 5, 3);
+    for (const [x, y, s] of [
+      [8, 20, 1],
+      [19, 22, 0.9],
+      [13, 25, 0.6],
+    ] as const) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 5 * s, y - 6 * s);
+      ctx.lineTo(x + 8 * s, y + 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = PALETTE.clayDark;
+    }
   },
   cloth: (ctx) => {
-    ctx.strokeStyle = PALETTE.bush;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#5c5a30';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(6, 28);
-    ctx.lineTo(14, 10);
-    ctx.lineTo(24, 26);
+    ctx.lineTo(14, 9);
+    ctx.lineTo(25, 26);
+    ctx.moveTo(14, 9);
+    ctx.lineTo(9, 16);
     ctx.stroke();
-    ctx.fillStyle = '#3f6f8f';
+    ctx.fillStyle = '#6f5a3a';
     ctx.beginPath();
-    ctx.moveTo(12, 12);
-    ctx.lineTo(20, 14);
-    ctx.lineTo(17, 22);
+    ctx.moveTo(12, 11);
+    ctx.lineTo(21, 13);
+    ctx.lineTo(18, 22);
     ctx.lineTo(13, 19);
+    ctx.closePath();
     ctx.fill();
+    ctx.fillStyle = '#3f6f8f';
+    ctx.fillRect(15, 12, 2, 9);
   },
   prints: (ctx) => {
-    ctx.fillStyle = 'rgba(90,65,40,0.45)';
+    const print = (x: number, y: number, a: number): void =>
+      ellipse(ctx, x, y, 1.9, 3, 'rgba(95,68,40,0.45)', a);
     for (let i = 0; i < 4; i++) {
-      ellipse(ctx, 9 + (i % 2) * 7, 27 - i * 6, 2.2, 3.2, 'rgba(90,65,40,0.45)');
-      ellipse(ctx, 20 + (i % 2) * 5, 25 - i * 6, 2.2, 3.2, 'rgba(90,65,40,0.35)');
+      print(9 + (i % 2) * 6, 27 - i * 6, -0.2);
+      print(20 + (i % 2) * 5, 25 - i * 6, 0.2);
     }
   },
   drag: (ctx) => {
-    ctx.strokeStyle = 'rgba(90,65,40,0.45)';
+    ctx.strokeStyle = 'rgba(95,68,40,0.45)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(4, 26);
     ctx.bezierCurveTo(12, 20, 18, 22, 28, 12);
     ctx.stroke();
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(4, 30);
     ctx.bezierCurveTo(12, 24, 18, 26, 28, 16);
     ctx.stroke();
   },
   purse: (ctx) => {
-    shadow(ctx, 6);
+    softShadow(ctx, 16, 26, 7, 2.5, 0.35);
     ellipse(ctx, 16, 21, 7, 6, '#7a5a3a');
+    ellipse(ctx, 14, 19, 2.5, 2, rgba('#ffffff', 0.15));
     ctx.strokeStyle = '#4a3522';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(12, 15);
     ctx.lineTo(8, 10);
@@ -131,58 +172,87 @@ const PAINTERS: Record<string, Painter> = {
     ctx.stroke();
   },
   basket: (ctx) => {
-    shadow(ctx, 10);
+    softShadow(ctx, 16, 27, 12, 3.5, 0.35);
     ellipse(ctx, 16, 20, 11, 8, '#c49a5a');
-    ellipse(ctx, 16, 16, 9, 4, '#8a6a3e');
-    ellipse(ctx, 13, 15, 2.5, 2.5, '#6b3f6b');
-    ellipse(ctx, 18, 15, 2.5, 2.5, '#8a4f2f');
+    ctx.strokeStyle = rgba('#8a6a3e', 0.8);
+    ctx.lineWidth = 0.7;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.ellipse(16, 20 + i * 2.5, 10.5 - Math.abs(i), 1.2, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+    ellipse(ctx, 16, 15, 9, 4, '#8a6a3e');
+    for (const [x, col] of [
+      [12, '#6b3f6b'],
+      [16, '#8a4f2f'],
+      [20, '#7a8a4c'],
+    ] as const)
+      ellipse(ctx, x, 14.5, 2.6, 2.6, col);
   },
   lamp: (ctx) => {
-    shadow(ctx, 6);
+    softShadow(ctx, 16, 25, 8, 2.5, 0.35);
     ellipse(ctx, 16, 22, 8, 4, PALETTE.clay);
-    ellipse(ctx, 23, 20, 2, 3, '#f2b441');
+    ellipse(ctx, 14, 21, 3, 1.2, rgba('#ffffff', 0.25));
+    ellipse(ctx, 23.5, 20.5, 2, 3, '#f7c653');
+    ellipse(ctx, 23.5, 19.5, 1, 1.6, '#fff1b8');
   },
   donkey: (ctx) => {
-    shadow(ctx, 13);
-    ellipse(ctx, 15, 17, 10, 6, '#8b7765');
-    ellipse(ctx, 26, 12, 4, 5, '#8b7765');
+    softShadow(ctx, 16, 28, 14, 3.5, 0.35);
+    ctx.fillStyle = '#7d6a58';
+    for (const x of [8, 11, 19, 22]) ctx.fillRect(x, 20, 2.4, 8);
+    ellipse(ctx, 15, 17, 10, 6.5, '#8b7765');
+    ellipse(ctx, 13, 15, 6, 2.5, rgba('#ffffff', 0.12));
+    ellipse(ctx, 26, 11, 3.8, 5, '#8b7765');
+    ellipse(ctx, 27.5, 14.5, 2.2, 2, '#c9b8a6');
     ctx.fillStyle = '#6f5f50';
-    ctx.fillRect(24, 3, 2, 6);
-    ctx.fillRect(28, 3, 2, 6);
-    ctx.fillRect(8, 21, 3, 7);
-    ctx.fillRect(19, 21, 3, 7);
+    ctx.fillRect(24, 2, 2, 6);
+    ctx.fillRect(27.5, 2, 2, 6);
+    ellipse(ctx, 27, 9.5, 0.7, 0.7, '#1c140e');
     ctx.fillStyle = '#b4452f';
-    ctx.fillRect(10, 11, 10, 4);
+    ctx.fillRect(10, 10.5, 10, 4);
+    ctx.fillStyle = '#e0b453';
+    ctx.fillRect(10, 14, 10, 1);
   },
   bedroll: (ctx) => {
+    softShadow(ctx, 16, 23, 13, 3, 0.3);
     ellipse(ctx, 16, 20, 13, 6, '#9c7b54');
     ellipse(ctx, 16, 18, 11, 4, '#c9a878');
-  },
-  clouds: (ctx) => {
-    ellipse(ctx, 12, 14, 8, 5, '#6d7280');
-    ellipse(ctx, 20, 12, 9, 6, '#7c8190');
-    ellipse(ctx, 16, 17, 10, 4, '#5f6470');
-    ctx.strokeStyle = '#8fa6b8';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba('#7a5c38', 0.7);
+    ctx.lineWidth = 0.6;
     for (let i = 0; i < 4; i++) {
       ctx.beginPath();
-      ctx.moveTo(9 + i * 5, 22);
-      ctx.lineTo(7 + i * 5, 28);
+      ctx.moveTo(6 + i * 6, 16);
+      ctx.lineTo(7 + i * 6, 22);
+      ctx.stroke();
+    }
+  },
+  clouds: (ctx) => {
+    ellipse(ctx, 11, 13, 8, 5, '#6d7280');
+    ellipse(ctx, 20, 11, 9, 6, '#7c8190');
+    ellipse(ctx, 16, 16, 11, 4, '#5f6470');
+    ellipse(ctx, 18, 9, 5, 3, rgba('#ffffff', 0.15));
+    ctx.strokeStyle = '#8fa6b8';
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(8 + i * 4, 21);
+      ctx.lineTo(6 + i * 4, 28);
       ctx.stroke();
     }
   },
   'mud-line': (ctx) => {
     ctx.strokeStyle = '#6f4f30';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(2, 18);
     ctx.bezierCurveTo(10, 14, 22, 22, 30, 16);
     ctx.stroke();
     ellipse(ctx, 10, 22, 3, 1.5, '#7f8f4f');
     ellipse(ctx, 22, 21, 4, 1.5, PALETTE.woodDark);
+    ellipse(ctx, 16, 24, 2, 1, '#9f8762');
   },
   scroll: (ctx) => {
-    shadow(ctx, 8);
+    softShadow(ctx, 16, 25, 9, 2.5, 0.3);
     ctx.fillStyle = '#efe0bd';
     ctx.fillRect(7, 12, 18, 11);
     ellipse(ctx, 7, 17.5, 3, 5.5, PALETTE.wood);
@@ -199,10 +269,7 @@ export function paintProp(
   name: string,
   doc: Document = document,
 ): { canvas: HTMLCanvasElement; known: boolean } {
-  const canvas = doc.createElement('canvas');
-  canvas.width = PROP_SIZE;
-  canvas.height = PROP_SIZE;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = makeCanvas(PROP_SIZE, PROP_SIZE, doc);
   const painter = PAINTERS[name];
   if (ctx) (painter ?? PAINTERS.marker)?.(ctx);
   return { canvas, known: painter !== undefined };

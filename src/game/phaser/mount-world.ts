@@ -67,6 +67,7 @@ function createPort(scene: WorldScene, destroy: () => void): WorldPort {
     travelTo: (targetId, instant) => scene.travelTo(targetId, instant),
     setControlsEnabled: (enabled) => scene.setControlsEnabled(enabled),
     setMotion: (options) => scene.setMotion(options),
+    setLighting: (lighting) => scene.setLighting(lighting),
     destroy,
   };
 }

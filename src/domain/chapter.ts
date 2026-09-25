@@ -82,6 +82,8 @@ export const ChapterSchema = z.object({
   }),
   /** Effects applied once when a NEW game's first scene has loaded (e.g. the opening conversation). */
   opening: z.array(EffectSchema).default([]),
+  /** Item that lights the way after dark (drives the lamp glow in the world). */
+  lightItem: z.string().optional(),
   /** Counter shown to the player as time of day (hours, 0–24+). */
   timeCounter: z.string().optional(),
   mainQuest: z.string().min(1),

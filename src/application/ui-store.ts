@@ -55,6 +55,8 @@ export interface UiState {
   toasts: Toast[];
   /** Polite screen-reader announcement (scene changes, arrivals). */
   announcement: string;
+  /** Visual place-name banner shown on arrival (seq changes each time). */
+  place: { name: string; seq: number } | null;
   transitioning: boolean;
   fatalError: string | null;
   storageWarning: string | null;
@@ -69,6 +71,7 @@ export const INITIAL_UI_STATE: UiState = {
   focus: null,
   toasts: [],
   announcement: '',
+  place: null,
   transitioning: false,
   fatalError: null,
   storageWarning: null,
@@ -139,6 +142,10 @@ export class UiStore extends Store<UiState> {
 
   announce(text: string): void {
     this.setState((s) => ({ ...s, announcement: text }));
+  }
+
+  showPlace(name: string): void {
+    this.setState((s) => ({ ...s, place: { name, seq: (s.place?.seq ?? 0) + 1 } }));
   }
 
   setTransitioning(transitioning: boolean): void {

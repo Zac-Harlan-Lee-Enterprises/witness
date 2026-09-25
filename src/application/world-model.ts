@@ -3,7 +3,7 @@ import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
 import type { GameState } from '@/domain/state/game-state';
 import { parseLayout, type Entity, type Scene } from '@/domain/world';
-import type { WorldEntityView, WorldSceneModel } from './ports';
+import type { WorldEntityView, WorldLighting, WorldSceneModel } from './ports';
 
 /**
  * Translates content + state into the render model the world adapter draws.
@@ -52,6 +52,12 @@ export function visibleEntities(
     });
 }
 
+export function lightingOf(chapter: Chapter, state: GameState): WorldLighting {
+  const hour = chapter.timeCounter ? (state.counters[chapter.timeCounter] ?? null) : null;
+  const lamp = chapter.lightItem ? (state.inventory[chapter.lightItem] ?? 0) > 0 : false;
+  return { hour, lamp };
+}
+
 export function buildSceneModel(
   chapter: Chapter,
   state: GameState,
@@ -62,6 +68,8 @@ export function buildSceneModel(
     sceneId: scene.id,
     name: scene.name,
     kind: scene.kind,
+    ambience: scene.ambience,
+    lighting: lightingOf(chapter, state),
     grid: parseLayout(scene),
     baseTile: scene.baseTile,
     entities: visibleEntities(chapter, scene, state),
