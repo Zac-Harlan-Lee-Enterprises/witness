@@ -119,7 +119,7 @@ export const RECORDS: ChapterInput['records'] = [
     title: 'A road with a reputation',
     sources: ['src-strabo-16', 'src-jerome-108', 'src-wiki-adummim', 'src-web-luk10'],
     scripture: [ref('Luke', 10, 30)],
-    body: 'Jesus’ story takes it for granted that robbers could strike on this road. Other ancient writers mention danger in the area too. The geographer Strabo wrote that the Roman general Pompey (63 BC) destroyed robbers’ strongholds on the passes near Jericho. Centuries later, Jerome (AD 404) called the climb “the place of blood” because of attacks — but that name is much later than Jesus’ day. The older Hebrew name, Adummim, simply means “red,” after the reddish rock.',
+    body: 'Jesus’ story takes it for granted that robbers could strike on this road. Other ancient writers mention danger in the area too. The geographer Strabo wrote that the Roman general Pompey (63 BC) destroyed robbers’ hideouts and local rulers’ strongholds in the region, two of them on the passes leading to Jericho. Centuries later, Jerome (AD 404) called the climb “the place of blood” because of attacks — but that name is much later than Jesus’ day. The older Hebrew name, Adummim, simply means “red,” after the reddish rock.',
     governance: aiDraft({ confidence: 'probable', sourced: true }),
   },
   {
@@ -271,7 +271,7 @@ export const RECORDS: ChapterInput['records'] = [
     kind: 'interpretation',
     title: 'An early Christian reading',
     sources: ['src-augustine-qe', 'src-augustine-doctrine'],
-    body: 'Some early Christian teachers also read the parable as a picture of salvation. Augustine of Hippo (around AD 400) described the wounded man as Adam — standing for all humanity — the Samaritan as the Lord, and the inn as the Church. He said the oil meant the comfort of good hope, and the wine meant encouragement to work with a fervent spirit. Augustine ALSO taught the plain moral lesson that every person is our neighbor. Today many scholars focus on the moral reading, while some Christians still treasure the Christ-centered one. Christian traditions differ in how much weight they give each.',
+    body: 'Some early Christian teachers also read the parable as a picture of salvation. Augustine of Hippo (around AD 400) described the wounded man as Adam, the Samaritan as the Lord, and the inn as the Church. He said the oil meant the comfort of good hope, and the wine meant encouragement to work with a fervent spirit. Augustine ALSO taught the plain moral lesson that every person is our neighbor. Today many scholars focus on the moral reading, while some Christians still treasure the Christ-centered one. Christian traditions differ in how much weight they give each.',
     governance: aiDraft({
       confidence: 'not-applicable',
       sourced: true,

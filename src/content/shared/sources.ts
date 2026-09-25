@@ -152,7 +152,7 @@ export const SOURCES: ChapterInput['sources'] = [
     url: 'https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Strabo/16B*.html',
     accessed: ACCESSED,
     verified: true,
-    note: 'Mentions robbers’ strongholds on the passes to Jericho destroyed by Pompey (63 BC); describes Jericho’s palms and balsam.',
+    note: 'Pompey (63 BC) destroyed “the haunts of robbers and the treasure-holds of the tyrants”, two of them “on the passes leading to Hiericus” (16.2.40) — it does not say which kind those two were. Describes Jericho’s palms and balsam (16.2.41).',
   },
   {
     id: 'src-jerome-108',
@@ -195,14 +195,14 @@ export const SOURCES: ChapterInput['sources'] = [
   },
   {
     id: 'src-augustine-doctrine',
-    title: 'Augustine, On Christian Doctrine 1.30.31 (NPNF), New Advent',
+    title: 'Augustine, On Christian Doctrine 1.30.31–32 (NPNF), New Advent',
     kind: 'ancient-primary',
     author: 'Augustine of Hippo',
-    locator: '1.30.31',
+    locator: '1.30.31–32',
     url: 'https://www.newadvent.org/fathers/12021.htm',
     accessed: ACCESSED,
     verified: true,
-    note: 'Augustine’s plain moral reading: every person is our neighbor.',
+    note: 'Augustine’s plain moral reading: “every man is to be considered our neighbor” (1.30.32); “he is our neighbor whom it is our duty to help in his need” (1.30.31).',
   },
 
   // ── Modern scholarship and reference ───────────────────────────────────
