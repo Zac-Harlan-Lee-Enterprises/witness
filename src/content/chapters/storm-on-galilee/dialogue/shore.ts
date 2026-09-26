@@ -596,7 +596,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say(
         'ev1',
         'narrator',
-        'Evening comes, and the crowd begins to break up. The teacher’s disciples take him with them in the boat, just as he is, to cross to the other side.',
+        'Evening comes. The teacher’s disciples leave the crowd and take him with them in the boat, just as he is, to cross to the other side.',
         { kind: 'paraphrase', recordId: 'rec-para-evening', next: 'ev2' },
       ),
       say(
