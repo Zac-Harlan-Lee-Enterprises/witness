@@ -1,12 +1,23 @@
-# Deploy to GitHub Pages — MANUAL and main-only.
+# Deploy to GitHub Pages — automatic on main, only after CI passes.
 #
-# Deploying is a human decision: this workflow only runs from the Actions tab
-# (workflow_dispatch), and the job is pinned to main BY REF so a dispatch on
-# any other branch cannot publish it. Configure the `github-pages`
-# environment with required reviewers (see harden-github.sh).
+# Merging a pull request into main is the decision to publish: branch
+# protection (harden-github.sh) requires the PR and the `build-and-test`
+# check. When CI finishes on a push to main, this workflow deploys that exact
+# commit if CI succeeded; a failed or cancelled CI run deploys nothing.
+# It can also be re-run by hand from the Actions tab on main.
+#
+# Guards (workflow_run runs with this repo's permissions, so be strict):
+# - the job is pinned to main BY REF;
+# - the CI run must be a `push` to main in THIS repository (a fork's pull
+#   request from a branch named "main" also reports head_branch == 'main');
+# - it checks out the commit CI tested, not whatever main is by now.
 name: Deploy to GitHub Pages
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -20,13 +31,23 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' && (
+        github.event_name == 'workflow_dispatch' || (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository
+        )
+      )
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc

@@ -331,5 +331,14 @@
     "priority": 3,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "pages-deploy-on-merge",
+    "category": "quality",
+    "description": "Merging to main publishes the site: the Pages workflow deploys the exact commit once CI succeeds on a push to main in this repository (never a failed run, another branch or a fork), built for the repository sub-path.",
+    "verification": "npx vitest run --project unit tests/architecture/deploy-workflow.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
   }
 ]

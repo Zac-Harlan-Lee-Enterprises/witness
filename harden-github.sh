@@ -149,7 +149,7 @@ say "2/4  Deployment environments with required reviewers"
 # waits for a human click. This is what makes "agent accidentally deployed to
 # production" structurally impossible rather than merely discouraged.
 for env in "$DEPLOY_ENVIRONMENT"; do
-  reviewers_note=" (add required reviewers in the UI — see note below)"
+  reviewers_note=" (limit it to main in the UI — see note below)"
   apply "Environment '$env' exists$reviewers_note" \
         "Could not create environment '$env'" \
         gh api -X PUT "repos/$REPO/environments/$env" \
@@ -160,9 +160,12 @@ cat <<'NOTE'
 
   ACTION REQUIRED (cannot be fully scripted):
     Settings → Environments → github-pages → Deployment protection rules
-      [x] Required reviewers      → add 1-2 humans (NOT a bot account)
-      [x] Wait timer              → 5 minutes (gives you time to cancel)
       [x] Deployment branches     → Selected branches → main only
+      [ ] Wait timer              → optional: delays each automatic deploy
+                                    after a merge, giving you time to cancel
+      [ ] Required reviewers      → optional: every deploy then waits for a
+                                    human (not a bot) instead of going out on
+                                    merge
     This game needs NO secrets. If a future chapter adds any, put them in this
     environment, never in repo-level secrets.
 

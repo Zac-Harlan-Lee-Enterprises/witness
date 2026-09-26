@@ -69,7 +69,7 @@ More: [docs/architecture.md](docs/architecture.md) · decisions: [docs/adr/](doc
 
 The build is a plain static site (`dist/`) — no server rendering and no client-side routes.
 
-- **GitHub Pages**: `.github/workflows/deploy-pages.yml`, run manually from the Actions tab on `main`. It builds with `VITE_BASE_PATH=/<repo-name>/` so assets, the manifest and the service worker work under the repository sub-path.
+- **GitHub Pages**: `.github/workflows/deploy-pages.yml` deploys automatically once CI passes on `main`, so merging a pull request publishes it (it can also be re-run from the Actions tab). It builds with `VITE_BASE_PATH=/<repo-name>/` so assets, the manifest and the service worker work under the repository sub-path.
 - **Amazon S3 + CloudFront / Netlify / Cloudflare Pages**: upload `dist/`; serve `index.html`, `sw.js` and `manifest.webmanifest` with `Cache-Control: no-cache` and hashed `assets/*` as immutable.
 - **Sub-path deploys**: set `VITE_BASE_PATH=/your-path/` at build time (verified: assets, icons, manifest scope and service-worker fallback all follow it; world art is generated in code, so there are no asset URLs to break).
 
