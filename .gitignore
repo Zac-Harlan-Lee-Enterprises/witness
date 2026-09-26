@@ -40,3 +40,6 @@ dist-subpath/
 # Art pipeline (Blender runs Python from tools/art)
 __pycache__/
 *.pyc
+
+# Agent worktrees (Claude Code)
+.claude/worktrees/
