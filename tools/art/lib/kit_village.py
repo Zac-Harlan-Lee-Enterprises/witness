@@ -2111,7 +2111,9 @@ class VillageKit:
             main = self.add_light(f"{name}-light", "POINT", c + Vector((0, 0, 0.32)), 150.0, "#ff9040", radius=0.12)
             low = self.add_light(f"{name}-coal-light", "POINT", c + Vector((0, -0.05, 0.1)), 40.0, "#ff6a28", radius=0.2)
             _ = (main, low)
-            self.flicker.append(("hearth", (x + 0.5) * 32, (y + 0.3) * 32, 110.0, ["day", "late", "night"]))
+            # Its glow is baked in (and at night's exposure it is bright): the
+            # game's flickering pool over it is gentle, or the ring goes white.
+            self.flicker.append(("hearth", (x + 0.5) * 32, (y + 0.3) * 32, 110.0, ["day", "late", "night"], 0.25))
 
     def rounded_block(self, name, x0, x1, y0, y1, z0, z1, mat, rng, roundness=0.3):
         """A hewn block of stone with rounded edges and corners (a

@@ -256,7 +256,7 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
         self.exposure = 0.0
         # Extra exposure (EV) per lighting variant (a room lit only by lamps).
         self.variant_exposure = {}
-        # Fires and lamps the game makes flicker: (kind, x, y, radius, variants), game units.
+        # Fires and lamps the game makes flicker: (kind, x, y, radius, lights[, strength]), game units.
         self.flicker = []
         self.col_ground = common.collection("ground")
         self.heights = None
@@ -301,10 +301,11 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
 
     def light_spots(self, variant):
         """The fires and lamps burning in a lighting variant, for the game to
-        make flicker: kind ('hearth' or 'lamp'), centre and radius in game units."""
+        make flicker: kind ('hearth' or 'lamp'), centre and radius in game units,
+        and, where an entry gives one (a sixth item), how strong its pool is."""
         return [
-            {"kind": k, "x": round(x, 1), "y": round(y, 1), "radius": round(r, 1)}
-            for k, x, y, r, vs in self.flicker
+            {"kind": k, "x": round(x, 1), "y": round(y, 1), "radius": round(r, 1), **({"strength": s[0]} if s else {})}
+            for k, x, y, r, vs, *s in self.flicker
             if variant in vs
         ]
 

@@ -2647,7 +2647,8 @@
      "kind": "hearth",
      "x": 336.0,
      "y": 521.6,
-     "radius": 110.0
+     "radius": 110.0,
+     "strength": 0.25
     }
    ],
    "peopleLight": "night"
@@ -5292,7 +5293,8 @@
      "kind": "hearth",
      "x": 336.0,
      "y": 521.6,
-     "radius": 110.0
+     "radius": 110.0,
+     "strength": 0.25
     }
    ],
    "peopleLight": "late"
