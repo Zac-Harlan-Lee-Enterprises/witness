@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
 import { weatherOf } from '@/domain/weather';
-import { createHarness, flush, loadJericho } from '../../support/harness';
+import { createHarness, flush, loadJericho, Player } from '../../support/harness';
 
 const flag = (name: string) => ({ type: 'flag' as const, flag: name });
 
@@ -41,6 +41,25 @@ describe('weather driven by the story', () => {
     await flush();
     h.controller.handleWorldEvent({ type: 'playerMoved', x: 3, y: 5, facing: 'down' });
     expect(h.world.weather).toBe('rain');
+  });
+
+  it("reports the new scene's weather after a scene change, not the last scene's", async () => {
+    const chapter = structuredClone(loadJericho());
+    const house = chapter.scenes.find((s) => s.id === 'miriam-house');
+    if (!house) throw new Error('no house');
+    house.weatherChanges = [{ when: flag('test-rain'), weather: 'rain' }];
+    const h = await createHarness({ chapter });
+    h.session.dispatch([{ type: 'setFlag', flag: 'test-rain', value: true }]);
+    await flush();
+    h.controller.handleWorldEvent({ type: 'playerMoved', x: 3, y: 5, facing: 'down' });
+    expect(h.world.weather).toBe('rain');
+    const p = new Player(h);
+    await p.choose('c-yes');
+    await p.choose('c-go');
+    await p.finish();
+    await p.exit('house-door');
+    expect(h.world.currentScene).toBe('jerusalem-market');
+    expect(h.world.weather).toBe('clear');
   });
 
   it('rejects a weather change that refers to something that does not exist', () => {

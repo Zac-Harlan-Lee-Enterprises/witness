@@ -143,3 +143,23 @@ git worktree add ../witness-ch2 feat/art-storm-on-galilee   # one worktree per W
 - **Privacy incident (2026-09-25).** Two research subagents, one working for Chapter 2 and one for Chapter 4, put the owner's email address in the User-Agent header of some Wikipedia API requests. The email is in no file in the repo. Every agent brief now carries an explicit rule never to send personal details.
 - **Portraits v1** read as high-end CG rather than photographs. A further jump in realism probably needs a sculpted base mesh. MakeHuman's assets are CC0, but using any downloaded asset is the owner's call, since the realism brief forbade downloading artwork.
 - **Content.** All educational records in Chapters 2–4 are AI drafts awaiting a named human reviewer. Nothing is approved, and the Scripture text for Chapters 2–4 is not in the translation registry, so players see the placeholder.
+
+## Progress since the checkpoint (same day)
+
+- **Merged and pushed** to `feat/realism-and-chapters`:
+  - portraits second pass: all 43 speakers and the player looks;
+  - Chapter 4 art: all four places, with Chapter 4's per-place light plan as the canonical lighting mechanism.
+- **Still rendering:** Chapter 3 (`bethlehem-lanes`, `shepherds-fields`) and Chapter 2 (all three places). Both are porting their lighting onto Chapter 4's light plan first.
+- **Code review** (the `code-review` skill, high effort, on `feat/realism-and-chapters`). Fixed:
+  - the test world's weather getter;
+  - the portrait lookup is indexed;
+  - the cache-on-first-use art cache is named by a content hash (`scripts/art-revision.ts`), so it can't go stale after a redeploy;
+  - later-chapter people lights are cached on first use.
+- **Settled by Chapter 2's branch when it merges:** lake and shallows get live water, and no rain splashes on open water.
+- **Review findings still to fix after the Chapter 2 and 3 merges** (they touch the same files):
+  1. `src/game/fx/weather-layer.ts`: puddles on `roman-road`, `bridge` and `shingle` too.
+  2. `src/game/scenes/world-scene.ts`: turning "Simpler visual effects" off must restore the level `create()` chose (`lite` on software renderers), not `full`.
+  3. `src/game/prerendered/figures.ts` / `loader.ts`: a person's shadow sheet and its frame metrics must come from the same light as the body sheet.
+  4. `src/game/prerendered/loader.ts`: reuse the engine's `textureMegabytes` (GPU formats) instead of a second RGBA-only copy that overwrites `data-texture-mb`.
+  5. `src/game/prerendered/loader.ts`: `beginPlace` marks sheets stale before the next place's loads can keep them, so they're dropped and downloaded again on every transition. The module-level `watching` also holds a destroyed scene.
+  6. `src/game/scenes/world-scene.ts`: `refreshSky()` runs every frame even when nothing changed.

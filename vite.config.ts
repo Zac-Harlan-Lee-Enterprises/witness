@@ -3,7 +3,12 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { ART_RUNTIME_CACHE_ENTRIES, CACHED_ON_FIRST_USE_PLACES } from './src/app/art-cache';
+import {
+  ART_RUNTIME_CACHE_ENTRIES,
+  CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
+  CACHED_ON_FIRST_USE_PLACES,
+} from './src/app/art-cache';
+import { artRevision } from './scripts/art-revision';
 
 /**
  * Static-host friendly build.
@@ -81,13 +86,16 @@ export default defineConfig(({ mode }) => {
             '**/art/**/*-late*.webp',
             // Later chapters' places are cached on first use (src/app/art-cache.ts).
             ...CACHED_ON_FIRST_USE_PLACES.map((id) => `**/art/${id}/**`),
+            ...CACHED_ON_FIRST_USE_PEOPLE_LIGHTS.map((light) => `**/art/people/*-${light}*.webp`),
           ],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.includes('/art/'),
               handler: 'CacheFirst',
               options: {
-                cacheName: 'witness-art',
+                // Named after the art's content: new art means a fresh cache, never an
+                // old manifest cached beside newer pages (or the reverse).
+                cacheName: `witness-art-${artRevision(fileURLToPath(new URL('./public/art', import.meta.url)))}`,
                 expiration: { maxEntries: ART_RUNTIME_CACHE_ENTRIES },
               },
             },

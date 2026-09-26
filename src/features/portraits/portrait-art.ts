@@ -40,6 +40,23 @@ export interface PortraitImage {
  * look now. `characterId` picks that person's own portrait when two people
  * share an appearance; players (and anyone else) are found by appearance.
  */
+/** For each manifest: appearance key → the first portrait id (sorted) rendered from it. */
+const byAppearance = new WeakMap<PortraitManifest, ReadonlyMap<string, string>>();
+
+function appearanceIndex(entries: PortraitManifest): ReadonlyMap<string, string> {
+  let index = byAppearance.get(entries);
+  if (!index) {
+    const map = new Map<string, string>();
+    for (const id of Object.keys(entries).sort()) {
+      const key = entries[id]?.appearance;
+      if (key !== undefined && !map.has(key)) map.set(key, id);
+    }
+    index = map;
+    byAppearance.set(entries, index);
+  }
+  return index;
+}
+
 export function portraitImage(
   appearance: Appearance,
   characterId: string | null = null,
@@ -48,12 +65,8 @@ export function portraitImage(
 ): PortraitImage | null {
   const key = appearanceKey(appearance);
   const own = characterId ? entries[characterId] : undefined;
-  const id =
-    own?.appearance === key
-      ? characterId
-      : (Object.keys(entries)
-          .sort()
-          .find((k) => entries[k]?.appearance === key) ?? null);
+  // Built once per manifest: Portrait renders on every typewriter tick.
+  const id = own?.appearance === key ? characterId : (appearanceIndex(entries).get(key) ?? null);
   if (!id) return null;
   const url = (size: number) => `${base}${PORTRAIT_DIR}${id}-${size}.webp`;
   return {
