@@ -164,7 +164,7 @@ def main():
     # Small bright lights (lamps, embers) reflected in glossy things make
     # fireflies that the denoiser smears into blotches: clamp the indirect light.
     scene.cycles.sample_clamp_indirect = 10.0
-    scene.cycles.filter_glossy = 0.5
+    scene.cycles.blur_glossy = 0.5
     p = place.Place(scene_data).build()
     scene.view_settings.exposure = -1.4 + p.exposure
     plan = light_plan(p)
