@@ -164,7 +164,7 @@
     },
     {
       "path": "public/art/capernaum-shore/ground-*.webp",
-      "what": "Ground layer of the shore at Capernaum: a lane of basalt flags, dry lakeside grass on dark soil, trodden paths, a shingle beach of basalt and limestone pebbles falling to the waterline (wet band, foam), the lake and its shallows (refracting water over a shelving bed), the jetty of dressed basalt blocks, with every standing thing's shadow and occlusion baked in; the 'late' set in later-day light (also shown as the boats put out at sunset) and the 'night' set by moonlight with the lamps lit; full and half resolution; cut into tiles of at most 2048 px.",
+      "what": "Ground layer of the shore at Capernaum: a lane of basalt flags, dry lakeside grass on dark soil, trodden paths, a shingle beach of basalt and limestone pebbles falling to the waterline (wet band, foam), the lake and its shallows (refracting water over a shelving bed), the jetty of dressed basalt blocks, with every standing thing's shadow and occlusion baked in; the 'late' set in later-day light (exposed 0.3 EV brighter than other places, for the dark basalt; also shown as the boats put out at sunset) and the 'night' set by moonlight with the lamps lit (lamplight falling out of the middle house's open door onto the lane); full and half resolution; cut into tiles of at most 2048 px.",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's capernaum-shore scene data (tile map, legend, mood, entities). Geometry and materials are procedural (tools/art/lib/*.py, the lake's in kit_lake.py, lake_boats.py, lake_houses.py and lake_materials.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
       "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
       "license": "Project licence (original work)",
@@ -180,7 +180,7 @@
     },
     {
       "path": "public/art/capernaum-shore/sprites-*.webp",
-      "what": "Atlas pages of every standing thing on the shore (basalt houses, boats drawn up and moored, masts and furled sails, the teacher's boat under its shade, nets and fish racks, the salter's jars and tubs, story props such as Grandmother's lamp, the towline and the jars left on the rack), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
+      "what": "Atlas pages of every standing thing on the shore (basalt houses, the middle one's room seen through its open door by lamplight at night, boats drawn up and moored, masts and furled sails, the teacher's boat under its shade, nets and fish racks, the salter's jars and tubs, story props such as Grandmother's lamp, the towline and the jars left on the rack), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
       "origin": "Rendered by tools/art/build_place.py; procedural geometry and materials.",
       "tools": ["Blender 5.2.2 LTS"],
       "license": "Project licence (original work)",
@@ -212,7 +212,7 @@
     },
     {
       "path": "public/art/open-lake/sprites-*.webp",
-      "what": "Atlas pages of every standing thing on the lake (the family boat's bulwarks, oars, steering oar, stern lamp, mast, yard and sail, the boats around under way with their stern lamps, the teacher's boat under its shade, story props such as the floating jars, the towline and Shifra's family's boat), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
+      "what": "Atlas pages of every standing thing on the lake (the family boat's bulwarks, oars, steering oar, stern lamp, mast, yard and sail, the boats around under way with their stern lamps, the teacher's boat under its shade, the yard and sail of each boat around as story props, set before the squall and taken in from it on, story props such as the floating jars, the towline and Shifra's family's boat), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
       "origin": "Rendered by tools/art/build_place.py; procedural geometry and materials.",
       "tools": ["Blender 5.2.2 LTS"],
       "license": "Project licence (original work)",

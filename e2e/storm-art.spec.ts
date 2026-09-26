@@ -146,8 +146,9 @@ for (const vp of VIEWPORTS) {
         timeout: 20_000,
       });
       await shot('shore-evening', 2500);
+      // The boats put out: the lake's arrival narration may open at once, so
+      // wait for the place rather than for no conversation.
       await continueDialogue(page);
-      await endDialogue(page);
       await expectScene(page, 'Out on the lake');
       await shot('lake-arrival', 300);
       await page.waitForTimeout(400);

@@ -16,6 +16,15 @@ const storm = (option: string): Condition => ({
 });
 const talked = (dialogue: string): Condition => ({ type: 'conversationDone', dialogue });
 
+/** The squall has broken: the lake's storm (weatherChanges) and every boat's sail taken in. */
+const STORM_BROKE = flag('storm-broke');
+
+/** The other boats big enough to carry a sail (a tile of each: see the layout). */
+const OTHER_BOATS = [
+  { id: 'teacher-boat', label: 'The teacher’s boat', x: 36, y: 11 },
+  { id: 'fishing-boat', label: 'A fishing boat', x: 29, y: 18 },
+] as const;
+
 /** Wind rises once you've been under way a little while: after any talk, or a walk forward. */
 const GUST_EFFECTS: Effect[] = [
   { type: 'setFlag', flag: 'wind-rising', value: true },
@@ -289,6 +298,31 @@ export const OPEN_LAKE: ChapterInput['scenes'][number] = {
         effects: [{ type: 'openPuzzle', puzzle: 'p-sail' }],
       },
     },
+    // ── The other boats' sails: set in the evening air, taken in when the
+    // squall breaks (the same story state that brings the storm), and not
+    // set again in the calm. Drawn with the boats' art only.
+    ...OTHER_BOATS.flatMap(({ id, label, x, y }) => [
+      {
+        id: `${id}-sail`,
+        kind: 'feature' as const,
+        label: `${label}: its sail set`,
+        sprite: 'sail-set',
+        x,
+        y,
+        solid: false,
+        visibleWhen: not(STORM_BROKE),
+      },
+      {
+        id: `${id}-sail-furled`,
+        kind: 'feature' as const,
+        label: `${label}: its sail taken in`,
+        sprite: 'sail-furled',
+        x,
+        y,
+        solid: false,
+        visibleWhen: STORM_BROKE,
+      },
+    ]),
     {
       id: 'bow',
       kind: 'feature',
@@ -353,7 +387,7 @@ export const OPEN_LAKE: ChapterInput['scenes'][number] = {
   weather: 'clear',
   weatherChanges: [
     { when: flag('wind-rising'), weather: 'wind' },
-    { when: flag('storm-broke'), weather: 'storm' },
+    { when: STORM_BROKE, weather: 'storm' },
     { when: flag('great-calm'), weather: 'clear' },
   ],
 };

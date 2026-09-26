@@ -4,6 +4,7 @@ import { chapterSource, parseChapter } from '@/content';
 import { STORM_ON_GALILEE } from '@/content/chapters/storm-on-galilee';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
+import { evaluate } from '@/domain/conditions';
 import { weatherOf } from '@/domain/weather';
 import { isSolidTile, parseLayout, type TileKind } from '@/domain/world';
 import { groundColor } from '@/game/art/terrain';
@@ -183,6 +184,41 @@ describe('A Storm on Galilee — content', () => {
     const shore = scene('capernaum-shore');
     expect(weatherOf(shore, makeState())).toBe('wind');
     expect(weatherOf(shore, makeState({ flags: { evening: true } }))).toBe('clear');
+  });
+
+  it('takes in the other boats’ sails when the storm breaks, and never sets them in it', () => {
+    const lake = scene('open-lake');
+    const grid = parseLayout(lake);
+    const sails = lake.entities.filter(
+      (e) => e.sprite === 'sail-set' || e.sprite === 'sail-furled',
+    );
+    // One set sail and one furled for each boat that carries a sail, on its tiles.
+    expect(sails.length).toBeGreaterThanOrEqual(4);
+    for (const s of sails) expect(grid.tiles[s.y]?.[s.x], s.id).toBe('boat');
+    for (const flags of [
+      [],
+      ['wind-rising'],
+      ['wind-rising', 'storm-broke'],
+      ['wind-rising', 'storm-broke', 'great-calm'],
+    ]) {
+      const state = makeState({ flags: Object.fromEntries(flags.map((f) => [f, true])) });
+      const storm = weatherOf(lake, state) === 'storm';
+      for (const s of sails) {
+        const shown = evaluate(s.visibleWhen, state);
+        // Set before the squall; taken in from the squall on (and left so in the calm).
+        const expected =
+          s.sprite === 'sail-set' ? !flags.includes('storm-broke') : flags.includes('storm-broke');
+        expect(shown, `${s.id} with ${flags.join(',') || 'nothing'}`).toBe(expected);
+        if (storm) expect(s.sprite === 'sail-set' && shown, `${s.id} set in the storm`).toBe(false);
+      }
+      // Each boat shows exactly one of its two sails.
+      for (const base of new Set(sails.map((s) => s.id.replace(/-sail(-furled)?$/, ''))))
+        expect(
+          sails.filter((s) => s.id.startsWith(`${base}-sail`) && evaluate(s.visibleWhen, state))
+            .length,
+          base,
+        ).toBe(1);
+    }
   });
 
   it('builds its places from tile kinds that name real things, all of which the painter knows', () => {
