@@ -1,6 +1,6 @@
 # Architecture
 
-Technical architecture of **Witness: A Journey Through Scripture** as it exists in this repository (vertical slice: Chapter 1, *The Road to Jericho*). Everything here is meant to be checkable against the code, and the links point at the source of truth. The reasoning behind each major choice is in the [Architecture Decision Records](adr/README.md).
+Technical architecture of **Witness: A Journey Through Scripture** as it exists in this repository (four chapters, starting with *The Road to Jericho*). Everything here is meant to be checkable against the code, and the links point at the source of truth. The reasoning behind each major choice is in the [Architecture Decision Records](adr/README.md).
 
 **Contents**
 

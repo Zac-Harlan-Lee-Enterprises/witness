@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> **Read this first.** Single entry point for any AI agent (Claude, Copilot, Cursor…) or new developer working on **Witness: A Journey Through Scripture** — a local-first Christian narrative adventure (React + Phaser 3 + TypeScript PWA). Vertical slice: **Chapter 1, The Road to Jericho**.
+> **Read this first.** Single entry point for any AI agent (Claude, Copilot, Cursor…) or new developer working on **Witness: A Journey Through Scripture** — a local-first Christian narrative adventure (React + Phaser 3 + TypeScript PWA). Four chapters: **1 The Road to Jericho**, **2 A Storm on Galilee**, **3 A Journey to Bethlehem**, **4 A Letter from Paul** (`src/content/chapters/`), every place pre-rendered in 3D (`tools/art/`).
 
 ---
 

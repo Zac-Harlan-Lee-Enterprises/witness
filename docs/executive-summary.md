@@ -26,7 +26,7 @@ The player carries a fever remedy from Jerusalem down the dangerous road to Jeri
 
 ### For players
 
-- **Menus and profiles.** Title screen, nickname-only profiles (up to 8 per device, 4 non-gendered looks), and chapter select. Chapter 1 is playable. Three future chapters are listed as locked ("Coming later").
+- **Menus and profiles.** Title screen, nickname-only profiles (up to 8 per device, 4 non-gendered looks), and chapter select. All four chapters are playable: *The Road to Jericho*, *A Storm on Galilee*, *A Journey to Bethlehem* and *A Letter from Paul*.
 - **The world.** A top-down tile world in Phaser with procedural placeholder art and synthesised placeholder audio (with sound captions). Movement is by keyboard, touch d-pad, pointer (click or tap to walk) or gamepad. A **"Go to…" list** makes the whole chapter playable without precise movement.
 - **The story.** Branching dialogue in which choices that can't be taken right now stay visible with the reason. There is a main quest and an optional side quest (*An Honest Measure*). Four puzzles grow out of the story: packing a satchel, measuring with two vessels, choosing a route from evidence, and ordering what happened from tracks. Each has three hint tiers and no penalty.
 - **Consequences.** Choices change what the player carries, who helps the injured traveler and how, who pays the inn, what time it is (a story counter, not a clock), and what people say.

@@ -64,13 +64,13 @@ Ordered by dependency: human gates first, then platform confidence, then new con
 | Check `navigator.storage.persist()` | The result is ignored today. Consider telling players when the browser declines persistent storage. |
 | Save and content-version compatibility | `contentVersion` is stored in every save but not checked on load. Define what happens when content ids change between releases. |
 
-### Phase 10: Chapter 2 preparation
+### Phase 10: Chapters 2–4 ✅ Built (AI draft)
 
 | Item | Detail |
 |---|---|
-| Choose the chapter | The registry lists *A Storm on Galilee*, *A Journey to Bethlehem* and *A Letter from Paul* as "Coming later" |
-| Research first | Build the source list and a claim-by-claim verification doc before drafting ([research/source-verification.md](research/source-verification.md) is the model) |
-| Author as content only | Follow [chapter-authoring-guide.md](chapter-authoring-guide.md). A new puzzle type means schema, checker and view. |
+| Chapters | *A Storm on Galilee*, *A Journey to Bethlehem* and *A Letter from Paul* are playable end to end, as content only, with headless playthroughs of every branch and one e2e spec each ([chapters/](chapters/)) |
+| Research | Claim-by-claim source docs in [research/](research/); every educational record awaits human review |
+| Art | Every place pre-rendered in 3D, with day, later-day and night light where the story needs it |
 | Extract UI strings | Before any second language |
 
 ### Later (only when a concrete need justifies it)
@@ -308,10 +308,10 @@ Evidence: `scripture.test.ts`, [content-governance.md §3](content-governance.md
 
 ### Developers
 
-#### US-32 Add Chapter 2 as content only 🟡 Partial
+#### US-32 Add Chapter 2 as content only ✅ Done
 *As a developer, I want to add a chapter without changing the engine.*
 - **Given** a new chapter folder that passes the schema and integrity checks, **when** it is registered in [`src/content/index.ts`](../src/content/index.ts), **then** it appears in chapter select and loads lazily.
-- The schemas, registry, lazy loading and [chapter-authoring-guide.md](chapter-authoring-guide.md) exist. No second chapter has been built to prove it.
+- Chapters 2–4 were added this way (plus small additive engine features: weather, tile kinds, carries), proving the guide.
 
 #### US-33 Architecture boundaries can't silently erode ✅ Done
 - **Given** a change that imports Phaser outside `src/game`, IndexedDB outside persistence, React outside the UI layers, or adds `fetch`, `eval`, `any` or `console.log` in `src`, **when** tests run, **then** the architecture test fails with what, why and how to fix.

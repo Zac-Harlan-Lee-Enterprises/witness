@@ -1,5 +1,7 @@
 # Handoff: realism pass and Chapters 2–4 (2026-09-26)
 
+> **Status: complete.** Everything below was finished on the same day: all WIP branches were merged into `feat/realism-and-chapters`, both code reviews' findings were fixed, and the branch went to `main` by pull request. This document is kept as the record of how the work was split and merged.
+
 This is where the realism pass and Chapters 2–4 stand, what's left, and how to finish, on this laptop or a more powerful machine. Read it together with `AGENTS.md` and the latest entries in `claude-progress.txt`.
 
 ## What the owner asked for

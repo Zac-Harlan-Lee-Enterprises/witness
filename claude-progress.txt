@@ -295,3 +295,19 @@ NEXT   : Judge the shore's afternoon light in game (a basalt town under a low su
          should read brighter, add `self.exposure += 0.3` for the lake style in kit_lake.py
          regional_materials and re-render capernaum-shore --variants late, ~10 min on the GPU).
 BLOCKED: none. Already merged with Chapters 3 and 4 (feat/realism-and-chapters at dbf14cf).
+
+--- 2026-09-26  Claude Opus 5.5 (lead) — realism pass + Chapters 2–4 complete; review; PR ---
+DONE   : Merged into feat/realism-and-chapters: portraits second pass (43 people); Chapter 4 art (light
+         plans, canonical); Chapter 3 art (night set, relighting); Chapter 2 art (lake, Capernaum,
+         Shelomit's house). Two code reviews (high): 20 findings, all fixed — lake water, puddles,
+         simpler-effects start level, harness weather, portrait index, shadow light, one texture-memory
+         counter, no release while a place loads, sky skip, safe live relighting (snapshot, stand-in,
+         epoch race, dropped clock change, abandoned textures), art versions (?v= from manifests) with one
+         runtime cache and network-first manifests. PWA: later chapters' art and later-chapter people
+         lights cached on first use (precache 16.6 MB). Docs updated for four chapters.
+TESTS  : Vitest 341 → 605; e2e 32 passed / 28 opt-in skipped, 0 failed (all four chapters to summary,
+         offline PWA); quality-sweep clean (branch protection optional); init.sh healthy.
+NEXT   : PR feat/realism-and-chapters → main; merge after CI; verify the Pages deploy and play each
+         chapter on the live site. Then: people sheets at half resolution for phones (memory), dimmer
+         night campfire (fields), human editorial review of Chapters 2–4 records.
+BLOCKED: none (editorial approval of content remains a human decision).
