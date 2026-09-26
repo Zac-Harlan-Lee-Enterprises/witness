@@ -247,6 +247,11 @@ class LakeKit(BoatsMixin, HousesMixin):
         self.basalt_dressed = L.basalt("#4e4a45", "basalt-dressed", dust=0.4, lichen=0.12)
         self.mortar = L.mud_mortar()
         if self.style == "lake":
+            # A town of black basalt under a low afternoon sun reads dim, as
+            # if dusk had come early: the later-day set is exposed 0.3 EV
+            # brighter (a camera metering for the dark stone), still a late
+            # afternoon (long shadows, warm light).
+            self.variant_exposure["late"] = 0.3
             # Stone builders shared with other places use `limestone` and
             # `paving`: here they are basalt.
             self.limestone = L.basalt("#4e4a45", "basalt-fieldstone", dust=0.5, lichen=0.3)
