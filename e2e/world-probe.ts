@@ -23,6 +23,19 @@ export async function data(page: Page, key: string): Promise<string | null> {
 }
 
 /**
+ * For capture logs: the resolution of the place's art and of its people
+ * (pixels per game unit: 3 full, 1.5 half) and the effects level.
+ */
+export async function artDetails(page: Page): Promise<string> {
+  const [ppu, people, effects] = await Promise.all([
+    data(page, 'art-ppu'),
+    data(page, 'people-ppu'),
+    data(page, 'effects'),
+  ]);
+  return `ppu=${ppu ?? '?'}\tpeople=${people ?? '?'}\teffects=${effects ?? '?'}`;
+}
+
+/**
  * Brightness (0–255) of the top part of the canvas, above any dialogue box:
  * its mean and its spread (a flat wash of one colour has almost none).
  */

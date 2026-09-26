@@ -37,11 +37,21 @@ Walkable kinds keep fixed heights (`WALK`: the wadi is 0.34 below the ground, th
 | Asset | Pixels per game unit (ppu) | Notes |
 |---|---|---|
 | Place layers and sprites | **3** | 96 px per tile. Sharp up to the close framing's desktop zoom (3.0). |
-| Low-resolution ground and sprite pages | 1.5 | Loaded when the camera shows ≤ 2 px per unit (phones) and on devices that asked for simpler effects (`wantsLowResolution`) |
+| Low-resolution ground and sprite pages | 1.5 | The **low set**: loaded on phones, on devices short of memory, on views that show ≤ 2 px per unit, and when the device asked for simpler effects (`wantsLowResolution`, below) |
 | Character sheets | **3** | A 54-unit adult is about 160 px tall in the texture and about 122 px on a 1280×720 screen |
-| Shadow sheets | 1 | Soft by nature |
+| Low-resolution character sheets | 1.5 | With the low set: `<sheet>-low.webp`, made from the full sheets without rendering ([`downsample_people.py`](../../tools/art/downsample_people.py)) |
+| Shadow sheets | 1 | Soft by nature. The low set keeps them: one byte a pixel on the GPU, so halving them saves little, and at 0.5 a phone would show each texel about nine device pixels wide |
 
 The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pixels (up to 2×; see [ADR-0015](../adr/0015-world-rendering-effects.md)), so on a high-DPI screen at close framing one texture pixel of 3-ppu art covers about two screen pixels, and a 1-ppu shadow sheet about six: richer art would show.
+
+**Which devices load the low set** (`wantsLowResolution` in [`select.ts`](../../src/game/prerendered/select.ts), device rules in [`resolution.ts`](../../src/game/systems/resolution.ts)): the place's low set and everyone's low sheets go together, to
+
+- **phones**: a coarse (touch) pointer and a screen under 600 CSS px on its shorter side (`isPhone`; Android's tablet breakpoint: phones are about 320–430, tablets 600 and more), whatever the zoom;
+- **devices short of memory**: `navigator.deviceMemory` ≤ 2 GB (Chromium reports it; Safari and Firefox don't, and are judged by the screen alone);
+- devices that asked for **simpler effects**, or dropped to them (`lowPower`);
+- any view showing **less than two-thirds of the full set's pixels** (a small window at 1×).
+
+Desktops and tablets keep the full art. The zoom alone never picks the low set on a phone any more: the high-DPI canvas makes a phone's zoom (3.5 canvas pixels per unit on a Pixel 7, the close framing's 1.75 CSS px × a render ratio of 2) as high as a desktop's, so phones used to load the full set and the full people, 45–80 MB of textures a place (§9). On the phone's screen a low texel is about one CSS pixel (1.17 at the close framing): at the phone's device pixels the low art is visibly softer when magnified side by side, and reads the same at arm's length (review captures, §9).
 
 **No texture is bigger than 2048 px** (`MAX_ART_TEXTURE`), the size every WebGL 2 GPU must hold; many phones stop at 4096. Atlas pages are 2048 px at most, and a ground bigger than that is cut into tiles (`imageio.save_tiles`): the road's ground, 48 × 30 tiles of map, is 4608 × 2880 px at 3 ppu and ships as six tiles of 1536 × 1440. Neighbouring tiles overlap by 2 px, so no hairline opens between them when the camera sits between pixels. The game draws one image per tile; the content test checks that every texture fits and that the tiles cover the whole place.
 
@@ -67,6 +77,8 @@ The sky is Blender's multiple-scattering sky, set for the same sun. It gives the
 **Things that exist only in some lights** are tagged with the lights they belong to, `obj["variants"] = "night"` (or `"day,late"`); `build_place.py` leaves them out of every other light (`only_in`). At night the lamps in the niches, on the table and by the travellers' bedding are lit, doors are shut (lamplight at the cracks where someone is in), windows glow, and the daylight bounced in at a door is gone. Fires and lamps also go in `Place.flicker`, with the lights they burn in: the manifest lists them per set (`lights`: kind, centre, radius, strength), and the game draws a flickering pool of warm light over each, so the baked glow of a campfire or a lamp moves ([`ambient.ts`](../../src/game/scenes/ambient.ts), from the site's light spots).
 
 **The night bake and the game's grade.** The game grades night on top of any art: a multiply layer (blue-grey, darker at the edges) and a post-processing grade (less saturation, a blue white balance, bloom on bright lamps). Over a night bake the multiply is gentled (`overBakedArt`: 30% strength, the vignette at most 0.42), so the art is not darkened twice but still gathers the dark round the lamps; bloom makes the fire and lamps glow. Day art shown at night (a Chapter 1 place after dark) keeps the full night. Look at a night set's ground after rendering it: once, on a GPU shared with another render, the fold's night ground came out with its terrain unlit (only the scattered grass caught the moon: a median of 1 of 255 against 29 when rendered again), and nothing else flags that.
+
+**A fire burning in day and night sets** needs its own night version. Night is rendered 2.2 EV brighter, so the day's fire (150 W a hand above the coals) blew the shepherds' ring of stones out to near white, and the game's bloom added more. The campfire (`tile_campfire` in [`kit_village.py`](../../tools/art/lib/kit_village.py)) has a separate night light (55 W, set a little higher and as wide as the flames, so its falloff is flatter and its shadows soft), and night copies of its flames and embers (a third of the emission) and of its ring (soot-blackened stone), each tagged with its lights (`_by_light`). The same goes for rooms, rendered about 3 EV brighter than outdoors: the dye vats' stoke-holes in Ammia's workshop were flat emissive slabs of strength 4 that came out white-pink; they are now a few coals of the village kit's `embers` material (strength 1.4, cracked, mostly dark crust) with a 2 W light in the mouth that throws a small warm pool on the floor, ash raked out in front, and a flickering hearth spot each (`_dye_vat` in [`roman_props.py`](../../tools/art/lib/roman_props.py)). Emission bright enough to read outdoors by day blows out in a room or at night; give such things their own strength in those lights.
 
 **Rooms** are lit as if closed: their side and front walls and their roof are *occluders*, invisible to the camera but blocking light (§4). Light comes in only through the openings: the sun through a window in the east wall and through the door, plus the room's own lights (an oil lamp in a niche, the oven's embers). A room renders at +3.1 EV over the outdoor exposure, as a camera adapts, and at 512 samples (its light is mostly bounced). Two lights stand in for what the closed shell would bounce: a soft warm panel low in the doorway (daylight off the sunlit ground outside) and a broad, dim warm panel under the roof (light off the floor and walls), without which the corners go black. The cut tops of the walls sit directly under the invisible walls, so no light reaches them: they glow faintly (`limestone(glow=)`) and read as a dark section through the wall, as in an architect's cutaway. The walls that block light are thinner than their tiles (0.45 m): at 40° a sunbeam drops a whole tile crossing a tile-thick wall, which would shut the morning sun out of any window. Dust shows in the sunbeams as a thin scattering volume confined to each beam: lit straight by the sun, it settles quickly (a volume filling the room did not, and the denoiser turned its noise into blotches).
 
@@ -127,7 +139,7 @@ Occluders (a room's invisible walls and roof) are never seen by the camera in an
 **People** ([`build_people.py`](../../tools/art/build_people.py)), for each light:
 
 - a colour sheet from the figure camera, without the ground;
-- a shadow sheet from the world camera: the person is hidden from the camera and a shadow-catcher ground records their shadow. It is stored as an opaque cool tint on white and drawn with **multiply** blending, about a tenth of the size of an alpha channel. It fades out when the person stands in shade.
+- a shadow sheet from the world camera: the person is hidden from the camera and a shadow-catcher ground records their shadow. It is stored as an opaque cool tint on white and drawn with **multiply** blending, about a tenth of the size of an alpha channel. It fades out when the person stands in shade. Each frame is rendered in its light's shadow box (`SHADOW_BOX`, `REST_SHADOW_BOX`), but a soft light (a window, a lamp, an overcast sky) throws a shadow wider than its box, and a frame cut off while the shadow is still grey printed the box on the floor as a faint rectangle round the person. So a sheet whose shadows reach an edge gets a 12-pixel margin round every frame, the shade at each edge carried on outward and faded to white from 4 pixels inside the box ([`lib/shadow_edges.py`](../../tools/art/lib/shadow_edges.py)); `node scripts/art-build.mjs people-shadows` does the same to sheets already rendered, and `e2e/people-shadows.spec.ts` checks every frame, decoded by the browser.
 - **overlays** for story marks: the same frames showing only the mark (a bandage, the spare cloak, a water skin), rendered with the body as a **holdout**. Whatever the body hides stays hidden, and the game draws the overlay over the person.
 
 Then every frame is **trimmed** to its visible pixels and packed into an atlas ([`lib/pack.py`](../../tools/art/lib/pack.py)). `people.json` records each frame as `[x, y, w, h, offsetX, offsetY]`, and the game restores each one to its full frame size (Phaser trimmed frames), so origins are unchanged and overlays line up exactly.
@@ -161,7 +173,7 @@ Not produced, because they wouldn't improve anything in this view: normal maps (
 | `<id>.<chapter>` | Someone whose name another chapter also uses for a different person (`kallias.letter-from-paul`): sheet ids name the chapter too |
 | `<sheet>@rag-bandaged-<rrggbb>` | Bandages torn from the player's tunic: one per tunic colour |
 
-Files are `<sheet id>-<light>.webp` and `<sheet id>-shadow-<light>.webp`. Each entry carries its **appearance key** (`appearanceKey` in [`select.ts`](../../src/game/prerendered/select.ts)), its `pose`, its body `marks`, and for overlays `overlay: { mark, of, rag? }`. The game matches people by key, pose and marks (`pickSheets`), not by name.
+Files are `<sheet id>-<light>.webp` and `<sheet id>-shadow-<light>.webp`, and their half-resolution copies `…-low.webp` (§2), recorded under the entry's `low` (`ppu`, frame size and origin at that size, `sheets`, `shadows`), their frame tables in `atlas` beside the full sheets'. Each entry carries its **appearance key** (`appearanceKey` in [`select.ts`](../../src/game/prerendered/select.ts)), its `pose`, its body `marks`, and for overlays `overlay: { mark, of, rag? }`. The game matches people by key, pose and marks (`pickSheets`), not by name.
 
 **Standing sheet layout** (frame 44 × 68 game units, feet 62 units from the top):
 
@@ -189,15 +201,16 @@ Everything is WebP, written by Blender:
 |---|---|
 | Colour layers and sprite pages | 86–90 |
 | Low-resolution ground | 84 |
-| Shadow sheets | 62 (opaque tint, multiplied) |
+| People sheets, full and low | 90 |
+| Shadow sheets, full and low | 62 (opaque tint, multiplied) |
 | Shade mask | 90 |
 
 WebP decodes in every current browser, including Safari 14+.
 
 **What is cached, and when** (`workbox` in [`vite.config.ts`](../../vite.config.ts)):
 
-- **Precached on install:** the morning (`day`) set of every place, every morning and indoor people sheet, and all manifests. One visit is enough to play the whole chapter offline.
-- **Cached on first use:** later-day sets (`*-late*`). Offline before one has been seen, the loader draws the morning set in its place rather than painting the place (`loadPlace`, `loadPersons`).
+- **Precached on install:** the morning (`day`) set of every place, every morning and indoor people sheet (both resolutions: `*-low.webp` too), and all manifests. One visit is enough to play the whole chapter offline.
+- **Cached on first use:** later-day sets (`*-late*`). Offline before one has been seen, the loader draws the morning set in its place rather than painting the place (`loadPlace`, `loadPersons`). A person's low sheet that can't load falls back to their full sheet in the same light first, then to the morning's.
 - Anything that still fails to load falls back to the Canvas painters, and a warning goes to the diagnostics log.
 
 Precaching every later-day set too would roughly double the install for light the player may never see; painting whole places offline would break the look. See §9 for the measured sizes.
@@ -251,7 +264,11 @@ A change to anything that casts shadows onto the ground (a building, a tree) nee
 - **A house fills exactly its own tiles on screen**: its north wall stands one row in from its top row (`min(n + height, gy - 1)`), so nobody in the lane behind it is hidden.
 - **Things of one light only** (lamps lit at night, doors open by day and shut at night, the day's bounced light in a room) are tagged with the lights they belong to, and fires and lamps that should flicker go in `Place.flicker` (see §3).
 
-**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into two sprites per map row (its stern and bow halves: between them a row holds only deck). The lake is baked calm: the game draws the wind, the rain and the storm's swell over it (its water shader covers `lake` and `shallows` tiles, with a darker sky and deep colour in a `night` set: `waterSky` in [`water.ts`](../../src/game/systems/water.ts)).
+**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into two sprites per map row (its stern and bow halves: between them a row holds only deck). The lake is baked calm: the game draws the wind, the rain and the storm's swell over it (its water shader covers `lake` and `shallows` tiles, with a darker sky and deep colour in a `night` set: `waterSky` in [`water.ts`](../../src/game/systems/water.ts)). Some choices worth knowing:
+
+- **The shore's later-day set is exposed 0.3 EV brighter** (`variant_exposure["late"]`, set in `regional_materials`): a town of black basalt under a sun 21° up otherwise read as dusk come early. It is still a late afternoon: the sun, its colour and the long shadows are unchanged.
+- **The middle house's lit door** opens into a room (`_lit_room` in [`lake_houses.py`](../../tools/art/lib/lake_houses.py)): its hole runs 2.8 m into the house, with an earth floor, a mat, a jar and a basket, and a clay lamp on a wooden stand just inside by the east jamb. After dark the doorway's dark fill goes (it stays by day), and the lamp's light (32 W, set high) falls out through the door in a wedge cut by the jambs and lintel. A flat emissive panel in the doorway, as before, read as an orange card.
+- **The other boats' sails follow the story.** A boat under way whose tiles hold the story's sail entities (sprites `sail-set` and `sail-furled`, in the open lake's content) is built without its yard and sail; `entity_sail_set` and `entity_sail_furled` build them as sprites of their own (the yard braced round with the sail half brailed, or lowered along the thwarts with the sail furled on it), sorted and faded with the boat. They are shown by the flag that brings the storm (`storm-broke`), so no boat around keeps its sail set in the squall, and none sets it again in the calm. They carry no shadow (`Sprite(shadow=False)`: a sail's shadow would fall on open water, whose terrain is the lake bed, where no catcher can hold it). An entity builder can pass such options as a fourth item: `(objects, base, flat, {"shadow": False, "fade": True})`.
 
 **The Roman kit.** A place is Roman when its chapter is in `ROMAN_CHAPTERS`. It keeps the style its mood gives it (the street is `city`, the road `oasis`, the rooms `home`), so every shared builder still works; the kit, mixed in ahead of the others, overrides only what differs and calls the shared builder for any other place. It is split by subject: [`roman_geom.py`](../../tools/art/lib/roman_geom.py) (helpers, shared materials), [`roman_materials.py`](../../tools/art/lib/roman_materials.py) (stucco, roof tile, marble, bronze, dyes, river water, paving, opus signinum, mosaic, fresco, travertine, wool, papyrus, and the pattern images drawn by code: a mosaic's design, a painted wall, a milestone's worn lines), [`roman_arch.py`](../../tools/art/lib/roman_arch.py) (tile roofs of tegulae and imbrices with antefixes, the Ionic order, house fronts, doors, windows), [`roman_props.py`](../../tools/art/lib/roman_props.py), [`roman_town.py`](../../tools/art/lib/roman_town.py), [`roman_valley.py`](../../tools/art/lib/roman_valley.py) and [`roman_rooms.py`](../../tools/art/lib/roman_rooms.py). Kinds with a dash are built by `tile_` plus the kind with underscores (`tile-roof`: `tile_tile_roof`).
 
@@ -259,14 +276,14 @@ Some choices worth knowing:
 
 - **Raised floors register like terrain.** A floor that people stand on above the ground (the stoa's stylobate, the bridge's deck) is sheared as the terrain is (`Q`, `QT`: a point at height h is placed h tiles south), so it shows over its own tiles and people walking on it look right; anything standing on it stands at the sheared point.
 - **The travertine** is shaped by the terrain (`terrain.RISE['travertine']`) and skinned with its own mesh, stepped into level pools behind scalloped rims (quantized upward, so the skin always lies over the terrain), with `wet` and `depth` attributes the material turns into water.
-- **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam; the tops of the abaci are cut sections and glow faintly, like the walls' cut tops (`_ionic_column(cut_top=True)`). The invisible roof is open over the garden, so the evening sky lights it. The colonnade's far (north) row stands between the camera and the room where the gathering is, so its sprites sort 1.3 rows north of their base: people up to two rows beyond it are drawn in front of the shafts instead of cut in half by them. This is a deliberate cheat, limited to that row; anyone south of it still sorts true.
+- **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam; the tops of the abaci are cut sections and glow faintly, like the walls' cut tops (`_ionic_column(cut_top=True)`). The invisible roof is open over the garden, so the evening sky lights it. The colonnade's far (north) row stands between the camera and the room where the gathering is, and every column sorts true: nobody at the gathering stands one or two rows north of a column in line with it, where its shaft would hide their legs (a content rule, checked in [`letter-from-paul.test.ts`](../../tests/content/letter-from-paul.test.ts)); and since the player can stand anywhere (beside Ammia is just behind a column), the house's columns are flagged `fade` and turn see-through like a canopy while the player is behind one. An earlier render sorted that row 1.3 rows north of its base instead, a cheat that drew people behind it in front of the shafts.
 - **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime. Each is an irregular ellipse (`_decal`), not a rectangle, faded out before its rim: the denoiser's albedo guide sees a decal's whole outline, and a square one printed a faint square on the ground. Decals are tagged (`obj["decal"]`) and left out of every sprite render ([`build_place.py`](../../tools/art/build_place.py)): as a see-through holdout, a decal still left a faint ghost of itself in the alpha of any sprite whose box reached it, which showed as a pale rectangle round the thing in the game.
 
 A builder reads `self.map` (tiles, runs, neighbours), builds geometry with the shared helpers (`self.P` for points on the terrain, `_lathe`, `_ellipsoid`, `_branch`, `boulder`, `rocks.stone`, materials in [`materials.py`](../../tools/art/lib/materials.py)), and either adds sprites with `self.sprite(id, base_row, objects, tiles, fade=?, flat=?)` or puts ground dressing in the ground layer with `self.to_ground(obj)` or a scatter emitter (`self.emitter` plus [`scatter.py`](../../tools/art/lib/scatter.py)). Walkable kinds also need a ground layer in `GROUND`. Give the method a docstring saying what it builds, and add the kind to the table above.
 
 **A story entity's prop.** Add `entity_<sprite>(self, name, x, y, e)` to [`kit_props.py`](../../tools/art/lib/kit_props.py) (or the kit of its chapter's world, like [`kit_village.py`](../../tools/art/lib/kit_village.py)) (dashes in the sprite name become underscores). Return the objects, or `(objects, base_in_game_units, flat)` for something lying on the ground.
 
-**Another character.** Give them an `appearance` in the chapter content, then `npm run art:data` and `npm run art:people`. The people job plans from the chapter data: standing sheets for everyone who stands, rest sheets for anyone whose looks sit or lay them down, overlays for every mark their looks can show, in every light the places they appear in were rendered in (a room's morning is `indoor`, its night `lamplight`; read from each place's manifest, so render the places first), and passers-by for places with a crowd. It renders only what `people.json` doesn't have yet.
+**Another character.** Give them an `appearance` in the chapter content, then `npm run art:data` and `npm run art:people`. The people job plans from the chapter data: standing sheets for everyone who stands, rest sheets for anyone whose looks sit or lay them down, overlays for every mark their looks can show, in every light the places they appear in were rendered in (a room's morning is `indoor`, its night `lamplight`; read from each place's manifest, so render the places first), and passers-by for places with a crowd. It renders only what `people.json` doesn't have yet, and then makes the half-resolution copies of what it rendered (§2). `node scripts/art-build.mjs people-low` makes any that are missing or out of date without rendering (about 5 minutes for every sheet with `--force`; a sheet re-rendered under the same file name needs `--force`, since only the set of lights is compared).
 
 The generator is parametric. It reads the appearance (build, skin, hair, beard, robe and stripe colours, head covering, what they carry) and builds, rigs and renders the person. New kinds of clothing, carried items or marks go in [`tools/art/lib/people.py`](../../tools/art/lib/people.py): a mark's parts are tagged `Part(..., mark="<mark>")` so they can be rendered as an overlay. Marks that change the body rather than add to it (a torn hem) go in `BASE_MARKS` ([`build_people.py`](../../tools/art/build_people.py)) and `BODY_MARKS` ([`select.ts`](../../src/game/prerendered/select.ts)) and get a sheet of their own.
 
@@ -274,16 +291,16 @@ The generator is parametric. It reads the appearance (build, skin, hair, beard, 
 
 [`src/game/prerendered/`](../../src/game/prerendered/) and [`world-scene.ts`](../../src/game/scenes/world-scene.ts):
 
-1. **Load** (`prepareArt` in [`figures.ts`](../../src/game/prerendered/figures.ts)). The place's manifest, the variant for the story hour, the resolution for the zoom, and every sheet the people present might need (`sheetsToLoad`: all sheets of their appearances, and passers-by where the place has a crowd), all through Phaser's loader. Loading everyone's sheets up front means that when the story changes how someone looks (a bandage, the spare cloak, sitting up) the figure is ready at once.
+1. **Load** (`prepareArt` in [`figures.ts`](../../src/game/prerendered/figures.ts)). The place's manifest, the variant for the story hour, the resolution for the device and the zoom (§2: the full or the low set; people's sheets at the same resolution, their frame sizes and origins from the sheet loaded), and every sheet the people present might need (`sheetsToLoad`: all sheets of their appearances, and passers-by where the place has a crowd), all through Phaser's loader. Loading everyone's sheets up front means that when the story changes how someone looks (a bandage, the spare cloak, sitting up) the figure is ready at once.
 2. **Release.** Textures of the place before are released on the first frame nothing draws them (`beginPlace`), so memory holds one place at a time.
 3. **Composite.** The ground is one image per tile. Each sprite is an image from an atlas page, anchored at its bottom centre, with depth set by its ground line (`depthRow`). People are sprites with a baked shadow sprite and depth by their feet; their story marks are overlay sprites kept in step frame by frame just above them (`attachLayers`).
 4. **Behaviour.** Turning passes through the diagonal frames (70 ms each). Standing in shade tints a person toward the shade colour, sampled from the shade mask. Canopies fade to 38% while the player is behind them (`CanopyFader`, `behindCanopy`). The fires and lamps the manifest lists for the light flicker: a warm pool drawn over each (at night; a small glow by day). A night bake has no painted lamplight at every door (the lit doors are in the art).
 5. **Relight.** When the story clock crosses into another light the place has (`relightTo`), the world loads that set and rebuilds the place around everyone where they stand (never while a scene is loading: it waits a moment, and a scene change wins).
-6. **Fallback.** If anything fails to load, the place or person is painted by Canvas as before, and a warning goes to the diagnostics log. The canvas carries `data-art="prerendered:<variant>"` or `data-art="painted"`, and `data-texture-mb` with the texture memory in use.
+6. **Fallback.** If anything fails to load, the place or person is painted by Canvas as before, and a warning goes to the diagnostics log. The canvas carries `data-art="prerendered:<variant>"` or `data-art="painted"`, `data-art-ppu` and `data-people-ppu` (the resolution of the place and of its people: `3` full, `1.5` low; `none` without pre-rendered people), and `data-texture-mb` with the texture memory in use. An overlay (a bandage, a lamp) that loaded at another resolution than the body under it would not line up, so that person is painted instead.
 
 ## 9. Measurements
 
-Measured on the art in `public/art/` as rendered (September 2026). Texture memory is what the files decode to on the GPU: RGBA, uncompressed, width × height × 4 bytes. The **full** set is what desktops and tablets load; the **low** set (half resolution: a quarter of the pixels) is what phones and devices that asked for simpler effects load.
+Measured on the art in `public/art/` as rendered (September 2026). Texture memory is what the files decode to on the GPU: RGBA, uncompressed, width × height × 4 bytes. The **full** set is what desktops and tablets load; the **low** set (half resolution: a quarter of the pixels) is what phones, devices short of memory and devices that asked for simpler effects load (§2), with half-resolution people.
 
 | Place | Light | Download, full set | Download, low set | Textures, full | Textures, low | Ground tiles (full / low) | Sprite pages |
 |---|---|---|---|---|---|---|---|
@@ -296,9 +313,9 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
 | Grandmother Shelomit's house (Ch. 2) | later day | 0.20 MB | 0.07 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
 | | lamplight (night) | 0.14 MB | 0.06 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
-| The shore at Capernaum (Ch. 2) | later day | 2.21 MB | 0.86 MB | 65.3 MB | 18.3 MB | 6 / 2 | 2 |
-| | night | 1.68 MB | 0.66 MB | 64.1 MB | 18.0 MB | 6 / 2 | 2 |
-| The open lake (Ch. 2) | night (its only set) | 0.35 MB | 0.15 MB | 61.4 MB | 16.9 MB | 4 / 1 | 2 |
+| The shore at Capernaum (Ch. 2) | later day | 2.23 MB | 0.81 MB | 65.3 MB | 18.3 MB | 6 / 2 | 2 |
+| | night | 1.56 MB | 0.58 MB | 64.1 MB | 18.0 MB | 6 / 2 | 2 |
+| The open lake (Ch. 2) | night (its only set) | 0.34 MB | 0.14 MB | 60.1 MB | 16.6 MB | 4 / 1 | 2 |
 | Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
 | A street in Colossae (Ch. 4) | morning | 1.02 MB | 0.37 MB | 51.6 MB | 14.3 MB | 4 / 1 | 2 |
 | | later day | 0.93 MB | 0.36 MB | 52.9 MB | 14.6 MB | 4 / 1 | 2 |
@@ -309,7 +326,7 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | The lanes of Bethlehem (Ch. 3) | later day (its day set) | 1.50 MB | 0.53 MB | 58.6 MB | 16.1 MB | 4 / 1 | 2 |
 | | night | 1.11 MB | 0.40 MB | 57.4 MB | 15.8 MB | 4 / 1 | 2 |
 | The fold below Bethlehem (Ch. 3) | later day (its day set) | 3.21 MB | 1.10 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
-| | night | 2.68 MB | 0.99 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
+| | night | 2.67 MB | 0.98 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
 | People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
 | People added for Chapter 2 | later day, indoor and lamp | 1.38 MB (42 files) | | | | | |
@@ -322,40 +339,39 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | lamp (the house at night) | 1.13 MB (42 files) | | | | | |
 | | later day | 1.58 MB (40 files) | | | | | |
 | | night (moonlight) | 1.21 MB (40 files) | | | | | |
+| Every person's colour sheets and overlays above, full / half resolution (`-low`: phones; the cast shadows are shared) | every light | 12.36 MB (306 files) | 7.64 MB (306 files) | 264 MB | 67 MB | | |
 
 The fold below Bethlehem is the heaviest of Chapter 3 (138 sprites: the flock, olives, thorn shrubs, rocks and stones on the hills); at night its pages compress better (dark, little detail). A night set takes as much texture memory as a day set but downloads a fifth to a quarter less.
 
-The open lake downloads little (its water is smooth and compresses well). Its family boat is cut into sprites by map row, and each row in two, its stern and bow halves: most rows hold only the curved bulwarks at the two ends, and one sprite spanning the boat was mostly transparent texture (four sprite pages, 81.5 MB, before the split; two, 61.4 MB, after).
+The open lake downloads little (its water is smooth and compresses well). Its family boat is cut into sprites by map row, and each row in two, its stern and bow halves: most rows hold only the curved bulwarks at the two ends, and one sprite spanning the boat was mostly transparent texture (four sprite pages, 81.5 MB, before the split; two, 61.4 MB, after; 60.1 MB since the boats around carry their yards and sails as story sprites).
 
 The Laodicea road is the heaviest download so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
-**Phones** load about 28% of the texture memory desktops do (a place's low set is 12–17 MB against 44–58 MB). People sheets are the same on every device.
+**Phones** load a place's low set (a quarter of the full set's texture memory: 2–22 MB against 7–79 MB) and everyone's half-resolution sheets (a quarter of the full sheets' memory; cast shadows are kept at full size, one byte a pixel).
 
-**In the game**, the texture memory the canvas reports (`data-texture-mb`: every texture loaded, including people, passers-by and the game's own) with one place in memory at a time, from the review captures (§10; headless Chromium drawing with the Mac's GPU):
+**In the game**, the texture memory the canvas reports (`data-texture-mb`: every texture loaded, including people, passers-by and the game's own) with one place in memory at a time, from the review captures (§10; headless Chromium drawing with the Mac's GPU). The desktop column is from the captures of the full art (unchanged by the phone work); the phone columns are the Pixel 7 viewport before and after phones were given the half-resolution art (§2), measured the same day on the same routes ([performance §2c](../performance.md#2c-phones-half-resolution-places-and-people)):
 
-| Place | Desktop and tablet (full set) | Phone (low set) |
-|---|---|---|
-| Aunt Miriam's house | 16–32 MB | 10–26 MB |
-| Lower market | 98–101 MB | 67–69 MB |
-| Road down to Jericho | 89 MB | 47 MB |
-| Jericho, morning | 104 MB | 68 MB |
-| Jericho, later day | 122 MB | 87 MB |
-| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17–22 MB |
-| A street in Colossae, morning (Ch. 4) | 83–84 MB | 83–84 MB |
-| A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
-| The Laodicea road (Ch. 4) | 105 MB | 105 MB |
-| Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
-| Grandmother Shelomit's house (Ch. 2) | 17–18 MB | 15–17 MB |
-| The shore at Capernaum, later day (Ch. 2) | 125 MB | 125 MB |
-| The shore at Capernaum, night (Ch. 2) | 103–107 MB | 103–107 MB |
-| The open lake (Ch. 2) | 84 MB | 84 MB |
-| Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 24 / 40 MB |
-| The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 109 / 87 MB |
-| The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 81 / 77 MB |
+| Place | Desktop and tablet (full set) | Phone, before (full set and people) | Phone, now (low set and people) |
+|---|---|---|---|
+| Aunt Miriam's house | 16–32 MB | 14.6–14.7 MB | 5.7–5.8 MB |
+| Lower market | 98–101 MB | 62.2 MB | 21.2 MB |
+| Road down to Jericho | 89 MB | 46.8 MB | 16.3 MB |
+| Jericho, morning | 104 MB | 62.9 MB | 20.8 MB |
+| Jericho, later day | 122 MB | 70.0 MB | 25.1 MB |
+| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17.3–17.4 MB | 6.5–6.6 MB |
+| A street in Colossae, morning (Ch. 4) | 83–84 MB | 61.6–62.7 MB | 20.3–20.7 MB |
+| A street in Colossae, later day (Ch. 4) | 97 MB | 66.1 MB | 23.8 MB |
+| The Laodicea road (Ch. 4) | 105 MB | 80.0 MB | 24.7 MB |
+| Philemon's house (Ch. 4) | 41–42 MB | 31.0–32.3 MB | 11.0–11.4 MB |
+| Grandmother Shelomit's house (Ch. 2), later day / lamplight | 17–18 MB | 14.8 / 13.1 MB | 6.0 / 5.3 MB |
+| The shore at Capernaum, later day (Ch. 2) | 125 MB | 81.0 MB | 30.1 MB |
+| The shore at Capernaum, night (Ch. 2) | 103–107 MB | 72.6–75.4 MB | 24.5–25.6 MB |
+| The open lake (Ch. 2) | 84 MB | 62.3 MB | 20.6 MB |
+| Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 23.9 / 30.0 MB | 8.3 / 10.8 MB |
+| The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 74.9 / 64.2 MB | 26.5 / 21.0 MB |
+| The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 53.9 / 53.1 MB | 18.6 / 17.8 MB |
 
-In the Chapter 2, 3 and 4 captures (`storm-art.spec.ts`, `bethlehem-art.spec.ts`, `letter-art.spec.ts`, September 2026) the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
-
-People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
+Until the phone work, the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the zoom threshold for the half-resolution set, and people sheets had no half-resolution version. Now the device decides (§2), and a phone holds 31–41% of what it did. Of the phone's textures before, people's colour sheets were 7–30 MB a place, and the ground and sprite pages the rest; now the low set and people are each a quarter of that, and the cast shadows (one byte a pixel) and the game's own textures make up the remainder. GPU-compressed textures (KTX2) are the next saving.
 
 Before this work only the market was pre-rendered and nothing was released: by Jericho the painted chapter held about 100 MB of textures.
 
@@ -365,7 +381,7 @@ Before this work only the market was pre-rendered and nothing was released: by J
 - once a later-day scene has been seen, it too works offline; before that, offline, the morning set stands in for it (the place is never painted);
 - a player who never reaches the afternoon never downloads its light.
 
-Caching the morning sets on first use instead would save the install about 10 MB, but a player who lost the connection on the road would then see Jericho painted. Precaching the later-day sets too would add 8 MB for light some players never see. Both resolutions of the morning sets are precached (the low one adds 1.8 MB) because a desktop can switch to the low set mid-chapter, offline, when it runs slowly.
+Caching the morning sets on first use instead would save the install about 10 MB, but a player who lost the connection on the road would then see Jericho painted. Precaching the later-day sets too would add 8 MB for light some players never see. Both resolutions of the morning sets are precached (the low one adds 1.8 MB) because a desktop can switch to the low set mid-chapter, offline, when it runs slowly. For the same reason the half-resolution copies of the morning and indoor people are precached too: with them (and the larger `people.json` that lists them) the precache grew from 356 files, 17.3 MB, to 458 files, 20.7 MB (`npm run build`, September 2026, four chapters).
 
 ## 10. Review captures
 

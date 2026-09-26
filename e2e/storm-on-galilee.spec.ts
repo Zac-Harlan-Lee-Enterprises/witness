@@ -11,6 +11,7 @@ import {
   setFastSettings,
   snap,
   waitForWorld,
+  timeLimit,
 } from './support';
 
 /** The weather the story has asked the world to show (recorded on the canvas). */
@@ -49,7 +50,7 @@ async function readUntilChoice(page: Page, choice: string): Promise<void> {
  * Scripture Connection → reflection → summary.
  */
 test('play A Storm on Galilee from a new profile to the chapter summary', async ({ page }) => {
-  test.setTimeout(420_000); // a long journey; generous for busy machines
+  test.setTimeout(timeLimit(420_000)); // a long journey; generous for busy machines
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Noa');

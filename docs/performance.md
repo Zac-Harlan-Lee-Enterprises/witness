@@ -152,6 +152,55 @@ Within run-to-run noise of the old build. Without a GPU the world now starts at 
 
 **Download:** the lazily loaded world-engine chunk grows by **14.5 KB gzip** (351.7 → 366.2 KB) and the initial JS by 0.2 KB (the new setting). There are no new files: weather and water textures are painted at start-up, and the shaders are part of the code.
 
+(The phone's full-resolution ground described above was superseded by §2c: phones now load the half-resolution set, people included.)
+
+## 2c. Phones: half-resolution places and people
+
+Measured on 2026-09-26. **Before:** a phone loaded about the same textures as a desktop. The half-resolution set was chosen by zoom alone (`wantsLowResolution`), and the high-DPI canvas makes a phone's zoom as high as a desktop's (3.5 canvas pixels per unit on a Pixel 7), so phones always took the full set; people sheets had no half-resolution version at all. **After:** phones (a touch screen under 600 CSS px on its shorter side) and devices reporting ≤ 2 GB of memory load the half-resolution place set **and** half-resolution people sheets (1.5 px per unit, made from the full sheets by [`downsample_people.py`](../tools/art/downsample_people.py)); desktops and tablets load the full art as before. See [technical-art-guide §2](art/technical-art-guide.md#2-resolution-and-pixels-per-world-unit).
+
+- **Setup:** the review capture specs (`place-art`, `storm-art`, `bethlehem-art`, `letter-art`, `-g phone`): the Pixel 7 viewport (412 × 839 CSS px, 2.625×, touch, mobile), headless Chromium drawing with the Mac's GPU (Metal), production builds. Before is commit `d37dac5`, after is this change, each played through the same routes.
+- **Measure:** `data-texture-mb`, what Phaser's texture manager holds in each texture's GPU format (the ground at 16 bits on phones, shadow sheets at 8), one place in memory at a time. Where a place is seen on two routes, the range spans both.
+
+| Place | Light | Phone, before | Phone, after | Change |
+|---|---|---:|---:|---:|
+| Aunt Miriam's house | morning | 14.6–14.7 MB | **5.7–5.8 MB** | −61% |
+| Lower market | morning | 62.2 MB | **21.2 MB** | −66% |
+| Road down to Jericho | morning | 46.8 MB | **16.3 MB** | −65% |
+| Jericho | morning | 62.9 MB | **20.8 MB** | −67% |
+|  | later day | 70.0 MB | **25.1 MB** | −64% |
+| Grandmother Shelomit's house (Ch. 2) | later day | 14.8 MB | **6.0 MB** | −59% |
+|  | lamplight | 13.1 MB | **5.3 MB** | −60% |
+| The shore at Capernaum (Ch. 2) | later day | 81.0 MB | **30.1 MB** | −63% |
+|  | night | 72.6–75.4 MB | **24.5–25.6 MB** | −66% |
+| The open lake (Ch. 2) | night | 62.3 MB | **20.6 MB** | −67% |
+| Tamar's house (Ch. 3) | by day | 23.9 MB | **8.3 MB** | −65% |
+|  | at night | 30.0 MB | **10.8 MB** | −64% |
+| The lanes of Bethlehem (Ch. 3) | later day | 74.9 MB | **26.5 MB** | −65% |
+|  | night | 64.2 MB | **21.0 MB** | −67% |
+| The fold below Bethlehem (Ch. 3) | later day | 53.9 MB | **18.6 MB** | −65% |
+|  | night | 53.1 MB | **17.8 MB** | −66% |
+| Ammia's dye workshop (Ch. 4) | morning | 17.3–17.4 MB | **6.5–6.6 MB** | −62% |
+| A street in Colossae (Ch. 4) | morning | 61.6–62.7 MB | **20.3–20.7 MB** | −67% |
+|  | later day | 66.1 MB | **23.8 MB** | −64% |
+| The Laodicea road (Ch. 4) | rain cloud | 80.0 MB | **24.7 MB** | −69% |
+| Philemon's house (Ch. 4) | lamp-lighting | 31.0–32.3 MB | **11.0–11.4 MB** | −65% |
+
+A phone now holds **31–41%** of the textures it did: 5–30 MB a place instead of 13–81 MB. (Earlier review captures quoted higher figures for the phone, up to 125 MB at the shore, from earlier builds; the before column here was measured on the same machine and routes as the after, so the two compare like for like.)
+
+**All GPU textures** (the market on the GPU, `PERF_GPU=1` in [`market-perf.spec.ts`](../e2e/market-perf.spec.ts): every WebGL texture uploaded and not deleted, render targets included):
+
+| View | `data-texture-mb`, before → after | All GPU textures, before → after |
+|---|---:|---:|
+| Desktop 1280×720 | 76.6 → 76.6 MB | 76.8 → 84.1 MB (the before run had dropped to `lite` effects: no post-processing targets) |
+| Tablet 820×1180 (touch) | 62.2 → 62.2 MB | 70.0 → 70.0 MB |
+| Phone (Pixel 7, 2×) | 62.2 → **21.2 MB** | 70.4 → **29.4 MB** (−58%) |
+
+**Where the phone's memory went** (the lanes of Bethlehem in the late sun, from the sizes of the files loaded): ground 16.1 → 4.0 MB (RGB 5-6-5 either way), sprite pages 24.5 → 6.1 MB, people 26.4 → 6.6 MB. Their cast shadows (6.4 MB at one byte a pixel) are kept at full size: halving them would save little, and a phone would magnify each shadow texel to about nine device pixels.
+
+**The look** (captures at the phone's device pixels, before and after, in the review sets): at arm's length the scenes read the same. Side by side at 100% the half-resolution art is softer: the grit of the ground and fine sprite detail (flowers, a mosaic's dots) blur a little, and faces and the stripes of robes are softer; the most visible loss is the fine mesh of the nets drying on the shore at Capernaum, which blurs into a mottled weave. Nothing is lost that the story needs (marks, carried things, who is who). At a 3× phone's device pixels (a 2× canvas scaled 1.5 by the browser) a full-size person is itself magnified 1.75×; an intermediate size (2 px per unit) was compared and is barely sharper there, for 78% more memory than 1.5.
+
+**Download:** the half-resolution people are 306 files, 7.6 MB (the full colour sheets: 12.4 MB); a phone downloads them instead of the full ones for every person it meets. `people.json` grows from 1.39 to 2.32 MB (85 → 141 KB gzip) with their frame tables. The service worker precaches the morning and indoor ones too, as it does both resolutions of the places' morning sets: the precache grows from 356 files, 17.3 MB, to 458 files, 20.7 MB (`npm run build`).
+
 ## 3. How to reproduce
 
 ```bash
@@ -161,6 +210,12 @@ PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --pro
 # The same on the machine's GPU (Chromium's new headless mode), and in a forced storm
 PERF_GPU=1 PERF_MARKET=1 PERF_LABEL=gpu npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
 VITE_FORCE_WEATHER=storm PERF_GPU=1 PERF_MARKET=1 PERF_LABEL=storm npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
+
+# Phone texture memory per place (§2c): the art captures at the Pixel 7 size, logging data-texture-mb,
+# the art and people resolution (ppu, people) and the effects level with every shot
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/place-art.spec.ts e2e/storm-art.spec.ts \
+  e2e/bethlehem-art.spec.ts e2e/letter-art.spec.ts --project=desktop-chromium -g phone
+#   → test-results/<spec>/after/phone-*-art.txt
 
 # Sizes
 npm run build && npm run perf:bundle
@@ -188,6 +243,7 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 | **Debounced autosave** | [`src/application/autosaver.ts`](../src/application/autosaver.ts) | A burst of save requests becomes one IndexedDB write |
 | **Only the render targets the world uses** | `disablePreFX`/`disablePostFX` in [`mount-world.ts`](../src/game/phaser/mount-world.ts); `releaseUnusedTargets` in [`src/game/phaser/renderer.ts`](../src/game/phaser/renderer.ts) | Phaser's built-in FX allocated about 70 screen-sized or smaller render targets up front (61 MB at 1280×720; about 420 MB at 2560×1440) that the world never used; bitmap-mask and capture targets are shrunk to 1×1 |
 | **Release the last place's art** | `releaseUnusedTextures` in [`world-scene.ts`](../src/game/scenes/world-scene.ts) | Art, people and painted figures from the previous place are freed when a new place is built (18 MB of painted figures from the house were still resident in the market) |
+| **Half-resolution art on phones** | `wantsLowResolution` in [`select.ts`](../src/game/prerendered/select.ts), `isPhone`/`isLowMemory` in [`resolution.ts`](../src/game/systems/resolution.ts) | Phones (a touch screen under 600 CSS px on its shorter side) and devices reporting ≤ 2 GB load the half-resolution place set and people sheets: 31–41% of the textures they held before (§2c). Desktops and tablets keep the full art |
 | **Smaller GPU formats where they don't show** | [`src/game/phaser/compact-textures.ts`](../src/game/phaser/compact-textures.ts) | Shadow sheets upload as one channel (¼); on phones, tablets and low-memory devices the opaque ground uploads as RGB 5-6-5 (½). The browser converts during upload: no pixel work in JavaScript |
 | **Effects step down before the frame rate does** | `stepQuality` in [`quality.ts`](../src/game/systems/quality.ts) | full → lite (no post-processing, half the weather) → crisp (1×) → low; an isolated hitch is ignored, repeated long frames are not; no GPU → 1× and no post-processing from the start |
 | **One post-processing pass, bloom at half the CSS resolution** | [`post-fx.ts`](../src/game/fx/post-fx.ts) | One full-screen composite plus small bloom passes, instead of a chain of full-resolution FX |

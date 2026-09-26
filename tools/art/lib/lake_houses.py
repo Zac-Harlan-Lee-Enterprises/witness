@@ -71,6 +71,9 @@ class HousesMixin:
         depth = 4.2
         doors = [x for x in range(x0, x1) if m.kind(x, front_row) == "door"]
         objs = []
+        # Someone is still awake in the middle house: after dark a lamp burns
+        # inside, and you see into the room through its open door.
+        lit = doors[0] if doors and x0 <= m.w / 2 <= x1 else None
 
         def P(x, y, z):
             # Everything of the house stands on the ground at its front.
@@ -91,7 +94,11 @@ class HousesMixin:
         # centimetres back from the stones' faces.
         fill = common.box(f"{name}-fill", (x1 - x0, depth - 0.1, height), P((x0 + x1) / 2, gy - depth / 2 - 0.05, height / 2), self.mortar, None)
         for ox0, ox1, oz0, oz1 in openings:
-            hole = common.box(f"{name}-hole", (ox1 - ox0, 1.2, oz1 - oz0), P((ox0 + ox1) / 2, gy - 0.3, (oz0 + oz1) / 2), None, None)
+            # The lit door opens into the room: its hole runs deep enough that
+            # everything seen through it (at 45°, 1.9 m of floor) is inside.
+            deep = lit is not None and ox0 == lit + 0.04
+            ln = 2.8 if deep else 1.2
+            hole = common.box(f"{name}-hole", (ox1 - ox0, ln, oz1 - oz0), P((ox0 + ox1) / 2, gy + 0.3 - ln / 2, (oz0 + oz1) / 2), None, None)
             mod = fill.modifiers.new("hole", "BOOLEAN")
             mod.operation = "DIFFERENCE"
             mod.object = hole
@@ -112,29 +119,45 @@ class HousesMixin:
         # Beside the door: a water jar, quern stones, a bench of stone.
         for dx in doors:
             objs += self._doorstep_life(f"{name}-step{dx}", dx, gy, P, rng)
-        # Someone is still awake in the middle house: after dark a lamp burns
-        # inside, and its light spills from the doorway.
-        if doors and x0 <= m.w / 2 <= x1:
-            dx = doors[0]
-            import kit_lake
-
-            at = P(dx + 0.5, gy - 0.12, 0.95)
-            kit_lake.only(self.add_light(f"{name}-inside-lamp", "POINT", at, 7.0, "#ffa856", radius=0.1), kit_lake.AFTER_DARK)
-            self.flicker.append(("lamp", at.x * 32, (-at.y - at.z) * 32, 36.0, kit_lake.AFTER_DARK.split(",")))
-            dark = next((o for o in objs if o.name == f"{name}-door{dx}-dark"), None)
-            if dark is not None:
-                # The doorway's dark inside, glowing warm after dark.
-                glow = dark.copy()
-                glow.data = dark.data.copy()
-                glow.name = f"{dark.name}-lit"
-                glow.data.materials.clear()
-                glow.data.materials.append(M.emissive("#b8662a", 0.5))
-                for c in dark.users_collection:
-                    c.objects.link(glow)
-                kit_lake.only(dark, kit_lake.BY_DAY)
-                kit_lake.only(glow, kit_lake.AFTER_DARK)
-                objs.append(glow)
+        if lit is not None:
+            objs += self._lit_room(f"{name}-door{lit}", lit, gy, base, P, objs)
         self.sprite(name, gy, objs, sorted(cells))
+
+    def _lit_room(self, name, dx, gy, base, P, parts):
+        """The room behind the middle house's door after dark, seen through
+        it: a beaten-earth floor running back into the house, a mat and a
+        jar on it, the door leaf swung in against the wall, and a clay lamp
+        burning on a low stone by the east jamb. Its light falls on the floor
+        and out through the doorway onto the lane in a widening spill, cut by
+        the jambs. By day the doorway stays dark (the `dark` box)."""
+        import kit_lake
+
+        objs = []
+        cx = dx + 0.5
+        dark = next((o for o in parts if o.name == f"{name}-dark"), None)
+        if dark is not None:
+            kit_lake.only(dark, kit_lake.BY_DAY)
+        # The floor: packed earth, a hand's breadth above the lane (the
+        # terrain under the house is a holdout in its render).
+        rise = max(0.04, max(self.H(cx + ddx, gy - d) for ddx in (-0.5, 0.0, 0.5) for d in (0.2, 1.2, 2.2)) - base + 0.03)
+        floor = common.box(f"{name}-floor", (1.3, 2.5, 0.06), P(cx, gy - 1.35, rise - 0.03), M.plaster("#6a5846", "house-floor-earth"), None)
+        objs.append(floor)
+        # A rush mat along the west wall, a water jar at the back, a basket.
+        objs.append(common.box(f"{name}-mat", (0.5, 1.1, 0.012), P(cx - 0.22, gy - 1.35, rise + 0.006), M.straw("#8e7a52"), None))
+        objs += self.storage_jar(f"{name}-jar", P(cx - 0.22, gy - 1.95, rise), 0.8, "#94623f", lid=False, dusty=0.3)
+        objs.append(self._lathe(f"{name}-basket", [(0.1, 0.0), (0.15, 0.06), (0.17, 0.14), (0.18, 0.16)], P(cx + 0.24, gy - 1.6, rise), M.straw("#9c8456"), 20))
+        # The lamp: a clay lamp on a plain wooden stand just inside, by the
+        # east jamb, its flame just low enough to be seen under the lintel;
+        # set that high, its light falls out through the door in a wedge.
+        wood = M.wood("#5a4330", 4.0)
+        foot = P(cx + 0.24, gy - 0.72, rise)
+        objs.append(self._lathe(f"{name}-stand-foot", [(0.0, 0.0), (0.12, 0.0), (0.12, 0.03), (0.05, 0.06), (0.0, 0.06)], foot, wood, 16))
+        objs.append(self._branch(f"{name}-stand-post", foot, foot + Vector((0, 0, 0.9)), 0.022, 0.018, wood, 8, bow=0.0))
+        objs.append(self._lathe(f"{name}-stand-top", [(0.0, 0.88), (0.08, 0.88), (0.085, 0.91), (0.0, 0.91)], foot, wood, 16))
+        top = foot + Vector((0, 0, 0.91))
+        objs.append(self._lathe(f"{name}-lamp", [(0.0, 0.0), (0.035, 0.0), (0.05, 0.015), (0.045, 0.03), (0.012, 0.035), (0.0, 0.036)], top, M.terracotta("#a0663e", 0.1), 16))
+        objs += self.lamp_flame(f"{name}-lamp", top + Vector((0.035, 0.0, 0.045)), (0.012, 0.03), 32.0, top + Vector((0.035, 0.0, 0.1)), radius=40.0)
+        return objs
 
     def _fieldstone_face(self, name, x0, x1, gy, height, openings, P, rng):
         """Rounded and broken basalt fieldstones laid in rough courses, the

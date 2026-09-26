@@ -20,9 +20,16 @@ import {
   sheetsToLoad,
   tileOrigin,
   turnPath,
+  sheetSet,
   variantFor,
   wantsLowResolution,
 } from '@/game/prerendered/select';
+import {
+  isLowMemory,
+  isPhone,
+  PHONE_SHORT_SIDE,
+  type DeviceClass,
+} from '@/game/systems/resolution';
 import { naturalColor } from '@/shared/color';
 
 const variant = {
@@ -285,11 +292,54 @@ describe('pre-rendered place art', () => {
       expect(artPathFor(id)).toBe(`art/${id}/`);
   });
 
-  it('loads half-resolution art on small views and in low-power mode', () => {
-    expect(wantsLowResolution(3, 3, false)).toBe(false); // desktop, close framing
-    expect(wantsLowResolution(2.75, 3, false)).toBe(false); // tablet
-    expect(wantsLowResolution(1.75, 3, false)).toBe(true); // phone
-    expect(wantsLowResolution(3, 3, true)).toBe(true);
+  describe('half-resolution art', () => {
+    const desktop: DeviceClass = { coarsePointer: false, deviceMemory: 8, screenShortSide: 1080 };
+    // Pixel 7: a touch screen 412 CSS px wide; its canvas renders at 2×.
+    const pixel7: DeviceClass = { coarsePointer: true, deviceMemory: 8, screenShortSide: 412 };
+    // A 1280×720 window at the close framing (zoom 3), or on a 2× screen (6).
+    const view = (zoom: number, device = desktop, lowPower = false) =>
+      wantsLowResolution({ zoom, ppu: 3, lowPower, device });
+
+    it('keeps the full art on desktops and tablets', () => {
+      expect(view(3)).toBe(false);
+      expect(view(6)).toBe(false);
+      expect(view(3, { ...desktop, deviceMemory: undefined })).toBe(false); // Safari, Firefox
+      // Tablets are touch screens too, but large: iPad (820), iPad mini (744), a 600 dp Android.
+      expect(view(2.75, { ...pixel7, screenShortSide: 820 })).toBe(false);
+      expect(view(5.5, { ...pixel7, screenShortSide: 744 })).toBe(false);
+      expect(view(4, { ...pixel7, screenShortSide: 600 })).toBe(false);
+      // A laptop with a touch screen and a mouse reports a fine pointer.
+      expect(view(3, { ...desktop, screenShortSide: 900 })).toBe(false);
+    });
+
+    it('loads it on phones, whatever the canvas zoom (high-DPI makes it as high as a desktop’s)', () => {
+      expect(view(3.5, pixel7)).toBe(true); // close framing 1.75 × render ratio 2
+      expect(view(6.5, pixel7)).toBe(true);
+      expect(view(3.5, { ...pixel7, screenShortSide: 360 })).toBe(true);
+      // In landscape the screen's shorter side is still a phone's.
+      expect(view(3.5, { ...pixel7, screenShortSide: 412 })).toBe(true);
+      // Safari reports no device memory: the screen decides.
+      expect(view(3.5, { ...pixel7, deviceMemory: undefined })).toBe(true);
+    });
+
+    it('loads it on devices short of memory (2 GB or less), in simpler effects, and on small views', () => {
+      expect(view(3, { ...desktop, deviceMemory: 2 })).toBe(true);
+      expect(view(3, { ...desktop, deviceMemory: 0.5 })).toBe(true);
+      expect(view(3, { ...desktop, deviceMemory: 4 })).toBe(false);
+      expect(view(3, desktop, true)).toBe(true);
+      expect(view(1.75)).toBe(true); // a small window at 1×: two-thirds of 3 is 2
+      expect(view(2)).toBe(false);
+    });
+
+    it('classifies phones by a touch screen under 600 CSS px on its shorter side', () => {
+      expect(PHONE_SHORT_SIDE).toBe(600);
+      expect(isPhone(pixel7)).toBe(true);
+      expect(isPhone({ ...pixel7, screenShortSide: 599 })).toBe(true);
+      expect(isPhone({ ...pixel7, screenShortSide: 600 })).toBe(false);
+      expect(isPhone({ ...pixel7, coarsePointer: false })).toBe(false); // a small desktop window
+      expect(isLowMemory({ deviceMemory: undefined })).toBe(false);
+      expect(isLowMemory({ deviceMemory: 2 })).toBe(true);
+    });
   });
 
   it('takes the half-resolution sprite pages with the half-resolution ground, when they exist', () => {
@@ -437,6 +487,35 @@ describe('pre-rendered people', () => {
     );
     expect(sheetsToLoad(people, [player], false, '#112233')).toContain('player-look-1@lamp');
     expect(sheetsToLoad(people, [], true)).toEqual(['crowd-0']);
+  });
+
+  it('reads half-resolution sheets and takes them only when wanted', () => {
+    const low = {
+      ppu: 1.5,
+      frameWidth: 66,
+      frameHeight: 102,
+      originX: 33,
+      originY: 93,
+      sheets: { day: 'x-low.webp' },
+      shadows: {
+        day: {
+          sheet: 's-low.webp',
+          frameWidth: 58,
+          frameHeight: 40,
+          originX: 10,
+          originY: 10,
+          ppu: 0.5,
+        },
+      },
+    };
+    const art = parsePeopleArt({ a: sheet({ low }), b: sheet({}) }).people;
+    if (!art?.a || !art.b) throw new Error('people');
+    expect(sheetSet(art.a, true)).toEqual(low);
+    expect(sheetSet(art.a, false)).toBe(art.a);
+    // Someone without half-resolution sheets keeps the full ones.
+    expect(sheetSet(art.b, true)).toBe(art.b);
+    // A half-resolution set must say its size.
+    expect(parsePeopleArt({ a: sheet({ low: { ...low, ppu: undefined } }) }).error).not.toBeNull();
   });
 
   it('keys appearances stably and distinctly', () => {

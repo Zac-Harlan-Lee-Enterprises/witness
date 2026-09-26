@@ -2082,12 +2082,17 @@ class VillageKit:
             c = self.P(x + 0.5, y + 0.5)
             objs = []
             stone = field_rock("#8a8272", "fire-stone", lichen=0.0, dark=0.35)
+            # At night the ring is seen by the fire alone, at night's brighter
+            # exposure: stones blackened by years of fires (their faces turned
+            # to it sooty), so the firelight on them reads orange, not white.
+            sooty = field_rock("#4a4540", "fire-stone-sooted", lichen=0.0, dark=0.6)
             for k in range(10):
                 a = math.tau * k / 10 + rng.random() * 0.2
                 s = 0.08 + rng.random() * 0.05
-                objs.append(self.boulder(f"{name}-ring{k}", c + Vector((math.cos(a) * 0.33, math.sin(a) * 0.27, 0.0)), (s, s * 0.85, s * 0.7), stone, k * 2.7 + x, flat=0.6, sink=0.3))
+                ring = self.boulder(f"{name}-ring{k}", c + Vector((math.cos(a) * 0.33, math.sin(a) * 0.27, 0.0)), (s, s * 0.85, s * 0.7), stone, k * 2.7 + x, flat=0.6, sink=0.3)
+                objs += self._by_light(ring, sooty)
             objs.append(self._ellipsoid(f"{name}-ash", c + Vector((0, 0, 0.005)), (0.3, 0.24, 0.02), M.plain("#7a746c", 0.95), 20, 6))
-            objs.append(self._ellipsoid(f"{name}-coals", c + Vector((0, 0, 0.02)), (0.18, 0.14, 0.04), embers(16.0), 20, 8))
+            objs += self._by_light(self._ellipsoid(f"{name}-coals", c + Vector((0, 0, 0.02)), (0.18, 0.14, 0.04), embers(16.0), 20, 8), embers(6.0))
             char = charred()
             for k in range(6):
                 a = math.tau * k / 6 + rng.random() * 0.3
@@ -2095,11 +2100,13 @@ class VillageKit:
                 p1 = c + Vector((math.cos(a) * 0.03, math.sin(a) * 0.03, 0.14 + rng.random() * 0.06))
                 objs.append(self._branch(f"{name}-stick{k}", p0, p1, 0.026, 0.018, char, 8, bow=0.01))
                 # The burning ends glow.
-                objs.append(self._ellipsoid(f"{name}-glow{k}", p0.lerp(p1, 0.85), (0.03, 0.03, 0.03), embers(24.0), 8, 6))
+                objs += self._by_light(self._ellipsoid(f"{name}-glow{k}", p0.lerp(p1, 0.85), (0.03, 0.03, 0.03), embers(24.0), 8, 6), embers(9.0))
             for k, (dx, dy, h, r) in enumerate(((0.0, 0.0, 0.34, 0.07), (0.07, 0.03, 0.24, 0.05), (-0.06, -0.02, 0.27, 0.05), (0.03, -0.06, 0.2, 0.04), (-0.04, 0.05, 0.18, 0.04))):
                 f = self._flame(f"{name}-flame{k}", c + Vector((dx, dy, 0.06)), h, r)
                 f.data.transform(Matrix.Translation(c + Vector((dx, dy, 0.06))) @ Matrix.Rotation(k * 0.7, 4, "Z") @ Matrix.Translation(-(c + Vector((dx, dy, 0.06)))))
-                objs.append(f)
+                # By night a dimmer flame: at night's exposure the day's
+                # burns white; this one keeps its yellow core and orange tips.
+                objs += self._by_light(f, flame(8.0))
             # Firewood stacked beside, and a pot on its stones.
             wood = M.bark("#6a5a46")
             for k in range(5):
@@ -2108,12 +2115,30 @@ class VillageKit:
             pot = self._lathe(f"{name}-pot", [(0.06, 0), (0.12, 0.05), (0.14, 0.12), (0.1, 0.19), (0.1, 0.21)], c + Vector((-0.44, 0.28, 0.0)), M.terracotta("#3e3028", 0.05), 20)
             objs.append(pot)
             self.sprite(name, y + 0.85, objs, [(x, y)])
-            main = self.add_light(f"{name}-light", "POINT", c + Vector((0, 0, 0.32)), 150.0, "#ff9040", radius=0.12)
-            low = self.add_light(f"{name}-coal-light", "POINT", c + Vector((0, -0.05, 0.1)), 40.0, "#ff6a28", radius=0.2)
-            _ = (main, low)
-            # Its glow is baked in (and at night's exposure it is bright): the
-            # game's flickering pool over it is gentle, or the ring goes white.
+            # Its light. By day a strong one (the sun is stronger still); at
+            # night, rendered 2.2 EV brighter, a separate, dimmer fire: set a
+            # little higher and as wide as the flames (soft shadows, a flatter
+            # falloff), so the stones beside it don't blow out while the
+            # ground round it still takes a warm pool.
+            tag(self.add_light(f"{name}-light", "POINT", c + Vector((0, 0, 0.32)), 150.0, "#ff9040", radius=0.12), "day,late")
+            tag(self.add_light(f"{name}-coal-light", "POINT", c + Vector((0, -0.05, 0.1)), 40.0, "#ff6a28", radius=0.2), "day,late")
+            tag(self.add_light(f"{name}-light-night", "POINT", c + Vector((0, 0, 0.42)), 55.0, "#ff9446", radius=0.22), NIGHT)
+            tag(self.add_light(f"{name}-coal-light-night", "POINT", c + Vector((0, -0.05, 0.12)), 7.0, "#ff6a28", radius=0.2), NIGHT)
+            # Its glow is baked in: the game's flickering pool over it is gentle.
             self.flicker.append(("hearth", (x + 0.5) * 32, (y + 0.3) * 32, 110.0, ["day", "late", "night"], 0.25))
+
+    def _by_light(self, obj, night_mat):
+        """A thing of the fire as it is by day (its own material) and a copy
+        of it for the night (`night_mat`: dimmer embers and flames, sooty
+        stone), each tagged with the lights it belongs to."""
+        twin = obj.copy()
+        twin.data = obj.data.copy()
+        twin.name = f"{obj.name}-night"
+        twin.data.materials.clear()
+        twin.data.materials.append(night_mat)
+        for c in obj.users_collection:
+            c.objects.link(twin)
+        return [tag(obj, "day,late"), tag(twin, NIGHT)]
 
     def rounded_block(self, name, x0, x1, y0, y1, z0, z1, mat, rng, roundness=0.3):
         """A hewn block of stone with rounded edges and corners (a

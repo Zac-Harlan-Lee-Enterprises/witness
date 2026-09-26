@@ -108,7 +108,7 @@ class RomanTown:
         openings += [(a, b, c, d) for a, b, c, d, _k in windows]
         objs += self._front(name, x0, x1, y_face, h, mat, openings)
         for a, b, c, d, kind in windows:
-            objs += self._window(f"{name}-win{a:.1f}", a, b, y_face, c, d, kind)
+            objs += self._roman_window(f"{name}-win{a:.1f}", a, b, y_face, c, d, kind)
         for dx in doors:
             if behind_stoa:
                 objs += self._shop_front(f"{name}-shop{dx}", dx, y_face)

@@ -192,9 +192,13 @@ class Sprite:
       not cast shadows into the ground layer or onto other sprites; it
       carries its own shadow instead (a shadow catcher under it);
     - `flat`: lies on the ground (prints, a mat): anyone standing on it
-      draws over it, so its base is its northern edge."""
+      draws over it, so its base is its northern edge;
+    - `shadow`: a conditional thing carries its own shadow on a catcher
+      laid on the terrain under it; False for one whose shadow would fall
+      where no catcher can hold it (a sail over open water, whose terrain
+      is the lake bed)."""
 
-    def __init__(self, sid, base, objects, tiles=None, conditional=False, flat=False, fade=False):
+    def __init__(self, sid, base, objects, tiles=None, conditional=False, flat=False, fade=False, shadow=True):
         self.id = sid
         self.base = base
         self.objects = objects
@@ -203,6 +207,7 @@ class Sprite:
         self.flat = flat
         # A canopy (a palm's crown): the game fades it while someone walks behind it.
         self.fade = fade
+        self.shadow = shadow
 
 
 def value_noise(w, h, cell, seed):
@@ -604,8 +609,10 @@ class Place(LakeKit, VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, Plan
             made = maker(sid, e["x"], e["y"], e)
             if made is None:
                 continue
-            objs, base, flat = made if isinstance(made, tuple) else (made, (e["y"] + 0.85) * 32, False)
-            self.sprites.append(Sprite(sid, base, objs, [(e["x"], e["y"])], conditional=e.get("conditional", False), flat=flat))
+            # A builder returns its objects, or (objects, base, flat[, Sprite options]).
+            objs, base, flat, *more = made if isinstance(made, tuple) else (made, (e["y"] + 0.85) * 32, False)
+            options = more[0] if more else {}
+            self.sprites.append(Sprite(sid, base, objs, [(e["x"], e["y"])], conditional=e.get("conditional", False), flat=flat, **options))
 
     # ── dressing ────────────────────────────────────────────────────────────
     def _dressing(self):

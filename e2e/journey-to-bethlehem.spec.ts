@@ -12,6 +12,7 @@ import {
   setFastSettings,
   snap,
   waitForWorld,
+  timeLimit,
 } from './support';
 
 /**
@@ -27,7 +28,7 @@ async function vessel(page: Page, name: string, action: string): Promise<void> {
 }
 
 test('play A Journey to Bethlehem from a new profile to the chapter summary', async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(timeLimit(240_000));
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Noa');

@@ -11,6 +11,7 @@ import {
   setFastSettings,
   snap,
   waitForWorld,
+  timeLimit,
 } from './support';
 
 /**
@@ -22,7 +23,7 @@ import {
  *  Scripture references.
  */
 test('play The Road to Jericho from a new profile to the chapter summary', async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(timeLimit(240_000));
   await openApp(page);
   await setFastSettings(page);
 

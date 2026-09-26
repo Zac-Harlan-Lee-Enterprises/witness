@@ -136,6 +136,7 @@ Everything `VITE_*` is compiled into the public bundle — never put a secret in
 | Regenerate PWA icons | `npm run icons` |
 | Re-export art data after changing characters/maps | `npm run art:data` |
 | Re-render the market / people (needs Blender 5.2+, `BLENDER=` to override) | `npm run art:market` · `npm run art:people` |
+| Half-resolution people sheets for phones, from the full ones (no rendering; `art:people` also makes them) | `node scripts/art-build.mjs people-low` |
 | Weather and atmosphere captures (review only) | `VITE_FORCE_WEATHER=storm E2E_SHOTS=1 WEATHER_SHOTS=storm E2E_GPU=1 npx playwright test e2e/weather-art.spec.ts --project=desktop-chromium` |
 | Market art captures / performance (review only) | `E2E_SHOTS=1 ART_SHOTS=<set> npx playwright test e2e/market-art.spec.ts --project=desktop-chromium` · `PERF_MARKET=1 PERF_LABEL=<label> npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium` |
 | Drift sweep | `bash quality-sweep.sh` |

@@ -124,6 +124,42 @@ const ShadowSheetSchema = z.object({
 
 export const POSES = ['stand', 'sit', 'lie'] as const;
 
+const LightFilesSchema = z.object({
+  day: z.string().min(1).optional(),
+  late: z.string().min(1).optional(),
+  indoor: z.string().min(1).optional(),
+  overcast: z.string().min(1).optional(),
+  lamp: z.string().min(1).optional(),
+  night: z.string().min(1).optional(),
+});
+
+const ShadowsSchema = z
+  .object({
+    day: ShadowSheetSchema.optional(),
+    late: ShadowSheetSchema.optional(),
+    indoor: ShadowSheetSchema.optional(),
+    overcast: ShadowSheetSchema.optional(),
+    lamp: ShadowSheetSchema.optional(),
+    night: ShadowSheetSchema.optional(),
+  })
+  .default({});
+
+/**
+ * The same sheets at a lower resolution (tools/art/downsample_people.py),
+ * for phones and low-memory devices: the same frames, at `ppu` pixels per
+ * game unit (full sheets: 3), with frame sizes and origins scaled to match.
+ * Their frame tables are in the person's `atlas`, by file.
+ */
+const LowSheetsSchema = z.object({
+  ppu: z.number().positive(),
+  frameWidth: z.number().int().positive(),
+  frameHeight: z.number().int().positive(),
+  originX: z.number(),
+  originY: z.number(),
+  sheets: LightFilesSchema,
+  shadows: ShadowsSchema,
+});
+
 const PersonSheetSchema = z.object({
   /** Stable key of the authored appearance (see appearanceKey). */
   appearance: z.string().min(1),
@@ -143,14 +179,7 @@ const PersonSheetSchema = z.object({
       rag: z.string().optional(),
     })
     .optional(),
-  sheets: z.object({
-    day: z.string().min(1).optional(),
-    late: z.string().min(1).optional(),
-    indoor: z.string().min(1).optional(),
-    overcast: z.string().min(1).optional(),
-    lamp: z.string().min(1).optional(),
-    night: z.string().min(1).optional(),
-  }),
+  sheets: LightFilesSchema,
   frameWidth: z.number().int().positive(),
   frameHeight: z.number().int().positive(),
   originX: z.number(),
@@ -160,16 +189,9 @@ const PersonSheetSchema = z.object({
   rows: z.array(z.string().min(1)).min(1),
   turns: z.array(z.string().min(1)).default([]),
   /** Cast shadows per light (overlays have none: the sheet under them casts it). */
-  shadows: z
-    .object({
-      day: ShadowSheetSchema.optional(),
-      late: ShadowSheetSchema.optional(),
-      indoor: ShadowSheetSchema.optional(),
-      overcast: ShadowSheetSchema.optional(),
-      lamp: ShadowSheetSchema.optional(),
-      night: ShadowSheetSchema.optional(),
-    })
-    .default({}),
+  shadows: ShadowsSchema,
+  /** The same sheets and shadows at a lower resolution, if made. */
+  low: LowSheetsSchema.optional(),
   /**
    * Trimmed frames packed into atlases, per image file: frame name →
    * [x, y, w, h, offsetX, offsetY] (the offset places the trimmed pixels

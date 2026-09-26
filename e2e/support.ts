@@ -5,6 +5,15 @@ import { expect, type Page } from '@playwright/test';
  * the same buttons a keyboard or screen-reader player would use (the
  * “Go to…” list, dialogue buttons, puzzle controls).
  */
+/**
+ * The time limit for a long test (a whole chapter, a storm): doubled on CI,
+ * whose shared runners are sometimes half again as slow as usual (every step
+ * of a run, not just the browser), which took a chapter past its limit.
+ */
+export function timeLimit(ms: number): number {
+  return process.env.CI ? ms * 2 : ms;
+}
+
 export async function openApp(page: Page): Promise<void> {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

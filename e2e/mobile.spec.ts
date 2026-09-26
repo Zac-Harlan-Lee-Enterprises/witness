@@ -8,6 +8,7 @@ import {
   openApp,
   waitForWorld,
 } from './support';
+import { canvas, data } from './world-probe';
 
 test('touch controls: on-screen pad, action button and Go-to work on phones and tablets', async ({
   page,
@@ -39,4 +40,27 @@ test('touch controls: on-screen pad, action button and Go-to work on phones and 
     const dialogBox = await page.locator('section.dialogue').boundingBox();
     expect(dialogBox?.width ?? 0).toBeLessThanOrEqual(vw);
   }
+});
+
+test('phones load the half-resolution art, places and people; tablets and desktops the full', async ({
+  page,
+  isMobile,
+}) => {
+  // Pixel 7 (mobile-chromium) is a phone; the tablet project (820 × 1180,
+  // touch) and desktops are not. Checked in the first place, before automatic
+  // quality could lower anything.
+  const phone = isMobile && (page.viewportSize()?.width ?? 0) < 600;
+  await openApp(page);
+  await createProfile(page, 'Memory');
+  await newGame(page);
+  await waitForWorld(page);
+  const world = canvas(page);
+  await expect(world).toHaveAttribute('data-art', /^prerendered:/);
+  const ppu = phone ? '1.5' : '3';
+  await expect(world).toHaveAttribute('data-art-ppu', ppu);
+  await expect(world).toHaveAttribute('data-people-ppu', ppu);
+  // The half-resolution art is about a quarter of the full art's texture memory.
+  const mb = Number(await data(page, 'texture-mb'));
+  expect(mb).toBeGreaterThan(0);
+  if (phone) expect(mb).toBeLessThan(12);
 });

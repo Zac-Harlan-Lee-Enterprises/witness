@@ -15,10 +15,12 @@ import {
   type LightingVariant,
   type PeopleArt,
   type PeopleLight,
+  type PersonSheet,
   type PlaceArt,
 } from '@/game/prerendered/manifest';
 import {
   appearanceKey,
+  behindCanopy,
   peopleLightFor,
   PLACE_ART,
   PLACES_WITH_ART,
@@ -132,6 +134,72 @@ describe('art asset provenance', () => {
       expect(a.origin.length, `origin of ${a.path}`).toBeGreaterThan(10);
       expect(a.license.length, `licence of ${a.path}`).toBeGreaterThan(5);
     }
+  });
+});
+
+describe('Philemon’s house', () => {
+  it('fades a column while the player stands behind it, rather than cutting them in half', () => {
+    // The colonnade sorts true (no cheat): someone just north of a column in
+    // line with it is behind its shaft. The player can stand there (talking
+    // to Ammia at the gathering), so the house's columns fade like canopies.
+    const { art } = parsePlaceArt(
+      JSON.parse(readFileSync(join(ART, 'philemon-house', 'manifest.json'), 'utf8')),
+    );
+    const v = art?.variants.day;
+    if (!art || !v) throw new Error('no art for philemon-house');
+    const columns = v.sprites.filter((s) => s.id.startsWith('column-'));
+    expect(columns.length).toBeGreaterThan(0);
+    for (const c of columns) {
+      expect(c.fade, c.id).toBe(true);
+      // Each sorts by its own base (the old cheat drew the far row 1.3 rows north of it).
+      const row = Number(c.id.split('-')[2]);
+      expect(c.base, c.id).toBeCloseTo((row + 0.72) * 32, 1);
+    }
+    // The player at (9,5), beside Ammia and in line with column (9,7): feet at
+    // the tile centre plus FEET_BELOW_CENTRE (src/game/scenes/actors.ts).
+    const far = columns.find((c) => c.id === 'column-9-7');
+    if (!far) throw new Error('no column-9-7');
+    expect(behindCanopy(far, art.ppu, 9.5 * 32, 5.5 * 32 + 10)).toBe(true);
+  });
+});
+
+describe('the art pipeline', () => {
+  it('kits never shadow each other’s helpers: a shared helper is an override that calls super()', () => {
+    // Place mixes every kit into one class, so a private helper defined in two
+    // kits resolves to the first in the MRO for all of them: the lake kit's
+    // _tube once broke every Roman place, and the Roman _window every
+    // Chapter 1 house. A deliberate override keeps the signature and hands
+    // other places on (super()).
+    const lib = join(ROOT, 'tools', 'art', 'lib');
+    const kits = readdirSync(lib).filter(
+      (f) => /^(kit_|lake_|roman_)\w+\.py$/.test(f) || f === 'place.py',
+    );
+    const defs = new Map<string, Array<{ file: string; params: string; overrides: boolean }>>();
+    for (const file of kits) {
+      const source = readFileSync(join(lib, file), 'utf8');
+      const methods = [...source.matchAll(/^ {4}def (_[a-z0-9_]+)\(self([^)]*)\)/gm)];
+      methods.forEach((m, i) => {
+        const [, name = '', params = ''] = m;
+        if (name.startsWith('__')) return;
+        const body = source.slice(m.index, methods[i + 1]?.index ?? source.length);
+        const list = defs.get(name) ?? [];
+        list.push({
+          file,
+          params: params.replace(/\s+/g, ' ').trim(),
+          overrides: body.includes('super()'),
+        });
+        defs.set(name, list);
+      });
+    }
+    const clashes = [...defs.entries()]
+      .filter(([, list]) => list.length > 1)
+      .filter(
+        ([, list]) =>
+          new Set(list.map((d) => d.params)).size > 1 ||
+          list.filter((d) => !d.overrides).length > 1,
+      )
+      .map(([name, list]) => `${name} in ${list.map((d) => d.file).join(', ')}`);
+    expect(clashes, 'Rename the helper, or make it an override that calls super()').toEqual([]);
   });
 });
 
@@ -300,6 +368,85 @@ describe('pre-rendered people', () => {
       ])
         if (f) expect(existsSync(join(dir, f)), `${f} exists`).toBe(true);
     }
+  });
+
+  it('every sheet has a half-resolution copy for phones, with the same frames at half the size', () => {
+    expect(people).not.toBeNull();
+    if (!people) return;
+    const dir = join(ART, 'people');
+    const problems: string[] = [];
+    /** A low atlas: it exists, fits any GPU, and packs every frame of its full sheet. */
+    const packed = (sheet: PersonSheet, full: string, half: string): void => {
+      if (!existsSync(join(dir, half))) {
+        problems.push(`${half} is missing`);
+        return;
+      }
+      const size = webpSize(join(dir, half));
+      if (Math.max(size.w, size.h) > MAX_ART_TEXTURE) problems.push(`${half} is too big`);
+      const names = Object.keys(sheet.atlas[full] ?? {}).sort();
+      const table = sheet.atlas[half] ?? {};
+      if (Object.keys(table).sort().join() !== names.join())
+        problems.push(`${half}: frames differ from ${full}`);
+      for (const [name, [x, y, w, h]] of Object.entries(table))
+        if (x + w > size.w || y + h > size.h) problems.push(`${half}: ${name} is outside it`);
+    };
+    for (const [id, sheet] of Object.entries(people)) {
+      const low = sheet.low;
+      if (!low) {
+        problems.push(`${id}: no low sheets (node scripts/art-build.mjs people-low)`);
+        continue;
+      }
+      const k = low.ppu / sheet.ppu;
+      // Half the pixels per unit, and a frame that lies exactly where the full one does.
+      if (low.ppu !== 1.5) problems.push(`${id}: low ppu ${low.ppu}`);
+      for (const [a, b] of [
+        [low.frameWidth, sheet.frameWidth],
+        [low.frameHeight, sheet.frameHeight],
+        [low.originX, sheet.originX],
+        [low.originY, sheet.originY],
+      ] as const)
+        if (a !== b * k) problems.push(`${id}: low frame ${a} is not ${b} × ${k}`);
+      for (const [light, full] of Object.entries(sheet.sheets)) {
+        const half = low.sheets[light as PeopleLight];
+        if (half !== full.replace(/\.webp$/, '-low.webp'))
+          problems.push(`${id}: ${light} has no low sheet (${String(half)})`);
+        else packed(sheet, full, half);
+      }
+      // Cast shadows: the full sheet itself (one byte a pixel, soft already),
+      // or a smaller copy with its frame scaled to match.
+      if (Object.keys(low.shadows).sort().join() !== Object.keys(sheet.shadows).sort().join())
+        problems.push(`${id}: low shadows are not in the lights of the full ones`);
+      for (const light of Object.keys(sheet.shadows) as PeopleLight[]) {
+        const full = sheet.shadows[light];
+        const half = low.shadows[light];
+        if (!full || !half) continue;
+        if (half.sheet === full.sheet) {
+          if (JSON.stringify(half) !== JSON.stringify(full))
+            problems.push(`${id}: ${light} shadow differs from the sheet it names`);
+          continue;
+        }
+        if (half.sheet !== full.sheet.replace(/\.webp$/, '-low.webp'))
+          problems.push(`${id}: ${light} shadow sheet ${half.sheet}`);
+        else packed(sheet, full.sheet, half.sheet);
+        if (half.frameWidth !== full.frameWidth * (half.ppu / full.ppu))
+          problems.push(`${id}: ${light} shadow frame is not scaled`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('the half-resolution sheets are recorded as derived from the rendered ones', () => {
+    const manifest = JSON.parse(
+      readFileSync(join(ROOT, 'docs', 'art', 'asset-manifest.json'), 'utf8'),
+    ) as { assets: AssetEntry[] };
+    const entry = manifest.assets.find((a) => a.path === 'public/art/people/*-low.webp');
+    expect(entry?.origin).toContain('tools/art/downsample_people.py');
+    // Listed before the rendered sheets' entry, which would match them too.
+    const rendered = manifest.assets.findIndex((a) => a.path === 'public/art/people/*.webp');
+    expect(manifest.assets.indexOf(entry as AssetEntry)).toBeLessThan(rendered);
+    const low = files(join(ART, 'people')).filter((f) => f.endsWith('-low.webp'));
+    expect(low.length).toBeGreaterThan(0);
+    for (const f of low) expect(matches(entry?.path ?? '', relative(ROOT, f)), f).toBe(true);
   });
 
   const rags = Object.values(PLAYER_APPEARANCES).map((a) => a.robe);

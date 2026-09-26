@@ -139,11 +139,25 @@ class RomanProps:
             col = {"madder": "#8a2418", "woad": "#2c3e6a", "purple": "#4a1e46"}.get(kind, stain)
             objs.append(self.skein(f"{name}-skein", c + Vector((0.33, -0.25, 0.64)), col, 0.28, twist=0.4))
         if hot:
-            # The stoke-hole at the foot, embers glowing in it.
+            # The stoke-hole at the foot: its dark mouth, a bed of embers on
+            # its sill (cracked coals, dim: a room renders about 3 EV brighter
+            # than outdoors, and a flat bright slab blew out to white), a low
+            # glow from inside that falls warm on the floor in front, and ash
+            # raked out onto it.
+            from kit_village import embers
+
             bm, layer = self._rbm()
             self._cbox(bm, layer, x + 0.38, y + 0.955, x + 0.62, y + 0.985, 0.1, 0.3, chamfer=0.01, r=0.5)
             objs.append(self._obj(f"{name}-stoke", bm, self._mat("dark")))
-            objs.append(common.box(f"{name}-embers", (0.18, 0.02, 0.05), self.P(x + 0.5, y + 0.99, 0.14), M.emissive("#ff5a1a", 4.0), None))
+            own = common.rng(int(x * 131 + y * 7))
+            for k in range(5):
+                ex = x + 0.42 + k * 0.04 + (own.random() - 0.5) * 0.015
+                objs.append(self._ellipsoid(f"{name}-ember{k}", self.P(ex, y + 0.975, 0.115 + own.random() * 0.012), (0.024, 0.014, 0.018), embers(1.4), 10, 6))
+            glow = self.add_light(f"{name}-fire", "POINT", self.P(x + 0.5, y + 1.02, 0.14), 2.2, "#ff7a30", radius=0.05)
+            _ = glow
+            self.flicker.append(("hearth", (x + 0.5) * 32, (y + 1.0) * 32, 20.0, list(self.light_plan.values()), 0.35))
+            ash = self._ellipsoid(f"{name}-ash", self.P(x + 0.5, y + 1.08, 0.003), (0.13, 0.07, 0.004), M.plain("#6e6862", 0.95), 16, 4)
+            self.to_ground(ash)
             steam = common.lathe(f"{name}-steam", [(0.32, 0.0), (0.36, 0.2), (0.33, 0.45), (0.24, 0.72), (0.1, 0.9)], 24, R.steam(), None)
             steam.data.transform(Matrix.Translation(c + Vector((0, 0, 0.6))))
             objs.append(steam)
@@ -444,24 +458,50 @@ class RomanProps:
         objs.append(self._ellipsoid(f"{name}-muzzle", head + Vector((0, -0.06, -0.04)), (0.06, 0.04, 0.045), stone, 12, 8))
         spout = head + Vector((0, -0.1, -0.05))
         objs.append(self._branch(f"{name}-pipe", head + Vector((0, -0.05, -0.05)), spout, 0.018, 0.016, self._mat("bronze"), 8, bow=0.0))
-        water = R.puddle()
+        # The stream: a rope of water arcing out of the lion's mouth, clear
+        # where it leaves the pipe and whitening with air as it falls, a
+        # little wavering, thinning as it speeds up; it breaks into a splash
+        # of white water and rings where it lands in the basin.
+        surface = h - 0.06
+        # Its own random stream, so the rest of the street builds as before.
+        rng = common.rng(int(x0 * 97 + y0 * 13))
         stream = bmesh.new()
         pts = []
-        for k in range(10):
-            t_ = k / 9
-            pts.append(spout + Vector((0, -0.18 * t_, -0.36 * t_ * t_ - 0.02 * t_)))
-        self._tube(stream, pts, [0.014 + 0.006 * (k / 9) for k in range(10)], seg=8)
-        objs.append(common.mesh_object(f"{name}-stream", stream, M.water(), None, smooth=True))
-        objs.append(common.box(f"{name}-water", (bx1 - bx0 - 2 * t, by1 - by0 - 2 * t, 0.01), self.P(mid, (by0 + by1) / 2, h - 0.06), M.water(), None))
-        # Water spilling over the front lip, and wet stone below.
-        spill = bmesh.new()
-        pts = [self.P(mid - 0.08, by1 - 0.02, h - 0.02), self.P(mid - 0.08, by1 + 0.02, h - 0.1), self.P(mid - 0.08, by1 + 0.04, 0.02)]
-        self._tube(spill, pts, 0.012, seg=6)
-        objs.append(common.mesh_object(f"{name}-spill", spill, M.water(), None, smooth=True))
+        n_pts = 14
+        drop = spout.z - self.P(mid, by0, surface).z
+        for k in range(n_pts):
+            t_ = k / (n_pts - 1)
+            wob = 0.004 * math.sin(t_ * 17.0)
+            pts.append(spout + Vector((wob, -0.16 * t_, -drop * (0.1 * t_ + 0.9 * t_ * t_))))
+        self._tube(stream, pts, [0.021 - 0.006 * (k / (n_pts - 1)) for k in range(n_pts)], seg=10)
+        objs.append(common.mesh_object(f"{name}-stream", stream, R.falling_water(0.3), None, smooth=True))
+        land = pts[-1]
+        objs.append(common.box(f"{name}-water", (bx1 - bx0 - 2 * t, by1 - by0 - 2 * t, 0.01), self.P(mid, (by0 + by1) / 2, surface), R.basin_water(), None))
+        splash = bmesh.new()
+        for k in range(9):
+            a = math.tau * k / 9 + rng.random() * 0.4
+            r0 = 0.03 + rng.random() * 0.02
+            base = land + Vector((math.cos(a) * r0, math.sin(a) * r0 * 0.8, 0.0))
+            tip = base + Vector((math.cos(a) * (0.015 + rng.random() * 0.02), math.sin(a) * 0.015, 0.015 + rng.random() * 0.025))
+            self._tube(splash, [base, base.lerp(tip, 0.6), tip], [0.01, 0.007, 0.003], seg=6)
+        objs.append(common.mesh_object(f"{name}-splash", splash, R.falling_water(0.8), None, smooth=True))
+        objs.append(self._ellipsoid(f"{name}-foam", land + Vector((0, 0, 0.002)), (0.07, 0.06, 0.006), R.falling_water(0.9, "fountain-foam"), 18, 4))
+        # Water spilling over a worn notch in the front lip in a thin sheet
+        # down the slab's face, darkening the stone, and a puddle at its foot.
+        sheet = bmesh.new()
+        rows = []
+        path = [(by1 - 0.06, h + 0.004), (by1 + 0.005, h - 0.004), (by1 + 0.02, h - 0.04), (by1 + 0.022, h * 0.5), (by1 + 0.03, 0.03), (by1 + 0.1, 0.004)]
+        for yy, zz in path:
+            half = 0.05 + 0.02 * (1 - zz / h)
+            rows.append([sheet.verts.new(self.P(mid - 0.12 + s * half, yy, zz)) for s in (-1, 1)])
+        for a_, b_ in zip(rows, rows[1:]):
+            sheet.faces.new((a_[0], a_[1], b_[1], b_[0]))
+        objs.append(common.mesh_object(f"{name}-spill", sheet, R.falling_water(0.12, "fountain-sheet"), None, smooth=True))
+        # (The wet paving round the basin is a decal in the ground: _litter.)
+        objs.append(common.box(f"{name}-wet", (0.2, 0.004, h - 0.06), self.P(mid - 0.12, by1 + 0.012, (h - 0.06) / 2), R.wet_stone("#8e8a80"), None))
         # Water jars waiting their turn at the spout.
         for k, (dx, dy) in enumerate(((bx0 - 0.3, by1 - 0.1), (bx1 + 0.28, by1 - 0.25))):
             objs.append(self._lathe(f"{name}-jar{k}", [(0.05, 0.0), (0.12, 0.05), (0.15, 0.2), (0.13, 0.32), (0.07, 0.4), (0.055, 0.44), (0.065, 0.46)], self.P(dx, dy, 0.03), M.terracotta("#b87a54", 0.4), 24))
-        _ = water
         return objs
 
     def _garden_fountain(self, name, cx, cy):
@@ -470,17 +510,21 @@ class RomanProps:
         c = self.P(cx, cy)
         prof = [(0.62, 0.0), (0.64, 0.04), (0.6, 0.08), (0.58, 0.36), (0.63, 0.4), (0.62, 0.44), (0.55, 0.44), (0.53, 0.2), (0.0, 0.18)]
         objs.append(self._lathe(f"{name}-basin", prof, c, stone, 48))
-        objs.append(self._ellipsoid(f"{name}-water", c + Vector((0, 0, 0.36)), (0.53, 0.53, 0.004), M.water(), 40, 4))
+        objs.append(self._ellipsoid(f"{name}-water", c + Vector((0, 0, 0.36)), (0.53, 0.53, 0.004), R.basin_water(), 40, 4))
         ped = [(0.1, 0.18), (0.08, 0.3), (0.06, 0.6), (0.09, 0.7), (0.05, 0.75), (0.26, 0.82), (0.28, 0.86), (0.22, 0.87), (0.0, 0.8)]
         objs.append(self._lathe(f"{name}-labrum", ped, c, stone, 40))
-        objs.append(self._ellipsoid(f"{name}-bowlwater", c + Vector((0, 0, 0.85)), (0.22, 0.22, 0.004), M.water(), 32, 4))
+        objs.append(self._ellipsoid(f"{name}-bowlwater", c + Vector((0, 0, 0.85)), (0.22, 0.22, 0.004), R.basin_water(), 32, 4))
+        # A low jet bubbling up in the bowl (a dome of water with a plume),
+        # and the overflow falling from the bowl's lip in thin threads.
         jet = bmesh.new()
-        self._tube(jet, [c + Vector((0, 0, 0.84)), c + Vector((0, 0, 0.95)), c + Vector((0, 0, 1.0))], [0.012, 0.008, 0.004], seg=6)
-        for k in range(6):
-            a = math.tau * k / 6
-            pts = [c + Vector((math.cos(a) * 0.27, math.sin(a) * 0.27, 0.86 - 0.02)), c + Vector((math.cos(a) * 0.3, math.sin(a) * 0.3, 0.7)), c + Vector((math.cos(a) * 0.31, math.sin(a) * 0.31, 0.38))]
-            self._tube(jet, pts, 0.006, seg=5)
-        objs.append(common.mesh_object(f"{name}-jets", jet, M.water(), None, smooth=True))
+        self._tube(jet, [c + Vector((0, 0, 0.845)), c + Vector((0, 0, 0.9)), c + Vector((0, 0, 0.95)), c + Vector((0, 0, 0.97))], [0.03, 0.022, 0.012, 0.002], seg=10)
+        objs.append(common.mesh_object(f"{name}-jet", jet, R.falling_water(0.45, "fountain-jet"), None, smooth=True))
+        fall = bmesh.new()
+        for k in range(8):
+            a = math.tau * k / 8 + 0.2
+            pts = [c + Vector((math.cos(a) * 0.275, math.sin(a) * 0.275, 0.855)), c + Vector((math.cos(a) * 0.3, math.sin(a) * 0.3, 0.72)), c + Vector((math.cos(a) * 0.31, math.sin(a) * 0.31, 0.37))]
+            self._tube(fall, pts, [0.009, 0.007, 0.006], seg=6)
+        objs.append(common.mesh_object(f"{name}-falls", fall, R.falling_water(0.3, "fountain-falls"), None, smooth=True))
         return objs
 
     # ── tables and hearths ──────────────────────────────────────────────────

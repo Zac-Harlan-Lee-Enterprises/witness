@@ -8,6 +8,8 @@
  *   node scripts/art-build.mjs places              # render every place in PLACES (below)
  *   npm run art:market                             # = place jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people                             # every person those places need (only what is missing)
+ *   node scripts/art-build.mjs people-low          # half-resolution people sheets for phones (no rendering)
+ *   node scripts/art-build.mjs people-shadows      # cast shadows that fade out past their box, not at it (no rendering)
  *   npm run art:portrait-data                      # export everyone who speaks, in every chapter
  *   npm run art:portraits                          # render public/art/portraits (≈ 2 min a person)
  *   npm run art:portraits -- --who miriam player:look-1   # just some people
@@ -115,6 +117,13 @@ const jobs = {
       ...rest,
     ],
   ],
+  // Half-resolution people sheets (phones) from the packed sheets, without
+  // rendering (only people whose low sheets are missing or out of date;
+  // --force redoes all). The people job makes them too, for what it renders.
+  'people-low': () => [['tools/art/downsample_people.py', 'public/art/people', ...rest]],
+  // A fading margin for cast-shadow frames whose shadow reaches their box's
+  // edge (no rendering; new renders get it as they are made).
+  'people-shadows': () => [['tools/art/shadow_margins.py', 'public/art/people', ...rest]],
   // Bring older renders up to date (tiled grounds, half-resolution pages) without rendering.
   upgrade: () => [
     [
