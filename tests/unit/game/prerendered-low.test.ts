@@ -175,4 +175,20 @@ describe('half-resolution people', () => {
     expect(book.figure(player, ['lamp'], 'stand', null)).toBeNull();
     expect(book.figure(player, [], 'stand', null)?.ppu).toBe(1.5);
   });
+
+  it('shares the full shadow sheet when the low set names it (as the shipped art does)', async () => {
+    const full = person('player-look-1');
+    const art = parsePeopleArt({
+      'player-look-1': { ...full, low: { ...full.low, shadows: full.shadows } },
+    }).people;
+    if (!art) throw new Error('people');
+    const loaded = await loadPersons(fakeScene().scene, art, ['player-look-1'], 'late', true);
+    expect(loaded.get('player-look-1')).toMatchObject({
+      key: 'person:player-look-1-late-low.webp',
+      shadow: 'person:player-look-1-shadow-late.webp',
+    });
+    const fig = FigureBook.from(art, loaded).figure(player, [], 'stand', null);
+    expect(fig?.ppu).toBe(1.5);
+    expect(fig?.shadow).toMatchObject({ ppu: 1, frameWidth: 84, originX: 64 });
+  });
 });
