@@ -19,9 +19,16 @@ describe('time-of-day lighting', () => {
     expect(lightingFor(12, false).night).toBe(false);
     expect(lightingFor(21, false).alpha).toBeGreaterThan(lightingFor(12, false).alpha);
   });
-  it('keeps interiors warm regardless of the hour, and copes with chapters without a clock', () => {
-    expect(lightingFor(22, true)).toMatchObject({ label: 'indoor', night: false });
+  it('keeps interiors warm by day, and copes with chapters without a clock', () => {
+    expect(lightingFor(8, true)).toMatchObject({ label: 'indoor', night: false });
+    expect(lightingFor(16, true)).toMatchObject({ label: 'indoor', night: false });
+    expect(lightingFor(null, true)).toMatchObject({ label: 'indoor', night: false });
     expect(lightingFor(null, false).label).toBe('day');
+  });
+  it('lets lamps and the hearth light a room after dark', () => {
+    expect(lightingFor(22, true)).toMatchObject({ label: 'indoor night', night: true });
+    expect(lightingFor(18.5, true)).toMatchObject({ label: 'indoor evening', night: true });
+    expect(lightingFor(22, true).alpha).toBeGreaterThan(lightingFor(12, true).alpha);
   });
 });
 

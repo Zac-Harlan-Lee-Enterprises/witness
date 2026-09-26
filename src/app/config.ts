@@ -1,3 +1,5 @@
+import { WeatherSchema, type Weather } from '@/domain/world';
+
 /**
  * Build-time configuration (public — never put secrets in VITE_* variables).
  */
@@ -17,6 +19,11 @@ export interface AppConfig {
   cameraFraming: 'standard' | 'close';
   /** Pre-rendered places: pick the lighting from the story clock, or force one (for review builds). */
   artLighting: 'auto' | 'day' | 'late';
+  /**
+   * Review builds only: show this weather everywhere, whatever the story says
+   * (VITE_FORCE_WEATHER=clear|wind|rain|storm). null follows the story.
+   */
+  forceWeather: Weather | null;
 }
 
 /** The default camera framing, chosen from side-by-side screenshots (docs/art/prototype-report.md §3). */
@@ -40,5 +47,11 @@ export function readConfig(env: ImportMetaEnv = import.meta.env): AppConfig {
       env.VITE_ART_LIGHTING === 'day' || env.VITE_ART_LIGHTING === 'late'
         ? env.VITE_ART_LIGHTING
         : 'auto',
+    forceWeather: forcedWeather(env.VITE_FORCE_WEATHER),
   };
+}
+
+function forcedWeather(raw: string | undefined): Weather | null {
+  const parsed = WeatherSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }

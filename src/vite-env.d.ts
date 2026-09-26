@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_BASE_PATH?: string;
   readonly VITE_CAMERA_FRAMING?: string;
   readonly VITE_ART_LIGHTING?: string;
+  readonly VITE_FORCE_WEATHER?: string;
 }
 
 declare const __APP_VERSION__: string;

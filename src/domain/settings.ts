@@ -53,6 +53,12 @@ export const GameSettingsSchema = z.object({
   font: z.enum(['standard', 'hyperlegible', 'dyslexic']),
   highContrast: z.boolean(),
   reducedMotion: z.enum(['system', 'on', 'off']),
+  /**
+   * Simpler visual effects in the world: no post-processing, 1× resolution,
+   * little weather and decoration. Lighter on the battery and on old devices
+   * (the world also simplifies itself when frames are slow).
+   */
+  simpleEffects: z.boolean().default(false),
   dialogueSpeed: z.enum(['instant', 'fast', 'normal', 'slow']),
   movementSpeed: z.enum(['slow', 'normal', 'fast']),
   /** "Go to…" moves you instantly instead of walking (motor-accessibility aid). */
@@ -79,6 +85,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   font: 'standard',
   highContrast: false,
   reducedMotion: 'system',
+  simpleEffects: false,
   dialogueSpeed: 'normal',
   movementSpeed: 'normal',
   instantTravel: false,

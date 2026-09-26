@@ -33,7 +33,7 @@ Shadows lie on the ground, so they are always rendered with the world camera, in
 | Character sheets | **3** | A 54-unit adult is about 160 px tall in the texture and about 122 px on a 1280×720 screen |
 | Shadow sheets | 1 | Soft by nature |
 
-The game shows textures at `1/ppu` scale. The Phaser canvas renders at CSS pixel size, not device pixels (see §8).
+The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pixels (up to 2×; see [ADR-0015](../adr/0015-world-rendering-effects.md)), so on a high-DPI screen at close framing one texture pixel of 3-ppu art covers about two screen pixels, and a 1-ppu shadow sheet about six: richer art would show.
 
 ## 3. Lighting (one sun, a physically based sky)
 

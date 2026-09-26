@@ -124,12 +124,14 @@ describe('Settings', () => {
     await user.selectOptions(screen.getByLabelText('Font'), 'dyslexic');
     await user.selectOptions(screen.getByLabelText('Reduce motion'), 'on');
     await user.selectOptions(screen.getByLabelText('Dialogue text speed'), 'instant');
+    await user.click(screen.getByLabelText('Simpler visual effects (lighter on battery)'));
     await waitFor(() =>
       expect(services.settings.current).toMatchObject({
         highContrast: true,
         font: 'dyslexic',
         reducedMotion: 'on',
         dialogueSpeed: 'instant',
+        simpleEffects: true,
       }),
     );
     const root = document.createElement('div');

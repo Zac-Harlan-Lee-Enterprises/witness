@@ -90,6 +90,13 @@ describe('settings', () => {
     expect(parsed.highContrast).toBe(true);
     expect(parseSettings('garbage')).toEqual(DEFAULT_SETTINGS);
   });
+  it('keeps settings saved before simpler effects existed, with them off', () => {
+    const { simpleEffects: _dropped, ...older } = DEFAULT_SETTINGS;
+    const parsed = parseSettings({ ...older, highContrast: true });
+    expect(parsed.simpleEffects).toBe(false);
+    expect(parsed.highContrast).toBe(true);
+    expect(parseSettings({ ...DEFAULT_SETTINGS, simpleEffects: true }).simpleEffects).toBe(true);
+  });
   it('rebinding moves a key to exactly one action', () => {
     const b = rebindKey(DEFAULT_SETTINGS.keyBindings, 'journal', 'KeyE');
     expect(b.journal[0]).toBe('KeyE');

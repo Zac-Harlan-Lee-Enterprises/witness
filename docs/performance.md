@@ -2,7 +2,7 @@
 
 This page lists **measured results only**. Anything not measured is labelled as such under [Not measured yet](#5-not-measured-yet).
 
-Sizes come from the build of 2026-09-25 with the pre-rendered market (`npm run perf:bundle`); the font and icon breakdown is from 2026-09-24 and unchanged since. The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
+Sizes come from the build of 2026-09-25 with the pre-rendered market (`npm run perf:bundle`); the font and icon breakdown is from 2026-09-24 and unchanged since. The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade. The rendering upgrade (high-DPI, weather, water, post-processing, texture memory) is measured in [§2b](#2b-the-rendering-upgrade-adr-0015), 2026-09-26.
 
 ---
 
@@ -52,7 +52,7 @@ The Phaser engine is the largest single item. Fonts are about a quarter of the s
 
 **What changed with the first lighting pass (same conditions).** The first version of the new lighting used two full-screen layers (a colour grade and a vignette) and measured **28.8 fps**; hiding both gave **51.6 fps**. Merging them into one multiply layer, redrawn only when the time of day changes, gave **38.3 fps**. Full-screen blending is costly without a GPU and cheap with one.
 
-**Automatic quality.** If the world runs below 34 fps for two 2-second samples in a row (after a 3-second warm-up), it switches to simpler effects for the rest of the session: no drifting dust, birds or water glints, and the light layer only when the light means something (sunset, dusk, night). It logs a warning (shown in *Copy diagnostics*) and marks the canvas `data-effects="reduced"`. The second test in [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) slows the CPU 8× through the DevTools Protocol and checks that the switch happens. The decision is a pure function, [`src/game/systems/quality.ts`](../src/game/systems/quality.ts), with unit tests.
+**Automatic quality.** If the world runs below 34 fps for two 2-second samples in a row (after a 3-second warm-up), it steps down a level: first post-processing and half the weather particles go (`lite`), then high-DPI rendering (`crisp`, 1×; skipped on 1× screens), then — the last step, as before — simpler effects for the rest of the session: no drifting dust, birds, water glints or cloud shadows, a fifth of the weather, and the light layer only when the light means something (sunset, dusk, night, a storm). Below 24 fps it goes straight to simpler effects. An isolated frame over 250 ms (a screenshot, a tab coming back) is not counted; long frames in a row are. The canvas reports the level as `data-effects` (`full`, `lite`, `reduced`). Players can also choose **Simpler visual effects** in Settings. It logs a warning (shown in *Copy diagnostics*) and marks the canvas `data-effects="reduced"`. The second test in [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) slows the CPU 8× through the DevTools Protocol and checks that the switch happens. The decision is a pure function, [`src/game/systems/quality.ts`](../src/game/systems/quality.ts), with unit tests.
 
 The frame-rate assertion is only a floor: `fps > 20` locally, and `fps > 6` on CI. GitHub's hosted runners render in software on a few vCPUs and measured **10.4–10.8 fps** in the market for both the painted build (main, f2018ef) and the pre-rendered one (2026-09-26, CI runs 36205809697 and 36207544477), so on CI the check only catches the world stalling.
 
@@ -96,12 +96,71 @@ Measured on 2026-09-25 with [`e2e/market-perf.spec.ts`](../e2e/market-perf.spec.
 
 **Download:** see §1. The art is precached for offline play. The morning set precaches; later-day files are cached the first time they're used.
 
+## 2b. The rendering upgrade ([ADR-0015](adr/0015-world-rendering-effects.md))
+
+High-DPI rendering, weather, live water, post-processing and the texture-memory work, measured on 2026-09-26 with [`e2e/market-perf.spec.ts`](../e2e/market-perf.spec.ts) against a copy of commit `eb631ae` (the build before), in alternating runs:
+
+- **GPU:** Chromium's new headless mode (`PERF_GPU=1`), which renders on the host's GPU — an Apple M3 Pro through ANGLE and Metal. Closer to what players see than software rendering, but not a phone or tablet GPU.
+- **Software:** headless Chromium's SwiftShader, as in §2 and §2a.
+- **Load:** other builds and browsers were running on the machine (load average 12–35 during the runs quoted, far higher during earlier runs that were discarded). Software-rendered figures moved by ±30% between identical runs.
+
+**Texture memory in the market** (`gpuMb`: every WebGL texture uploaded and not deleted, including render targets; `data-texture-mb`: what Phaser's texture manager holds, now counted in each texture's GPU format):
+
+| View | Canvas (before → after) | `data-texture-mb` | All GPU textures and render targets |
+|---|---|---:|---:|
+| Desktop 1280×720 | 1280×720 | 94.4 → **66.4 MB** | 177.6 → **72.5 MB** (−59%) |
+| Desktop 1280×720 on a 2× screen | 1280×720 → **2560×1440** | 94.4 → **66.4 MB** | 177.6 → **83.0 MB** |
+| Tablet 820×1180 (touch) | 820×1180 | 94.4 → **52.1 MB** | 199.8 → **58.4 MB** (−71%) |
+| Phone 412×915 (Pixel 7, 2.625×) | 412×839 → **824×1678** | 72.9 → **52.1 MB** | 95.0 → **58.8 MB** (−38%) |
+
+Where it went (desktop, 1×):
+
+| Before | MB | After |
+|---|---:|---|
+| Phaser's pre-FX render targets: 66 squares from 32 to 704 px, three screen-sized | ≈ 61 | Disabled (`disablePreFX`). At 2560×1440 they would have been **≈ 420 MB**. |
+| Seven more screen-sized targets for bitmap masks, captures and built-in FX | ≈ 25 | Shrunk to 1×1 |
+| Painted figures left over from the house | 18.3 | Released when the market is built |
+| People's shadow sheets (RGBA) | ≈ 12 | One channel: ≈ 3 |
+| Ground (3264×2304) | 28.7 | Unchanged on desktops; RGB 5-6-5 (14.3) on phones, tablets and ≤ 4 GB devices |
+| — | — | Post-processing: one screen-sized target and two bloom targets at half the CSS size (5.3 MB at 1×, 15.8 MB at 2×) |
+
+The phone now loads the **full-resolution** ground (it renders at 2×, so it can show it), stored at 16 bits: sharper art for less memory than the old half-resolution ground in RGBA.
+
+**Frame rate, GPU** (rAF over 3 s standing and 2.5 s walking, full effects):
+
+| View | Before | After, clear | After, storm (`VITE_FORCE_WEATHER=storm`) |
+|---|---|---|---|
+| Desktop 1280×720 | 60 / 60 fps | 60 / 60 | 60 / 60 |
+| Desktop on a 2× screen | 60 / 60 (canvas at 1×) | 60 / 60 (canvas at 2×) | 60 / 60 |
+| Tablet 820×1180 | 60 / 60 | 60 / 60 | — |
+| Phone (Pixel 7 size, 2×) | 60 / 60 (canvas at 1×) | 60 / 60 (canvas at 2×) | 60 / 60 |
+
+All frames under 33 ms (p95 16.8 ms) in these runs. Every row sits at the 60 fps display cap, so they show no regression but not the headroom left. A CPU profile of the storm at 2× on the GPU (580 raindrops, splashes, sheets of rain, cloud shadows, post-processing) spent **about 3% of the main thread in JavaScript** (100 ms of 3.2 s); the rest was idle.
+
+**Frame rate, software rendering** (SwiftShader; ranges over two to three runs each, standing / walking):
+
+| View | Before | After |
+|---|---|---|
+| Desktop 1280×720, full effects | 26–30 / 18–28 fps | 16–31 / 17–34 fps |
+| Tablet 820×1180, full effects | 24–28 / 27–31 fps | 24–33 / 20–34 fps |
+| Phone, full effects | 45–55 / 45–55 fps | 34–60 / 49–60 fps |
+| Desktop, storm | — | 18–19 / 12–13 fps, then simpler effects (24.5 fps) |
+| Phone, storm | — | 29–43 / 30–42 fps |
+
+Within run-to-run noise of the old build. Without a GPU the world now starts at the `lite` level at 1× (no post-processing or rain sheets, half the weather), and on desktop and tablet sizes both builds step down to simpler effects within a few seconds under this load. A storm costs fill rate in software (the light layer, cloud shadows and several hundred drops, all drawn by the CPU); automatic quality takes it back to about the clear-weather rate.
+
+
+**Download:** the lazily loaded world-engine chunk grows by **14.5 KB gzip** (351.7 → 366.2 KB) and the initial JS by 0.2 KB (the new setting). There are no new files: weather and water textures are painted at start-up, and the shaders are part of the code.
+
 ## 3. How to reproduce
 
 ```bash
 # Market: pre-rendered vs painted (run the same spec in a worktree of the older commit for "before")
 PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
 #   → test-results/market-perf/after.jsonl
+# The same on the machine's GPU (Chromium's new headless mode), and in a forced storm
+PERF_GPU=1 PERF_MARKET=1 PERF_LABEL=gpu npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
+VITE_FORCE_WEATHER=storm PERF_GPU=1 PERF_MARKET=1 PERF_LABEL=storm npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
 
 # Sizes
 npm run build && npm run perf:bundle
@@ -127,6 +186,13 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 | **Cheap frame loop** | `update` in [`world-scene.ts`](../src/game/scenes/world-scene.ts); `refreshEntities` in [`src/application/game-controller.ts`](../src/application/game-controller.ts) | Frame delta is capped at 50 ms. Entity lists are rebuilt **only when the story state changes**, not when the player moves, and identical updates are skipped. |
 | **Gamepad polling only while a pad is connected** | [`src/infrastructure/input/gamepad-source.ts`](../src/infrastructure/input/gamepad-source.ts) | No idle `requestAnimationFrame` loop |
 | **Debounced autosave** | [`src/application/autosaver.ts`](../src/application/autosaver.ts) | A burst of save requests becomes one IndexedDB write |
+| **Only the render targets the world uses** | `disablePreFX`/`disablePostFX` in [`mount-world.ts`](../src/game/phaser/mount-world.ts); `releaseUnusedTargets` in [`src/game/phaser/renderer.ts`](../src/game/phaser/renderer.ts) | Phaser's built-in FX allocated about 70 screen-sized or smaller render targets up front (61 MB at 1280×720; about 420 MB at 2560×1440) that the world never used; bitmap-mask and capture targets are shrunk to 1×1 |
+| **Release the last place's art** | `releaseUnusedTextures` in [`world-scene.ts`](../src/game/scenes/world-scene.ts) | Art, people and painted figures from the previous place are freed when a new place is built (18 MB of painted figures from the house were still resident in the market) |
+| **Smaller GPU formats where they don't show** | [`src/game/phaser/compact-textures.ts`](../src/game/phaser/compact-textures.ts) | Shadow sheets upload as one channel (¼); on phones, tablets and low-memory devices the opaque ground uploads as RGB 5-6-5 (½). The browser converts during upload: no pixel work in JavaScript |
+| **Effects step down before the frame rate does** | `stepQuality` in [`quality.ts`](../src/game/systems/quality.ts) | full → lite (no post-processing, half the weather) → crisp (1×) → low; an isolated hitch is ignored, repeated long frames are not; no GPU → 1× and no post-processing from the start |
+| **One post-processing pass, bloom at half the CSS resolution** | [`post-fx.ts`](../src/game/fx/post-fx.ts) | One full-screen composite plus small bloom passes, instead of a chain of full-resolution FX |
+| **Weather particles on a budget** | `weatherBudget` in [`weather.ts`](../src/game/systems/weather.ts) | Counts scale with the weather, the view size (clamped ½–2×) and the quality level; none with reduced motion or indoors |
+| **Water only where there is water** | [`water-surface.ts`](../src/game/fx/water-surface.ts) | One shader quad per body of water (and painted well or trough), masked by an 8-texels-per-tile map |
 | **Self-hosted, subset fonts** | [`src/app/main.tsx`](../src/app/main.tsx) (`@fontsource/*/latin-400/700.css`) | Latin subset, two weights each, no third-party font requests |
 
 ## 5. Not measured yet
@@ -134,6 +200,7 @@ npx playwright test e2e/perf.spec.ts --project=desktop-chromium
 - **60 fps on typical phones has NOT been measured on real devices.** The only figures are from headless, software-rendered Chromium (above). Real devices have GPUs and may do better, but that is an expectation, not a measurement.
 - **Slow-network behaviour beyond offline caching has not been measured.** Offline play after the first visit *is* verified ([`e2e/pwa.spec.ts`](../e2e/pwa.spec.ts)). The time to first load and to start a chapter over a slow connection is not. Starting the chapter fetches ≈377 KB gzip of lazy chunks unless the service worker has already cached them.
 - Memory use (the largest ground texture is about 24 MB at 2×), battery drain, real low-end devices, WebKit/Safari, and Lighthouse scores. CPU throttling is used only to check that automatic quality switches on.
+- **High-DPI, weather, water and post-processing on real phones and tablets.** GPU figures in §2b come from an Apple M3 Pro, which says little about a mid-range phone's GPU. The automatic quality levels are the safety net; they have been exercised only in emulation.
 
 ## 6. Next steps
 
