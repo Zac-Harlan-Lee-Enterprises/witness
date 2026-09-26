@@ -29,6 +29,8 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 4: A Letter from Paul
+  'colossae-street',
 ] as const;
 
 /** Where each place's art is served (relative to the site base). */
