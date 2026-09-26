@@ -127,7 +127,7 @@ export function makeFxTextures(textures: Phaser.Textures.TextureManager): void {
       const y = h * (0.3 + r() * 0.4);
       const thick = 2 + r() * 5;
       const g = c.createLinearGradient(0, 0, w, 0);
-      const a = 0.16 + r() * 0.18;
+      const a = 0.22 + r() * 0.22;
       g.addColorStop(0, 'rgba(226,202,158,0)');
       g.addColorStop(0.25 + r() * 0.2, `rgba(226,202,158,${a.toFixed(2)})`);
       g.addColorStop(0.6 + r() * 0.2, `rgba(218,192,146,${(a * 0.7).toFixed(2)})`);

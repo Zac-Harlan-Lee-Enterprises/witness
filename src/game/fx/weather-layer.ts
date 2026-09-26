@@ -241,7 +241,7 @@ export class WeatherLayer {
       lifespan: { min: 450, max: 900 },
       speedX: { onEmit: () => (170 + this.r() * 170) * (0.5 + this.windNow) },
       speedY: { min: -14, max: 20 },
-      scale: { min: 0.35 / FX_PPU, max: 0.75 / FX_PPU },
+      scale: { min: 0.45 / FX_PPU, max: 0.95 / FX_PPU },
       alpha: {
         onEmit: () => 0,
         onUpdate: (_p: unknown, _k: string, t: number) => Math.min(1, Math.sin(t * Math.PI) * 1.6),
@@ -386,7 +386,7 @@ export class WeatherLayer {
 
   private updateWind(b: WeatherBudget): void {
     if (this.dust) flow(this.dust, b.dust / 2.3, b.dust);
-    if (this.grit) flow(this.grit, (b.dust * 1.6) / 0.68, b.dust * 1.6);
+    if (this.grit) flow(this.grit, (b.dust * 2.4) / 0.68, b.dust * 2.4);
     if (this.leaves) flow(this.leaves, b.leaves / 3.2, b.leaves);
   }
 

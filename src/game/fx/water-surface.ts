@@ -76,9 +76,11 @@ vec3 waves (vec2 p, float t) {
   vec2 d6 = normalize(vec2(-0.8, 0.45));
   vec2 d7 = normalize(vec2(0.7, 0.7));
   float r = 0.3 + uWaves;
-  float p5 = dot(d5, p) * 0.93 - t * 4.1;
-  float p6 = dot(d6, p) * 1.31 - t * 5.3;
-  float p7 = dot(d7, p) * 1.77 - t * 6.2;
+  // A slow warp so the wavelets never line up into a regular pattern.
+  vec2 q = p + 6.0 * vec2(noise(p * 0.045 + t * 0.04), noise(p * 0.045 + 17.0 - t * 0.03));
+  float p5 = dot(d5, q) * 0.93 - t * 4.1;
+  float p6 = dot(d6, q) * 1.31 - t * 5.3;
+  float p7 = dot(d7, q) * 1.77 - t * 6.2;
   // Patches of calmer and livelier water drift across the surface.
   float patchy = 0.55 + 0.9 * noise(p * 0.035 + vec2(t * 0.05, t * 0.03));
   g += r * patchy * (d5 * 0.93 * cos(p5) * 0.1 + d6 * 1.31 * cos(p6) * 0.07 + d7 * 1.77 * cos(p7) * 0.045);

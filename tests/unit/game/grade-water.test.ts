@@ -31,6 +31,13 @@ describe('post-processing grade', () => {
     expect(night.saturation).toBeLessThan(gradeFor(base).saturation);
   });
 
+  it('lets lamplight glow in a room at night', () => {
+    const night = gradeFor({ ...base, mood: 'home', indoor: true, hour: 21 });
+    const day = gradeFor({ ...base, mood: 'home', indoor: true, hour: 10 });
+    expect(night.bloom).toBeGreaterThan(day.bloom);
+    expect(night.saturation).toBeLessThan(day.saturation);
+  });
+
   it('lets lamps and fire bloom more at night than the sun does by day', () => {
     const night = gradeFor({ ...base, hour: 22 });
     const day = gradeFor(base);

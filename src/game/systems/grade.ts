@@ -59,6 +59,18 @@ const mix3 = (a: Rgb3, b: Rgb3, t: number): Rgb3 => [
 
 /** The time of day's own finish: warm mornings and evenings, cool dusk, dim blue nights. */
 function timeGrade(hour: number | null, indoor: boolean): Grade {
+  const dark = hour !== null && (((hour % 24) + 24) % 24 >= 18 || ((hour % 24) + 24) % 24 < 5);
+  if (indoor && dark)
+    // Lamplight: the dark around the lamps goes grey-blue, the pools glow.
+    return {
+      ...NEUTRAL_GRADE,
+      contrast: 1.1,
+      saturation: 0.9,
+      gain: [1.02, 0.98, 0.97],
+      lift: [0.004, 0.004, 0.012],
+      bloom: 0.55,
+      threshold: 0.68,
+    };
   if (indoor)
     return {
       ...NEUTRAL_GRADE,
@@ -72,13 +84,13 @@ function timeGrade(hour: number | null, indoor: boolean): Grade {
   if (h < 5 || h >= 19)
     return {
       ...NEUTRAL_GRADE,
-      exposure: 1.02,
-      contrast: 1.06,
-      saturation: 0.8,
+      exposure: 0.97,
+      contrast: 1.1,
+      saturation: 0.75,
       gain: [0.94, 0.98, 1.08],
-      lift: [0.02, 0.03, 0.06],
-      bloom: 0.75,
-      threshold: 0.55,
+      lift: [0.004, 0.008, 0.02],
+      bloom: 0.6,
+      threshold: 0.72,
     };
   if (h < 7)
     return {

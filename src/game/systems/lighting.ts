@@ -2,7 +2,8 @@
  * Time-of-day lighting as a pure function of the story clock (the chapter's
  * hour counter). The world applies it as ONE multiply-blend layer (colour
  * grade in the middle, darker towards the edges — see `gradeColors`); at
- * night a carried lamp adds a warm glow around the player.
+ * night a carried lamp adds a warm pool of light around the player, and
+ * indoors the lamps and the hearth become the room's light.
  * Pure and Phaser-free so it can be unit-tested.
  */
 export interface Lighting {
@@ -19,7 +20,15 @@ export interface Lighting {
 }
 
 export function lightingFor(hour: number | null, indoor: boolean): Lighting {
-  if (indoor) return { tint: 0xffd49a, alpha: 0.12, vignette: 0.5, night: false, label: 'indoor' };
+  if (indoor) {
+    // Interiors keep their warm daylight; after dark only lamps and the hearth light the room.
+    const h = hour === null ? 12 : ((hour % 24) + 24) % 24;
+    if (h < 5 || h >= 19)
+      return { tint: 0x2e2640, alpha: 0.6, vignette: 0.75, night: true, label: 'indoor night' };
+    if (h >= 18)
+      return { tint: 0x8a6a70, alpha: 0.3, vignette: 0.6, night: true, label: 'indoor evening' };
+    return { tint: 0xffd49a, alpha: 0.12, vignette: 0.5, night: false, label: 'indoor' };
+  }
   if (hour === null)
     return { tint: 0xfff4dc, alpha: 0.04, vignette: 0.3, night: false, label: 'day' };
   const h = ((hour % 24) + 24) % 24;

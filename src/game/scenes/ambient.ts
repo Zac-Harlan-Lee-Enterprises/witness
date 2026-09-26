@@ -100,7 +100,7 @@ export class AmbientLife {
     base: number;
     seed: number;
     radius: number;
-    kind: LightSpot['kind'];
+    kind: LightSpot['kind'] | 'doorway';
   }> = [];
   private readonly swayers: Swayer[] = [];
   private wind = 0;
@@ -135,6 +135,7 @@ export class AmbientLife {
 
   // ── Light: hearth fire and lamps flicker; window light holds dust ────────
   private buildLights(): void {
+    this.buildDoorways();
     for (const light of this.d.lights) {
       if (light.kind === 'window') continue;
       const image = this.d.scene.add
@@ -157,10 +158,38 @@ export class AmbientLife {
    * By day a lamp or hearth is a small warm glow; at night it is the light
    * in the room: a wider, warmer pool that the dark gathers around.
    */
+  /**
+   * Outdoors after dark, lamplight spills from open doorways onto the ground
+   * in front of them (hidden by day).
+   */
+  private buildDoorways(): void {
+    const { model } = this.d;
+    if (model.kind === 'indoor') return;
+    const { grid } = model;
+    for (let y = 0; y < grid.height; y++) {
+      for (let x = 0; x < grid.width; x++) {
+        const kind = grid.tiles[y]?.[x];
+        if (kind !== 'door' && kind !== 'gate') continue;
+        // The door of a building: something solid above it, open ground below.
+        if (grid.tiles[y + 1]?.[x] === 'door') continue;
+        const image = this.d.scene.add
+          .image((x + 0.5) * TILE, (y + 1.1) * TILE, FX.pool)
+          .setDepth(this.d.depths.light + 1)
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setVisible(false);
+        this.objects.push(image);
+        this.flickers.push({ image, base: 0, seed: x * 3.1 + y, radius: 34, kind: 'doorway' });
+      }
+    }
+  }
+
   private lightPools(): void {
     for (const f of this.flickers) {
       const hearth = f.kind === 'hearth';
-      if (this.night) {
+      if (f.kind === 'doorway') {
+        f.image.setVisible(this.night).setScale((f.radius * 2.3) / 256, (f.radius * 1.6) / 256);
+        f.base = this.night ? 0.55 : 0;
+      } else if (this.night) {
         f.image.setTexture(FX.pool).setScale((f.radius * 2.3) / 256);
         f.base = hearth ? 0.85 : 0.7;
       } else {
