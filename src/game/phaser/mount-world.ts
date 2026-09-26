@@ -21,7 +21,7 @@ export interface MountWorldOptions {
   /** Camera framing where the art allows it (default "close"; painted places stay standard). */
   framing?: Framing;
   /** Force a lighting variant for pre-rendered places (review builds). */
-  artLighting?: 'auto' | 'day' | 'late';
+  artLighting?: 'auto' | 'day' | 'late' | 'dusk' | 'night';
   /** Force the weather everywhere, whatever the story says (review builds). */
   forceWeather?: Weather | null;
   /** The player's high-contrast setting: keep the world bright and clear. */

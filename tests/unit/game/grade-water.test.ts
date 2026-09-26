@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TileGrid, TileKind } from '@/domain/world';
 import { gradeFor, type GradeInput } from '@/game/systems/grade';
 import { gradeColors, lightingFor } from '@/game/systems/lighting';
-import { sunForWater, waterLook, waterRegions } from '@/game/systems/water';
+import { sunForWater, waterLook, waterRegions, waterSky } from '@/game/systems/water';
 import { CALM, WEATHER_MIX } from '@/game/systems/weather';
 
 const base: GradeInput = {
@@ -98,7 +98,16 @@ describe('light layer with the sky', () => {
 });
 
 function grid(rows: string[]): TileGrid {
-  const kinds: Record<string, TileKind> = { '~': 'water', '.': 'sand', W: 'well' };
+  const kinds: Record<string, TileKind> = {
+    '~': 'water',
+    '.': 'sand',
+    W: 'well',
+    L: 'lake',
+    s: 'shallows',
+    ':': 'shingle',
+    h: 'hull',
+    d: 'deck',
+  };
   return {
     width: rows[0]?.length ?? 0,
     height: rows.length,
@@ -114,6 +123,26 @@ describe('water', () => {
     expect(pool).toMatchObject({ x: 2, y: 2, w: 3, h: 2, tiles: 4 });
     expect(pool?.mask).toEqual([false, false, true, true, true, true]);
     expect(spring).toMatchObject({ x: 1, y: 0, w: 2, h: 2, tiles: 3 });
+  });
+
+  it('finds the lake and its shallows as water too', () => {
+    const lake = grid(['::ssLL', ':ssLLL', '..hhdd']);
+    const regions = waterRegions(lake);
+    expect(regions).toHaveLength(1);
+    expect(regions[0]?.tiles).toBe(9);
+  });
+
+  it('reflects a sky that matches the light: pale by day, violet at dusk, dark at night', () => {
+    const day = waterSky('late');
+    const dusk = waterSky('dusk');
+    const night = waterSky('night');
+    const lum = (c: readonly number[]) => c.reduce((a, b) => a + b, 0);
+    expect(lum(night.sky)).toBeLessThan(lum(dusk.sky));
+    expect(lum(dusk.sky)).toBeLessThan(lum(day.sky));
+    expect(lum(night.deep)).toBeLessThan(lum(day.deep));
+    // Art rendered at dusk or by night has no sun in it to glint.
+    expect(sunForWater(18, 'dusk').height).toBe(0);
+    expect(sunForWater(16, 'night').height).toBe(0);
   });
 
   it('has no water where there is none', () => {

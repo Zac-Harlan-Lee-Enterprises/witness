@@ -1,7 +1,6 @@
 import type Phaser from 'phaser';
 import type { Logger } from '@/shared/logger';
 import {
-  LIGHTING_VARIANTS,
   parsePeopleArt,
   parsePlaceArt,
   type LightingVariant,
@@ -11,11 +10,13 @@ import {
   type PlaceArt,
 } from './manifest';
 import {
+  nearestLight,
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
   tileOrigin,
-  variantFor,
+  variantsByPreference,
+  variantsOf,
   wantsLowResolution,
   type ShadeMask,
 } from './select';
@@ -159,14 +160,15 @@ export async function loadPlace(
     );
     return null;
   }
-  const available = LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
-  const wanted = variantFor(options.hour, available);
   const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
   const groundPpu = low ? art.ppu / 2 : art.ppu;
-  // The later-day set is cached the first time it is used; offline before
-  // then, the morning set stands in for it rather than painting the place.
-  for (const variant of wanted === 'day' ? (['day'] as const) : ([wanted, 'day'] as const)) {
-    const v = art.variants[variant] ?? art.variants.day;
+  // Sets that are not precached are cached the first time they are used;
+  // offline before then, the nearest light the place has that loads stands
+  // in for it (for Chapter 1, the precached morning set) rather than
+  // painting the place.
+  for (const variant of variantsByPreference(options.hour, variantsOf(art))) {
+    const v = art.variants[variant];
+    if (!v) continue;
     const prefix = `art:${sceneId}:${variant}`;
     const tiles = low ? v.groundLow : v.ground;
     const ground = tiles.map((tile, i) => ({
@@ -219,10 +221,8 @@ export async function loadPeople(scene: Phaser.Scene, logger: Logger): Promise<P
   return people;
 }
 
-/** A sheet in a light: the light asked for, else the morning's (or any there is). */
-function pick<T>(byLight: Partial<Record<PeopleLight, T>>, light: PeopleLight): T | undefined {
-  return byLight[light] ?? byLight.day ?? byLight.late ?? byLight.indoor;
-}
+/** A sheet in a light: the light asked for, else the nearest there is. */
+const pick = nearestLight;
 
 export interface PersonTextures {
   key: string;

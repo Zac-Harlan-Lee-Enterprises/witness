@@ -55,11 +55,17 @@ const VariantSchema = z.object({
 });
 export type ArtVariant = z.infer<typeof VariantSchema>;
 
-export const LIGHTING_VARIANTS = ['day', 'late'] as const;
+/**
+ * The lights a place can be rendered in, in the order of the day: the
+ * morning sun, the later-day sun, dusk (the sun gone behind the hills, the
+ * sky still glowing) and night (moonlight, lamps and fire). A place has
+ * only the ones its story shows.
+ */
+export const LIGHTING_VARIANTS = ['day', 'late', 'dusk', 'night'] as const;
 export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
 
-/** How people are lit: by the sun of the place's variant, or indoors (a lamp and a window). */
-export const PEOPLE_LIGHTS = ['day', 'late', 'indoor'] as const;
+/** How people are lit: by the light of the place's variant, or indoors (a lamp and a window). */
+export const PEOPLE_LIGHTS = ['day', 'late', 'dusk', 'night', 'indoor'] as const;
 export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
 
 export const PlaceArtSchema = z.object({
@@ -69,7 +75,16 @@ export const PlaceArtSchema = z.object({
   ppu: z.number().positive(),
   /** Rooms light people with their own lamp and window (people sheets' 'indoor' variant). */
   peopleLight: z.enum(['indoor']).optional(),
-  variants: z.object({ day: VariantSchema, late: VariantSchema.optional() }),
+  variants: z
+    .object({
+      day: VariantSchema.optional(),
+      late: VariantSchema.optional(),
+      dusk: VariantSchema.optional(),
+      night: VariantSchema.optional(),
+    })
+    .refine((v) => LIGHTING_VARIANTS.some((k) => v[k] !== undefined), {
+      message: 'a place needs at least one lighting variant',
+    }),
 });
 export type PlaceArt = z.infer<typeof PlaceArtSchema>;
 
@@ -106,6 +121,8 @@ const PersonSheetSchema = z.object({
   sheets: z.object({
     day: z.string().min(1).optional(),
     late: z.string().min(1).optional(),
+    dusk: z.string().min(1).optional(),
+    night: z.string().min(1).optional(),
     indoor: z.string().min(1).optional(),
   }),
   frameWidth: z.number().int().positive(),
@@ -121,6 +138,8 @@ const PersonSheetSchema = z.object({
     .object({
       day: ShadowSheetSchema.optional(),
       late: ShadowSheetSchema.optional(),
+      dusk: ShadowSheetSchema.optional(),
+      night: ShadowSheetSchema.optional(),
       indoor: ShadowSheetSchema.optional(),
     })
     .default({}),

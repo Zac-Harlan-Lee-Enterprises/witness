@@ -311,6 +311,17 @@ export class Actors {
     this.conversation = null;
   }
 
+  /** Draw everyone again from their sheets (the place's light changed), facing as they were. */
+  refresh(): void {
+    for (const npc of [...this.npcs.values()]) {
+      const { view, facing } = npc;
+      this.remove(view.id);
+      this.add(view);
+      const again = this.npcs.get(view.id);
+      if (again) again.facing = facing;
+    }
+  }
+
   setConversation(conversation: WorldConversation | null, now: number): void {
     if (conversation?.speaking !== this.conversation?.speaking) this.talkStart = now;
     this.conversation = conversation;

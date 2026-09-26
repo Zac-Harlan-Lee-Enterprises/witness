@@ -36,9 +36,11 @@ const PUDDLE_GROUND: ReadonlySet<TileKind> = new Set<TileKind>([
   'mud',
   'floor',
   'steps',
+  'deck',
+  'jetty',
 ]);
 /** Where splashes land: anything but open water and the void beyond the map. */
-const NO_SPLASH: ReadonlySet<TileKind> = new Set<TileKind>(['water', 'void']);
+const NO_SPLASH: ReadonlySet<TileKind> = new Set<TileKind>(['water', 'lake', 'shallows', 'void']);
 /** How fast rain falls on screen (world units per second). */
 const FALL = 430;
 /** World units per texel of the near and far sheets of rain. */

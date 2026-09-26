@@ -2,7 +2,15 @@ import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
 import type { LookMark, Pose } from '@/domain/world';
 import { naturalColor } from '@/shared/color';
-import type { ArtSprite, ArtVariant, LightingVariant, PeopleArt, PeopleLight } from './manifest';
+import {
+  LIGHTING_VARIANTS,
+  type ArtSprite,
+  type ArtVariant,
+  type LightingVariant,
+  type PeopleArt,
+  type PeopleLight,
+  type PlaceArt,
+} from './manifest';
 
 /**
  * The rules for using pre-rendered art, as pure functions (unit-tested):
@@ -37,18 +45,88 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
+/** Dusk from six: the sun has gone behind the hills. */
+export const DUSK_FROM_HOUR = 18;
+/** Night from seven in the evening until five in the morning. */
+export const NIGHT_FROM_HOUR = 19;
+export const MORNING_FROM_HOUR = 5;
+
+/** The light of an hour of the story clock (hours past midnight wrap: 26 is 2 a.m.). */
+export function lightOfHour(hour: number | null): LightingVariant {
+  if (hour === null) return 'day';
+  const h = ((hour % 24) + 24) % 24;
+  if (h < MORNING_FROM_HOUR || h >= NIGHT_FROM_HOUR) return 'night';
+  if (h >= DUSK_FROM_HOUR) return 'dusk';
+  if (h >= LATE_FROM_HOUR) return 'late';
+  return 'day';
+}
+
+/**
+ * The variants a place has, best first for this hour: its own light if the
+ * place has it, then the nearest in the order of the day (a tie goes to the
+ * brighter one, which the time-of-day layer can darken but never lighten).
+ */
+export function variantsByPreference(
+  hour: number | null,
+  available: readonly LightingVariant[],
+): LightingVariant[] {
+  const order = LIGHTING_VARIANTS as readonly LightingVariant[];
+  const want = order.indexOf(lightOfHour(hour));
+  return [...available].sort(
+    (a, b) =>
+      Math.abs(order.indexOf(a) - want) - Math.abs(order.indexOf(b) - want) ||
+      order.indexOf(a) - order.indexOf(b),
+  );
+}
 
 export function variantFor(
   hour: number | null,
   available: readonly LightingVariant[],
 ): LightingVariant {
-  if (hour !== null && hour >= LATE_FROM_HOUR && available.includes('late')) return 'late';
-  return 'day';
+  return variantsByPreference(hour, available)[0] ?? 'day';
+}
+
+/** The variants a place's manifest has, in the order of the day. */
+export function variantsOf(art: Pick<PlaceArt, 'variants'>): LightingVariant[] {
+  return LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
+}
+
+/** An hour in each light (for review builds that force one: VITE_ART_LIGHTING). */
+export function hourForLight(light: LightingVariant): number {
+  return { day: 8, late: 16, dusk: 18, night: 22 }[light];
+}
+
+/**
+ * Whether art rendered in `variant` already carries the light of `hour`
+ * (so the world's time-of-day layer should add only a trace on top).
+ */
+export function bakedFor(variant: LightingVariant, hour: number | null): boolean {
+  return variant === lightOfHour(hour);
 }
 
 /** How people are lit in a place: indoors by the room's own light, else by the place's sun. */
 export function peopleLightFor(variant: LightingVariant, room: 'indoor' | undefined): PeopleLight {
   return room ?? variant;
+}
+
+/**
+ * The nearest light a person has a sheet in: the one asked for, else the
+ * nearest in the order of the day, else any (indoor sheets last outdoors,
+ * first indoors).
+ */
+export function nearestLight<T>(
+  byLight: Partial<Record<PeopleLight, T>>,
+  light: PeopleLight,
+): T | undefined {
+  const own = byLight[light];
+  if (own !== undefined) return own;
+  const outdoor = LIGHTING_VARIANTS as readonly LightingVariant[];
+  const at = light === 'indoor' ? 0 : outdoor.indexOf(light);
+  const nearest = [...outdoor]
+    .sort((a, b) => Math.abs(outdoor.indexOf(a) - at) - Math.abs(outdoor.indexOf(b) - at))
+    .map((l) => byLight[l])
+    .find((s) => s !== undefined);
+  return nearest ?? byLight.indoor;
 }
 
 /**

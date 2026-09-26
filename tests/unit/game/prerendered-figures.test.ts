@@ -103,6 +103,25 @@ describe('canopies', () => {
     expect(img.alpha).toBeGreaterThan(CANOPY_FADED);
     expect(other.alpha).toBe(1);
   });
+
+  it('forget a story prop once it is taken away (a sail brailed up and destroyed)', () => {
+    const fader = new CanopyFader(3, () => true);
+    const sail = {
+      alpha: 1,
+      active: true,
+      scene: {} as unknown,
+      setAlpha: (a: number) => ((sail.alpha = a), sail),
+    };
+    fader.track(sail as unknown as Phaser.GameObjects.Image, crown);
+    fader.update(50, 120, 0.016);
+    expect(sail.alpha).toBeCloseTo(CANOPY_FADED);
+    // Destroyed: Phaser clears its scene and makes it inactive.
+    sail.active = false;
+    sail.scene = undefined;
+    sail.alpha = 0.5;
+    fader.update(50, 260, 0.016);
+    expect(sail.alpha).toBe(0.5);
+  });
 });
 
 describe('story-mark layers', () => {

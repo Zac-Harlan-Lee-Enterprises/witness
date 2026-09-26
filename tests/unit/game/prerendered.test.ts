@@ -4,9 +4,15 @@ import { parsePeopleArt, parsePlaceArt } from '@/game/prerendered/manifest';
 import {
   appearanceKey,
   artPathFor,
+  bakedFor,
   behindCanopy,
   depthRow,
+  DUSK_FROM_HOUR,
+  hourForLight,
   LATE_FROM_HOUR,
+  lightOfHour,
+  nearestLight,
+  NIGHT_FROM_HOUR,
   pagesFor,
   peopleLightFor,
   pickSheets,
@@ -17,6 +23,8 @@ import {
   tileOrigin,
   turnPath,
   variantFor,
+  variantsByPreference,
+  variantsOf,
   wantsLowResolution,
 } from '@/game/prerendered/select';
 import { naturalColor } from '@/shared/color';
@@ -68,9 +76,19 @@ describe('pre-rendered place art', () => {
       variants: { day: variant, late: variant },
     });
     expect(ok.error).toBeNull();
-    expect(ok.art?.variants.day.sprites[0]?.id).toBe('stall-11-6');
-    expect(ok.art?.variants.day.sprites[0]?.fade).toBe(false);
-    expect(ok.art?.variants.day.sprites[1]?.fade).toBe(true);
+    expect(ok.art?.variants.day?.sprites[0]?.id).toBe('stall-11-6');
+    expect(ok.art?.variants.day?.sprites[0]?.fade).toBe(false);
+    expect(ok.art?.variants.day?.sprites[1]?.fade).toBe(true);
+    // A place seen only after dark needs no morning light, but it needs some light.
+    const lake = parsePlaceArt({
+      version: 1,
+      scene: 'open-lake',
+      tiles: { w: 40, h: 24 },
+      ppu: 3,
+      variants: { dusk: variant, night: variant },
+    });
+    expect(lake.error).toBeNull();
+    expect(lake.art && variantsOf(lake.art)).toEqual(['dusk', 'night']);
     const bad = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -111,6 +129,58 @@ describe('pre-rendered place art', () => {
     expect(variantFor(LATE_FROM_HOUR, ['day', 'late'])).toBe('late');
     expect(variantFor(17, ['day'])).toBe('day');
     expect(variantFor(null, ['day', 'late'])).toBe('day');
+  });
+
+  it('knows the light of every hour, past midnight too', () => {
+    expect(lightOfHour(null)).toBe('day');
+    expect(lightOfHour(8)).toBe('day');
+    expect(lightOfHour(16)).toBe('late');
+    expect(lightOfHour(DUSK_FROM_HOUR)).toBe('dusk');
+    expect(lightOfHour(NIGHT_FROM_HOUR)).toBe('night');
+    expect(lightOfHour(23)).toBe('night');
+    // The story clock counts on past midnight: 26 is two in the morning.
+    expect(lightOfHour(26)).toBe('night');
+    expect(lightOfHour(30)).toBe('day');
+  });
+
+  it('shows dusk and night where a place has them, else the nearest light it has', () => {
+    const shore = ['late', 'dusk', 'night'] as const;
+    expect(variantFor(16, shore)).toBe('late');
+    expect(variantFor(18, shore)).toBe('dusk');
+    expect(variantFor(26, shore)).toBe('night');
+    // Before the afternoon, the shore's earliest light.
+    expect(variantFor(9, shore)).toBe('late');
+    // Chapter 1's places have no night: the later-day light, as before, darkened by the world.
+    expect(variantFor(22, ['day', 'late'])).toBe('late');
+    expect(variantFor(26, ['day', 'late'])).toBe('late');
+    // A tie goes to the brighter light (the world can darken art, never lighten it).
+    expect(variantFor(18, ['late', 'night'])).toBe('late');
+    expect(variantsByPreference(20, ['day', 'late', 'dusk', 'night'])).toEqual([
+      'night',
+      'dusk',
+      'late',
+      'day',
+    ]);
+    // Rooms: lamplight at night, their daylight otherwise.
+    expect(variantFor(16, ['day', 'night'])).toBe('day');
+    expect(variantFor(26, ['day', 'night'])).toBe('night');
+  });
+
+  it('knows when the art already carries the hour’s light, and an hour in each light', () => {
+    expect(bakedFor('night', 26)).toBe(true);
+    expect(bakedFor('dusk', 18)).toBe(true);
+    expect(bakedFor('late', 22)).toBe(false);
+    for (const light of ['day', 'late', 'dusk', 'night'] as const)
+      expect(lightOfHour(hourForLight(light))).toBe(light);
+  });
+
+  it('draws people in the nearest light they have a sheet for', () => {
+    expect(nearestLight({ day: 'd', late: 'l' }, 'late')).toBe('l');
+    expect(nearestLight({ day: 'd', late: 'l' }, 'night')).toBe('l');
+    expect(nearestLight({ late: 'l', dusk: 'u', night: 'n' }, 'day')).toBe('l');
+    expect(nearestLight({ indoor: 'i', day: 'd' }, 'indoor')).toBe('i');
+    expect(nearestLight({ indoor: 'i' }, 'night')).toBe('i');
+    expect(nearestLight({ day: 'd' }, 'indoor')).toBe('d');
   });
 
   it('lights people for the room indoors, and by the place’s sun outdoors', () => {
