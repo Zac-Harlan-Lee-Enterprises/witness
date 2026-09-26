@@ -52,11 +52,27 @@
     },
     {
       "path": "public/art/portraits/*.webp",
-      "what": "Portraits of every character and player look (head and shoulders, 512 px masters with 256 and 128 px copies) for the dialogue box, the profile picker and chapter select.",
-      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_portraits.py from the characters' appearance data. Heads are sculpted in code as signed distance fields (tools/art/lib/portrait_head.py); skin, eyes, hair (Blender hair curves), cloth and the backdrop are procedural (tools/art/lib/portrait*.py). No image textures, scanned or downloaded models, photographs or image-generation models.",
+      "what": "Portraits of everyone who speaks in any chapter and of every player look (head and shoulders, 512 px masters with 256 and 128 px copies) for the dialogue box, the profile picker and chapter select.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_portraits.py from the characters' appearance data (exported by scripts/export-portrait-data.ts) and the casting table in tools/art/lib/portrait_params.py. Heads are sculpted in code as signed distance fields (tools/art/lib/portrait_head.py); skin maps and shaders, eyes, hair (Blender hair curves), wound and draped cloth and the backdrop are procedural (tools/art/lib/portrait*.py). No image textures, scanned or downloaded models, HDRIs, photographs or image-generation models.",
       "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
       "license": "Project licence (original work)",
       "rebuild": "npm run art:portraits"
+    },
+    {
+      "path": "tools/art/data/portrait-people.json",
+      "what": "Who needs a portrait: every speaking character in every chapter (not biblical figures) and the player looks, with appearance keys.",
+      "origin": "Written by scripts/export-portrait-data.ts from the chapter content.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "npm run art:portrait-data"
+    },
+    {
+      "path": "docs/art/portraits/*.webp",
+      "what": "Review sheets and comparisons of the rendered portraits (documentation only; not shipped).",
+      "origin": "Composed by scripts/portrait-sheets.mjs from the rendered portraits, and captured from the game by e2e/portrait-art.spec.ts.",
+      "tools": ["Playwright (Chromium), a dev dependency"],
+      "license": "Project licence (original work)",
+      "rebuild": "npm run art:portrait-sheets"
     },
     {
       "path": "src/features/portraits/portrait-manifest.json",

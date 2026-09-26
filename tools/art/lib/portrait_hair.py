@@ -102,7 +102,7 @@ def brow_mask(head, V):
     E = head.eye_half
     x, y, z = V[:, 0], V[:, 1], V[:, 2]
     m = np.zeros(len(V), F)
-    thick = (0.3 + 0.35 * P.brow_thickness) * (0.55 + 0.45 * P.masc) * (1 - 0.15 * P.child)
+    thick = (0.3 + 0.35 * P.brow_thickness) * (0.48 + 0.52 * P.masc) * (1 - 0.15 * P.child)
     # Women's brows taper more.
     taper = 0.55 + 0.25 * (1 - P.masc)
     rng = np.random.default_rng(P.seed + 41)
@@ -293,7 +293,8 @@ class Hair:
         """Positive in front of the face below the brows: hair never falls over the eyes."""
         head = self.head
         x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
-        top = head.eye_z + 1.7 * head.s
+        # Long hair under a covering stays at the hairline, off the forehead.
+        top = head.eye_z + (6.0 if self.P.hair_style == "long" else 1.7) * head.s
         return np.minimum(np.minimum(top - z, 6.3 * head.s - np.abs(x)), -4.5 - y)
 
     def _clip(self, strands, guard=False):
@@ -359,7 +360,7 @@ class Hair:
             # Parted in the middle, swept back toward the ears; at the front
             # it lies along the temples, so a little shows under the cloth.
             side = np.sign(roots[:, 0] + 0.01)[:, None] * np.array([1, 0, 0], F)
-            dirs = np.where(front, side * 1.0 + np.array([0, 0.45, -0.25], F), side * 0.55 + np.array([0, 1.0, 0.3], F))
+            dirs = np.where(front, side * 1.0 + np.array([0, 0.75, 0.2], F), side * 0.55 + np.array([0, 1.0, 0.3], F))
         # At the hairline over the face, hair is swept back and to the side
         # (it ends naturally rather than being cut off above the eyes).
         if style in ("child", "short"):
