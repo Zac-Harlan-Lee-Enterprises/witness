@@ -114,6 +114,9 @@ describe('weather particle budgets', () => {
     expect(lite.drops).toBeLessThan(full.drops);
     expect(low.drops).toBeLessThan(lite.drops);
     expect(low.sheets).toBe(false);
+    expect(lite.sheets).toBe(false);
+    expect(low.cloudShadows).toBe(false);
+    expect(lite.cloudShadows).toBe(true);
     expect(weatherBudget(WEATHER_MIX.wind, { ...view, share: 0.2 }).leaves).toBe(0);
   });
 

@@ -231,6 +231,9 @@ export class WorldScene extends Phaser.Scene {
     this.scale.on('resize', () => this.fitCamera());
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.onPointer(pointer));
     this.gpu = rendererInfo(this.game);
+    // Without a GPU every pixel costs CPU: start without post-processing or
+    // full-screen weather layers (the lite level), and step down from there.
+    if (this.gpu.software && this.quality.level === 'full') this.quality = chosenLevel('lite');
     registerPostFx(this.game);
     releaseUnusedTargets(this.game);
     fixCanvasBlendModes(this.game);

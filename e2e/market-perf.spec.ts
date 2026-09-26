@@ -15,7 +15,8 @@ import { glRenderer, gpuTextures, trackGpuTextures } from './gpu-memory';
  * Market performance measurements (not a pass/fail test; PERF_MARKET=1):
  * chapter start, the house → market transition, steady frame rate and
  * frame pacing while walking, and texture memory, at desktop, tablet and
- * phone sizes, with full and with reduced effects (reduced motion).
+ * phone sizes (and a 2× "retina" desktop), with full and with reduced effects
+ * (reduced motion).
  *
  *   PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
  *
@@ -32,6 +33,7 @@ const LABEL = process.env.PERF_LABEL ?? 'current';
 if (process.env.PERF_GPU) test.use({ channel: 'chromium' });
 const VIEWPORTS = [
   { name: 'desktop', use: { viewport: { width: 1280, height: 720 } } },
+  { name: 'retina', use: { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 } },
   { name: 'tablet', use: { viewport: { width: 820, height: 1180 }, hasTouch: true } },
   {
     name: 'phone',

@@ -8,9 +8,9 @@
  * | level | what is dropped                                                         |
  * |-------|-------------------------------------------------------------------------|
  * | full  | nothing: post-processing, full weather, device-pixel resolution (≤ 2×)  |
- * | lite  | post-processing (grade, bloom), half the weather particles              |
+ * | lite  | post-processing (grade, bloom), sheets of rain, half the weather       |
  * | crisp | high-DPI rendering: back to 1× (skipped where the screen is 1× anyway)  |
- * | low   | "simpler effects": dust, birds, water glints, most weather, half-res art |
+ * | low   | "simpler effects": dust, birds, glints, cloud shadows, most weather    |
  *
  * Very slow frames (below `severeFps`) skip straight to `low`.
  */

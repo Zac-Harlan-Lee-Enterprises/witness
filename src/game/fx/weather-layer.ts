@@ -334,12 +334,14 @@ export class WeatherLayer {
         .setBlendMode(Phaser.BlendModes.MULTIPLY)
         .setDepth(this.d.depths.shadows)
         .setAlpha(0);
+      // The sheens are drawn just above the dark patches, and all of one kind
+      // together, so the puddles cost two draw calls rather than one per blend switch.
       const sheen = this.d.scene.add
         .image(x, y, FX.puddle)
         .setScale(dark.scaleX * 0.8, dark.scaleY * 0.7)
         .setTint(0x9fb6cc)
         .setBlendMode(Phaser.BlendModes.ADD)
-        .setDepth(this.d.depths.shadows)
+        .setDepth(this.d.depths.shadows + 0.5)
         .setAlpha(0);
       this.objects.push(dark, sheen);
       this.puddles.push({ x, y, dark, sheen });

@@ -129,8 +129,10 @@ export function weatherBudget(
     // Dust blows when it's windy and dry; rain lays it.
     dust: n(WEATHER_BUDGET.dust, Math.max(0, mix.wind - 0.15) * dry),
     leaves: options.share >= 0.5 ? n(WEATHER_BUDGET.leaves, Math.max(0, mix.wind - 0.2)) : 0,
-    sheets: options.share >= 0.5 && mix.rain > 0.55,
-    cloudShadows: mix.cloud > 0.05 || mix.wind > 0.3,
+    // Two full-screen layers: only at full quality.
+    sheets: options.share >= 1 && mix.rain > 0.55,
+    // A full-screen layer: dropped in the simplest effects.
+    cloudShadows: options.share >= 0.5 && (mix.cloud > 0.05 || mix.wind > 0.3),
   };
 }
 
