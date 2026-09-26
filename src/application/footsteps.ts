@@ -21,6 +21,18 @@ const SURFACES: Partial<Record<TileKind, FootstepSurface>> = {
   rug: 'mat',
   mat: 'mat',
   bedroll: 'mat',
+  // Chapter 2: the lake shore, a basalt jetty, a boat's planked deck.
+  shingle: 'gravel',
+  jetty: 'stone',
+  deck: 'wood',
+  // Chapter 3: straw on the animals' floor, the plastered family floor, a threshing floor.
+  straw: 'mat',
+  platform: 'stone',
+  threshing: 'earth',
+  // Chapter 4: mosaic floors, a paved Roman highway, a stone bridge.
+  mosaic: 'stone',
+  'roman-road': 'stone',
+  bridge: 'stone',
 };
 
 export function footstepSurface(kind: TileKind): FootstepSurface {

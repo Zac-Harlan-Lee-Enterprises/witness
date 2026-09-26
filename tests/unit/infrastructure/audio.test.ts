@@ -36,7 +36,16 @@ describe('sound design', () => {
   });
 
   it('gives every surface its own quiet footstep', () => {
-    const surfaces: FootstepSurface[] = ['stone', 'gravel', 'sand', 'earth', 'grass', 'mud', 'mat'];
+    const surfaces: FootstepSurface[] = [
+      'stone',
+      'gravel',
+      'sand',
+      'earth',
+      'grass',
+      'mud',
+      'mat',
+      'wood',
+    ];
     for (const s of surfaces) {
       expect(FOOTSTEPS[s].length).toBeGreaterThan(0);
       for (const t of FOOTSTEPS[s]) expect(t.gain).toBeLessThan(0.15);

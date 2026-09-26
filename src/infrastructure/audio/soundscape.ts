@@ -74,6 +74,11 @@ export const FOOTSTEPS: Record<FootstepSurface, readonly Tone[]> = {
     { kind: 'breath', freq: 2000, at: 0.045, dur: 0.05, gain: 0.035 },
   ],
   sand: [{ kind: 'breath', freq: 1400, at: 0, dur: 0.09, gain: 0.035 }],
+  // A hollow knock on planking, with a little give.
+  wood: [
+    { kind: 'knock', freq: 260, at: 0, dur: 0.06, gain: 0.11 },
+    { kind: 'knock', freq: 150, at: 0.012, dur: 0.08, gain: 0.06 },
+  ],
   earth: [
     { kind: 'knock', freq: 120, at: 0, dur: 0.07, gain: 0.1 },
     { kind: 'breath', freq: 700, at: 0, dur: 0.06, gain: 0.03 },

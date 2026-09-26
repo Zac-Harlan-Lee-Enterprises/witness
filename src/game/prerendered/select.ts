@@ -1,3 +1,4 @@
+import { appearanceKey } from '@/domain/appearance-key';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
 import type { LookMark, Pose } from '@/domain/world';
@@ -86,22 +87,8 @@ export function depthRow(base: number): number {
   return base / 32;
 }
 
-/** A stable key for an authored appearance (matches the offline art build). */
-export function appearanceKey(a: Appearance): string {
-  return [
-    a.skin,
-    a.hair,
-    a.robe,
-    a.accent,
-    a.headwear,
-    a.headwearColor,
-    a.beard ? 'beard' : 'clean',
-    a.build,
-    a.carry,
-  ]
-    .join('|')
-    .toLowerCase();
-}
+/** A stable key for an authored appearance (one definition, in the domain; matches the offline art build). */
+export { appearanceKey };
 
 /** Marks that change the body itself (so they have sheets of their own, not overlays). */
 export const BODY_MARKS: readonly LookMark[] = ['torn-hem'];
