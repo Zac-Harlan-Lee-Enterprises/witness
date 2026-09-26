@@ -32,6 +32,14 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'cloth',
   'mat',
   'bedroll',
+  'column',
+  'vat',
+  'amphorae',
+  'couch',
+  'milestone',
+  'garden',
+  'lampstand',
+  'fountain',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -45,6 +53,8 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'door',
   'gate',
   'fence',
+  'tile-roof',
+  'travertine',
 ]);
 
 const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig']);
@@ -80,6 +90,16 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   crops: 12,
   reeds: 22,
   cloth: 26,
+  'tile-roof': 46,
+  column: 56,
+  vat: 8,
+  amphorae: 20,
+  couch: 10,
+  milestone: 26,
+  travertine: 14,
+  garden: 12,
+  lampstand: 36,
+  fountain: 16,
 };
 
 export function isPropTile(kind: TileKind): boolean {
@@ -98,7 +118,9 @@ export function heightOf(kind: TileKind): number {
   return HEIGHTS[kind] ?? 0;
 }
 
-const isBuilding = (k: TileKind): boolean => k === 'wall' || k === 'roof';
+/** Walls and the roofs over them (flat plaster or pitched terracotta). */
+export const isBuilding = (k: TileKind): boolean =>
+  k === 'wall' || k === 'roof' || k === 'tile-roof';
 
 /** The ground a prop stands on: the most common ground-like neighbour (hills count as ground). */
 export function groundUnder(grid: TileGrid, tx: number, ty: number, fallback: TileKind): TileKind {
@@ -203,12 +225,14 @@ export interface LightSpot {
   radius: number;
 }
 
-/** Hearth glows at ovens; indoors, lamp niches and windows along the back wall. */
+/** Hearth glows at ovens, lamps on lampstands; indoors, lamp niches and windows along the back wall. */
 export function findLights(site: Site, indoor: boolean): LightSpot[] {
   const lights: LightSpot[] = [];
   site.forEach((x, y) => {
     if (site.kindAt(x, y) === 'oven')
       lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 12, radius: indoor ? 70 : 40 });
+    if (site.kindAt(x, y) === 'lampstand')
+      lights.push({ kind: 'lamp', x: x * 32 + 16, y: y * 32 - 2, radius: indoor ? 48 : 36 });
   });
   if (indoor) {
     backWallSlots(site).forEach(({ x, y, use }) => {

@@ -20,7 +20,20 @@ export const AppearanceSchema = z.object({
   build: z.enum(['child', 'adult', 'elder']),
   /** Something the person usually carries — it makes roles readable at a glance. */
   carry: z
-    .enum(['none', 'staff', 'basket', 'jar', 'bundle', 'bread', 'spindle', 'satchel'])
+    .enum([
+      'none',
+      'staff',
+      'basket',
+      'jar',
+      'bundle',
+      'bread',
+      'spindle',
+      'satchel',
+      /** A pair of wooden writing tablets and a stylus (a scribe). */
+      'tablets',
+      /** A cylindrical leather case for carrying letters (a letter carrier). */
+      'scroll-case',
+    ])
     .default('none'),
 });
 export type Appearance = z.infer<typeof AppearanceSchema>;

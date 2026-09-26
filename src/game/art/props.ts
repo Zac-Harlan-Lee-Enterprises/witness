@@ -338,6 +338,109 @@ const PAINTERS: Record<string, Painter> = {
     ellipse(ctx, 7, 17.5, 3, 5.5, PALETTE.wood);
     ellipse(ctx, 25, 17.5, 3, 5.5, PALETTE.wood);
   },
+  tablets: (ctx) => {
+    // A pair of hinged wooden writing tablets, open, their wax scratched with writing.
+    softShadow(ctx, 16, 26, 12, 3, 0.3);
+    for (const [x, tone] of [
+      [4, 0.1],
+      [16.5, -0.05],
+    ] as const) {
+      ctx.fillStyle = shade('#b99a64', tone);
+      ctx.fillRect(x, 12, 11.5, 13);
+      ctx.fillStyle = '#3b3128';
+      ctx.fillRect(x + 1.3, 13.3, 8.9, 10.4);
+      ctx.strokeStyle = rgba('#d8c9a8', 0.6);
+      ctx.lineWidth = 0.4;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + 2.2, 15.5 + i * 2.2);
+        ctx.lineTo(x + 9 - (i % 2) * 2, 15.5 + i * 2.2);
+        ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = '#8a8a8a';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(22, 27);
+    ctx.lineTo(30, 23);
+    ctx.stroke();
+  },
+  'letter-sheets': (ctx) => {
+    // Loose papyrus sheets, stained where the ink ran in the rain.
+    softShadow(ctx, 16, 25, 12, 3, 0.25);
+    const sheet = (x: number, y: number, a: number): void => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.fillStyle = '#e8d9b0';
+      ctx.fillRect(-6, -7, 12, 14);
+      ctx.strokeStyle = rgba('#7a6038', 0.4);
+      ctx.lineWidth = 0.3;
+      for (let i = 0; i < 12; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(-6, -7 + i);
+        ctx.lineTo(6, -7 + i);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = rgba('#2a1c10', 0.7);
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-4.5, -4 + i * 3);
+        ctx.lineTo(4 - (i % 2) * 2, -4 + i * 3);
+        ctx.stroke();
+      }
+      ellipse(ctx, 2, 3, 3, 2, rgba('#3a2a1c', 0.25));
+      ctx.restore();
+    };
+    sheet(10, 19, -0.3);
+    sheet(18, 17, 0.15);
+    sheet(22, 21, 0.4);
+  },
+  'letter-bundle': (ctx) => {
+    // Folded letters tied together with cord, a lump of sealing clay on each.
+    softShadow(ctx, 16, 26, 11, 3, 0.3);
+    for (const [x, y, col] of [
+      [8, 17, '#e3d2a6'],
+      [13, 14, '#d8c496'],
+      [11, 20, '#ecdcb4'],
+    ] as const) {
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y, 14, 6);
+      ctx.fillStyle = rgba('#000000', 0.12);
+      ctx.fillRect(x, y + 5, 14, 1);
+      ellipse(ctx, x + 7, y + 3, 1.6, 1.4, '#8a3a2a');
+    }
+    ctx.strokeStyle = '#6b4f30';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(16, 12);
+    ctx.lineTo(16, 27);
+    ctx.stroke();
+  },
+  wool: (ctx) => {
+    // Skeins of dyed wool, madder red, laid over a pole.
+    softShadow(ctx, 16, 27, 12, 3, 0.3);
+    ctx.fillStyle = PALETTE.woodDark;
+    ctx.fillRect(3, 9, 26, 2);
+    for (let i = 0; i < 4; i++) {
+      const col = ['#9a2e28', '#b23a2c', '#7a2432', '#a8322a'][i] ?? '#9a2e28';
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(5 + i * 6, 10);
+      ctx.quadraticCurveTo(4 + i * 6, 20, 6.5 + i * 6, 26);
+      ctx.lineTo(9 + i * 6, 26);
+      ctx.quadraticCurveTo(11 + i * 6, 20, 10 + i * 6, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = rgba('#000000', 0.2);
+      ctx.lineWidth = 0.4;
+      ctx.beginPath();
+      ctx.moveTo(7.5 + i * 6, 11);
+      ctx.lineTo(7.8 + i * 6, 25);
+      ctx.stroke();
+    }
+  },
   marker: (ctx) => {
     ellipse(ctx, 16, 16, 7, 7, '#f2b441');
   },
