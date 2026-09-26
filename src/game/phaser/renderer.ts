@@ -10,7 +10,8 @@ import { POST_FX_KEY, WorldPostFX } from '../fx/post-fx';
  * - registering the world's post-processing pipeline;
  * - releasing render targets Phaser allocates at full screen size for
  *   features this game never uses (bitmap masks, captures, built-in FX),
- *   which on a high-DPI screen would otherwise hold tens of MB of GPU memory.
+ *   which on a high-DPI screen would otherwise hold tens of MB of GPU memory;
+ * - on the Canvas renderer, the blend modes the light layer relies on.
  */
 export interface RendererInfo {
   webgl: boolean;
@@ -61,4 +62,18 @@ export function releaseUnusedTargets(game: Phaser.Game): void {
     target.resize(1, 1);
     target.setAutoResize(false);
   }
+}
+
+/**
+ * Canvas renderer: Phaser tests for the newer blend modes with an image that
+ * loads asynchronously, and builds its blend table before the test finishes,
+ * so MULTIPLY silently became a plain draw and the light layer covered the
+ * world. Every browser that runs this game supports them: set them directly.
+ */
+export function fixCanvasBlendModes(game: Phaser.Game): void {
+  const renderer = game.renderer;
+  if (!(renderer instanceof Phaser.Renderer.Canvas.CanvasRenderer)) return;
+  const modes = renderer.blendModes as string[];
+  modes[Phaser.BlendModes.MULTIPLY] = 'multiply';
+  modes[Phaser.BlendModes.SCREEN] = 'screen';
 }

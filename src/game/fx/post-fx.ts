@@ -141,8 +141,10 @@ export class WorldPostFX extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline 
     const g = this.grade;
     const bloom = g.bloom > 0.01;
     if (bloom) {
-      const w = Math.max(2, Math.round(target.width / 2));
-      const h = Math.max(2, Math.round(target.height / 2));
+      // Bloom is soft: work at half the CSS resolution, whatever the screen.
+      const scale = 2 * Math.max(1, this.resolution);
+      const w = Math.max(2, Math.round(target.width / scale));
+      const h = Math.max(2, Math.round(target.height / scale));
       if (fit(a, w, h) || fit(b, w, h)) {
         // Creating a framebuffer forgets the bound one (the camera's): restore it.
         fit(b, w, h);
@@ -152,7 +154,7 @@ export class WorldPostFX extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline 
       this.set1f('uThreshold', g.threshold, bright);
       this.bindAndDraw(target, a, true, true, bright);
       // Two blur passes, the second twice as wide: a soft, broad glow.
-      const step = Math.max(1, this.resolution) * 0.75;
+      const step = 0.75;
       for (const spread of [1, 2]) {
         this.set2f('uDir', (step * spread) / w, 0, blur);
         this.bindAndDraw(a, b, true, true, blur);

@@ -46,3 +46,22 @@ export function canvasPixels(
     height: Math.max(1, Math.round(cssHeight * ratio)),
   };
 }
+
+/**
+ * Whether to store the opaque ground at 16 bits a pixel (RGB 5-6-5, half the
+ * memory) instead of 32. The saving matters on phones and tablets and on
+ * low-memory devices; it costs a faint hue noise in soft shadows that only
+ * shows when magnified, so desktops keep full colour.
+ */
+export function wantsCompactGround(device: {
+  coarsePointer: boolean;
+  /** navigator.deviceMemory in GB, where the browser reports it. */
+  deviceMemory: number | undefined;
+  lowPower: boolean;
+}): boolean {
+  return (
+    device.lowPower ||
+    device.coarsePointer ||
+    (device.deviceMemory !== undefined && device.deviceMemory <= 4)
+  );
+}

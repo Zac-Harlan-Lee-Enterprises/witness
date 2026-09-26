@@ -56,6 +56,8 @@ export interface WeatherLayerDeps {
   reducedMotion: boolean;
   /** The quality level's share of the full particle budget (1, 0.5, 0.2). */
   share: number;
+  /** Draw puddles (they need tinting, which the Canvas renderer lacks). */
+  puddles: boolean;
 }
 
 interface Rect {
@@ -304,7 +306,7 @@ export class WeatherLayer {
 
   /** Puddles gather on flat, open ground outdoors (a few per place, always the same ones). */
   private buildPuddles(): void {
-    if (this.d.indoor) return;
+    if (this.d.indoor || !this.d.puddles) return;
     const { grid } = this.d;
     const spots: Array<{ x: number; y: number; seed: number }> = [];
     for (let y = 1; y < grid.height - 1; y++) {

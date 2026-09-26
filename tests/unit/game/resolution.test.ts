@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { canvasPixels, renderResolution, RESOLUTION } from '@/game/systems/resolution';
+import {
+  canvasPixels,
+  renderResolution,
+  RESOLUTION,
+  wantsCompactGround,
+} from '@/game/systems/resolution';
 
 describe('render resolution (device pixels per CSS pixel)', () => {
   it('renders at the device pixel ratio on ordinary screens, up to 2×', () => {
@@ -42,5 +47,18 @@ describe('render resolution (device pixels per CSS pixel)', () => {
     expect(canvasPixels(1280, 720, 2)).toEqual({ width: 2560, height: 1440 });
     expect(canvasPixels(412, 915, 1.75)).toEqual({ width: 721, height: 1601 });
     expect(canvasPixels(0, 0, 2)).toEqual({ width: 1, height: 1 });
+  });
+});
+
+describe('compact ground textures', () => {
+  const desktop = { coarsePointer: false, deviceMemory: 16, lowPower: false };
+  it('keeps full colour on desktops', () => {
+    expect(wantsCompactGround(desktop)).toBe(false);
+    expect(wantsCompactGround({ ...desktop, deviceMemory: undefined })).toBe(false);
+  });
+  it('halves the ground on phones, tablets, small-memory devices and in simpler effects', () => {
+    expect(wantsCompactGround({ ...desktop, coarsePointer: true })).toBe(true);
+    expect(wantsCompactGround({ ...desktop, deviceMemory: 4 })).toBe(true);
+    expect(wantsCompactGround({ ...desktop, lowPower: true })).toBe(true);
   });
 });

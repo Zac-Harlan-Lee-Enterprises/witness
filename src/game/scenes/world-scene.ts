@@ -27,9 +27,11 @@ import { headTop, isFootfall, walkColumn, WALK_CYCLE_TILES } from '../art/people
 import { frameName } from '../art/people/sheet';
 import { FX, makeFxTextures } from '../fx/fx-textures';
 import { POST_FX_KEY, WorldPostFX } from '../fx/post-fx';
+import { bytesPerPixel, compactTexture } from '../phaser/compact-textures';
 import { WaterSurface } from '../fx/water-surface';
 import { WeatherLayer } from '../fx/weather-layer';
 import {
+  fixCanvasBlendModes,
   releaseUnusedTargets,
   registerPostFx,
   rendererInfo,
@@ -72,6 +74,7 @@ import {
   type EffectsLevel,
   type QualityState,
 } from '../systems/quality';
+import { wantsCompactGround } from '../systems/resolution';
 import { overcast, WEATHER_MIX, type WeatherMix } from '../systems/weather';
 import { sunForWater, waterLook } from '../systems/water';
 import {
@@ -224,6 +227,9 @@ export class WorldScene extends Phaser.Scene {
     this.gpu = rendererInfo(this.game);
     registerPostFx(this.game);
     releaseUnusedTargets(this.game);
+    fixCanvasBlendModes(this.game);
+    // The Canvas renderer draws on the CPU: keep it at CSS resolution.
+    if (!this.gpu.webgl) this.opts.viewport.setCap(1);
     makeSharedTextures(this.textures);
     makeFxTextures(this.textures);
     this.game.canvas.dataset.effects = effectsLabel(this.quality.level);
@@ -279,6 +285,24 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     this.place = place;
+    this.compactArt();
+  }
+
+  /**
+   * Smaller GPU formats for art that doesn't need RGBA: people's multiplied
+   * shadow sheets (one channel) and, on phones, tablets and low-memory
+   * devices, the opaque ground (RGB 5-6-5).
+   */
+  private compactArt(): void {
+    const compactGround = wantsCompactGround({
+      coarsePointer: window.matchMedia?.('(pointer: coarse)').matches ?? false,
+      deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      lowPower: this.quality.lowPower,
+    });
+    if (this.place && compactGround)
+      compactTexture(this.game, this.textures, this.place.ground, 'rgb565');
+    for (const f of this.figures.values())
+      compactTexture(this.game, this.textures, f.shadowKey, 'luminance');
   }
 
   /** Close framing only where the place's art has the resolution for it. */
@@ -630,6 +654,8 @@ export class WorldScene extends Phaser.Scene {
       initial: this.weatherNow,
       reducedMotion: this.reducedMotion,
       share: effectsFor(this.quality.level).weather,
+      // Puddles are tinted; the Canvas renderer can't tint.
+      puddles: this.gpu.webgl,
     });
   }
 
@@ -728,7 +754,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.applyPostFx();
     this.weather?.setShare(fx.weather);
-    this.opts.viewport.setCap(fx.maxResolution);
+    this.opts.viewport.setCap(this.gpu.webgl ? fx.maxResolution : 1);
   }
 
   // ── Camera ──────────────────────────────────────────────────────────────
@@ -1332,11 +1358,12 @@ function figureOf(
   };
 }
 
-/** Approximate GPU memory of every loaded texture (RGBA, uncompressed), in MB. */
+/** Approximate GPU memory of every loaded texture (level 0, in its GPU format), in MB. */
 function textureMegabytes(textures: Phaser.Textures.TextureManager): number {
   let bytes = 0;
   for (const key of textures.getTextureKeys()) {
-    for (const src of textures.get(key).source) bytes += src.width * src.height * 4;
+    for (const src of textures.get(key).source)
+      bytes += src.width * src.height * bytesPerPixel(src);
   }
   return bytes / (1024 * 1024);
 }

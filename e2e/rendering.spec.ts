@@ -1,16 +1,16 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   choose,
   continueDialogue,
   createProfile,
   endDialogue,
-  expectScene,
-  goTo,
   newGame,
   openApp,
   setFastSettings,
   waitForWorld,
+  goTo,
 } from './support';
+import { brightness, canvas, data, stormAfterShimon, toMarket } from './world-probe';
 
 /**
  * The world's rendering engine, end to end:
@@ -23,61 +23,9 @@ import {
  *    rule on the fly), and the world visibly darkens and rains, then clears.
  *    The picture is compared within one conversation, so the camera holds still.
  * 3. Reduced motion: the same storm darkens the light but nothing falls.
+ *
+ * The Canvas-renderer fallback is covered by canvas-renderer.spec.ts.
  */
-const canvas = (page: Page) => page.locator('.viewport canvas');
-
-async function data(page: Page, key: string): Promise<string | null> {
-  return canvas(page).getAttribute(`data-${key}`);
-}
-
-/** Mean brightness (0–255) of the top part of the canvas, above any dialogue box. */
-async function brightness(page: Page): Promise<number> {
-  const png = (await canvas(page).screenshot()).toString('base64');
-  return page.evaluate(async (b64) => {
-    const img = new Image();
-    img.src = `data:image/png;base64,${b64}`;
-    await img.decode();
-    const c = document.createElement('canvas');
-    c.width = 160;
-    c.height = 90;
-    const ctx = c.getContext('2d');
-    if (!ctx) return -1;
-    ctx.drawImage(img, 0, 0, img.width, img.height * 0.45, 0, 0, 160, 90);
-    const px = ctx.getImageData(0, 0, 160, 90).data;
-    let sum = 0;
-    for (let i = 0; i < px.length; i += 4)
-      sum += 0.2126 * (px[i] ?? 0) + 0.7152 * (px[i + 1] ?? 0) + 0.0722 * (px[i + 2] ?? 0);
-    return sum / (px.length / 4);
-  }, png);
-}
-
-/** Add a story-driven storm to the market (the chapter chunk is plain data). */
-async function stormAfterShimon(page: Page): Promise<void> {
-  await page.route('**/assets/road-to-jericho-*.js', async (route) => {
-    const response = await route.fetch();
-    const body = await response.text();
-    const rule =
-      'weatherChanges:[{when:{type:"clueFound",clue:"clue-bend-watchers"},weather:"storm"},' +
-      '{when:{type:"clueFound",clue:"clue-cistern"},weather:"clear"}],';
-    const patched = body.replace(/(id:(["'`])jerusalem-market\2,)(name:)/, `$1${rule}$3`);
-    expect(patched, 'the market scene should be found in the chapter chunk').not.toBe(body);
-    await route.fulfill({ response, body: patched });
-  });
-}
-
-async function toMarket(page: Page): Promise<void> {
-  await openApp(page);
-  await setFastSettings(page);
-  await createProfile(page, 'Rain');
-  await newGame(page);
-  await waitForWorld(page);
-  await choose(page, 'Of course. What do I need to know?');
-  await choose(page, 'I’ll head to the market.');
-  await endDialogue(page);
-  await goTo(page, 'Go to the market');
-  await expectScene(page, 'The lower market, Jerusalem');
-}
-
 test.describe('high-DPI rendering', () => {
   test.use({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
 
