@@ -32,6 +32,8 @@ export const PLACES_WITH_ART = [
   'jericho',
   // Chapter 2: A Storm on Galilee
   'shelomit-house',
+  'capernaum-shore',
+  'open-lake',
   // Chapter 4: A Letter from Paul
   'ammia-workshop',
   'colossae-street',
