@@ -131,8 +131,136 @@
       "rebuild": "node scripts/art-build.mjs place jericho"
     },
     {
+      "path": "public/art/ammia-workshop/ground-*.webp",
+      "what": "Ground layer of Ammia's dye workshop, a room seen in cutaway, by day (a red opus signinum floor stained with dye, six dye vats of madder, woad, purple and alum in plastered masonry, steaming, a hearth under a copper cauldron, skeins drying, the plastered back wall with a shelf of dye pots, dye plants drying and a lamp in a niche, the cut-down walls, sunlight through the window and the door), with the shadows and occlusion of every standing thing baked in; morning ('day') light, full and half resolution; cut into tiles of at most 2048 px where larger.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's ammia-workshop scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place ammia-workshop"
+    },
+    {
+      "path": "public/art/ammia-workshop/shade-*.webp",
+      "what": "Light on the ground (white = lit), used to tint people who stand out of the light: sun visibility by day, sky visibility under cloud, the lamps' pools at lamp-lighting.",
+      "origin": "Rendered by tools/art/build_place.py (white material override; sun, sky or lamps only).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place ammia-workshop"
+    },
+    {
+      "path": "public/art/ammia-workshop/sprites-*.webp",
+      "what": "Atlas pages of every standing thing in the place (buildings, columns, roofs, walls, trees and their crowns, furniture, vats, props, animals, story props), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it; full and half resolution.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's ammia-workshop scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place ammia-workshop"
+    },
+    {
+      "path": "public/art/ammia-workshop/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, and how people are lit there.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place ammia-workshop"
+    },
+    {
+      "path": "public/art/colossae-street/ground-*.webp",
+      "what": "Ground layer of A street in Colossae (big limestone paving slabs, a stoa of Ionic columns on its stylobate with its entablature and lean-to tile roof, stuccoed houses and shops under terracotta roofs with antefixes, a house gate with a pediment, a public fountain, a fuller's yard with whitewashed walls, the town wall and gate, and the grassy foothills of Mount Cadmus with olives, cypresses, shrubs and terrace walls), with the shadows and occlusion of every standing thing baked in; morning ('day') and later-day ('late') light, full and half resolution; cut into tiles of at most 2048 px where larger.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's colossae-street scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place colossae-street"
+    },
+    {
+      "path": "public/art/colossae-street/shade-*.webp",
+      "what": "Light on the ground (white = lit), used to tint people who stand out of the light: sun visibility by day, sky visibility under cloud, the lamps' pools at lamp-lighting.",
+      "origin": "Rendered by tools/art/build_place.py (white material override; sun, sky or lamps only).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place colossae-street"
+    },
+    {
+      "path": "public/art/colossae-street/sprites-*.webp",
+      "what": "Atlas pages of every standing thing in the place (buildings, columns, roofs, walls, trees and their crowns, furniture, vats, props, animals, story props), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it; full and half resolution.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's colossae-street scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place colossae-street"
+    },
+    {
+      "path": "public/art/colossae-street/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, and how people are lit there.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place colossae-street"
+    },
+    {
+      "path": "public/art/lycus-road/ground-*.webp",
+      "what": "Ground layer of The Laodicea road in the Lycus valley under rain cloud (wet meadows with wildflowers, spring grain, tilled plots, the river and its reeds, a stone bridge, the paved highway of fitted polygonal slabs between kerbstones with water in its ruts, milestones, a dye works and a waystation of rubble and stucco under tiled roofs, and the white travertine terraces of Hierapolis with their pools), with the shadows and occlusion of every standing thing baked in; overcast light (the only set; the game adds the rain), full and half resolution; cut into tiles of at most 2048 px where larger.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's lycus-road scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place lycus-road"
+    },
+    {
+      "path": "public/art/lycus-road/shade-*.webp",
+      "what": "Light on the ground (white = lit), used to tint people who stand out of the light: sun visibility by day, sky visibility under cloud, the lamps' pools at lamp-lighting.",
+      "origin": "Rendered by tools/art/build_place.py (white material override; sun, sky or lamps only).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place lycus-road"
+    },
+    {
+      "path": "public/art/lycus-road/sprites-*.webp",
+      "what": "Atlas pages of every standing thing in the place (buildings, columns, roofs, walls, trees and their crowns, furniture, vats, props, animals, story props), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it; full and half resolution.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's lycus-road scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place lycus-road"
+    },
+    {
+      "path": "public/art/lycus-road/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, and how people are lit there.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place lycus-road"
+    },
+    {
+      "path": "public/art/philemon-house/ground-*.webp",
+      "what": "Ground layer of Philemon's house at lamp-lighting, seen in cutaway (a painted wall of red panels over a black dado, a mosaic floor with a guilloche border and a field of intersecting circles, triclinium couches, bronze lampstands and lamps lighting the room, a peristyle of painted Ionic columns round a garden with a marble fountain, the evening sky over the garden), with the shadows and occlusion of every standing thing baked in; evening light by lamps (the only set), full and half resolution; cut into tiles of at most 2048 px where larger.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's philemon-house scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place philemon-house"
+    },
+    {
+      "path": "public/art/philemon-house/shade-*.webp",
+      "what": "Light on the ground (white = lit), used to tint people who stand out of the light: sun visibility by day, sky visibility under cloud, the lamps' pools at lamp-lighting.",
+      "origin": "Rendered by tools/art/build_place.py (white material override; sun, sky or lamps only).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place philemon-house"
+    },
+    {
+      "path": "public/art/philemon-house/sprites-*.webp",
+      "what": "Atlas pages of every standing thing in the place (buildings, columns, roofs, walls, trees and their crowns, furniture, vats, props, animals, story props), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it; full and half resolution.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's philemon-house scene data (tile map, legend, mood, entities), with the Roman kit (tools/art/lib/kit_roman.py and roman_*.py). Geometry and materials are procedural: no image textures, scanned or downloaded models, HDRIs or photographs; the few pattern images (a mosaic's design, a painted wall's panels, a milestone's worn lines) are drawn by code (roman_materials.py).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place philemon-house"
+    },
+    {
+      "path": "public/art/philemon-house/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, and how people are lit there.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place philemon-house"
+    },
+    {
       "path": "public/art/people/*.webp",
-      "what": "Character sprite sheets (idle, breathing, blink, talking, walking, turning; four directions), sheets of people at rest (sitting, lying), sheets with a torn hem, and overlay sheets of story marks (bandages, the spare cloak, a water skin, a lamp, a rolled cloak), with their cast-shadow sheets, for morning, later-day and indoor light.",
+      "what": "Character sprite sheets (idle, breathing, blink, talking, walking, turning; four directions), sheets of people at rest (sitting, lying), sheets with a torn hem, and overlay sheets of story marks (bandages, the spare cloak, a water skin, a lamp, a rolled cloak, a letter case), with their cast-shadow sheets, for morning, later-day and indoor light, overcast light (under rain cloud) and lamp-light (at lamp-lighting).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_people.py. Each person is built procedurally from the game's character appearance data (tools/art/lib/people.py): a body grown along a joint skeleton, lofted garments, head and face parts, carried things and story marks, and our own forward kinematics and skinning for every pose. Overlays are rendered with the body as a holdout.",
       "tools": ["Blender 5.2.2 LTS"],
       "license": "Project licence (original work)",

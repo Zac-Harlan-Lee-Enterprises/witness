@@ -4,6 +4,21 @@
       "id": "road-to-jericho",
       "scenes": ["miriam-house", "jerusalem-market", "jericho-road", "jericho"],
       "playerMarks": ["water-skin", "lamp", "cloak-roll", "torn-hem"]
+    },
+    {
+      "id": "storm-on-galilee",
+      "scenes": ["shelomit-house", "capernaum-shore", "open-lake"],
+      "playerMarks": ["lamp", "cloak-roll", "water-skin"]
+    },
+    {
+      "id": "journey-to-bethlehem",
+      "scenes": ["tamar-house", "bethlehem-lanes", "shepherds-fields"],
+      "playerMarks": ["lamp", "carrying-lamb"]
+    },
+    {
+      "id": "letter-from-paul",
+      "scenes": ["ammia-workshop", "colossae-street", "lycus-road", "philemon-house"],
+      "playerMarks": ["letter-case", "cloak-roll"]
     }
   ],
   "characters": [
@@ -308,6 +323,1014 @@
         {
           "scene": "jericho",
           "entity": "yair",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "shelomit",
+      "chapter": "storm-on-galilee",
+      "key": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
+      "appearance": {
+        "skin": "#906547",
+        "hair": "#3a2e26",
+        "robe": "#665571",
+        "accent": "#c2a66a",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "elder",
+        "carry": "net"
+      },
+      "appears": [
+        {
+          "scene": "shelomit-house",
+          "entity": "shelomit",
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "scene": "capernaum-shore",
+          "entity": "shelomit-night",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "elazar",
+      "chapter": "storm-on-galilee",
+      "key": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
+      "appearance": {
+        "skin": "#865738",
+        "hair": "#1f1611",
+        "robe": "#4c6873",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#c8ba97",
+        "beard": true,
+        "build": "adult",
+        "carry": "oar"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "elazar",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "elazar-lake",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "tamar",
+      "chapter": "storm-on-galilee",
+      "key": "#9a6440|#1a1210|#8f3f2f|#e2b555|scarf|#c96f3b|clean|adult|net",
+      "appearance": {
+        "skin": "#956545",
+        "hair": "#1a1210",
+        "robe": "#8b4d40",
+        "accent": "#c2a56a",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "adult",
+        "carry": "net"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "tamar",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "tamar-lake",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "yoezer",
+      "chapter": "storm-on-galilee",
+      "key": "#7a4a2e|#2a1a10|#6b5a3a|#8a6a4a|band|#5a4a3a|beard|adult|jar",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#2a1a10",
+        "robe": "#706247",
+        "accent": "#876e56",
+        "headwear": "band",
+        "headwearColor": "#625547",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "yoezer",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "yoezer-lake",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "hanina",
+      "chapter": "storm-on-galilee",
+      "key": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
+      "appearance": {
+        "skin": "#82593e",
+        "hair": "#d8d0c0",
+        "robe": "#7b6e5c",
+        "accent": "#55636e",
+        "headwear": "hood",
+        "headwearColor": "#887b63",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "hanina",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "nikanor",
+      "chapter": "storm-on-galilee",
+      "key": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#3f6c7f",
+        "accent": "#d3c394",
+        "headwear": "wrap",
+        "headwearColor": "#dfd4bc",
+        "beard": true,
+        "build": "adult",
+        "carry": "basket"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "nikanor",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "capernaum-shore",
+          "entity": "nikanor-night",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "shifra",
+      "chapter": "storm-on-galilee",
+      "key": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#5e7047",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#c8ba9e",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "shifra",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "shifra-aboard",
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "shifra-small",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "ami",
+      "chapter": "storm-on-galilee",
+      "key": "#b07a50|#2a1a12|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#baa07a",
+        "accent": "#5e7047",
+        "headwear": "none",
+        "headwearColor": "#baa07a",
+        "beard": false,
+        "build": "child",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "ami",
+          "poses": ["stand", "sit"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "scene": "open-lake",
+          "entity": "ami-aboard",
+          "poses": ["sit"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "scene": "open-lake",
+          "entity": "ami-small",
+          "poses": ["sit"],
+          "marks": ["wrapped-in-cloak"]
+        }
+      ]
+    },
+    {
+      "id": "oded",
+      "chapter": "storm-on-galilee",
+      "key": "#a8734a|#3a2a1c|#8a7a5c|#b8683e|band|#8a2f2f|beard|adult|oar",
+      "appearance": {
+        "skin": "#a3744f",
+        "hair": "#3a2a1c",
+        "robe": "#877b64",
+        "accent": "#a96f4e",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": true,
+        "build": "adult",
+        "carry": "oar"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "oded",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "oded-aboard",
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "scene": "open-lake",
+          "entity": "oded-small",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "dinah",
+      "chapter": "storm-on-galilee",
+      "key": "#9a6a45|#2a1a10|#7a4b3a|#e3c27a|scarf|#d9b25f|clean|adult|basket",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#7b5648",
+        "accent": "#cbb37f",
+        "headwear": "scarf",
+        "headwearColor": "#c2a66a",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "dinah",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "listener-a",
+      "chapter": "storm-on-galilee",
+      "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|none",
+      "appearance": {
+        "skin": "#8b6043",
+        "hair": "#1f1510",
+        "robe": "#736247",
+        "accent": "#4d788b",
+        "headwear": "wrap",
+        "headwearColor": "#c8ba97",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "listener-1",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "listener-b",
+      "chapter": "storm-on-galilee",
+      "key": "#a57550|#2a1a10|#3f5f8f|#e8d49a|veil|#efe3c8|clean|adult|none",
+      "appearance": {
+        "skin": "#a17654",
+        "hair": "#2a1a10",
+        "robe": "#4d608b",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#dfd1b3",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "listener-2",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "listener-c",
+      "chapter": "storm-on-galilee",
+      "key": "#86583a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
+      "appearance": {
+        "skin": "#82593e",
+        "hair": "#d8d0c0",
+        "robe": "#887b63",
+        "accent": "#625547",
+        "headwear": "scarf",
+        "headwearColor": "#d8cbae",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "listener-3",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "tamar",
+      "chapter": "journey-to-bethlehem",
+      "key": "#a0704a|#2a1a10|#7a3f34|#e3c27a|veil|#e8dcc0|clean|adult|bread",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#7b4c43",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "adult",
+        "carry": "bread"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "tamar",
+          "poses": ["stand", "sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "amram",
+      "chapter": "journey-to-bethlehem",
+      "key": "#9a6a45|#dcd4c4|#5f5a44|#c9a45a|wrap|#efe6d2|beard|elder|staff",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#dcd4c4",
+        "robe": "#666250",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#dfd4bc",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "amram-home",
+          "poses": ["sit", "lie"],
+          "marks": []
+        },
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "amram",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "asa",
+      "chapter": "journey-to-bethlehem",
+      "key": "#946040|#2a1a10|#8a7a5c|#4f6a7a|band|#6f4a2c|beard|adult|bundle",
+      "appearance": {
+        "skin": "#906144",
+        "hair": "#2a1a10",
+        "robe": "#877b64",
+        "accent": "#59707b",
+        "headwear": "band",
+        "headwearColor": "#73553c",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "asa-home",
+          "poses": ["sit", "lie"],
+          "marks": []
+        },
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "asa-queue",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "peninah",
+      "chapter": "journey-to-bethlehem",
+      "key": "#b07a50|#1f1511|#35527a|#e8d49a|scarf|#c96f3b|clean|adult|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#1f1511",
+        "robe": "#44607b",
+        "accent": "#d3c394",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "peninah",
+          "poses": ["sit", "lie"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "dodi",
+      "chapter": "journey-to-bethlehem",
+      "key": "#b07a50|#1f1511|#d8c49a|#35527a|none|#d8c49a|clean|child|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#1f1511",
+        "robe": "#c8b793",
+        "accent": "#44607b",
+        "headwear": "none",
+        "headwearColor": "#c8b793",
+        "beard": false,
+        "build": "child",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "dodi",
+          "poses": ["lie"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "kallias",
+      "chapter": "journey-to-bethlehem",
+      "key": "#c08a5e|#3a2a1c|#e6dcc6|#3f5f8f|none|#e6dcc6|clean|adult|tablet",
+      "appearance": {
+        "skin": "#bb8b63",
+        "hair": "#3a2a1c",
+        "robe": "#d6cbb4",
+        "accent": "#4d608b",
+        "headwear": "none",
+        "headwearColor": "#d6cbb4",
+        "beard": false,
+        "build": "adult",
+        "carry": "tablet"
+      },
+      "appears": [
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "kallias",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "hagit",
+      "chapter": "journey-to-bethlehem",
+      "key": "#8a5a38|#cfc8bb|#556b3a|#d9b25f|veil|#6b5a7a|clean|elder|jar",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#cfc8bb",
+        "robe": "#5e7047",
+        "accent": "#c2a66a",
+        "headwear": "veil",
+        "headwearColor": "#70627b",
+        "beard": false,
+        "build": "elder",
+        "carry": "jar"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "hagit-door",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "hagit",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "yonatan",
+      "chapter": "journey-to-bethlehem",
+      "key": "#8d5a3a|#1f1611|#8b7a5a|#a8322a|scarf|#d8c49a|clean|adult|staff",
+      "appearance": {
+        "skin": "#895b3e",
+        "hair": "#1f1611",
+        "robe": "#887b63",
+        "accent": "#9b4840",
+        "headwear": "scarf",
+        "headwearColor": "#c8b793",
+        "beard": false,
+        "build": "adult",
+        "carry": "staff"
+      },
+      "appears": [
+        {
+          "scene": "shepherds-fields",
+          "entity": "yonatan",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "yoram",
+      "chapter": "journey-to-bethlehem",
+      "key": "#7a4a2e|#e2dbcf|#6f5a3a|#5a4a3a|hood|#8a6a4a|beard|elder|lamb",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#e2dbcf",
+        "robe": "#736247",
+        "accent": "#625547",
+        "headwear": "hood",
+        "headwearColor": "#876e56",
+        "beard": true,
+        "build": "elder",
+        "carry": "lamb"
+      },
+      "appears": [
+        {
+          "scene": "shepherds-fields",
+          "entity": "yoram",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "zerah",
+      "chapter": "journey-to-bethlehem",
+      "key": "#946040|#cfc8bb|#7a6448|#2f5590|wrap|#c9b48a|beard|elder|lamp",
+      "appearance": {
+        "skin": "#906144",
+        "hair": "#cfc8bb",
+        "robe": "#7b6953",
+        "accent": "#40548c",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "elder",
+        "carry": "lamp"
+      },
+      "appears": [
+        {
+          "scene": "tamar-house",
+          "entity": "zerah-hearth",
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "scene": "tamar-house",
+          "entity": "zerah-straw",
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "scene": "tamar-house",
+          "entity": "zerah-door",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "tamar-house",
+          "entity": "zerah-guest",
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "zerah-well",
+          "poses": ["lie"],
+          "marks": []
+        },
+        {
+          "scene": "bethlehem-lanes",
+          "entity": "zerah-hagit",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "ammia",
+      "chapter": "letter-from-paul",
+      "key": "#a8744c|#3a2c22|#7a3228|#e2c27a|veil|#e8dcc0|clean|elder|basket",
+      "appearance": {
+        "skin": "#a37551",
+        "hair": "#3a2c22",
+        "robe": "#7c4238",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "elder",
+        "carry": "basket"
+      },
+      "appears": [
+        {
+          "scene": "ammia-workshop",
+          "entity": "ammia",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "philemon-house",
+          "entity": "ammia-gathering",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "kallias",
+      "chapter": "letter-from-paul",
+      "key": "#b07a50|#2a1c12|#8a6a4a|#9a2e28|none|#8a6a4a|clean|adult|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1c12",
+        "robe": "#876e56",
+        "accent": "#92433c",
+        "headwear": "none",
+        "headwearColor": "#876e56",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "lycus-road",
+          "entity": "kallias",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "philemon-house",
+          "entity": "kallias-gathering",
+          "poses": ["stand"],
+          "marks": ["wrapped-in-cloak"]
+        }
+      ]
+    },
+    {
+      "id": "zenon",
+      "chapter": "letter-from-paul",
+      "key": "#9a6a45|#3a3028|#e6dcc4|#35527a|none|#e6dcc4|beard|adult|tablets",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#3a3028",
+        "robe": "#d6cbb2",
+        "accent": "#44607b",
+        "headwear": "none",
+        "headwearColor": "#d6cbb2",
+        "beard": true,
+        "build": "adult",
+        "carry": "tablets"
+      },
+      "appears": [
+        {
+          "scene": "colossae-street",
+          "entity": "zenon",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "philemon-house",
+          "entity": "zenon-reader",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "attalos",
+      "chapter": "letter-from-paul",
+      "key": "#8a5a38|#1f1611|#6b5a3a|#c9a45a|wrap|#c9b48a|beard|adult|bundle",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#1f1611",
+        "robe": "#706247",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      },
+      "appears": [
+        {
+          "scene": "colossae-street",
+          "entity": "attalos",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "lycus-road",
+          "entity": "attalos-road",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "tatia",
+      "chapter": "letter-from-paul",
+      "key": "#b8845a|#2a1a12|#d8d0b8|#5f7438|scarf|#9a8a6a|clean|adult|basket",
+      "appearance": {
+        "skin": "#b3855f",
+        "hair": "#2a1a12",
+        "robe": "#c8c1ab",
+        "accent": "#677746",
+        "headwear": "scarf",
+        "headwearColor": "#938770",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      },
+      "appears": [
+        {
+          "scene": "colossae-street",
+          "entity": "tatia",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "philemon-house",
+          "entity": "tatia-gathering",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "menandros",
+      "chapter": "letter-from-paul",
+      "key": "#a0704a|#2a1a10|#8c5231|#e2c170|band|#5a3a22|beard|adult|jar",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#895c41",
+        "accent": "#c8b179",
+        "headwear": "band",
+        "headwearColor": "#644832",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      },
+      "appears": [
+        {
+          "scene": "colossae-street",
+          "entity": "menandros",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "nikon",
+      "chapter": "letter-from-paul",
+      "key": "#9a6040|#4a3a30|#3f5f8f|#d9b25f|none|#3f5f8f|beard|adult|none",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#4a3a30",
+        "robe": "#4d608b",
+        "accent": "#c2a66a",
+        "headwear": "none",
+        "headwearColor": "#4d608b",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "lycus-road",
+          "entity": "nikon",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "chrysis",
+      "chapter": "letter-from-paul",
+      "key": "#8f5f3f|#1a1210|#7a6a58|#6a2a4f|scarf|#6a5a48|clean|adult|none",
+      "appearance": {
+        "skin": "#8b6043",
+        "hair": "#1a1210",
+        "robe": "#7b6e60",
+        "accent": "#703a57",
+        "headwear": "scarf",
+        "headwearColor": "#6e6253",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "lycus-road",
+          "entity": "chrysis",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "hermon",
+      "chapter": "letter-from-paul",
+      "key": "#9a6a45|#d8d0c0|#5f6f3a|#c9a45a|none|#5f6f3a|beard|elder|none",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#d8d0c0",
+        "robe": "#667347",
+        "accent": "#b89c63",
+        "headwear": "none",
+        "headwearColor": "#667347",
+        "beard": true,
+        "build": "elder",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "philemon-house",
+          "entity": "hermon",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "melitta",
+      "chapter": "letter-from-paul",
+      "key": "#b07a50|#2a1a12|#35527a|#e8d49a|veil|#d9b25f|clean|adult|bread",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#44607b",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#c2a66a",
+        "beard": false,
+        "build": "adult",
+        "carry": "bread"
+      },
+      "appears": [
+        {
+          "scene": "philemon-house",
+          "entity": "melitta",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "philemon",
+      "chapter": "letter-from-paul",
+      "key": "#a8744c|#3a2c22|#e8dcc0|#7a3228|none|#e8dcc0|beard|adult|none",
+      "appearance": {
+        "skin": "#a37551",
+        "hair": "#3a2c22",
+        "robe": "#d8cbae",
+        "accent": "#7c4238",
+        "headwear": "none",
+        "headwearColor": "#d8cbae",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "philemon-house",
+          "entity": "philemon",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "tychicus",
+      "chapter": "letter-from-paul",
+      "key": "#9a6040|#2a1a10|#6f5a3a|#c9a45a|wrap|#c9b48a|beard|adult|scroll-case",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#2a1a10",
+        "robe": "#736247",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "scroll-case"
+      },
+      "appears": [
+        {
+          "scene": "philemon-house",
+          "entity": "tychicus",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "onesimus",
+      "chapter": "letter-from-paul",
+      "key": "#8a5a38|#1f1611|#8b7a5a|#5a4a3a|none|#8b7a5a|clean|adult|none",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#1f1611",
+        "robe": "#887b63",
+        "accent": "#625547",
+        "headwear": "none",
+        "headwearColor": "#887b63",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      },
+      "appears": [
+        {
+          "scene": "philemon-house",
+          "entity": "onesimus",
           "poses": ["stand"],
           "marks": []
         }
@@ -1409,6 +2432,2816 @@
           "x": 1,
           "y": 10,
           "facing": "right"
+        }
+      }
+    },
+    {
+      "id": "shelomit-house",
+      "chapter": "storm-on-galilee",
+      "name": "Grandmother Shelomit’s house",
+      "kind": "indoor",
+      "mood": "home",
+      "layout": [
+        "################",
+        "################",
+        "#NN.os....bb.jj#",
+        "#N.............#",
+        "#...mmm........#",
+        "#...mmm....tt.c#",
+        "#..........tt..#",
+        "#j.............#",
+        "#jb.........rr.#",
+        "#######DD#######"
+      ],
+      "legend": {
+        "#": "wall",
+        ".": "floor",
+        "N": "nets",
+        "o": "oven",
+        "s": "sacks",
+        "b": "basket",
+        "j": "jars",
+        "m": "mat",
+        "t": "table",
+        "c": "crate",
+        "r": "bedroll",
+        "D": "door"
+      },
+      "baseTile": "floor",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "shelomit",
+          "kind": "npc",
+          "x": 5,
+          "y": 4,
+          "facing": "down",
+          "characterId": "shelomit",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "mending",
+          "kind": "feature",
+          "x": 4,
+          "y": 5,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "net-pile",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "dried-fish",
+          "kind": "feature",
+          "x": 10,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "house-door",
+          "x": 7,
+          "y": 9,
+          "w": 2,
+          "h": 1,
+          "to": "capernaum-shore"
+        }
+      ],
+      "spawns": {
+        "start": {
+          "x": 7,
+          "y": 6,
+          "facing": "up"
+        },
+        "from-shore": {
+          "x": 7,
+          "y": 8,
+          "facing": "up"
+        }
+      }
+    },
+    {
+      "id": "capernaum-shore",
+      "chapter": "storm-on-galilee",
+      "name": "The shore at Capernaum",
+      "kind": "outdoor",
+      "mood": "oasis",
+      "layout": [
+        "P,^^^^^^^^^,,F,^^^^^^^^^^,,P,,^^^^^^^^^,,F,P",
+        ",,^^^^^^^^^,,,,^^^^^^^^^^,,,,,^^^^^^^^^,,,,,",
+        "F,####D####,P,,####D#####,T,,,####D####,,P,,",
+        ",,jb.....b,,,,,c.......jj,,,,,,.......bk,,,,",
+        "============================================",
+        ",l,,,,,,..,,,b,,,,,.....,,,,,,,,c,..,,,,,,F,",
+        ",NN,,NN,..,,o,,,,,,.....,,RR,RR,,j,..,,,,,,,",
+        ",,,,,,,,..,,b,,,,,,.....,,,,,,,,,jjk..,,F,,,",
+        ",NN,,NN,..,,,,,,,,,.....,,RR,RR,,hh...,,,,,P",
+        ",,,,,,,,......,,c,,.....,b,,b,,,,.....,,,,,,",
+        ",r,,,,,,,,,,..,,,,,.....,,,,,,,,......,,,,,,",
+        "e,,,,,,,,,,,..,,,,,.....,,,,,,,,,,,,,,,,,,,,",
+        "ee:::::::::::::::::.....:::::::::::::::::::,",
+        "ee:::::::::::::::::JJJ::::::::::::::::::::::",
+        "ee::::::BBBB:::::::JJJ::::::::::::::::::::::",
+        "e~:BBB:::::::::::::JJJ::::::::::::::::BBB:::",
+        "~~:::::::r:::::::::JJJ:::::::::::::::::::r::",
+        "~~~~~~::::::::::~~~JJJ~~~~::::::::::~~~~~~~~",
+        "~~~~~~~~~~~~~~~~~~~JJJ~~~~~~~~~~~~~~~~~~~~~~",
+        "LLL~~~~~~~~~~~~~~~~JJJ~~~~~~~~~~~~~~~~~~~LLL",
+        "LLLLLL~~~~~~~~~~~~~JJJBBBBBB~~~~~~~~~~~LLLLL",
+        "LLLLLLLLL~~~~~~~~~~JJJBBBBBB~~~~~~~~LLLLLLLL",
+        "LLLLLLLLLLLLL~~~~~~JJJ~~~~~~~~~~BBBBLLLLLLLL",
+        "LLLLLLLLLLLLLLLL~~~JJJ~~~~LLLLLLBBBBLLLLLLLL",
+        "LLLLLLBBBBLLLLLLLLLJJJLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      ],
+      "legend": {
+        "#": "wall",
+        "^": "roof",
+        "D": "door",
+        "=": "paving",
+        ".": "sand",
+        ",": "scrub",
+        ":": "shingle",
+        "~": "shallows",
+        "L": "lake",
+        "J": "jetty",
+        "B": "boat",
+        "N": "nets",
+        "R": "rack",
+        "j": "jars",
+        "k": "sacks",
+        "b": "basket",
+        "c": "crate",
+        "h": "trough",
+        "o": "oven",
+        "l": "fence",
+        "r": "rock",
+        "e": "reeds",
+        "P": "palm",
+        "F": "fig",
+        "T": "olive"
+      },
+      "baseTile": "scrub",
+      "crowd": true,
+      "entities": [
+        {
+          "id": "elazar",
+          "kind": "npc",
+          "x": 21,
+          "y": 21,
+          "facing": "right",
+          "characterId": "elazar",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "tamar",
+          "kind": "npc",
+          "x": 17,
+          "y": 13,
+          "facing": "down",
+          "characterId": "tamar",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "sail-mending",
+          "kind": "feature",
+          "x": 16,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "net-pile",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "yoezer",
+          "kind": "npc",
+          "x": 24,
+          "y": 13,
+          "facing": "left",
+          "characterId": "yoezer",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "family-boat",
+          "kind": "feature",
+          "x": 22,
+          "y": 20,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "hanina",
+          "kind": "npc",
+          "x": 19,
+          "y": 24,
+          "facing": "down",
+          "characterId": "hanina",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "lake-view",
+          "kind": "sign",
+          "x": 20,
+          "y": 25,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "western-hills",
+          "kind": "clue",
+          "x": 1,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "far-shore",
+          "kind": "clue",
+          "x": 41,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "magdala-boat",
+          "kind": "clue",
+          "x": 9,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "waters-edge",
+          "kind": "clue",
+          "x": 16,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "nikanor",
+          "kind": "npc",
+          "x": 35,
+          "y": 9,
+          "facing": "down",
+          "characterId": "nikanor",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "brine-jars",
+          "kind": "feature",
+          "x": 37,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "vessels",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "fish-rack",
+          "kind": "feature",
+          "x": 28,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "teacher-boat",
+          "kind": "sign",
+          "x": 36,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "dinah",
+          "kind": "npc",
+          "x": 32,
+          "y": 14,
+          "facing": "down",
+          "characterId": "dinah",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "listener-1",
+          "kind": "npc",
+          "x": 33,
+          "y": 13,
+          "facing": "down",
+          "characterId": "listener-a",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "listener-2",
+          "kind": "npc",
+          "x": 35,
+          "y": 13,
+          "facing": "down",
+          "characterId": "listener-b",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "listener-3",
+          "kind": "npc",
+          "x": 34,
+          "y": 15,
+          "facing": "down",
+          "characterId": "listener-c",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "shifra",
+          "kind": "npc",
+          "x": 37,
+          "y": 14,
+          "facing": "left",
+          "characterId": "shifra",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "ami",
+          "kind": "npc",
+          "x": 38,
+          "y": 14,
+          "facing": "down",
+          "characterId": "ami",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand", "sit"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "id": "oded",
+          "kind": "npc",
+          "x": 41,
+          "y": 15,
+          "facing": "left",
+          "characterId": "oded",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "shelomit-night",
+          "kind": "npc",
+          "x": 20,
+          "y": 17,
+          "facing": "down",
+          "characterId": "shelomit",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "grandmother-lamp",
+          "kind": "feature",
+          "x": 21,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "lamp",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "nikanor-night",
+          "kind": "npc",
+          "x": 23,
+          "y": 12,
+          "facing": "down",
+          "characterId": "nikanor",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "jars-ashore",
+          "kind": "feature",
+          "x": 27,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "fish-jars",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "towline",
+          "kind": "feature",
+          "x": 40,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "towline",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "spare-oar-returned",
+          "kind": "feature",
+          "x": 37,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "oar",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-house",
+          "x": 6,
+          "y": 2,
+          "w": 1,
+          "h": 1,
+          "to": "shelomit-house"
+        }
+      ],
+      "spawns": {
+        "from-house": {
+          "x": 6,
+          "y": 3,
+          "facing": "down"
+        },
+        "from-lake": {
+          "x": 20,
+          "y": 20,
+          "facing": "up"
+        }
+      }
+    },
+    {
+      "id": "open-lake",
+      "chapter": "storm-on-galilee",
+      "name": "Out on the lake",
+      "kind": "outdoor",
+      "mood": "wilderness",
+      "layout": [
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLBBBBLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLBBBLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLhhhhhhhhhhhhLLLLLLLLLLLLLLLLL",
+        "LLLLLLLhhhhhddddddddddhhhhhhLLLLLLLLLLLL",
+        "LLLLLLhhdddddddddddddddddddhhhLLLLLLLLLL",
+        "LLLLLLhddddddddddddMddddddddddhhLLLBBBBL",
+        "LLLLLLhdddddddddddddddddddddddhhLLLBBBBL",
+        "LLLLLLhhdddddddddddddddddddhhhLLLLLLLLLL",
+        "LLLLLLLhhhhhddddddddddhhhhhhLLLLLLLLLLLL",
+        "LLLLLLLLLLLhhhhhhhhhhhhLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LBBBLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLBBBBBLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLBBBBBLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      ],
+      "legend": {
+        "L": "lake",
+        "h": "hull",
+        "d": "deck",
+        "M": "mast",
+        "B": "boat"
+      },
+      "baseTile": "deck",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "elazar-lake",
+          "kind": "npc",
+          "x": 8,
+          "y": 11,
+          "facing": "right",
+          "characterId": "elazar",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "tamar-lake",
+          "kind": "npc",
+          "x": 13,
+          "y": 13,
+          "facing": "left",
+          "characterId": "tamar",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "yoezer-lake",
+          "kind": "npc",
+          "x": 15,
+          "y": 10,
+          "facing": "left",
+          "characterId": "yoezer",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "ami-aboard",
+          "kind": "npc",
+          "x": 18,
+          "y": 13,
+          "facing": "up",
+          "characterId": "ami",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "id": "shifra-aboard",
+          "kind": "npc",
+          "x": 21,
+          "y": 13,
+          "facing": "up",
+          "characterId": "shifra",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "oded-aboard",
+          "kind": "npc",
+          "x": 23,
+          "y": 13,
+          "facing": "up",
+          "characterId": "oded",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "oded-small",
+          "kind": "npc",
+          "x": 15,
+          "y": 5,
+          "facing": "down",
+          "characterId": "oded",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "shifra-small",
+          "kind": "npc",
+          "x": 16,
+          "y": 5,
+          "facing": "down",
+          "characterId": "shifra",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "ami-small",
+          "kind": "npc",
+          "x": 17,
+          "y": 5,
+          "facing": "down",
+          "characterId": "ami",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "id": "port-rail",
+          "kind": "feature",
+          "x": 16,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "towline",
+          "kind": "feature",
+          "x": 16,
+          "y": 6,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "towline",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cargo-jars",
+          "kind": "feature",
+          "x": 23,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "fish-jars",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cargo-jars-more",
+          "kind": "feature",
+          "x": 24,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "fish-jars",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "net-cargo",
+          "kind": "feature",
+          "x": 25,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "net-pile",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "rope-coil",
+          "kind": "feature",
+          "x": 11,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "rope",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "spare-oar-deck",
+          "kind": "feature",
+          "x": 14,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "oar",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "bailer-deck",
+          "kind": "feature",
+          "x": 17,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bailer",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "floating-jars",
+          "kind": "feature",
+          "x": 4,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "floating-jars",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "sail",
+          "kind": "feature",
+          "x": 19,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "bow",
+          "kind": "feature",
+          "x": 30,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [],
+      "spawns": {
+        "aboard": {
+          "x": 11,
+          "y": 11,
+          "facing": "right"
+        }
+      }
+    },
+    {
+      "id": "tamar-house",
+      "chapter": "journey-to-bethlehem",
+      "name": "Tamar’s house, Bethlehem",
+      "kind": "indoor",
+      "mood": "home",
+      "layout": [
+        "##########################",
+        "##########################",
+        "#h,,,,,M..jj....o.b#rr.rr#",
+        "#,,,,,,M...........#.....#",
+        "#,,,,,,M..uuuu.....#.....#",
+        "#,,,,,,M..uuuu...........#",
+        "#,,,,,,M...........#.....#",
+        "#h,,,,,=..........t#.....#",
+        "#,,,,,,=...........#.....#",
+        "#c,,,,,M....mm.....#.....#",
+        "#####DD###################"
+      ],
+      "legend": {
+        "#": "wall",
+        ",": "straw",
+        ".": "platform",
+        "=": "steps",
+        "M": "manger",
+        "h": "hay",
+        "c": "crate",
+        "j": "jars",
+        "o": "oven",
+        "b": "basket",
+        "t": "table",
+        "u": "rug",
+        "m": "mat",
+        "r": "bedroll",
+        "D": "door"
+      },
+      "baseTile": "platform",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "tamar",
+          "kind": "npc",
+          "x": 14,
+          "y": 3,
+          "facing": "down",
+          "characterId": "tamar",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand", "sit"],
+          "marks": []
+        },
+        {
+          "id": "kneading",
+          "kind": "feature",
+          "x": 15,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "kneading-trough",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "bread",
+          "kind": "feature",
+          "x": 15,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bread-cloth",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "ladder",
+          "kind": "feature",
+          "x": 8,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "ladder",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "amram-home",
+          "kind": "npc",
+          "x": 10,
+          "y": 8,
+          "facing": "right",
+          "characterId": "amram",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit", "lie"],
+          "marks": []
+        },
+        {
+          "id": "your-mat",
+          "kind": "feature",
+          "x": 16,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bedroll",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zerah-hearth",
+          "kind": "npc",
+          "x": 16,
+          "y": 8,
+          "facing": "left",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": true,
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "id": "manger",
+          "kind": "feature",
+          "x": 7,
+          "y": 4,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "donkey",
+          "kind": "feature",
+          "x": 2,
+          "y": 4,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "asa-donkey",
+          "kind": "feature",
+          "x": 2,
+          "y": 6,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack-donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "goat",
+          "kind": "feature",
+          "x": 4,
+          "y": 3,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "goat",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "stable-loom",
+          "kind": "feature",
+          "x": 5,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "loom",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "stable-tools",
+          "kind": "feature",
+          "x": 2,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "tool-bag",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "your-straw",
+          "kind": "feature",
+          "x": 4,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "straw-bed",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "straw-bed",
+          "kind": "feature",
+          "x": 3,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "straw-bed",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zerah-straw",
+          "kind": "npc",
+          "x": 3,
+          "y": 7,
+          "facing": "right",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": true,
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "id": "zerah-door",
+          "kind": "npc",
+          "x": 6,
+          "y": 8,
+          "facing": "up",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "hagit-door",
+          "kind": "npc",
+          "x": 5,
+          "y": 8,
+          "facing": "up",
+          "characterId": "hagit",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "peninah",
+          "kind": "npc",
+          "x": 23,
+          "y": 3,
+          "facing": "left",
+          "characterId": "peninah",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": false,
+          "poses": ["sit", "lie"],
+          "marks": []
+        },
+        {
+          "id": "dodi",
+          "kind": "npc",
+          "x": 24,
+          "y": 2,
+          "facing": "left",
+          "characterId": "dodi",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": false,
+          "poses": ["lie"],
+          "marks": []
+        },
+        {
+          "id": "asa-home",
+          "kind": "npc",
+          "x": 21,
+          "y": 3,
+          "facing": "down",
+          "characterId": "asa",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit", "lie"],
+          "marks": []
+        },
+        {
+          "id": "bedding",
+          "kind": "feature",
+          "x": 21,
+          "y": 5,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bedroll",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "guest-loom",
+          "kind": "feature",
+          "x": 20,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "loom",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "guest-grain",
+          "kind": "feature",
+          "x": 24,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "grain-jars",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "guest-tools",
+          "kind": "feature",
+          "x": 20,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "tool-bag",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "spare-mat",
+          "kind": "feature",
+          "x": 22,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bedroll",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zerah-guest",
+          "kind": "npc",
+          "x": 22,
+          "y": 8,
+          "facing": "left",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": true,
+          "poses": ["lie", "sit"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-lanes",
+          "x": 5,
+          "y": 10,
+          "w": 2,
+          "h": 1,
+          "to": "bethlehem-lanes"
+        }
+      ],
+      "spawns": {
+        "start": {
+          "x": 13,
+          "y": 6,
+          "facing": "up"
+        },
+        "from-lanes": {
+          "x": 5,
+          "y": 9,
+          "facing": "up"
+        }
+      }
+    },
+    {
+      "id": "bethlehem-lanes",
+      "chapter": "journey-to-bethlehem",
+      "name": "The lanes of Bethlehem",
+      "kind": "outdoor",
+      "mood": "city",
+      "layout": [
+        "T^^^^^^^^^T,^^^^^^^^^,T^^^^^^^^^^^,,,,",
+        ".^^^^^^^^^..^^^^^^^^^..^^^^^^^^^^^,T,,",
+        ".^^^^^^^^^..^^^^^^^^^..^^^^^^^^^^^,,,,",
+        ".####D####..####D####..######D####...#",
+        ".j.......b..k.......j..C.........k...#",
+        ".....................................#",
+        ",..rr..a..............===k==c=======j#",
+        "T.....................====tt=========#",
+        ",..............mm.b...===============#",
+        ",...........T.........==========W====g",
+        ",....rr...T...........===============g",
+        "T................C....===============#",
+        ",^^^^^^^^.............=j=============#",
+        ",^^^^^^^^....k........==============b#",
+        ",^^^^^^^^............................#",
+        ",#####D##...^^^^^^^^..............B,,#",
+        ",oj.........^^^^^^^^..............,,,#",
+        ",llll.llll..^^^^^^^^....,xxxxxxxx,,,,#",
+        ",lh,,,,,hl..###D####....xxxxxxxxhx,,,#",
+        ",l,,,,,,,l..b......k....xxxxxxxxxx,,B#",
+        ",l,,,,,,hl,,,,,,,,,,,T,.xxxxxxxxxx,,,#",
+        ",lllllllll,T,,,,,,T,,,,.xhxxxxxxxx,,,#",
+        ",.........,,,,T,,,,,,,,.,xxxxhxxx,,,,#",
+        "eeeeeeeeeeeeeeeeeeeee,,eeeeeeeeeeeeee#"
+      ],
+      "legend": {
+        "#": "wall",
+        "^": "roof",
+        "D": "door",
+        "g": "gate",
+        ".": "sand",
+        ",": "scrub",
+        "=": "paving",
+        "x": "threshing",
+        "W": "well",
+        "t": "table",
+        "T": "olive",
+        "B": "bush",
+        "l": "fence",
+        "e": "terrace",
+        "h": "hay",
+        "k": "sacks",
+        "b": "basket",
+        "j": "jars",
+        "c": "crate",
+        "o": "oven",
+        "C": "cloth",
+        "r": "bedroll",
+        "m": "mat",
+        "a": "cart"
+      },
+      "baseTile": "sand",
+      "crowd": true,
+      "entities": [
+        {
+          "id": "amram",
+          "kind": "npc",
+          "x": 25,
+          "y": 7,
+          "facing": "down",
+          "characterId": "amram",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "kallias",
+          "kind": "npc",
+          "x": 27,
+          "y": 6,
+          "facing": "down",
+          "characterId": "kallias",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "model-tablet",
+          "kind": "clue",
+          "x": 26,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "tablet",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "blank-tablet",
+          "kind": "feature",
+          "x": 27,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "tablet",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "asa-queue",
+          "kind": "npc",
+          "x": 27,
+          "y": 10,
+          "facing": "up",
+          "characterId": "asa",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "well",
+          "kind": "feature",
+          "x": 32,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zerah-well",
+          "kind": "npc",
+          "x": 31,
+          "y": 10,
+          "facing": "up",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": true,
+          "poses": ["lie"],
+          "marks": []
+        },
+        {
+          "id": "gate-sign",
+          "kind": "sign",
+          "x": 35,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "hagit",
+          "kind": "npc",
+          "x": 4,
+          "y": 16,
+          "facing": "down",
+          "characterId": "hagit",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zerah-hagit",
+          "kind": "npc",
+          "x": 5,
+          "y": 16,
+          "facing": "down",
+          "characterId": "zerah",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "lane-donkey",
+          "kind": "feature",
+          "x": 9,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack-donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "lane-donkey-2",
+          "kind": "feature",
+          "x": 2,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "goat-1",
+          "kind": "feature",
+          "x": 4,
+          "y": 19,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "goat",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "goat-2",
+          "kind": "feature",
+          "x": 6,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "goat",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "threshing-floor",
+          "kind": "feature",
+          "x": 25,
+          "y": 21,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "straw-heap",
+          "kind": "feature",
+          "x": 32,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-house",
+          "x": 5,
+          "y": 3,
+          "w": 1,
+          "h": 1,
+          "to": "tamar-house"
+        },
+        {
+          "id": "to-fields",
+          "x": 37,
+          "y": 9,
+          "w": 1,
+          "h": 2,
+          "to": "shepherds-fields"
+        }
+      ],
+      "spawns": {
+        "from-house": {
+          "x": 5,
+          "y": 4,
+          "facing": "down"
+        },
+        "from-fields": {
+          "x": 36,
+          "y": 9,
+          "facing": "left"
+        }
+      }
+    },
+    {
+      "id": "shepherds-fields",
+      "chapter": "journey-to-bethlehem",
+      "name": "The fold below Bethlehem",
+      "kind": "outdoor",
+      "mood": "wilderness",
+      "layout": [
+        "HHH..HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HHH..dddddddddddddddddddddddddddddddddddHH",
+        "HHH..ddOddddOddddOddddOddddOddddOddddOdddd",
+        "HHH..ddddddddddddddddddddddddddddddddddddd",
+        "HHH..ddddddddddddddddddddddddddddddddddddd",
+        "HHH..eeeeeeeeeeeeeeeeeee,eeeeeeeeeeeeeeeee",
+        "HHH..,,,,,,,,,,,,,,r,,,,,,,,,r,,,,,,,b,,,,",
+        "HHH..,,,,,,,,,,,,,,,,,,,,,O,,,,,,,bbbbb,r,",
+        "HHH..,,,fffffffffff,,,O,,,,,,,^^^,bbbbbbb,",
+        "HHH,,,r,f,S,,S,,Shf,,,,l,,,,,,^^^,bbbbbbbb",
+        "HHH,,,,,f,,,,,,,,,f,,,,l,,,,,,#D#,bbbbbbb,",
+        "HHH,,,,,fS,,S,,S,,f,,,,l,b,,,,,,,,,bbbbbbb",
+        "HHH,,,O,f,,,,,,,,,f,,r,l,,,,O,,,,,bbbbbbr,",
+        "HHH,b,,,f,S,,,,,S,f,,,,l,,,,,,,,,,,,bbbb,,",
+        "HHH,,,,,fffffgfffff,b,,,,,,,,,,b,,,,,,,,,,",
+        "HHH,,,,,,,,,,,,,,,,,,,,,,,,r,,,,,,,,,,O,,,",
+        "HHH,,,,b,,F,,,,u,,,,,,r,,,,,,,,,,O,,r,,,,,",
+        "HHH,,,,,,r,,,,mmmm,,,,,,,,,,b,,,,r,,,,,,,,",
+        "HHH,,O,,,,,,,,,,,,,,,,,bwr,,,,,,,,,b,,,,O,",
+        "HHH,,,,,,,,,,,,,,,,,HHHrwrHHHHHHHHHHHHHHHH",
+        "HHHeeeeeeee,eeeeeeeeHHHHwwwHHHHHHHHHHHHHHH",
+        "HHHdddddddddddddddOdHHHHHHwwwHHHHHHHHHHHHH",
+        "HHHddqqqqqddqqqqqqddHHHHHHHrwwwHHHHHHHHHHH",
+        "HHHddqqqqqddqqqqqqddHHHHHHHHHrwwwHHHHHHHHH",
+        "HHHddqqqqqddqqqqqqddHHHHHHHHHHHrwwwHHHHHHH",
+        "HHHddqqqqqddqqqqqqddHHHHHHHHHHHHHrwwwwwbHH",
+        "HHHdOdddddddddddddddHHHHHHHHHHHHHHmmwwWwHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+      ],
+      "legend": {
+        "H": "hill",
+        ".": "sand",
+        ",": "scrub",
+        "d": "soil",
+        "q": "crops",
+        "O": "olive",
+        "e": "terrace",
+        "f": "sheepfold",
+        "g": "gate",
+        "S": "sheep",
+        "h": "hay",
+        "u": "trough",
+        "m": "mud",
+        "F": "campfire",
+        "r": "rock",
+        "b": "bush",
+        "l": "fence",
+        "w": "wadi",
+        "W": "well",
+        "^": "roof",
+        "#": "wall",
+        "D": "door"
+      },
+      "baseTile": "scrub",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "path-sign",
+          "kind": "sign",
+          "x": 5,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "yonatan",
+          "kind": "npc",
+          "x": 12,
+          "y": 15,
+          "facing": "up",
+          "characterId": "yonatan",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "yoram",
+          "kind": "npc",
+          "x": 9,
+          "y": 16,
+          "facing": "right",
+          "characterId": "yoram",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "id": "ewe",
+          "kind": "clue",
+          "x": 17,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "ewe",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "ewe-content",
+          "kind": "feature",
+          "x": 17,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "ewe",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "lamb-home",
+          "kind": "feature",
+          "x": 17,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "lamb",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "trough-prints",
+          "kind": "clue",
+          "x": 15,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "hoofprints",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "gully-wool",
+          "kind": "clue",
+          "x": 23,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "snagged-wool",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "terrace-gap",
+          "kind": "clue",
+          "x": 24,
+          "y": 5,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "thorn-branch",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "thicket-edge",
+          "kind": "clue",
+          "x": 34,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "watch-hut",
+          "kind": "feature",
+          "x": 31,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "gully-path",
+          "kind": "feature",
+          "x": 24,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "stone",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "lamb",
+          "kind": "feature",
+          "x": 39,
+          "y": 25,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "lamb",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "old-cistern",
+          "kind": "feature",
+          "x": 38,
+          "y": 26,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-village",
+          "x": 3,
+          "y": 0,
+          "w": 2,
+          "h": 1,
+          "to": "bethlehem-lanes"
+        }
+      ],
+      "spawns": {
+        "from-village": {
+          "x": 3,
+          "y": 1,
+          "facing": "down"
+        }
+      }
+    },
+    {
+      "id": "ammia-workshop",
+      "chapter": "letter-from-paul",
+      "name": "Ammia’s dye workshop",
+      "kind": "indoor",
+      "mood": "home",
+      "layout": [
+        "######################",
+        "######################",
+        "#jj.o..t....CC..CC.aa#",
+        "#b.....t............a#",
+        "#........v..v..v.....#",
+        "#..uuu...............#",
+        "#..uuu...v..v..v.....#",
+        "#m...................#",
+        "#m................L..#",
+        "#r....t.......ss.....#",
+        "#r.c..t..........bb.b#",
+        "#########DD###########"
+      ],
+      "legend": {
+        "#": "wall",
+        ".": "floor",
+        "j": "jars",
+        "o": "oven",
+        "t": "table",
+        "C": "cloth",
+        "a": "amphorae",
+        "b": "basket",
+        "v": "vat",
+        "u": "rug",
+        "m": "mat",
+        "r": "bedroll",
+        "L": "loom",
+        "s": "sacks",
+        "c": "crate",
+        "D": "door"
+      },
+      "baseTile": "floor",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "ammia",
+          "kind": "npc",
+          "x": 11,
+          "y": 5,
+          "facing": "down",
+          "characterId": "ammia",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "bag",
+          "kind": "feature",
+          "x": 4,
+          "y": 8,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "spoiled-wool",
+          "kind": "feature",
+          "x": 14,
+          "y": 3,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "wool",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "madder",
+          "kind": "feature",
+          "x": 1,
+          "y": 3,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "workshop-door",
+          "x": 9,
+          "y": 11,
+          "w": 2,
+          "h": 1,
+          "to": "colossae-street"
+        }
+      ],
+      "spawns": {
+        "start": {
+          "x": 6,
+          "y": 6,
+          "facing": "up"
+        },
+        "from-street": {
+          "x": 9,
+          "y": 10,
+          "facing": "up"
+        }
+      }
+    },
+    {
+      "id": "colossae-street",
+      "chapter": "letter-from-paul",
+      "name": "A street in Colossae",
+      "kind": "outdoor",
+      "mood": "city",
+      "layout": [
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "####D######D####D###D#########gg######",
+        "#============t=======s======b====b===#",
+        "#=========|==|==|==|==|==============#",
+        "#======jjs===========================#",
+        "#==================================f=#",
+        "G====================================#",
+        "G=================F==================#",
+        "#====================================#",
+        "#====================================#",
+        "#==f=================================#",
+        "#===================llllll==llllll===#",
+        "#===================l........CCC.l,,,#",
+        "#===================l.v.v........l,,,#",
+        "#===================l...........al,,,#",
+        "#,r,,,b,,b,,r,,,r,,,l.v.v.......al,,,#",
+        "#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH#",
+        "#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH#",
+        "#HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH#",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+      ],
+      "legend": {
+        "T": "tile-roof",
+        "#": "wall",
+        "D": "door",
+        "g": "gate",
+        "G": "gate",
+        "=": "paving",
+        "|": "column",
+        "t": "table",
+        "s": "stall",
+        "b": "bush",
+        "j": "jars",
+        "F": "fountain",
+        "f": "fig",
+        "l": "fence",
+        ",": "scrub",
+        ".": "sand",
+        "v": "vat",
+        "C": "cloth",
+        "a": "amphorae",
+        "r": "rock",
+        "H": "hill"
+      },
+      "baseTile": "paving",
+      "crowd": true,
+      "entities": [
+        {
+          "id": "zenon",
+          "kind": "npc",
+          "x": 14,
+          "y": 4,
+          "facing": "down",
+          "characterId": "zenon",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zenon-table",
+          "kind": "feature",
+          "x": 13,
+          "y": 4,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "letter-sheets",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "menandros",
+          "kind": "npc",
+          "x": 10,
+          "y": 6,
+          "facing": "down",
+          "characterId": "menandros",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "attalos",
+          "kind": "npc",
+          "x": 20,
+          "y": 9,
+          "facing": "left",
+          "characterId": "attalos",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "mule",
+          "kind": "feature",
+          "x": 21,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack-donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "fountain",
+          "kind": "feature",
+          "x": 18,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "tatia",
+          "kind": "npc",
+          "x": 27,
+          "y": 15,
+          "facing": "up",
+          "characterId": "tatia",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "fullers-clay",
+          "kind": "feature",
+          "x": 26,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cadmus",
+          "kind": "feature",
+          "x": 14,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "stoa",
+          "kind": "sign",
+          "x": 16,
+          "y": 5,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "philemon-gate",
+          "kind": "sign",
+          "x": 29,
+          "y": 4,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-workshop",
+          "x": 4,
+          "y": 3,
+          "w": 1,
+          "h": 1,
+          "to": "ammia-workshop"
+        },
+        {
+          "id": "west-gate",
+          "x": 0,
+          "y": 8,
+          "w": 1,
+          "h": 2,
+          "to": "lycus-road"
+        },
+        {
+          "id": "to-philemon",
+          "x": 30,
+          "y": 3,
+          "w": 2,
+          "h": 1,
+          "to": "philemon-house"
+        }
+      ],
+      "spawns": {
+        "from-workshop": {
+          "x": 4,
+          "y": 4,
+          "facing": "down"
+        },
+        "from-road": {
+          "x": 1,
+          "y": 9,
+          "facing": "right"
+        },
+        "from-philemon": {
+          "x": 30,
+          "y": 4,
+          "facing": "down"
+        }
+      }
+    },
+    {
+      "id": "lycus-road",
+      "chapter": "letter-from-paul",
+      "name": "The Laodicea road",
+      "kind": "outdoor",
+      "mood": "oasis",
+      "layout": [
+        "XXXXXXXXXXXXXXXXXXXXXHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "XXXXXXXXXXXXXXXXXXXXXHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HXXXXXXHXXXXXHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        ",,f,,,,,,,,,==,f,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+        ",,,qqqqqqq,,==,,,qqqqqqqq,,f,,ddddddddd,,,,,,,",
+        ",,,qqqqqqq,,==,,,qqqqqqqq,,,,,ddddddddd,,f,,,,",
+        ",,,,,,,,,,,,==,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+        "RRRRR,,RRRRR==RRRRRR,,RRRRRRRRRRR,,RRRRRRRRRRR",
+        "wwwwwwwwwwwwBBwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwwwwwwwwwBBwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "RR,,,,,,,,,,==,,,,,,,RRRRR,,RRRRRRRRRRRR,,RRRR",
+        ",lTTTTTT,v,,==,v,,v,,,,,,TTTTTTTTTTT,lllllll,,",
+        ",l###D##,,,,==,,,,,,,,,,,TTTTTTTTTTT,l,,h,,l,,",
+        ",l,,,,,,,,v,==,,CC,aa,,,,#####D#####,l,,,,,l,,",
+        ",,,,,,,,,,,,==,,,,,,M,,,,,,,,,,,,,,,,,M,,,,,,,",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,b,,,",
+        ",b,,,,,,,,,,,,,dddddddd,f,,,,,,,,,,,,,,,,,,,,,",
+        ",,,qqqqqqqqq,,,dddddddd,,,,qqqqqqqqqq,,,,,,,,,",
+        ",,,qqqqqqqqq,,,dddddddd,,,,qqqqqqqqqq,,,f,,,,,",
+        ",,,qqqqqqqqq,,,,,,,,,,,,,,,qqqqqqqqqq,,,,,,,,,",
+        ",,,,,,,,,,,,,f,,,,,,,,,,,,,qqqqqqqqqq,,,,,,,,,",
+        ",,,,,,,,,,,,,,,,,,,,,,,,,b,,,,,,,,,,,,,,,,,,,,",
+        ",,,,,,f,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,b,,,,,,",
+        "HHHH,HHHHHHHHHHHHHHH,HHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+      ],
+      "legend": {
+        "X": "travertine",
+        "H": "hill",
+        ",": "grass",
+        "f": "fig",
+        "q": "crops",
+        "d": "soil",
+        "=": "road",
+        "R": "reeds",
+        "w": "water",
+        "B": "bridge",
+        "T": "tile-roof",
+        "#": "wall",
+        "D": "door",
+        "l": "fence",
+        "v": "vat",
+        "C": "cloth",
+        "a": "amphorae",
+        "h": "trough",
+        "M": "milestone",
+        "r": "roman-road",
+        "b": "bush"
+      },
+      "baseTile": "grass",
+      "crowd": true,
+      "entities": [
+        {
+          "id": "milestone-east",
+          "kind": "sign",
+          "x": 38,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "milestone-west",
+          "kind": "sign",
+          "x": 20,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "laodicea-sign",
+          "kind": "sign",
+          "x": 1,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "hierapolis-view",
+          "kind": "sign",
+          "x": 11,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "kallias",
+          "kind": "npc",
+          "x": 11,
+          "y": 12,
+          "facing": "down",
+          "characterId": "kallias",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "nikon",
+          "kind": "npc",
+          "x": 17,
+          "y": 12,
+          "facing": "left",
+          "characterId": "nikon",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "chrysis",
+          "kind": "npc",
+          "x": 9,
+          "y": 12,
+          "facing": "up",
+          "characterId": "chrysis",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "alum-jars",
+          "kind": "feature",
+          "x": 14,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "vessels",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "alum-bath",
+          "kind": "feature",
+          "x": 14,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "vessels",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "drying-skein",
+          "kind": "feature",
+          "x": 8,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "wool",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "waystation",
+          "kind": "sign",
+          "x": 30,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "attalos-road",
+          "kind": "npc",
+          "x": 39,
+          "y": 13,
+          "facing": "down",
+          "characterId": "attalos",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "attalos-mule",
+          "kind": "feature",
+          "x": 41,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack-donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-colossae",
+          "x": 45,
+          "y": 15,
+          "w": 1,
+          "h": 2,
+          "to": "colossae-street"
+        }
+      ],
+      "spawns": {
+        "from-colossae": {
+          "x": 44,
+          "y": 15,
+          "facing": "left"
+        }
+      }
+    },
+    {
+      "id": "philemon-house",
+      "chapter": "letter-from-paul",
+      "name": "Philemon’s house",
+      "kind": "indoor",
+      "mood": "home",
+      "layout": [
+        "##########################",
+        "##########################",
+        "#aa...YxkkkkkkkkkkxY...rr#",
+        "#a.....xkxxxxxxxxkx......#",
+        "#......xkxxxxxxxxkx.....t#",
+        "#......xxxxxxxxxxxx......#",
+        "#j.......................#",
+        "#j....I..I..I..I..I......#",
+        "#.......ggggggggg........#",
+        "#.....I.ggggFgggg.I....o.#",
+        "#.....I.ggggFgggg.I......#",
+        "#L......ggggggggg.......j#",
+        "#.....I..I..I..I..I.....j#",
+        "#........................#",
+        "#..Y......xxxxxx......Y..#",
+        "#....uu...xxxxxx...uu....#",
+        "#........................#",
+        "############DD############"
+      ],
+      "legend": {
+        "#": "wall",
+        ".": "floor",
+        "a": "amphorae",
+        "Y": "lampstand",
+        "x": "mosaic",
+        "k": "couch",
+        "r": "bedroll",
+        "t": "table",
+        "j": "jars",
+        "I": "column",
+        "g": "garden",
+        "F": "fountain",
+        "L": "loom",
+        "o": "oven",
+        "u": "rug",
+        "D": "door"
+      },
+      "baseTile": "floor",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "ammia-gathering",
+          "kind": "npc",
+          "x": 10,
+          "y": 5,
+          "facing": "right",
+          "characterId": "ammia",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "kallias-gathering",
+          "kind": "npc",
+          "x": 9,
+          "y": 6,
+          "facing": "right",
+          "characterId": "kallias",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": ["wrapped-in-cloak"]
+        },
+        {
+          "id": "reply-tablets",
+          "kind": "feature",
+          "x": 11,
+          "y": 5,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "tablets",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "zenon-reader",
+          "kind": "npc",
+          "x": 12,
+          "y": 6,
+          "facing": "down",
+          "characterId": "zenon",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "tatia-gathering",
+          "kind": "npc",
+          "x": 21,
+          "y": 10,
+          "facing": "left",
+          "characterId": "tatia",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "hermon",
+          "kind": "npc",
+          "x": 20,
+          "y": 5,
+          "facing": "left",
+          "characterId": "hermon",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "melitta",
+          "kind": "npc",
+          "x": 4,
+          "y": 13,
+          "facing": "right",
+          "characterId": "melitta",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "philemon",
+          "kind": "npc",
+          "x": 13,
+          "y": 3,
+          "facing": "down",
+          "characterId": "philemon",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "tychicus",
+          "kind": "npc",
+          "x": 15,
+          "y": 5,
+          "facing": "down",
+          "characterId": "tychicus",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "onesimus",
+          "kind": "npc",
+          "x": 16,
+          "y": 6,
+          "facing": "down",
+          "characterId": "onesimus",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "guest-room",
+          "kind": "feature",
+          "x": 23,
+          "y": 3,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-street",
+          "x": 12,
+          "y": 17,
+          "w": 2,
+          "h": 1,
+          "to": "colossae-street"
+        }
+      ],
+      "spawns": {
+        "from-street": {
+          "x": 12,
+          "y": 16,
+          "facing": "up"
         }
       }
     }

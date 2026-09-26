@@ -649,6 +649,37 @@ class Person:
             back = J["chest"] + Vector((0, 0.1 * H, -0.02 * H))
             sack = ellipsoid(f"{self.name}-bundle", back, (0.1 * H, 0.07 * H, 0.12 * H), M.cloth("#8a7a5c", None, "wool"), self.col, 16, 10)
             self.parts.append(Part(sack, bone="chest"))
+        elif kind == "tablets":
+            # A scribe's pair of hinged wooden tablets held against the chest
+            # in the left arm (the arm is bent to hold them: see pose), the
+            # stylus tucked in beside them.
+            wood = M.wood("#8a6440", 9.0)
+            c = J["chest"] + Vector((0.035 * H, -0.085 * H, -0.05 * H))
+            for k in range(2):
+                board = common.box(f"{self.name}-tablet{k}", (0.1 * H, 0.012 * H, 0.13 * H), material=wood, col=self.col, bevel=0.002)
+                board.location = c + Vector((0, -0.013 * H * k, 0))
+                board.rotation_euler = (math.radians(-12), 0, math.radians(-6))
+                common.bake_modifiers(board)
+                self.parts.append(Part(board, bone="chest"))
+            cord = capsule(f"{self.name}-tablet-cord", c + Vector((-0.05 * H, -0.008 * H, 0.03 * H)), c + Vector((-0.05 * H, -0.008 * H, -0.03 * H)), 0.004 * H, M.plain("#6a4a2e", 0.8), self.col)
+            self.parts.append(Part(cord, bone="chest"))
+            stylus = capsule(f"{self.name}-stylus", c + Vector((0.055 * H, -0.02 * H, 0.08 * H)), c + Vector((0.058 * H, -0.02 * H, -0.02 * H)), 0.003 * H, M.plain("#9a7a44", 0.35, 0.6), self.col)
+            self.parts.append(Part(stylus, bone="chest"))
+        elif kind == "scroll-case":
+            # A letter carrier's cylindrical leather case at the right hip,
+            # capped at both ends, on a strap over the left shoulder.
+            leather = M.leather("#8a5230")
+            top = Vector((J["hip_R"].x - 0.07 * H, 0.35 * GU + 0.01 * H, J["pelvis"].z + 0.07 * H))
+            bot = Vector((J["hip_R"].x - 0.085 * H, 0.35 * GU - 0.035 * H, J["pelvis"].z - 0.16 * H))
+            case = capsule(f"{self.name}-scrollcase", bot, top, 0.033 * H, leather, self.col, 14)
+            self.parts.append(Part(case, bone="pelvis"))
+            for end, r in ((top, 0.037 * H), (bot, 0.037 * H)):
+                cap = ellipsoid(f"{self.name}-scrollcap{end.z:.3f}", end, (r, r, 0.012 * H), M.leather("#4a2e1a"), self.col, 12, 6)
+                self.parts.append(Part(cap, bone="pelvis"))
+            pts = [J["shoulder_L"] + Vector((-0.01, -0.012, 0.012)), J["chest"] + Vector((0, -0.076 * H, -0.01 * H)), top + Vector((0.01 * H, -0.02 * H, 0.0))]
+            for i in range(2):
+                st = capsule(f"{self.name}-scrollstrap{i}", pts[i], pts[i + 1], 0.007 * H, M.leather("#4a3020"), self.col)
+                self.parts.append(Part(st, bone="chest" if i == 0 else "spine"))
 
     def _marks(self):
         """Visible story marks: the player's water skin, lamp and rolled cloak,
@@ -671,6 +702,25 @@ class Person:
             for i in range(2):
                 st = capsule(f"{self.name}-waterskin-strap{i}", pts[i], pts[i + 1], 0.006 * H, M.leather("#4a3020"), self.col)
                 self.parts.append(Part(st, bone="chest" if i == 0 else "spine", mark="water-skin"))
+        if "letter-case" in self.marks:
+            # A flat leather letter case at the right hip, its flap buckled
+            # down, on a strap over the left shoulder.
+            c = J["hip_R"] + Vector((-0.064 * H, -0.03 * H, -0.03 * H))
+            case = common.box(f"{self.name}-lettercase", (0.028 * H, 0.115 * H, 0.15 * H), material=M.leather("#5e2c1e"), col=self.col, bevel=0.004)
+            case.location = c
+            case.rotation_euler = (0, math.radians(-8), 0)
+            common.bake_modifiers(case)
+            flap = common.box(f"{self.name}-lettercase-flap", (0.031 * H, 0.115 * H, 0.055 * H), material=M.leather("#4a2218"), col=self.col, bevel=0.003)
+            flap.location = c + Vector((-0.002 * H, 0, 0.045 * H))
+            flap.rotation_euler = (0, math.radians(-8), 0)
+            common.bake_modifiers(flap)
+            buckle = ellipsoid(f"{self.name}-lettercase-buckle", c + Vector((-0.016 * H, -0.0, 0.02 * H)), (0.006 * H, 0.012 * H, 0.008 * H), M.plain("#b89a5a", 0.35, 0.6), self.col, 8, 6)
+            for o in (case, flap, buckle):
+                self.parts.append(Part(o, bone="pelvis", mark="letter-case"))
+            pts = [J["shoulder_L"] + Vector((-0.012, -0.014, 0.012)), J["chest"] + Vector((-0.01 * H, -0.077 * H, -0.03 * H)), c + Vector((0.004 * H, -0.02 * H, 0.06 * H))]
+            for i in range(2):
+                st = capsule(f"{self.name}-lettercase-strap{i}", pts[i], pts[i + 1], 0.0065 * H, M.leather("#4a3020"), self.col)
+                self.parts.append(Part(st, bone="chest" if i == 0 else "spine", mark="letter-case"))
         if "lamp" in self.marks:
             # A small clay lamp hanging from the belt, front left.
             bz = J["waist"].z - 0.03 * H
@@ -718,6 +768,10 @@ class Person:
         # Gesture with the free hand: the right hand may be holding a staff, spindle or tray.
         busy = self.a.get("carry", "none") in ("staff", "spindle", "bread")
         R = pose_rotations(walk, breath, talk, hand="L" if busy else "R", rest=rest)
+        if self.a.get("carry") == "tablets" and rest is None:
+            # The left arm holds the tablets against the chest.
+            R["upper_arm_L"] = rot(x=-14.0 + (2.0 if breath else 0.0), y=6.0)
+            R["forearm_L"] = rot(x=-116.0, z=-38.0)
         if rest is not None:
             R["root"] = self._rest_root(rest)
         mats = self._forward(R)

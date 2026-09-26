@@ -3,7 +3,14 @@ import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
 import type { LookMark, Pose } from '@/domain/world';
 import { naturalColor } from '@/shared/color';
-import type { ArtSprite, ArtVariant, LightingVariant, PeopleArt, PeopleLight } from './manifest';
+import type {
+  ArtSprite,
+  ArtVariant,
+  LightingVariant,
+  PeopleArt,
+  PeopleLight,
+  PlaceArt,
+} from './manifest';
 
 /**
  * The rules for using pre-rendered art, as pure functions (unit-tested):
@@ -23,6 +30,11 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 4: A Letter from Paul
+  'ammia-workshop',
+  'colossae-street',
+  'lycus-road',
+  'philemon-house',
 ] as const;
 
 /** Where each place's art is served (relative to the site base). */
@@ -47,9 +59,15 @@ export function variantFor(
   return 'day';
 }
 
-/** How people are lit in a place: indoors by the room's own light, else by the place's sun. */
-export function peopleLightFor(variant: LightingVariant, room: 'indoor' | undefined): PeopleLight {
-  return room ?? variant;
+/**
+ * How people are lit in a place: as the place says (a room's own light, rain
+ * cloud, lamp-lighting), else by the place's sun.
+ */
+export function peopleLightFor(
+  variant: LightingVariant,
+  place: PlaceArt['peopleLight'],
+): PeopleLight {
+  return place ?? variant;
 }
 
 /**
@@ -98,6 +116,7 @@ const OVERLAY_ORDER: readonly LookMark[] = [
   'wrapped-in-cloak',
   'cloak-roll',
   'water-skin',
+  'letter-case',
   'lamp',
   'bandaged',
   'rag-bandaged',
