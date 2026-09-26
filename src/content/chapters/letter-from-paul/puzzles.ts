@@ -104,16 +104,10 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     type: 'packing',
     title: 'Ready for the Road',
     intro:
-      'The travel bag holds a load of 4. Ammia’s letter must come. It is a long walk down the valley to the bridge — and back before lamp-lighting. What else will you need, and what might Kallias need?',
+      'The travel bag holds a load of 4. Ammia’s letter weighs nothing and goes with you whatever you pack. It is a long walk down the valley to the bridge — and back before lamp-lighting. What else will you need, and what might Kallias need?',
     capacity: 4,
     choiceId: 'choice-packing',
     rules: [
-      {
-        id: 'letter',
-        description: 'Bring Ammia’s answer',
-        rule: { type: 'includes', item: 'ammia-letter' },
-        failureHint: 'The whole journey is to carry Ammia’s answer to Kallias.',
-      },
       {
         id: 'capacity',
         description: 'Stay within what the bag can hold',
@@ -161,7 +155,7 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     hints: [
       {
         tier: 1,
-        text: 'Start with what you must carry: Ammia’s letter weighs nothing. Then look at how much room is left.',
+        text: 'Ammia’s letter weighs nothing and always comes with you. Start with what the letter needs, then what Kallias might need.',
       },
       {
         tier: 2,
@@ -169,11 +163,11 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       },
       {
         tier: 3,
-        text: 'There is no single right answer. Any load of 4 or less with Ammia’s letter (and, if you know rain is coming, the case or the hooded cloak) works. Think about what Kallias might need: his old cloak, bread, or tablets to write his answer on.',
+        text: 'There is no single right answer. Any load of 4 or less works — as long as, if you know rain is coming, it includes the letter case or the hooded cloak. Think about what Kallias might need: his old cloak, bread, or tablets to write his answer on.',
       },
     ],
     explanation:
-      'You packed within the limit, with Ammia’s letter and a way to keep it safe. Whatever else you chose will shape what you can offer Kallias at the bridge.',
+      'You packed within the limit, and Ammia’s letter goes with you. Whatever you chose will shape what you can offer Kallias at the bridge.',
     recordIds: ['rec-hist-materials'],
     onSolved: [
       { type: 'setFlag', flag: 'packed', value: true },

@@ -67,10 +67,12 @@ async function pack(p: Player, packed: Record<string, number>): Promise<void> {
   expect(p.scene()).toBe('ammia-workshop');
   await p.interact('bag');
   expect(p.h.ui.getState().puzzleId).toBe('p-pack');
-  const result = p.h.puzzles.submitPacking('p-pack', { 'ammia-letter': 1, ...packed });
+  // Only what the packing screen offers (things with weight); the letter always comes.
+  const result = p.h.puzzles.submitPacking('p-pack', packed);
   expect(result?.valid, JSON.stringify(result?.failures)).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
+  expect(p.h.state().inventory['ammia-letter']).toBe(1);
 }
 
 async function toTheBridge(p: Player): Promise<void> {
@@ -148,8 +150,9 @@ async function arriveAtGathering(p: Player): Promise<void> {
   await p.exit('to-philemon');
   expect(p.scene()).toBe('philemon-house');
   expect(p.h.state().counters.hour).toBe(18);
-  await p.step(12, 15);
+  expect(p.dialogueView?.dialogueId).toBe('d-gathering-arrive'); // opens on arrival
   await p.finish();
+  expect(p.h.state().journal.unlocked).toContain('jp-onesimus');
   // The people named in the New Testament are present but silent.
   for (const id of ['philemon', 'tychicus', 'onesimus']) {
     expect(shown(p.h, id)).toBeDefined();
@@ -233,10 +236,9 @@ describe('A Letter from Paul — full playthroughs', () => {
     await sortLetter(p);
     await readToAmmia(p, 'soften');
     await p.interact('bag');
-    const wet = h.puzzles.submitPacking('p-pack', { 'ammia-letter': 1, tablets: 1, bread: 1 });
+    const wet = h.puzzles.submitPacking('p-pack', { tablets: 1, bread: 1 });
     expect(wet?.failures.map((f) => f.ruleId)).toEqual(['dry']);
     const heavy = h.puzzles.submitPacking('p-pack', {
-      'ammia-letter': 1,
       'hooded-cloak': 1,
       'spare-cloak': 1,
       tablets: 1,

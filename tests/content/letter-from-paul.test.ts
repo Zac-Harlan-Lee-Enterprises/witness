@@ -6,7 +6,7 @@ import { validateChapterIntegrity } from '@/domain/chapter-integrity';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
 import { EDUCATIONAL_KINDS } from '@/domain/content-records';
 import { parseLayout, type TileKind } from '@/domain/world';
-import { paintBuildings } from '@/game/art/architecture';
+import { nextColumn, paintBuildings } from '@/game/art/architecture';
 import { LOOKS } from '@/game/art/direction';
 import { paintFurnishing } from '@/game/art/furnishings';
 import { paintNatureProp, paintTravertine } from '@/game/art/nature';
@@ -193,6 +193,20 @@ describe('A Letter from Paul content', () => {
     expect(write?.unavailableText).toBeTruthy();
   });
 
+  it('only asks the player to pack things the packing screen offers (items with weight)', () => {
+    const packable = new Set(chapter.items.filter((i) => i.weight > 0).map((i) => i.id));
+    const includes = (rule: unknown): string[] => {
+      const r = rule as { type: string; item?: string; of?: unknown[] };
+      if (r.type === 'includes' && r.item) return [r.item];
+      return (r.of ?? []).flatMap(includes);
+    };
+    chapter.puzzles.forEach((p) => {
+      if (p.type !== 'packing') return;
+      const required = p.rules.flatMap((r) => includes(r.rule));
+      required.forEach((item) => expect(packable.has(item), `${p.id} needs ${item}`).toBe(true));
+    });
+  });
+
   it('sets the chapter on the real map: the Lycus valley road runs through rain', () => {
     const road = chapter.scenes.find((s) => s.id === 'lycus-road');
     expect(road?.weather).toBe('clear');
@@ -267,6 +281,19 @@ describe('A Letter from Paul art support', () => {
     expect(terraces.calls.length).toBeGreaterThan(20);
     for (const ground of ['mosaic', 'roman-road', 'bridge'] as const)
       expect(groundColor(LOOKS.city, ground), ground).not.toBe(groundColor(LOOKS.city, 'sand'));
+  });
+
+  it('carries one beam along each colonnade, across the gaps but never through a wall', () => {
+    const street = chapter.scenes.find((s) => s.id === 'colossae-street');
+    if (!street) throw new Error('missing scene');
+    const site = readSite(parseLayout(street), 'paving');
+    expect(nextColumn(site, 10, 5, 1, 0)).toBe(3); // the stoa: columns three tiles apart
+    expect(nextColumn(site, 22, 5, 1, 0)).toBeNull(); // the end of the row
+    const walled = readSite(
+      parseLayout({ id: 'w', layout: ['|#|'], legend: { '|': 'column', '#': 'wall' } }),
+      'paving',
+    );
+    expect(nextColumn(walled, 0, 0, 1, 0)).toBeNull();
   });
 
   it('lights the gathering with its lampstands', () => {

@@ -200,10 +200,11 @@ export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
     },
   ],
   triggers: [
+    // As soon as you step inside (before you can walk anywhere): the gathering.
     {
       id: 'gathering-arrive',
-      area: { x: 10, y: 13, w: 6, h: 4 },
       onceFlag: 'gathering-arrived',
+      when: { type: 'always' },
       effects: [{ type: 'startDialogue', dialogue: 'd-gathering-arrive' }],
     },
   ],
