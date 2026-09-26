@@ -103,7 +103,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0):
         sv = n.new("ShaderNodeTexVoronoi", Scale=2300.0 * M, Vector=obj, _feature="F1", Randomness=0.9)
         sdot = n.new("ShaderNodeMapRange", Value=(sv, "Distance"), **{"From Min": 0.18, "From Max": 0.42, "To Min": 1.0, "To Max": 0.0})
         sd = n.math("MULTIPLY", (sdot, "Result"), (stubble, "Fac"))
-        sd2 = n.math("MULTIPLY", (sd, "Value"), 0.55)
+        sd2 = n.math("MULTIPLY", (sd, "Value"), 0.7)
         scol = n.mix((sd2, "Value"), col, (0.02, 0.018, 0.018, 1.0))
         col = (scol, 2)
 

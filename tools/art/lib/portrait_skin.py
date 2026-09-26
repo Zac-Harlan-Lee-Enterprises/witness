@@ -199,7 +199,7 @@ def maps(head, V, skin_hex, beard=False):
     edge = np.clip(1 - inside / 0.22, 0, 1) * lips
     corner = np.clip((np.abs(V[:, 0]) / head.mouth_half - 0.55) / 0.4, 0, 1) * lips
     lower_mid = lips * (z < zl) * np.exp(-((V[:, 0] / 1.1) ** 2)) * np.exp(-(((z - (zl - head.lo_h * 0.45)) / 0.3) ** 2))
-    alb = mix(alb, lipc * 0.8, 0.45 * edge + 0.35 * corner)
+    alb = mix(alb, lipc * 0.8, (0.45 * edge + 0.35 * corner) * (1 - 0.75 * c))
     alb = mix(alb, lipc * np.array([1.15, 1.08, 1.1], F), 0.45 * lower_mid)
     # The wet margins of the lids: pink-grey, not skin.
     margin = lid_margins(head, V)
@@ -210,7 +210,7 @@ def maps(head, V, skin_hex, beard=False):
     if P.fuzz > 0 and not beard:
         st = head.stomion
         bm = bm * np.clip((V[:, 2] - st[2]) / 0.3, 0, 1) * np.clip((head.mouth_half + 0.3 - np.abs(V[:, 0])) / 0.5, 0, 1)
-    shadow = 0.55 if beard else 0.45 * P.stubble + 0.25 * P.fuzz
+    shadow = 0.55 if beard else 0.62 * P.stubble + 0.3 * P.fuzz
     alb = mix(alb, shade, shadow * bm)
     # The sun: darker, redder planes that face it.
     sunlit = np.clip(forehead + 0.7 * cheeks + nose + bridge + 0.8 * ear_tops, 0, 1)

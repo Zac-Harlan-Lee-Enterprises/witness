@@ -504,7 +504,7 @@ class Head:
         # faces down and forward; above the border the skin slopes back to
         # the nose.
         out += cu * _lip(v, 0.82, 0.93, 1.5, np.minimum(1.0, c0 / np.maximum(cu, 1e-6)))
-        out += (0.03 + 0.02 * P.bow) * _g((v - 1.0) / 0.1) * k  # the raised border (white roll)
+        out += (0.03 + 0.02 * P.bow) * (1 - 0.8 * P.child) * _g((v - 1.0) / 0.1) * k  # the raised border (white roll)
         # Lower lip: fullest in its upper half (it catches the light), turning
         # under into the groove above the chin.
         v2 = (zl - z) / hl
