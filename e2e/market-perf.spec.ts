@@ -9,6 +9,7 @@ import {
   setFastSettings,
   waitForWorld,
 } from './support';
+import { glRenderer, gpuTextures, trackGpuTextures } from './gpu-memory';
 
 /**
  * Market performance measurements (not a pass/fail test; PERF_MARKET=1):
@@ -18,10 +19,17 @@ import {
  *
  *   PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
  *
- * Output: test-results/market-perf/<label>.json (one line per run).
+ * Output: test-results/market-perf/<label>.jsonl (one line per run).
  * Headless Chromium without a GPU: a regression signal, not a device measurement.
+ * PERF_GPU=1 runs Chromium's new headless mode instead, which renders on the
+ * machine's real GPU (e.g. Metal on a Mac): closer to what players see.
+ *
+ * `textureMb` is what Phaser's texture manager holds (`data-texture-mb`);
+ * `gpuMb` tallies every WebGL texture actually uploaded and not deleted,
+ * including render targets (see gpu-memory.ts).
  */
 const LABEL = process.env.PERF_LABEL ?? 'current';
+if (process.env.PERF_GPU) test.use({ channel: 'chromium' });
 const VIEWPORTS = [
   { name: 'desktop', use: { viewport: { width: 1280, height: 720 } } },
   { name: 'tablet', use: { viewport: { width: 820, height: 1180 }, hasTouch: true } },
@@ -74,6 +82,7 @@ for (const vp of VIEWPORTS) {
         test.skip(!process.env.PERF_MARKET, 'PERF_MARKET=1 to measure');
         test.setTimeout(180_000);
         if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' });
+        await trackGpuTextures(page);
         await openApp(page);
         await setFastSettings(page);
         await createProfile(page, 'Ari');
@@ -113,6 +122,11 @@ for (const vp of VIEWPORTS) {
           art: (await canvas.getAttribute('data-art')) ?? 'painted',
           effects: (await canvas.getAttribute('data-effects')) ?? 'full',
           textureMb: Number(await canvas.getAttribute('data-texture-mb')),
+          gpuMb: (await gpuTextures(page))?.mb ?? null,
+          gpuLargest: (await gpuTextures(page))?.largest ?? [],
+          canvasPx: await canvas.evaluate((c: HTMLCanvasElement) => `${c.width}x${c.height}`),
+          resolution: Number((await canvas.getAttribute('data-resolution')) ?? 1),
+          renderer: await glRenderer(page),
         };
         console.info(`[market-perf] ${JSON.stringify(result)}`);
         const fs = await import('node:fs');
