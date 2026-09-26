@@ -78,10 +78,10 @@ LIGHTS = {
     "night": {
         "azimuth": math.radians(-66.0),  # the moon, south-south-east
         "elevation": math.radians(46.0),
-        "strength": 0.75,
+        "strength": 1.1,
         "color": "#98aeea",
         "angle": math.radians(0.6),
-        "sky_strength": 0.5,
+        "sky_strength": 0.7,
         # A clear night sky with stars (night_world).
         "stars": True,
         # The shade mask records all the light there is: the moon, the
