@@ -4,6 +4,7 @@ import {
   choose,
   continueDialogue,
   createProfile,
+  endArrivalNarration,
   endDialogue,
   expectScene,
   goTo,
@@ -120,7 +121,7 @@ for (const vp of VIEWPORTS) {
 
         await goTo(page, 'Go to the lane');
         await expectScene(page, 'The lanes of Bethlehem');
-        await endDialogue(page);
+        await endArrivalNarration(page);
         await shot('lanes', SETTLE_MS);
         if (helped) {
           await goTo(page, 'Talk to Kallias the clerk');
@@ -156,7 +157,7 @@ for (const vp of VIEWPORTS) {
 
         await goTo(page, /Go to the east gate/);
         await expectScene(page, 'The fold below Bethlehem');
-        await endDialogue(page);
+        await endArrivalNarration(page);
         await shot('fields-arrival', SETTLE_MS);
         await goTo(page, 'Talk to Cousin Yonatan');
         await choose(page, 'I’ll find the lamb.');

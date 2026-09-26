@@ -54,6 +54,16 @@ export async function endDialogue(page: Page): Promise<void> {
   await expect(dialogueBox(page)).toHaveCount(0);
 }
 
+/**
+ * Close the narration a place opens with on arrival. It starts once the place
+ * has loaded, after the HUD already names it (a pre-rendered place takes a
+ * few seconds to load): wait for it rather than finding no dialogue yet.
+ */
+export async function endArrivalNarration(page: Page): Promise<void> {
+  await expect(dialogueBox(page)).toBeVisible({ timeout: 30_000 });
+  await endDialogue(page);
+}
+
 /** Use the accessible “Go to…” list. */
 export async function goTo(page: Page, action: string | RegExp): Promise<void> {
   await page.getByRole('button', { name: /^Go to…/ }).click();
