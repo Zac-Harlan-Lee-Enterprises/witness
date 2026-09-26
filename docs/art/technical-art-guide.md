@@ -58,6 +58,14 @@ The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pi
 | `dusk` | Lamp-lighting: no sun, a deep blue evening sky (seen in a room only through its openings: Philemon's house is open to it over its garden), and the place's own lamps | Philemon's house |
 | `lamp` | People at lamp-lighting: a warm key from a lampstand high to the front left, a dimmer warm lamp behind to the right, the last blue of the sky from above, a dark room | People at the gathering (`peopleLight: "lamp"`) |
 
+The sky is Blender's multiple-scattering sky, set for the same sun. It gives the cool fill in shade. Colour management is AgX at −1.4 EV.
+
+**Rooms** are lit as if closed: their side and front walls and their roof are *occluders*, invisible to the camera but blocking light (§4). Light comes in only through the openings: the sun through a window in the east wall and through the door, plus the room's own lights (an oil lamp in a niche, the oven's embers). A room renders at +3.1 EV over the outdoor exposure, as a camera adapts, and at 512 samples (its light is mostly bounced). Two lights stand in for what the closed shell would bounce: a soft warm panel low in the doorway (daylight off the sunlit ground outside) and a broad, dim warm panel under the roof (light off the floor and walls), without which the corners go black. The cut tops of the walls sit directly under the invisible walls, so no light reaches them: they glow faintly (`limestone(glow=)`) and read as a dark section through the wall, as in an architect's cutaway. The walls that block light are thinner than their tiles (0.45 m): at 40° a sunbeam drops a whole tile crossing a tile-thick wall, which would shut the morning sun out of any window. Dust shows in the sunbeams as a thin scattering volume confined to each beam: lit straight by the sun, it settles quickly (a volume filling the room did not, and the denoiser turned its noise into blotches).
+
+**Keep cloth sheen tinted and light** (`cloth` in [`materials.py`](../../tools/art/lib/materials.py)). An untinted sheen reflects the blue sky across the whole garment and turns every dye grey: at weight 0.45 a brown robe rendered neutral grey (saturation 0.31 authored → 0.07 rendered). The sheen takes the dye's colour at weight 0.14, and wool is blended only 12% toward undyed fibre.
+
+For review builds only, `VITE_ART_LIGHTING=day|late` forces a variant.
+
 ### The story's light, place by place (light plans)
 
 Every place's art is a set of **lighting sets** in its manifest, keyed `day` and `late` by *when in the story* they are shown: the game draws `late` from 15:00 when the place has one, else `day` (`variantFor` in [`select.ts`](../../src/game/prerendered/select.ts)). Which **light** each set is rendered in, and how **people** are lit there, is the place's **light plan**:
@@ -78,17 +86,12 @@ To give a place its own light:
 
 A place whose story light changes within one set (a storm rising while you stand there) keeps one plan; the game's own weather, grade and lamp glow ([`weather.ts`](../../src/game/systems/weather.ts), [`grade.ts`](../../src/game/systems/grade.ts), [`lighting.ts`](../../src/game/systems/lighting.ts)) do the rest. The engine also darkens and cools any place in rain and after dark, so a place baked in rain cloud or lamplight should be baked a little brighter than it will look.
 
-The sky is Blender's multiple-scattering sky, set for the same sun. It gives the cool fill in shade. Colour management is AgX at −1.4 EV.
+**Tests and the engine.** [`art-assets.test.ts`](../../tests/content/art-assets.test.ts) reads each place's manifest and checks that everyone seen there has sheets in its people light (or in each set's sun), and that a room's people light is its own (`indoor` or `lamp`) while an outdoor place's is none or `overcast`: a new people light for a room or a place outdoors (night, say) belongs in that rule too. [`prerendered.test.ts`](../../tests/unit/game/prerendered.test.ts) covers `peopleLightFor` and the manifest schema.
 
-**Rooms** are lit as if closed: their side and front walls and their roof are *occluders*, invisible to the camera but blocking light (§4). Light comes in only through the openings: the sun through a window in the east wall and through the door, plus the room's own lights (an oil lamp in a niche, the oven's embers). A room renders at +3.1 EV over the outdoor exposure, as a camera adapts, and at 512 samples (its light is mostly bounced). Two lights stand in for what the closed shell would bounce: a soft warm panel low in the doorway (daylight off the sunlit ground outside) and a broad, dim warm panel under the roof (light off the floor and walls), without which the corners go black. The cut tops of the walls sit directly under the invisible walls, so no light reaches them: they glow faintly (`limestone(glow=)`) and read as a dark section through the wall, as in an architect's cutaway. The walls that block light are thinner than their tiles (0.45 m): at 40° a sunbeam drops a whole tile crossing a tile-thick wall, which would shut the morning sun out of any window. Dust shows in the sunbeams as a thin scattering volume confined to each beam: lit straight by the sun, it settles quickly (a volume filling the room did not, and the denoiser turned its noise into blotches).
-
-**Keep cloth sheen tinted and light** (`cloth` in [`materials.py`](../../tools/art/lib/materials.py)). An untinted sheen reflects the blue sky across the whole garment and turns every dye grey: at weight 0.45 a brown robe rendered neutral grey (saturation 0.31 authored → 0.07 rendered). The sheen takes the dye's colour at weight 0.14, and wool is blended only 12% toward undyed fibre.
-
-For review builds only, `VITE_ART_LIGHTING=day|late` forces a variant.
 
 ## 4. Render passes
 
-**Places** ([`build_place.py`](../../tools/art/build_place.py)), for each lighting variant (rooms: `day` only; the story never shows the house after noon):
+**Places** ([`build_place.py`](../../tools/art/build_place.py)), for each set of the place's light plan (§3; rooms: `day` only, the story never shows Miriam's house after noon):
 
 | Pass | What | How |
 |---|---|---|
