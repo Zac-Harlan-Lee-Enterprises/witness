@@ -157,7 +157,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   const connection = page.getByRole('dialog', { name: 'A Story on the Same Road' });
   await expect(connection).toBeVisible();
   await expect(connection).toContainText(
-    '[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Luke 10:25-37]',
+    'Behold, a certain lawyer stood up and tested him', // the approved World English Bible text
   );
   await expect(connection).toContainText('In our own words — not a quotation');
   await snap(page, '11-connection');

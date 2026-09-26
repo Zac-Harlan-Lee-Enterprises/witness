@@ -17,6 +17,7 @@ import { COLOSSAE_STREET } from './scenes/colossae-street';
 import { LYCUS_ROAD } from './scenes/lycus-road';
 import { PHILEMON_HOUSE } from './scenes/philemon-house';
 import { LETTER_SOURCES } from './sources';
+import { withApprovals } from '../../shared/approvals';
 
 const flagIs = (flag: string) => ({ type: 'flag' as const, flag });
 const carries = (item: string) => ({ type: 'hasItem' as const, item });
@@ -75,7 +76,7 @@ export const LETTER_FROM_PAUL: ChapterInput = {
   clues: CLUES,
   puzzles: PUZZLES,
   journal: JOURNAL,
-  records: RECORDS,
+  records: withApprovals('letter-from-paul', RECORDS),
   sources: LETTER_SOURCES,
   choices: CHOICES,
   themes: THEMES,

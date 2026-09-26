@@ -17,6 +17,7 @@ import { JERICHO } from './scenes/jericho';
 import { JERICHO_ROAD } from './scenes/jericho-road';
 import { JERUSALEM_MARKET } from './scenes/jerusalem-market';
 import { MIRIAM_HOUSE } from './scenes/miriam-house';
+import { withApprovals } from '../../shared/approvals';
 
 const flagIs = (flag: string) => ({ type: 'flag' as const, flag });
 const carries = (item: string) => ({ type: 'hasItem' as const, item });
@@ -65,7 +66,7 @@ export const ROAD_TO_JERICHO: ChapterInput = {
   clues: CLUES,
   puzzles: PUZZLES,
   journal: JOURNAL,
-  records: RECORDS,
+  records: withApprovals('road-to-jericho', RECORDS),
   sources: SOURCES,
   choices: CHOICES,
   themes: THEMES,

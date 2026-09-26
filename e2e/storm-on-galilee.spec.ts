@@ -179,7 +179,7 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   const connection = page.getByRole('dialog', { name: 'What Happened in the Boat Ahead' });
   await expect(connection).toBeVisible();
   await expect(connection).toContainText(
-    '[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Mark 4:35-41]',
+    'On that day, when evening had come, he s', // the approved World English Bible text
   );
   await expect(connection).toContainText('In our own words — not a quotation');
   await expect(connection).toContainText('Christians may understand this differently');

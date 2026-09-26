@@ -148,7 +148,7 @@ test('play A Letter from Paul from a new profile to the chapter summary', async 
   const connection = page.getByRole('dialog', { name: 'Two Letters Read Aloud' });
   await expect(connection).toBeVisible();
   await expect(connection).toContainText(
-    '[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Philemon 1:1-25]',
+    'Paul, a prisoner of Christ Jesus, and Ti', // the approved World English Bible text
   );
   await expect(connection).toContainText('In our own words — not a quotation');
   await expect(connection).toContainText('Why was Onesimus away?');

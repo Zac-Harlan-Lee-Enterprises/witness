@@ -135,7 +135,7 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   const connection = page.getByRole('dialog', { name: 'Good News in David’s Town' });
   await expect(connection).toBeVisible();
   await expect(connection).toContainText(
-    '[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Luke 2:1-20]',
+    'Now in those days, a decree went out from Cae', // the approved World English Bible text
   );
   await expect(connection).toContainText('In our own words — not a quotation');
   await expect(connection).toContainText('When was the census?');

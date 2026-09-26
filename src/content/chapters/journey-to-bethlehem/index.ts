@@ -15,6 +15,7 @@ import { BETHLEHEM_LANES } from './scenes/bethlehem-lanes';
 import { SHEPHERDS_FIELDS } from './scenes/shepherds-fields';
 import { TAMAR_HOUSE } from './scenes/tamar-house';
 import { SOURCES } from './sources';
+import { withApprovals } from '../../shared/approvals';
 
 /**
  * Chapter 3 — A Journey to Bethlehem (Luke 2:1–20).
@@ -58,7 +59,7 @@ export const JOURNEY_TO_BETHLEHEM: ChapterInput = {
   clues: CLUES,
   puzzles: PUZZLES,
   journal: JOURNAL,
-  records: RECORDS,
+  records: withApprovals('journey-to-bethlehem', RECORDS),
   sources: SOURCES,
   choices: CHOICES,
   themes: THEMES,

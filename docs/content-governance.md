@@ -45,7 +45,7 @@ References are stored separately from displayed text ([ADR-0008](adr/0008-script
 
 …with a note inviting them to read the passage in their own Bible, alongside the labelled paraphrase.
 
-**The World English Bible (WEB) is ready but switched off.** The WEB is in the public domain (eBible.org). The text of Luke 10:25–37 was copied programmatically, verbatim, from `https://ebible.org/eng-web/LUK10.htm` and stored in [src/content/scripture/translations.ts](../src/content/scripture/translations.ts) with `approvedForDisplay: false`.
+**The World English Bible (WEB) is shown.** The WEB is in the public domain (eBible.org). Every passage the four chapters cite, 63 in all, was copied programmatically and verbatim from the chapter pages at `https://ebible.org/eng-web/`, with footnote markers removed. Luke 10:25–37 was copied on 2026-09-24 and the rest on 2026-09-26. The parser used on 2026-09-26 reproduced the stored Luke 10:25–37 exactly before it was used for the others. The passages are stored in [src/content/scripture/translations.ts](../src/content/scripture/translations.ts). Display was approved by Zac Harlan on 2026-09-26 (`approvedForDisplay: true`). A test checks that every Scripture reference in every chapter has its text.
 
 ### To enable Bible text (a human decision)
 
@@ -57,7 +57,12 @@ References are stored separately from displayed text ([ADR-0008](adr/0008-script
 
 "World English Bible" is a trademark: never edit the stored text while keeping that name. To add another translation, add it to `TRANSLATIONS` with accurate license metadata; copyrighted translations need written permission first.
 
-**Approval log:** _(none yet)_
+**Approval log:**
+
+| Date | Approver | What |
+|---|---|---|
+| 2026-09-26 | Zac Harlan (owner, editor) | Display of the stored World English Bible text (`approvedForDisplay: true`) |
+| 2026-09-26 | Zac Harlan (owner, editor) | The AI-drafted content of all four chapters. Recorded in [src/content/shared/approvals.ts](../src/content/shared/approvals.ts), which marks each record `approved` with its reviewer and date. Provenance stays `ai-assisted`. |
 
 ## 4. Historical and biblical research rules
 
