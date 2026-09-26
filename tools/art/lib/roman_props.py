@@ -215,7 +215,8 @@ class RomanProps:
         for j in range(nz + 1):
             z = 0.3 + h * j / nz
             r = 0.25 * (1 - 0.06 * j / nz) * (1 + 0.012 * math.sin(j * 1.7))
-            rings.append([cb.verts.new(c + Vector((math.cos(math.tau * s / seg - math.pi / 2) * r, math.sin(math.tau * s / seg - math.pi / 2) * r, z))) for s in range(seg + 1)])
+            # Starting at the back, so the middle of the UVs (the lines) faces the road.
+            rings.append([cb.verts.new(c + Vector((math.cos(math.tau * s / seg + math.pi / 2) * r, math.sin(math.tau * s / seg + math.pi / 2) * r, z))) for s in range(seg + 1)])
         for j in range(nz):
             for s in range(seg):
                 f = cb.faces.new((rings[j][s], rings[j][s + 1], rings[j + 1][s + 1], rings[j + 1][s]))
