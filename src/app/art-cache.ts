@@ -24,5 +24,12 @@ export const CACHED_ON_FIRST_USE_PLACES = [
   'philemon-house',
 ] as const;
 
+/**
+ * People sheets in lights only later chapters use (a road under rain cloud,
+ * lamplight, dusk, night) are cached on first use too; Chapter 1's people
+ * are lit by day, later day or indoors, and stay precached.
+ */
+export const CACHED_ON_FIRST_USE_PEOPLE_LIGHTS = ['overcast', 'lamp', 'dusk', 'night'] as const;
+
 /** Art files kept by the cache-on-first-use cache: room for every chapter's places, people and light variants. */
 export const ART_RUNTIME_CACHE_ENTRIES = 1000;
