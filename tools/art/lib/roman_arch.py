@@ -7,6 +7,7 @@ import bmesh
 from mathutils import Matrix, Vector
 
 import common
+import materials as M
 import roman_materials as R
 from roman_geom import B, wall_pieces
 
@@ -142,14 +143,17 @@ class RomanArchitecture:
         bm.faces.new(ra[::-1])
         bm.faces.new(rb)
 
-    def _ionic_column(self, name, cx, cy, shaft_h, r=0.17, painted=None, z0=0.0):
+    def _ionic_column(self, name, cx, cy, shaft_h, r=0.17, painted=None, z0=0.0, cut_top=False):
         """An Ionic column standing at map point (cx, cy), its foot z0 above
         the ground: a square plinth, an Attic base (torus, scotia, torus), a
         fluted shaft with a gentle entasis and a flare at each end, and a
         capital: an echinus carved with eggs, a volute rolled up at each end
         of a bolster on the front and the back, a thin abacus. `painted` =
         (colour, height): the lower shaft left unfluted and painted, as in
-        houses of the period. Returns (objects, height of its top)."""
+        houses of the period. `cut_top`: the column stands in a room seen in
+        cutaway, under its invisible roof: the top of the abacus is a cut
+        section and glows faintly, as the cut tops of the walls do (no light
+        reaches it). Returns (objects, height of its top)."""
         mat = self._mat("marble")
         objs = []
         base = self.P(cx, cy, z0)
@@ -235,7 +239,7 @@ class RomanArchitecture:
         objs.append(self._obj(f"{name}-volutes", vb, mat, smooth=True))
         ab = bmesh.new()
         self._cbox(ab, None, cx - rt * 1.4, cy - rt * 1.12, cx + rt * 1.4, cy + rt * 1.12, z0 + top + 0.1, z0 + top + 0.15, chamfer=0.012)
-        objs.append(self._obj(f"{name}-abacus", ab, mat))
+        objs.append(self._obj(f"{name}-abacus", ab, M.limestone("#cfc6b2", "abacus-cut", worn=0.3, glow=0.05) if cut_top else mat))
         return objs, top + 0.15
 
     def _entablature(self, name, a, b, fixed, axis, z0, depth=0.34, frieze=None, mat=None):

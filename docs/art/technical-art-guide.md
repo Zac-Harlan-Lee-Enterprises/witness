@@ -232,8 +232,8 @@ Some choices worth knowing:
 
 - **Raised floors register like terrain.** A floor that people stand on above the ground (the stoa's stylobate, the bridge's deck) is sheared as the terrain is (`Q`, `QT`: a point at height h is placed h tiles south), so it shows over its own tiles and people walking on it look right; anything standing on it stands at the sheared point.
 - **The travertine** is shaped by the terrain (`terrain.RISE['travertine']`) and skinned with its own mesh, stepped into level pools behind scalloped rims (quantized upward, so the skin always lies over the terrain), with `wet` and `depth` attributes the material turns into water.
-- **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam. The invisible roof is open over the garden, so the evening sky lights it.
-- **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime.
+- **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam; the tops of the abaci are cut sections and glow faintly, like the walls' cut tops (`_ionic_column(cut_top=True)`). The invisible roof is open over the garden, so the evening sky lights it. The colonnade's far (north) row stands between the camera and the room where the gathering is, so its sprites sort 1.3 rows north of their base: people up to two rows beyond it are drawn in front of the shafts instead of cut in half by them. This is a deliberate cheat, limited to that row; anyone south of it still sorts true.
+- **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime. Each is an irregular ellipse (`_decal`), not a rectangle, faded out before its rim: the denoiser's albedo guide sees a decal's whole outline, and a square one printed a faint square on the ground.
 
 A builder reads `self.map` (tiles, runs, neighbours), builds geometry with the shared helpers (`self.P` for points on the terrain, `_lathe`, `_ellipsoid`, `_branch`, `boulder`, `rocks.stone`, materials in [`materials.py`](../../tools/art/lib/materials.py)), and either adds sprites with `self.sprite(id, base_row, objects, tiles, fade=?, flat=?)` or puts ground dressing in the ground layer with `self.to_ground(obj)` or a scatter emitter (`self.emitter` plus [`scatter.py`](../../tools/art/lib/scatter.py)). Walkable kinds also need a ground layer in `GROUND`. Give the method a docstring saying what it builds, and add the kind to the table above.
 
@@ -310,6 +310,11 @@ E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/place-art.spec.ts --project=
 
 # The market at fixed positions (the capture set the prototype report compares):
 E2E_SHOTS=1 ART_SHOTS=after-close npx playwright test e2e/market-art.spec.ts --project=desktop-chromium
+
+# Chapter 4's places (the workshop, the street, the Laodicea road in rain, Philemon's house at lamp-lighting)
+# on two routes (home: Kallias in his old cloak; reply: the tablets beside Ammia), at the same three sizes:
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/letter-art.spec.ts --project=desktop-chromium
+#   → test-results/letter-art/<set>/<viewport>-<route>-<nn>-<name>.png and <viewport>-<route>-art.txt
 
 # The whole chapter in every presentation variant
 E2E_SHOTS=1 npx playwright test e2e/visual-tour.spec.ts --project=desktop-chromium   # → test-results/tour/
