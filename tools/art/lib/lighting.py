@@ -6,8 +6,8 @@ warm, raking light from the right and shadows reach up and to the left.
 Later in the day it has crossed to the west-south-west and dropped low:
 fronts lit from the left, longer, warmer shadows reaching right.
 
-Two more lights for places whose story needs them (a place asks for them
-with its `light_plan`; see build_place.py):
+Two more lights for places whose story needs them (listed in PLACE_LIGHTS
+below; see build_place.py):
   - `overcast`: a road under rain cloud. The sun is only a faint, very soft
     brightening of the cloud to the south-east; an even grey sky, brighter
     overhead than at the horizon, lights everything from above, so shadows
@@ -75,6 +75,43 @@ LIGHTS = {
 def ev(name):
     """Exposure (EV) a light adds to the pipeline's base exposure."""
     return LIGHTS.get(name, {}).get("ev", 0.0)
+
+
+# ── The story's light, place by place ───────────────────────────────────────
+# Most places are lit by the sun of the hour: a room has one set rendered in
+# the morning ({"day": "day"}, people lit "indoor"); an outdoor place a
+# morning and a later-day set ({"day": "day", "late": "late"}, people lit by
+# each set's sun). The game picks the set by the story hour ("late" from
+# 15:00, src/game/prerendered/select.ts variantFor).
+#
+# A place the story shows in other light is listed here: scene id ->
+# (plan, people light).
+#   plan: each set of its manifest -> the light (a key of LIGHTS) it is
+#         rendered in. Sets are keyed "day" and "late", by when in the story
+#         they are shown; a place seen in one light only has a "day" set
+#         rendered in that light.
+#   people light: how people are lit there (the manifest's peopleLight, a
+#         PEOPLE_LIGHTS value in src/game/prerendered/manifest.ts): "indoor",
+#         "overcast", "lamp" or a light added beside them; None lights them
+#         by the sun of each set.
+# The people job renders exactly those lights for everyone seen there
+# (build_people.py reads each place's manifest: render places first).
+PLACE_LIGHTS = {
+    # Chapter 4. The Laodicea road is walked from mid-morning as the rain
+    # sweeps down the valley (hours 11-14, always the morning set): rain
+    # cloud and wet stone. The game draws the rain itself.
+    "lycus-road": ({"day": "overcast"}, "overcast"),
+    # The gathering at Philemon's house is at lamp-lighting (hour 18), and only then.
+    "philemon-house": ({"day": "dusk"}, "lamp"),
+}
+
+
+def plan_for(scene_id, room):
+    """({set: light}, people light) for a place (see PLACE_LIGHTS)."""
+    if scene_id in PLACE_LIGHTS:
+        plan, people = PLACE_LIGHTS[scene_id]
+        return dict(plan), people
+    return ({"day": "day"}, "indoor") if room else ({"day": "day", "late": "late"}, None)
 
 
 def sun_vector(name):

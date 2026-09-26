@@ -36,6 +36,7 @@ import numpy as np
 from mathutils import Matrix, Vector
 
 import common
+import lighting
 import materials as M
 import scatter
 import terrain
@@ -251,6 +252,18 @@ class Place(RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, I
         self.col_ground = common.collection("ground")
         self.heights = None
         self._materials()
+
+    # ── the story's light ───────────────────────────────────────────────────
+    @property
+    def light_plan(self):
+        """{set: light}: each set of the manifest and the light it is
+        rendered in (lighting.PLACE_LIGHTS)."""
+        return lighting.plan_for(self.map.id, self.style == "home")[0]
+
+    @property
+    def people_light(self):
+        """How people are lit here (the manifest's peopleLight), or None."""
+        return lighting.plan_for(self.map.id, self.style == "home")[1]
 
     # ── palette ─────────────────────────────────────────────────────────────
     def _materials(self):

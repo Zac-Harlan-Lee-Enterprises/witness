@@ -23,7 +23,7 @@ class RomanRooms:
         return bool(self.map.tiles("vat"))
 
     def _lamplit(self):
-        return (self.light_plan or {}).get("day") == "dusk"
+        return self.light_plan.get("day") == "dusk"
 
     # ── the shell ───────────────────────────────────────────────────────────
     def room_shell(self):

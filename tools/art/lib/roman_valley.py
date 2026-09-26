@@ -120,7 +120,7 @@ class RomanValley:
                 bands[-1][1] = y + 1
             else:
                 bands.append([y, y + 1])
-        wet = (self.light_plan or {}).get("day") == "overcast"
+        wet = self.light_plan.get("day") == "overcast"
         mat = self._mat("paver-wet" if wet else "paver")
         for bi, (y0, y1) in enumerate(bands):
             xs = [x for x, y in cells if y0 <= y < y1]
@@ -196,7 +196,7 @@ class RomanValley:
         ys = [c[1] for c in cells]
         x0, x1, y0, y1 = min(xs), max(xs) + 1, min(ys), max(ys) + 1
         rng = self.rng
-        wet = (self.light_plan or {}).get("day") == "overcast"
+        wet = self.light_plan.get("day") == "overcast"
         deck_h = 0.16
         ramp = 0.6
 

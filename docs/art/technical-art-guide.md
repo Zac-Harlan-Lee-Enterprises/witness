@@ -58,7 +58,25 @@ The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pi
 | `dusk` | Lamp-lighting: no sun, a deep blue evening sky (seen in a room only through its openings: Philemon's house is open to it over its garden), and the place's own lamps | Philemon's house |
 | `lamp` | People at lamp-lighting: a warm key from a lampstand high to the front left, a dimmer warm lamp behind to the right, the last blue of the sky from above, a dark room | People at the gathering (`peopleLight: "lamp"`) |
 
-A place picks its lights with a **light plan** (`Place.light_plan`, read by [`build_place.py`](../../tools/art/build_place.py)): each variant of its manifest and the light it is rendered in. By default rooms have `{day: day}` and outdoor places `{day: day, late: late}`; the Lycus road is `{day: overcast}` (it is walked only between hours 11 and 14) and Philemon's house `{day: dusk}` (only ever seen at hour 18). How people are lit there goes in the manifest's `peopleLight` (`Place.people_light`), and the people job renders exactly those lights for everyone who appears there (it reads each place's manifest: render places before people).
+### The story's light, place by place (light plans)
+
+Every place's art is a set of **lighting sets** in its manifest, keyed `day` and `late` by *when in the story* they are shown: the game draws `late` from 15:00 when the place has one, else `day` (`variantFor` in [`select.ts`](../../src/game/prerendered/select.ts)). Which **light** each set is rendered in, and how **people** are lit there, is the place's **light plan**:
+
+| Place | Plan (set → light) | People (`peopleLight`) | Why |
+|---|---|---|---|
+| any room (default) | `{day: day}` | `indoor` | Rooms are seen by day; people are lit by the room's lamp and window |
+| any outdoor place (default) | `{day: day, late: late}` | *(none: each set's sun)* | Morning and later-day sun |
+| `lycus-road` | `{day: overcast}` | `overcast` | Walked only from hour 11 to 14, as the rain comes down the valley |
+| `philemon-house` | `{day: dusk}` | `lamp` | Only ever seen at lamp-lighting (hour 18) |
+
+To give a place its own light:
+
+1. **The light** (if it is new): add it to `LIGHTS` in [`lighting.py`](../../tools/art/lib/lighting.py): a sun (`azimuth`, `elevation`, `strength` — 0 for none —, `color`, `angle`: a wide angle is a soft, cloudy sun), a sky (`sky`: a gradient of `zenith`, `horizon` and `ground` colours, or none for the physical clear sky; `sky_strength`), an exposure step `ev`, and where the **shade mask** comes from: `shade` = `sun` (default), `sky` (how much sky a point sees) or `lamps` (the place's own lights), and `shade_floor`, the least light the mask gives (people standing in the darkest spot are tinted to it).
+2. **The plan**: add the place to `PLACE_LIGHTS` in the same file: `"<scene id>": ({"day": "<light>"[, "late": "<light>"]}, "<people light>" or None)`. `Place.light_plan` and `Place.people_light` read it, so every kit sees it (the Roman kit lays wet stone under `overcast` and opens a room's roof to the evening sky under `dusk`).
+3. **People**: if the people light is new, add a `setup_<name>` for it in `lighting.py` (as `setup_indoor` and `setup_lamp`: lights set around a person at the origin), a shadow box for it in `SHADOW_BOX` and `REST_SHADOW_BOX` ([`build_people.py`](../../tools/art/build_people.py)), and its name to `PEOPLE_LIGHTS` and to `peopleLight`, `sheets` and `shadows` in [`manifest.ts`](../../src/game/prerendered/manifest.ts) (the loader falls back from `lamp` to `indoor`, then to the morning's sheets: `pick` in [`loader.ts`](../../src/game/prerendered/loader.ts)).
+4. Render the place, then its people: the people job reads each place's `manifest.json` and renders exactly the lights it names for everyone seen there.
+
+A place whose story light changes within one set (a storm rising while you stand there) keeps one plan; the game's own weather, grade and lamp glow ([`weather.ts`](../../src/game/systems/weather.ts), [`grade.ts`](../../src/game/systems/grade.ts), [`lighting.ts`](../../src/game/systems/lighting.ts)) do the rest. The engine also darkens and cools any place in rain and after dark, so a place baked in rain cloud or lamplight should be baked a little brighter than it will look.
 
 The sky is Blender's multiple-scattering sky, set for the same sun. It gives the cool fill in shade. Colour management is AgX at −1.4 EV.
 

@@ -34,7 +34,7 @@ Overrides of shared builders call the shared one for any place that is
 not Roman. The story's light: the road is walked as the rain comes down
 the valley (`overcast`, wet stone; the game draws the rain), and the
 gathering at Philemon's house is at lamp-lighting (`dusk`, lamps): see
-LIGHT_PLANS and build_place.py.
+lighting.PLACE_LIGHTS.
 """
 import math
 
@@ -48,17 +48,6 @@ from roman_valley import RomanValley
 # Chapters set in Greco-Roman towns (their places are built by this kit).
 ROMAN_CHAPTERS = {"letter-from-paul"}
 
-# Each manifest variant and the light it is rendered in (build_place.py),
-# and how people are lit there (their sheets' light), where the story
-# needs other than the sun of the hour.
-LIGHT_PLANS = {
-    # Walked from mid-morning as the rain sweeps down the valley (hours
-    # 11-14: always the morning set): rain cloud and wet stone.
-    "lycus-road": ({"day": "overcast"}, "overcast"),
-    # The gathering is at lamp-lighting (hour 18), and only then.
-    "philemon-house": ({"day": "dusk"}, "lamp"),
-}
-
 
 class RomanKit(RomanGeometry, RomanArchitecture, RomanProps, RomanTown, RomanValley, RomanRooms):
     # ── which places, which light ───────────────────────────────────────────
@@ -66,18 +55,6 @@ class RomanKit(RomanGeometry, RomanArchitecture, RomanProps, RomanTown, RomanVal
     def roman(self):
         """A place in a Greco-Roman town (its chapter is in ROMAN_CHAPTERS)."""
         return self.data.get("chapter") in ROMAN_CHAPTERS
-
-    @property
-    def light_plan(self):
-        """{variant: light} for build_place.py, or None for the default."""
-        plan = LIGHT_PLANS.get(self.map.id) if self.roman else None
-        return plan[0] if plan else None
-
-    @property
-    def people_light(self):
-        """How people are lit here (the manifest's peopleLight), or None."""
-        plan = LIGHT_PLANS.get(self.map.id) if self.roman else None
-        return plan[1] if plan else None
 
     # ── tile kinds built with their structures ──────────────────────────────
     def tile_tile_roof(self):

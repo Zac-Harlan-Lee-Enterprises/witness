@@ -112,21 +112,17 @@ def pack(items):
 
 
 def light_plan(p):
-    """Each variant the manifest will have and the light it is rendered in.
-    Interiors are seen only in the morning, outdoor places in both lights,
-    unless the place asks for its own (a road under rain cloud, a house at
-    lamp-lighting: `Place.light_plan`, e.g. {"day": "overcast"})."""
-    own = getattr(p, "light_plan", None)
-    if own:
-        return dict(own)
-    return {"day": "day"} if p.style == "home" else {"day": "day", "late": "late"}
+    """Each set the manifest will have and the light it is rendered in
+    (lighting.PLACE_LIGHTS): rooms one morning set, outdoor places a
+    morning and a later-day set, unless the story shows the place in its
+    own light (a road under rain cloud, a house at lamp-lighting)."""
+    return p.light_plan
 
 
 def people_light(p):
-    """How people are lit there (the manifest's peopleLight): by the room's
-    own light indoors, or as the place asks (overcast, lamp); else by the
-    sun of each variant (None)."""
-    return getattr(p, "people_light", None) or ("indoor" if p.style == "home" else None)
+    """How people are lit there (the manifest's peopleLight), or None: by
+    the sun of each set."""
+    return p.people_light
 
 
 def catcher_for(p, sp):
