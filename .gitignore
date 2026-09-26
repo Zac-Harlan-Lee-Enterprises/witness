@@ -36,3 +36,7 @@ blob-report/
 .content-validation.log
 .sweep-*.log
 dist-subpath/
+
+# Art pipeline (Blender runs Python from tools/art)
+__pycache__/
+*.pyc

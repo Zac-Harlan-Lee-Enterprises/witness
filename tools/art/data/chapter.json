@@ -1,0 +1,515 @@
+{
+  "characters": [
+    {
+      "id": "miriam",
+      "key": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#4a3a30",
+        "robe": "#7b5648",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#dfd1b3",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "malik",
+      "key": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#1c1410",
+        "robe": "#3e6b73",
+        "accent": "#bb9959",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      }
+    },
+    {
+      "id": "shimon",
+      "key": "#8a5a3a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
+      "appearance": {
+        "skin": "#865b3e",
+        "hair": "#d8d0c0",
+        "robe": "#887b63",
+        "accent": "#625547",
+        "headwear": "scarf",
+        "headwearColor": "#d8cbae",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      }
+    },
+    {
+      "id": "tobiah",
+      "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#667347",
+        "accent": "#b89c63",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "hadassah",
+      "key": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#4d608b",
+        "accent": "#d3c394",
+        "headwear": "scarf",
+        "headwearColor": "#c2a66a",
+        "beard": false,
+        "build": "adult",
+        "carry": "spindle"
+      }
+    },
+    {
+      "id": "ezer",
+      "key": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#2a1a10",
+        "robe": "#cdc1a5",
+        "accent": "#88593f",
+        "headwear": "wrap",
+        "headwearColor": "#e0d4b9",
+        "beard": true,
+        "build": "adult",
+        "carry": "bread"
+      }
+    },
+    {
+      "id": "menashe",
+      "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
+      "appearance": {
+        "skin": "#8b6043",
+        "hair": "#1f1510",
+        "robe": "#736247",
+        "accent": "#4d788b",
+        "headwear": "wrap",
+        "headwearColor": "#c8ba97",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "hanan",
+      "key": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
+      "appearance": {
+        "skin": "#a17654",
+        "hair": "#2a1a10",
+        "robe": "#dfd4bc",
+        "accent": "#4d608b",
+        "headwear": "none",
+        "headwearColor": "#dfd4bc",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "salome",
+      "key": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#1a1210",
+        "robe": "#8b4d40",
+        "accent": "#c2a56a",
+        "headwear": "veil",
+        "headwearColor": "#c8ba9e",
+        "beard": false,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "rivka",
+      "key": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#5e7047",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#dfd1b3",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "natan",
+      "key": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#baa07a",
+        "accent": "#5e7047",
+        "headwear": "none",
+        "headwearColor": "#baa07a",
+        "beard": false,
+        "build": "child",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "yair",
+      "key": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#3a2a1c",
+        "robe": "#705b44",
+        "accent": "#c2a66a",
+        "headwear": "scarf",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "basket"
+      }
+    }
+  ],
+  "players": [
+    {
+      "id": "look-1",
+      "key": "#a8734a|#2b1d14|#3f6f8f|#d9b25f|wrap|#e8dcc0|clean|child|satchel",
+      "appearance": {
+        "skin": "#a3744f",
+        "hair": "#2b1d14",
+        "robe": "#4d788b",
+        "accent": "#c2a66a",
+        "headwear": "wrap",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-2",
+      "key": "#8d5a3a|#1f1611|#7a3b2e|#e3c27a|scarf|#c96f3b|clean|child|satchel",
+      "appearance": {
+        "skin": "#895b3e",
+        "hair": "#1f1611",
+        "robe": "#7c493e",
+        "accent": "#cbb37f",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-3",
+      "key": "#c08a5e|#3a2a1c|#556b3a|#f0e0b0|band|#8a2f2f|clean|child|satchel",
+      "appearance": {
+        "skin": "#bb8b63",
+        "hair": "#3a2a1c",
+        "robe": "#5e7047",
+        "accent": "#dacda5",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-4",
+      "key": "#6f4630|#141010|#6b5a8e|#e8d49a|none|#6b5a8e|clean|child|satchel",
+      "appearance": {
+        "skin": "#6c4733",
+        "hair": "#141010",
+        "robe": "#71638a",
+        "accent": "#d3c394",
+        "headwear": "none",
+        "headwearColor": "#71638a",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    }
+  ],
+  "crowd": [
+    {
+      "id": "crowd-0",
+      "key": "#6e4630|#2b1d14|#4f6a7a|#d9b25f|wrap|#e8dcc0|clean|adult|none",
+      "appearance": {
+        "skin": "#6b4733",
+        "hair": "#2b1d14",
+        "robe": "#59707b",
+        "accent": "#c2a66a",
+        "headwear": "wrap",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "crowd-1",
+      "key": "#a8734a|#2b1d14|#6b5a7a|#7a3f6e|veil|#6b5a7a|clean|adult|basket",
+      "appearance": {
+        "skin": "#a3744f",
+        "hair": "#2b1d14",
+        "robe": "#70627b",
+        "accent": "#7b4c70",
+        "headwear": "veil",
+        "headwearColor": "#70627b",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "crowd-2",
+      "key": "#c08a5e|#4a3222|#4f6a7a|#7a3f6e|veil|#6b5a7a|clean|adult|none",
+      "appearance": {
+        "skin": "#bb8b63",
+        "hair": "#4a3222",
+        "robe": "#59707b",
+        "accent": "#7b4c70",
+        "headwear": "veil",
+        "headwearColor": "#70627b",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "crowd-3",
+      "key": "#8d5a3a|#2b1d14|#c9b48a|#2f4f86|hood|#d8c49a|beard|adult|none",
+      "appearance": {
+        "skin": "#895b3e",
+        "hair": "#2b1d14",
+        "robe": "#bbaa87",
+        "accent": "#3f5185",
+        "headwear": "hood",
+        "headwearColor": "#c8b793",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "jerusalem-market",
+      "layout": [
+        "##################################",
+        "#.^^^^^^^......SSS..^^^^^^^^.....#",
+        "#.^^^^^^^...........^^^^^^^^.....#",
+        "#.^^^^^^^...........^^^^^^^^.....#",
+        "#.###D###...........########.....#",
+        "#j...=.............b............k#",
+        "#....=....=sssbjk==sso===.T......#",
+        "#.T..====================....T...#",
+        "#,,,,,,,,.===============..tt....#",
+        "#,,,,,,,,.===============......r.#",
+        "#,,,,CC,,.===============........#",
+        "#,,T,,,,,.=======W===============g",
+        "#,,,,,,,,.=======================g",
+        "#,,,,,,,,.===============........#",
+        "#,T,,,,,,.===============......j.#",
+        "#,CC,,,,,.===============.j......#",
+        "#,,,,,T,,.=ss=kb==ss=cc==.j......#",
+        "#,,,,,,,,b.................hk...T#",
+        "#c.........T..........T...llllll.#",
+        "#^^^^^^^^^.....................r.#",
+        "#^^^^^^^^^.............^^^^^^^^^^#",
+        "#^^^^^^^^^.............^^^^^^^^^^#",
+        "#^^^^^^^^^.............^^^^^^^^^^#",
+        "##################################"
+      ],
+      "legend": {
+        "#": "wall",
+        "^": "roof",
+        "D": "door",
+        ".": "sand",
+        ",": "scrub",
+        "=": "paving",
+        "s": "stall",
+        "o": "oven",
+        "W": "well",
+        "T": "olive",
+        "r": "rock",
+        "j": "jars",
+        "l": "fence",
+        "g": "gate",
+        "S": "steps",
+        "k": "sacks",
+        "b": "basket",
+        "c": "crate",
+        "t": "tent",
+        "h": "trough",
+        "C": "cloth"
+      },
+      "baseTile": "sand",
+      "entities": [
+        {
+          "id": "hadassah",
+          "kind": "npc",
+          "x": 12,
+          "y": 7,
+          "facing": "down",
+          "characterId": "hadassah",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "ezer",
+          "kind": "npc",
+          "x": 20,
+          "y": 7,
+          "facing": "down",
+          "characterId": "ezer",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "menashe",
+          "kind": "npc",
+          "x": 17,
+          "y": 8,
+          "facing": "right",
+          "characterId": "menashe",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "vessels",
+          "kind": "feature",
+          "x": 22,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "vessels",
+          "solid": true
+        },
+        {
+          "id": "hanan",
+          "kind": "npc",
+          "x": 18,
+          "y": 2,
+          "facing": "left",
+          "characterId": "hanan",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "steps-sign",
+          "kind": "sign",
+          "x": 14,
+          "y": 1,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true
+        },
+        {
+          "id": "well",
+          "kind": "feature",
+          "x": 17,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true
+        },
+        {
+          "id": "malik",
+          "kind": "npc",
+          "x": 27,
+          "y": 14,
+          "facing": "left",
+          "characterId": "malik",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "donkey-1",
+          "kind": "feature",
+          "x": 29,
+          "y": 15,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "donkey",
+          "solid": true
+        },
+        {
+          "id": "donkey-2",
+          "kind": "feature",
+          "x": 30,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "donkey",
+          "solid": true
+        },
+        {
+          "id": "bales",
+          "kind": "feature",
+          "x": 28,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "basket",
+          "solid": true
+        },
+        {
+          "id": "shimon",
+          "kind": "npc",
+          "x": 30,
+          "y": 9,
+          "facing": "down",
+          "characterId": "shimon",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "tobiah",
+          "kind": "npc",
+          "x": 26,
+          "y": 13,
+          "facing": "up",
+          "characterId": "tobiah",
+          "sprite": null,
+          "solid": true
+        },
+        {
+          "id": "cart",
+          "kind": "feature",
+          "x": 25,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "basket",
+          "solid": true
+        },
+        {
+          "id": "gate-sign",
+          "kind": "sign",
+          "x": 31,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true
+        }
+      ]
+    }
+  ]
+}

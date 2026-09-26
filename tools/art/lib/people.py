@@ -1,0 +1,787 @@
+"""Procedural people for the offline render.
+
+A person is built from a joint skeleton: a smooth body grown along the
+skeleton (Blender's Skin modifier, subdivided), lofted garments with
+folds (a belted tunic with woven stripes, a mantle for elders, head
+coverings), a head with face features, hair and beard, sandals, and the
+things they carry. Posing is our own forward kinematics and linear-blend
+skinning (numpy), so every frame of the walk, breathing, talking and
+turning is exact and repeatable.
+
+Character space: facing -Y (south, toward the camera), +X is the
+person's LEFT, +Z up. Lengths are authored in game units (32 per tile)
+and converted to Blender units (tiles) with GU.
+"""
+import math
+
+import bmesh
+import bpy
+import numpy as np
+from mathutils import Matrix, Vector
+
+import common
+import materials as M
+
+GU = 1.0 / 32.0
+
+# ── Builds ─────────────────────────────────────────────────────────────────
+BUILDS = {
+    "adult": {"height": 54.0, "head": 7.6, "shoulder": 0.125, "hip": 0.052, "hem": 0.085},
+    "child": {"height": 44.0, "head": 7.3, "shoulder": 0.118, "hip": 0.05, "hem": 0.25},
+    "elder": {"height": 52.0, "head": 7.5, "shoulder": 0.122, "hip": 0.052, "hem": 0.05},
+}
+
+
+def is_female(a):
+    return (not a["beard"]) and a["headwear"] in ("veil", "scarf") and a["build"] != "child"
+
+
+def skeleton(a):
+    """Rest joints (Blender units) for an appearance."""
+    b = BUILDS[a["build"]]
+    H = b["height"]
+    fem = is_female(a)
+    sh = b["shoulder"] * H * (0.92 if fem else 1.0)
+    hip = b["hip"] * H * (1.06 if fem else 1.0)
+    head = b["head"]
+    stoop = 1.2 if a["build"] == "elder" else 0.0
+    J = {
+        "pelvis": (0, 0, 0.515 * H),
+        "waist": (0, 0.2, 0.6 * H),
+        "chest": (0, 0.4 + stoop * 0.3, 0.715 * H),
+        "neck": (0, 0.5 - stoop, 0.83 * H),
+        "head": (0, 0.2 - stoop * 1.6, H - head * 0.98),
+        "crown": (0, 0.1 - stoop * 1.8, H),
+        "shoulder_L": (sh, 0.5, 0.81 * H),
+        "elbow_L": (sh + 0.004 * H, 0.8, 0.628 * H),
+        "wrist_L": (sh + 0.006 * H, -0.2, 0.462 * H),
+        "hand_L": (sh + 0.006 * H, -0.5, 0.418 * H),
+        "hip_L": (hip, 0.0, 0.485 * H),
+        "knee_L": (hip * 0.92, -0.35, 0.27 * H),
+        "ankle_L": (hip * 0.85, 0.35, 0.042 * H),
+        "toe_L": (hip * 0.95, -0.075 * H, 0.012 * H),
+    }
+    for k in list(J):
+        if k.endswith("_L"):
+            x, y, z = J[k]
+            J[k[:-2] + "_R"] = (-x, y, z)
+    return {k: Vector(v) * GU for k, v in J.items()}
+
+
+BONES = [
+    ("pelvis", "pelvis", "waist", None),
+    ("spine", "waist", "chest", "pelvis"),
+    ("chest", "chest", "neck", "spine"),
+    ("neck", "neck", "head", "chest"),
+    ("head", "head", "crown", "neck"),
+]
+for side in ("L", "R"):
+    BONES += [
+        (f"upper_arm_{side}", f"shoulder_{side}", f"elbow_{side}", "chest"),
+        (f"forearm_{side}", f"elbow_{side}", f"wrist_{side}", f"upper_arm_{side}"),
+        (f"hand_{side}", f"wrist_{side}", f"hand_{side}", f"forearm_{side}"),
+        (f"thigh_{side}", f"hip_{side}", f"knee_{side}", "pelvis"),
+        (f"shin_{side}", f"knee_{side}", f"ankle_{side}", f"thigh_{side}"),
+        (f"foot_{side}", f"ankle_{side}", f"toe_{side}", f"shin_{side}"),
+    ]
+BONE_NAMES = [b[0] for b in BONES]
+BONE_INDEX = {n: i for i, n in enumerate(BONE_NAMES)}
+
+
+# ── Mesh helpers ───────────────────────────────────────────────────────────
+def loft(name, rings, material, col, close_top=False, close_bottom=False, segments=28, skip=None):
+    """A surface through rings of (cx, cy, z, rx, ry) from top to bottom.
+    `skip(i_ring, j_segment)` can open holes (e.g. a face opening)."""
+    bm = bmesh.new()
+    verts = []
+    for cx, cy, z, rx, ry, *extra in rings:
+        wobble = extra[0] if extra else None
+        ring = []
+        for j in range(segments):
+            a = 2 * math.pi * j / segments
+            r_scale = 1.0 + (wobble(a) if wobble else 0.0)
+            ring.append(bm.verts.new((cx + math.sin(a) * rx * r_scale, cy - math.cos(a) * ry * r_scale, z)))
+        verts.append(ring)
+    for i in range(len(verts) - 1):
+        for j in range(segments):
+            if skip and skip(i, j):
+                continue
+            k = (j + 1) % segments
+            bm.faces.new((verts[i][j], verts[i][k], verts[i + 1][k], verts[i + 1][j]))
+    if close_top:
+        c = bm.verts.new((rings[0][0], rings[0][1], rings[0][2]))
+        for j in range(segments):
+            bm.faces.new((verts[0][(j + 1) % segments], verts[0][j], c))
+    if close_bottom:
+        c = bm.verts.new((rings[-1][0], rings[-1][1], rings[-1][2]))
+        for j in range(segments):
+            bm.faces.new((verts[-1][j], verts[-1][(j + 1) % segments], c))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return common.mesh_object(name, bm, material, col)
+
+
+def ellipsoid(name, centre, radii, material, col, segments=20, rings=12):
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=rings, radius=1.0)
+    bmesh.ops.scale(bm, vec=Vector(radii), verts=bm.verts)
+    obj = common.mesh_object(name, bm, material, col)
+    obj.location = centre
+    return obj
+
+
+def capsule(name, a, b, r, material, col, segments=12):
+    a = Vector(a)
+    b = Vector(b)
+    d = b - a
+    bm = bmesh.new()
+    bmesh.ops.create_cone(
+        bm, cap_ends=True, segments=segments, radius1=r, radius2=r * 0.85, depth=d.length
+    )
+    obj = common.mesh_object(name, bm, material, col)
+    obj.location = (a + b) / 2
+    obj.rotation_euler = d.to_track_quat("Z", "Y").to_euler()
+    return obj
+
+
+def apply_transform(obj):
+    # matrix_basis is always current (matrix_world waits for a depsgraph update).
+    obj.data.transform(obj.matrix_basis.copy())
+    obj.matrix_basis = Matrix.Identity(4)
+
+
+# ── The person ─────────────────────────────────────────────────────────────
+class Part:
+    """A piece of the person: skinned (per-vertex bone weights) or rigid (one bone)."""
+
+    def __init__(self, obj, weights=None, bone=None, skirt=None, upright=None):
+        self.obj = obj
+        apply_transform(obj)
+        n = len(obj.data.vertices)
+        co = np.empty(n * 3, dtype=np.float64)
+        obj.data.vertices.foreach_get("co", co)
+        self.rest = co.reshape(n, 3)
+        self.weights = weights(self.rest) if weights else None
+        self.bone = bone
+        # Skirt: (centre y, top z) — vertices below `top` are tented around the posed legs.
+        self.skirt = skirt
+        # Upright: a grip point; the part follows it but doesn't rotate (a planted staff).
+        self.upright = upright
+
+
+def nearest_bone_weights(J, names, falloff=4.0, sharp=None):
+    """Weights by distance to bone segments (restricted to `names`)."""
+    segs = []
+    for n in names:
+        _, h, t, _ = BONES[BONE_INDEX[n]]
+        segs.append((BONE_INDEX[n], np.array(J[h]), np.array(J[t])))
+
+    def fn(pts):
+        W = np.zeros((len(pts), len(BONE_NAMES)))
+        ds = []
+        for idx, h, t in segs:
+            ht = t - h
+            L = max(1e-9, float(ht @ ht))
+            s = np.clip(((pts - h) @ ht) / L, 0.0, 1.0)
+            proj = h + s[:, None] * ht
+            ds.append(np.linalg.norm(pts - proj, axis=1))
+        D = np.stack(ds, axis=1) + 1e-4
+        inv = 1.0 / D**falloff
+        # Keep the two nearest bones only, for clean joints.
+        order = np.argsort(D, axis=1)
+        mask = np.zeros_like(inv)
+        rows = np.arange(len(pts))
+        for k in range(2):
+            mask[rows, order[:, k]] = 1.0
+        inv *= mask
+        inv /= inv.sum(axis=1, keepdims=True)
+        for k, (idx, _, _) in enumerate(segs):
+            W[:, idx] = inv[:, k]
+        return W
+
+    return fn
+
+
+class Person:
+    def __init__(self, appearance, marks=(), rag="#3e6b73", name="person"):
+        self.a = appearance
+        self.marks = set(marks)
+        self.rag = rag
+        self.name = name
+        self.col = common.collection(name)
+        self.J = skeleton(appearance)
+        self.parts = []
+        self.eyes = []
+        self.mouth = None
+        b = BUILDS[appearance["build"]]
+        self.H = b["height"] * GU
+        self.head_h = b["head"] * GU
+        self._build()
+
+    # ── construction ───────────────────────────────────────────────────────
+    def _build(self):
+        a = self.a
+        J = self.J
+        H = self.H
+        skin = M.skin(a["skin"])
+        self._body(skin)
+        self._head(skin)
+        self._tunic()
+        self._sandals()
+        if a["headwear"] != "none":
+            self._headwear()
+        if a["build"] == "elder":
+            self._mantle()
+        self._carry()
+        _ = (J, H)
+
+    def _body(self, skin):
+        a = self.a
+        J = self.J
+        H = self.H / GU
+        fem = is_female(a)
+        bm = bmesh.new()
+        layer = bm.verts.layers.skin.verify()
+        names = [
+            "pelvis", "waist", "chest", "neck", "head",
+            "shoulder_L", "elbow_L", "wrist_L", "hand_L",
+            "shoulder_R", "elbow_R", "wrist_R", "hand_R",
+            "hip_L", "knee_L", "ankle_L", "toe_L",
+            "hip_R", "knee_R", "ankle_R", "toe_R",
+        ]
+        radius = {
+            "pelvis": (0.095 * H * (1.08 if fem else 1), 0.068 * H),
+            "waist": (0.078 * H, 0.055 * H),
+            "chest": (0.098 * H * (0.94 if fem else 1), 0.066 * H * (1.08 if fem else 1)),
+            "neck": (0.03 * H, 0.03 * H),
+            "head": (0.028 * H, 0.028 * H),
+            "shoulder": (0.036 * H, 0.036 * H),
+            "elbow": (0.026 * H, 0.026 * H),
+            "wrist": (0.02 * H, 0.018 * H),
+            "hand": (0.02 * H, 0.011 * H),
+            "hip": (0.055 * H, 0.055 * H),
+            "knee": (0.034 * H, 0.034 * H),
+            "ankle": (0.021 * H, 0.021 * H),
+            "toe": (0.019 * H, 0.011 * H),
+        }
+        vs = {}
+        for n in names:
+            v = bm.verts.new(J[n])
+            key = n.split("_")[0]
+            rx, ry = radius[key]
+            v[layer].radius = (rx * GU, ry * GU)
+            v[layer].use_root = n == "pelvis"
+            vs[n] = v
+        edges = [("pelvis", "waist"), ("waist", "chest"), ("chest", "neck"), ("neck", "head")]
+        for s in ("L", "R"):
+            edges += [
+                ("chest", f"shoulder_{s}"), (f"shoulder_{s}", f"elbow_{s}"),
+                (f"elbow_{s}", f"wrist_{s}"), (f"wrist_{s}", f"hand_{s}"),
+                ("pelvis", f"hip_{s}"), (f"hip_{s}", f"knee_{s}"),
+                (f"knee_{s}", f"ankle_{s}"), (f"ankle_{s}", f"toe_{s}"),
+            ]
+        for e in edges:
+            bm.edges.new((vs[e[0]], vs[e[1]]))
+        obj = common.mesh_object(f"{self.name}-body", bm, skin, self.col)
+        common.add_modifier(obj, "SKIN", branch_smoothing=0.6, use_smooth_shade=True)
+        common.add_modifier(obj, "SUBSURF", levels=2, render_levels=2)
+        common.bake_modifiers(obj)
+        for p in obj.data.polygons:
+            p.use_smooth = True
+        self.parts.append(Part(obj, nearest_bone_weights(J, BONE_NAMES, 4.0)))
+
+    def _head(self, skin):
+        a = self.a
+        J = self.J
+        h = self.head_h
+        c = (J["head"] + J["crown"]) / 2 + Vector((0, -0.04 * h, -0.02 * h))
+        rx, ry, rz = 0.36 * h, 0.44 * h, 0.52 * h
+
+        def jaw(z):
+            return 1 - 0.22 * max(0.0, -z / rz) ** 1.5
+
+        def push(z):
+            return (1 + 0.08 * max(0.0, -z / rz)) * (1.04 if -0.2 < z / rz < 0.35 else 1.0)
+
+        def front_y(x, z):
+            """The face surface (y, negative = forward) at (x, z) relative to the head centre."""
+            k = 1 - (x / (rx * jaw(z))) ** 2 - (z / rz) ** 2
+            return -ry * math.sqrt(max(0.0, k)) * push(z)
+
+        def F(x, z, out=0.0):
+            return c + Vector((x, front_y(x, z) - out, z))
+
+        head = ellipsoid(f"{self.name}-head", c, (rx, ry, rz), skin, self.col, 32, 20)
+        for v in head.data.vertices:
+            z = v.co.z
+            v.co.x *= jaw(z)
+            if v.co.y < 0:
+                v.co.y *= push(z)
+        parts = [head]
+        dark = M.plain("#1c120c", 0.3, 0.5)
+        white = M.plain("#a89a88", 0.45, 0.3)
+        hair_col = a["hair"] if a["build"] != "elder" else "#cfc8bb"
+        # Nose: a ridge from between the brows to a tip that stands off the face.
+        nose = capsule(f"{self.name}-nose", F(0, 0.06 * h, -0.01 * h), F(0, -0.14 * h, 0.07 * h), 0.052 * h, skin, self.col)
+        parts.append(nose)
+        for s in (-1, 1):
+            ex, ez = s * 0.15 * h, 0.03 * h
+            sclera = ellipsoid(f"{self.name}-white{s}", F(ex, ez, -0.014 * h), (0.055 * h, 0.028 * h, 0.028 * h), white, self.col, 10, 6)
+            eye = ellipsoid(f"{self.name}-eye{s}", F(ex, ez, 0.0), (0.034 * h, 0.028 * h, 0.032 * h), dark, self.col, 10, 6)
+            self.eyes += [eye, sclera]
+            brow = capsule(f"{self.name}-brow{s}", F(s * 0.07 * h, 0.14 * h, 0.01 * h), F(s * 0.24 * h, 0.12 * h, 0.0), 0.024 * h, M.hair(hair_col), self.col)
+            ear = ellipsoid(f"{self.name}-ear{s}", c + Vector((s * 0.35 * h, 0.03 * h, 0.0)), (0.05 * h, 0.08 * h, 0.12 * h), skin, self.col, 10, 6)
+            parts += [sclera, eye, brow, ear]
+        self.mouth = ellipsoid(f"{self.name}-mouth", F(0, -0.28 * h, 0.0), (0.1 * h, 0.03 * h, 0.018 * h), M.plain("#4a1d16", 0.5, 0.3), self.col, 12, 6)
+        parts.append(self.mouth)
+        hair = M.hair(hair_col)
+        if a["headwear"] in ("none", "band", "wrap"):
+            cap = ellipsoid(f"{self.name}-hair", c + Vector((0, 0.03 * h, 0.03 * h)), (0.39 * h, 0.47 * h, 0.55 * h), hair, self.col, 28, 18)
+            me = cap.data
+            bm = bmesh.new()
+            bm.from_mesh(me)
+            doomed = [
+                v
+                for v in bm.verts
+                if (v.co.z < 0.16 * h and v.co.y < -0.08 * h) or v.co.z < -0.32 * h or (v.co.z < -0.05 * h and abs(v.co.x) > 0.28 * h and v.co.y < 0.12 * h)
+            ]
+            bmesh.ops.delete(bm, geom=doomed, context="VERTS")
+            bm.to_mesh(me)
+            bm.free()
+            common.add_modifier(cap, "SOLIDIFY", thickness=0.04 * h, offset=1.0)
+            parts.append(cap)
+        if a["beard"]:
+            beard_col = "#d8d2c6" if a["build"] == "elder" else a["hair"]
+            beard = ellipsoid(f"{self.name}-beard", c + Vector((0, -0.1 * h, -0.34 * h)), (0.34 * h, 0.36 * h, 0.3 * h), M.hair(beard_col), self.col, 22, 12)
+            for v in beard.data.vertices:
+                if v.co.z > 0.04 * h:
+                    v.co.z = 0.04 * h + (v.co.z - 0.04 * h) * 0.3
+                if v.co.y > 0.1 * h:
+                    v.co.y *= 0.55
+            mous = capsule(f"{self.name}-moustache", F(-0.13 * h, -0.2 * h, 0.015 * h), F(0.13 * h, -0.2 * h, 0.015 * h), 0.038 * h, M.hair(beard_col), self.col)
+            parts += [beard, mous]
+        for p in parts:
+            for poly in p.data.polygons:
+                poly.use_smooth = True
+            self.parts.append(Part(p, bone="head"))
+
+    def _tunic(self):
+        a = self.a
+        J = self.J
+        H = self.H
+        b = BUILDS[a["build"]]
+        fem = is_female(a)
+        hem_z = b["hem"] * H
+        sh = J["shoulder_L"].x
+        hip = J["hip_L"].x
+        cy = 0.35 * GU
+        fold = lambda amp, k, ph: (lambda ang: amp * math.sin(k * ang + ph) + amp * 0.5 * math.sin(k * 2.3 * ang + ph * 1.7))  # noqa: E731
+        rings = [
+            (0, cy, J["neck"].z - 0.004, 0.045 * H, 0.035 * H),
+            (0, cy, J["shoulder_L"].z + 0.012, sh * 0.85, 0.06 * H),
+            (0, cy, J["shoulder_L"].z - 0.025 * H, sh * 1.1, 0.072 * H),
+            (0, cy, J["chest"].z, sh * 0.9 * (0.97 if fem else 1), 0.072 * H * (1.1 if fem else 1)),
+            (0, cy, J["waist"].z + 0.03 * H, sh * 0.78, 0.066 * H, fold(0.03, 5, 0.3)),
+            (0, cy, J["waist"].z - 0.01 * H, sh * 0.72, 0.062 * H),
+            (0, cy, J["pelvis"].z - 0.02 * H, hip * 2.0, 0.074 * H, fold(0.035, 6, 1.1)),
+            (0, cy, J["pelvis"].z - 0.12 * H, hip * 2.15, 0.08 * H, fold(0.06, 7, 1.6)),
+            (0, cy, (J["pelvis"].z + hem_z) / 2, hip * 2.3, 0.087 * H, fold(0.1, 7, 2.0)),
+            (0, cy, hem_z + 0.03 * H, hip * 2.42, 0.093 * H, fold(0.12, 7, 2.4)),
+            (0, cy, hem_z, hip * 2.45, 0.095 * H, fold(0.13, 7, 2.6)),
+        ]
+        stripe = a["accent"]
+        mat = M.cloth(a["robe"], stripe, "wool", 0.1, 0.018)
+        tunic = loft(f"{self.name}-tunic", rings, mat, self.col, segments=40)
+        common.add_modifier(tunic, "SOLIDIFY", thickness=0.012, offset=1.0)
+        common.add_modifier(tunic, "SUBSURF", levels=1, render_levels=1)
+        common.bake_modifiers(tunic)
+        waist_z = J["waist"].z
+        pel = J["pelvis"].z
+        torso_w = nearest_bone_weights(J, ["pelvis", "spine", "chest", "upper_arm_L", "upper_arm_R"], 4.0)
+
+        def weights(pts):
+            W = torso_w(pts)
+            blend = np.clip((pel + 0.02 * H - pts[:, 2]) / (0.05 * H), 0, 1)[:, None]
+            Wsk = np.zeros_like(W)
+            Wsk[:, BONE_INDEX["pelvis"]] = 1.0
+            return W * (1 - blend) + Wsk * blend
+
+        self.parts.append(Part(tunic, weights, skirt=(cy, pel)))
+        # Sleeves to just below the elbow.
+        for s in ("L", "R"):
+            sgn = 1 if s == "L" else -1
+            shp = J[f"shoulder_{s}"]
+            elb = J[f"elbow_{s}"]
+            srings = []
+            wr = J[f"wrist_{s}"]
+            inner = shp + Vector((-sgn * 0.035 * H, 0, 0.004 * H))
+            for k in range(9):
+                t = k / 8
+                p = inner.lerp(shp, t / 0.12) if t <= 0.12 else (shp.lerp(elb, (t - 0.12) / 0.6) if t <= 0.72 else elb.lerp(wr, (t - 0.72) / 0.28 * 0.45))
+                r = (0.04 - 0.012 * t) * H
+                srings.append((p.x + sgn * 0.002, p.y, p.z, r, r * 0.95))
+            sleeve = loft(f"{self.name}-sleeve{s}", srings, mat, self.col, segments=18, close_top=True)
+            common.add_modifier(sleeve, "SOLIDIFY", thickness=0.01, offset=1.0)
+            common.bake_modifiers(sleeve)
+            self.parts.append(Part(sleeve, nearest_bone_weights(J, ["chest", f"upper_arm_{s}", f"forearm_{s}"], 5.0)))
+        # Belt: a woven sash with a knot.
+        belt_mat = M.cloth(a["accent"], None, "wool")
+        bz = waist_z - 0.005 * H
+        belt = loft(
+            f"{self.name}-belt",
+            [(0, cy, bz + 0.012 * H, sh * 0.8, 0.068 * H), (0, cy, bz - 0.012 * H, sh * 0.76, 0.066 * H)],
+            belt_mat,
+            self.col,
+            segments=32,
+        )
+        common.add_modifier(belt, "SOLIDIFY", thickness=0.01, offset=1.0)
+        common.bake_modifiers(belt)
+        self.parts.append(Part(belt, bone="spine"))
+        knot = ellipsoid(f"{self.name}-knot", (-0.03 * H, cy - 0.068 * H, bz), (0.02 * H, 0.012 * H, 0.016 * H), belt_mat, self.col, 10, 6)
+        self.parts.append(Part(knot, bone="spine"))
+        tail = capsule(f"{self.name}-tail", (-0.035 * H, cy - 0.07 * H, bz - 0.01 * H), (-0.045 * H, cy - 0.072 * H, bz - 0.1 * H), 0.009 * H, belt_mat, self.col)
+        self.parts.append(Part(tail, bone="pelvis"))
+
+    def _sandals(self):
+        J = self.J
+        H = self.H
+        leather = M.leather("#4e3220")
+        skin = M.skin(self.a["skin"])
+        for s in ("L", "R"):
+            ank = J[f"ankle_{s}"]
+            toe = J[f"toe_{s}"]
+            mid = Vector(((ank.x + toe.x) / 2, (ank.y + toe.y) / 2 - 0.004 * H, 0.004 * H))
+            sole = ellipsoid(f"{self.name}-sole{s}", mid, (0.028 * H, 0.068 * H, 0.006 * H), leather, self.col, 14, 6)
+            self.parts.append(Part(sole, bone=f"foot_{s}"))
+            foot = ellipsoid(f"{self.name}-foot{s}", mid + Vector((0, 0.004 * H, 0.012 * H)), (0.024 * H, 0.06 * H, 0.014 * H), skin, self.col, 14, 8)
+            self.parts.append(Part(foot, bone=f"foot_{s}"))
+            strap = capsule(f"{self.name}-strap{s}", mid + Vector((-0.026 * H, -0.01 * H, 0.02 * H)), mid + Vector((0.026 * H, -0.01 * H, 0.02 * H)), 0.005 * H, leather, self.col)
+            self.parts.append(Part(strap, bone=f"foot_{s}"))
+            if s == "L" and ({"bandaged", "rag-bandaged"} & self.marks):
+                wrap = ellipsoid(f"{self.name}-ankle-wrap", ank + Vector((0, 0, 0.01 * H)), (0.03 * H, 0.03 * H, 0.03 * H), self._bandage_mat(), self.col, 12, 8)
+                self.parts.append(Part(wrap, bone=f"shin_{s}"))
+
+    def _bandage_mat(self):
+        return M.cloth("#e6ddc9", None, "linen") if "bandaged" in self.marks else M.cloth(self.rag, None, "wool")
+
+    def _headwear(self):
+        a = self.a
+        J = self.J
+        h = self.head_h
+        H = self.H
+        c = (J["head"] + J["crown"]) / 2 + Vector((0, -0.04 * h, -0.02 * h))
+        mat = M.cloth(a["headwearColor"], None, "linen")
+        kind = a["headwear"]
+        if kind == "wrap":
+            parts = []
+            for i in range(4):
+                z = (0.24 + i * 0.09) * h
+                r = (0.44 - i * 0.045) * h
+                ring = loft(
+                    f"{self.name}-wrap{i}",
+                    [(0, 0.03 * h, z + 0.065 * h, r * 0.96, r * 1.12), (0, 0.03 * h, z - 0.065 * h, r, r * 1.17)],
+                    mat,
+                    self.col,
+                    segments=28,
+                )
+                common.add_modifier(ring, "SOLIDIFY", thickness=0.03 * h, offset=1.0)
+                common.bake_modifiers(ring)
+                ring.rotation_euler = (math.radians(-6 - i * 3), math.radians((i - 1.5) * 5), 0)
+                ring.location = c
+                parts.append(ring)
+            top = ellipsoid(f"{self.name}-wraptop", c + Vector((0, 0.05 * h, 0.5 * h)), (0.34 * h, 0.41 * h, 0.2 * h), mat, self.col, 20, 10)
+            parts.append(top)
+            for p in parts:
+                self.parts.append(Part(p, bone="head"))
+        elif kind == "band":
+            band = loft(
+                f"{self.name}-band",
+                [(0, c.y + 0.02 * h, c.z + 0.26 * h, 0.39 * h, 0.47 * h), (0, c.y + 0.02 * h, c.z + 0.18 * h, 0.39 * h, 0.47 * h)],
+                mat,
+                self.col,
+                segments=24,
+            )
+            common.add_modifier(band, "SOLIDIFY", thickness=0.02 * h, offset=1.0)
+            common.bake_modifiers(band)
+            self.parts.append(Part(band, bone="head"))
+        else:
+            # Scarf, veil or hood: over the head, framing the face, draped on the shoulders.
+            long = kind != "scarf"
+            sh = J["shoulder_L"].x
+            seg = 32
+            neck_z = J["neck"].z
+            rings = [
+                (0, c.y + 0.04 * h, c.z + 0.58 * h, 0.24 * h, 0.3 * h),
+                (0, c.y + 0.04 * h, c.z + 0.5 * h, 0.4 * h, 0.48 * h),
+                (0, c.y + 0.05 * h, c.z + 0.3 * h, 0.46 * h, 0.54 * h),
+                (0, c.y + 0.06 * h, c.z - 0.05 * h, 0.48 * h, 0.55 * h),
+                (0, c.y + 0.1 * h, c.z - 0.42 * h, 0.5 * h, 0.54 * h),
+                (0, c.y + 0.16 * h, neck_z - 0.01, sh * 0.95, 0.11 * H),
+                (0, c.y + 0.2 * h, neck_z - 0.07 * H, sh * 1.1, 0.12 * H),
+            ]
+            if long:
+                rings.append((0, c.y + 0.28 * h, J["chest"].z - 0.07 * H, sh * 1.1, 0.12 * H))
+                rings.append((0, c.y + 0.3 * h, J["waist"].z - 0.04 * H, sh * 1.02, 0.11 * H))
+
+            def skip(i, j):
+                ang = 2 * math.pi * j / seg
+                front = math.cos(ang) > 0.74  # toward -Y
+                if 2 <= i <= 4 and front:
+                    return True  # the face
+                if long and i >= 5 and math.cos(ang) > 0.8:
+                    return True  # open at the chest
+                return False
+
+            veil = loft(f"{self.name}-veil", rings, mat, self.col, segments=seg, skip=skip, close_top=True)
+            common.add_modifier(veil, "SOLIDIFY", thickness=0.014, offset=1.0)
+            common.add_modifier(veil, "SUBSURF", levels=1, render_levels=1)
+            common.bake_modifiers(veil)
+
+            def weights(pts):
+                W = np.zeros((len(pts), len(BONE_NAMES)))
+                t = np.clip((pts[:, 2] - (neck_z - 0.02 * H)) / (0.06 * H), 0, 1)
+                W[:, BONE_INDEX["head"]] = t
+                W[:, BONE_INDEX["chest"]] = 1 - t
+                return W
+
+            self.parts.append(Part(veil, weights))
+        if {"bandaged", "rag-bandaged"} & self.marks:
+            band = loft(
+                f"{self.name}-bandage",
+                [(0, c.y, c.z + 0.2 * h, 0.39 * h, 0.47 * h), (0, c.y, c.z + 0.1 * h, 0.39 * h, 0.47 * h)],
+                self._bandage_mat(),
+                self.col,
+                segments=24,
+            )
+            common.add_modifier(band, "SOLIDIFY", thickness=0.02 * h, offset=1.0)
+            common.bake_modifiers(band)
+            self.parts.append(Part(band, bone="head"))
+
+    def _mantle(self):
+        a = self.a
+        J = self.J
+        H = self.H
+        sh = J["shoulder_L"].x
+        cy = 0.6 * GU
+        color = "#6e6452"
+        mat = M.cloth(color, "#4c4436", "wool", 0.22, 0.05)
+        seg = 36
+        rings = [
+            (0, cy, J["neck"].z + 0.005, 0.07 * H, 0.06 * H),
+            (0, cy, J["shoulder_L"].z - 0.01 * H, sh * 1.18, 0.085 * H),
+            (0, cy, J["chest"].z - 0.02 * H, sh * 1.16, 0.09 * H),
+            (0, cy, J["waist"].z - 0.02 * H, sh * 1.12, 0.1 * H),
+            (0, cy, J["knee_L"].z + 0.05 * H, sh * 1.1, 0.11 * H),
+        ]
+
+        def skip(i, j):
+            return math.cos(2 * math.pi * j / seg) > 0.9 and i >= 0
+
+        mantle = loft(f"{self.name}-mantle", rings, mat, self.col, segments=seg, skip=skip)
+        common.add_modifier(mantle, "SOLIDIFY", thickness=0.016, offset=1.0)
+        common.add_modifier(mantle, "SUBSURF", levels=1, render_levels=1)
+        common.bake_modifiers(mantle)
+        self.parts.append(Part(mantle, nearest_bone_weights(J, ["pelvis", "spine", "chest", "upper_arm_L", "upper_arm_R"], 3.0)))
+        _ = a
+
+    def _carry(self):
+        a = self.a
+        J = self.J
+        H = self.H
+        kind = a.get("carry", "none")
+        if kind == "satchel":
+            bag = common.box(f"{self.name}-satchel", (0.1 * H, 0.04 * H, 0.085 * H), material=M.leather("#6a4628"), col=self.col, bevel=0.01)
+            bag.location = (J["hip_L"].x + 0.07 * H, J["hip_L"].y - 0.02 * H, J["pelvis"].z - 0.03 * H)
+            common.bake_modifiers(bag)
+            self.parts.append(Part(bag, bone="pelvis"))
+            strap_pts = [J["shoulder_R"] + Vector((0.01, -0.01, 0.012)), J["chest"] + Vector((0, -0.075 * H, 0)), J["hip_L"] + Vector((0.06 * H, -0.05 * H, 0.05 * H))]
+            for i in range(2):
+                st = capsule(f"{self.name}-satstrap{i}", strap_pts[i], strap_pts[i + 1], 0.009 * H, M.leather("#5a3a20"), self.col)
+                self.parts.append(Part(st, bone="chest" if i == 0 else "spine"))
+        elif kind == "staff":
+            hand = J["hand_R"]
+            staff = capsule(f"{self.name}-staff", (hand.x - 0.01 * H, hand.y - 0.05 * H, 0.0), (hand.x - 0.02 * H, hand.y - 0.05 * H, 1.02 * H), 0.012 * H, M.wood("#6e4e30", 3.0), self.col)
+            self.parts.append(Part(staff, bone="hand_R", upright=tuple(hand)))
+        elif kind == "spindle":
+            hand = J["hand_R"]
+            rod = capsule(f"{self.name}-spindle", hand + Vector((0, -0.01, -0.02 * H)), hand + Vector((0, -0.01, -0.13 * H)), 0.004 * H, M.wood("#7a5634"), self.col)
+            whorl = ellipsoid(f"{self.name}-whorl", hand + Vector((0, -0.01, -0.11 * H)), (0.018 * H, 0.018 * H, 0.006 * H), M.terracotta("#9c6a48", 0.0), self.col, 12, 6)
+            wool = ellipsoid(f"{self.name}-wool", J["hand_L"] + Vector((0, -0.02 * H, 0.03 * H)), (0.03 * H, 0.03 * H, 0.04 * H), M.cloth("#e2d8c2", None, "wool"), self.col, 12, 8)
+            self.parts += [Part(rod, bone="hand_R"), Part(whorl, bone="hand_R"), Part(wool, bone="hand_L")]
+        elif kind == "basket":
+            hand = J["hand_L"]
+            basket = M.straw()
+            b = common.lathe(f"{self.name}-basket", [(0.04 * H, 0), (0.07 * H, 0.05 * H), (0.075 * H, 0.07 * H)], 24, basket, self.col)
+            b.location = hand + Vector((0.02 * H, -0.03 * H, -0.02 * H))
+            self.parts.append(Part(b, bone="hand_L"))
+        elif kind == "jar":
+            hand = J["hand_L"]
+            prof = [(0.02 * H, 0), (0.06 * H, 0.05 * H), (0.065 * H, 0.11 * H), (0.035 * H, 0.17 * H), (0.022 * H, 0.2 * H), (0.028 * H, 0.21 * H)]
+            jar = common.lathe(f"{self.name}-jar", prof, 24, M.terracotta(), self.col)
+            jar.location = hand + Vector((0.04 * H, -0.02 * H, -0.03 * H))
+            self.parts.append(Part(jar, bone="hand_L"))
+        elif kind == "bread":
+            hand = J["hand_R"]
+            tray = common.lathe(f"{self.name}-tray", [(0.0, 0), (0.1 * H, 0.0), (0.11 * H, 0.015 * H)], 24, M.straw(), self.col)
+            tray.location = hand + Vector((-0.04 * H, -0.06 * H, 0.02 * H))
+            self.parts.append(Part(tray, bone="hand_R"))
+            for i in range(4):
+                ang = i * math.pi / 2 + 0.4
+                loaf = ellipsoid(f"{self.name}-loaf{i}", tray.location + Vector((math.cos(ang) * 0.05 * H, math.sin(ang) * 0.05 * H, 0.02 * H)), (0.04 * H, 0.04 * H, 0.018 * H), M.plain("#a8733e", 0.7), self.col, 12, 6)
+                self.parts.append(Part(loaf, bone="hand_R"))
+        elif kind == "bundle":
+            back = J["chest"] + Vector((0, 0.1 * H, -0.02 * H))
+            sack = ellipsoid(f"{self.name}-bundle", back, (0.1 * H, 0.07 * H, 0.12 * H), M.cloth("#8a7a5c", None, "wool"), self.col, 16, 10)
+            self.parts.append(Part(sack, bone="chest"))
+
+    # ── posing ─────────────────────────────────────────────────────────────
+    def pose(self, walk=None, breath=0.0, blink=False, talk=0, yaw=0.0):
+        """Place every part for one frame. `walk` is the cycle phase (0–1) or None."""
+        # Gesture with the free hand: the right hand may be holding a staff, spindle or tray.
+        busy = self.a.get("carry", "none") in ("staff", "spindle", "bread")
+        R = pose_rotations(walk, breath, talk, hand="L" if busy else "R")
+        mats = self._forward(R)
+        # Keep the lowest sole on the ground.
+        soles = []
+        for s in ("L", "R"):
+            for jn in (f"ankle_{s}", f"toe_{s}"):
+                bone = BONE_INDEX[f"foot_{s}"]
+                p = mats[bone] @ self.J[jn].to_4d()
+                soles.append(p.z - (0.042 * self.H if jn.startswith("ankle") else 0.012 * self.H))
+        dz = -min(soles)
+        lift = Matrix.Translation((0, 0, dz))
+        turn = Matrix.Rotation(yaw, 4, "Z")
+        mats = [turn @ lift @ m for m in mats]
+        for part in self.parts:
+            if part.bone is not None:
+                m = mats[BONE_INDEX[part.bone]]
+                if part.upright is not None:
+                    grip = Vector(part.upright)
+                    moved = m @ grip
+                    lean = Matrix.Rotation(yaw, 4, "Z")
+                    part.obj.matrix_world = Matrix.Translation(moved) @ lean @ Matrix.Translation(-grip)
+                else:
+                    part.obj.matrix_world = m
+                continue
+            W = part.weights
+            out = np.zeros_like(part.rest)
+            hom = np.hstack([part.rest, np.ones((len(part.rest), 1))])
+            for bi in np.nonzero(W.sum(axis=0) > 1e-6)[0]:
+                m = np.array(mats[bi])
+                out += W[:, bi : bi + 1] * (hom @ m.T)[:, :3]
+            if part.skirt is not None:
+                out = self._tent(part, out, mats)
+            part.obj.data.vertices.foreach_set("co", out.reshape(-1))
+            part.obj.data.update()
+        for eye in self.eyes:
+            eye.scale = (1.0, 1.0, 0.15 if blink else 1.0)
+        if self.mouth is not None:
+            self.mouth.scale = (0.8 if talk else 1.0, 1.0, 3.2 if talk == 1 else (1.8 if talk == 2 else 1.0))
+
+    def _tent(self, part, out, mats):
+        """Push the skirt out around the posed legs so knees and shins never
+        show through the cloth: each vertex's radius grows to cover any leg
+        in its direction, falling off smoothly to the sides."""
+        cy, top = part.skirt
+        rest = part.rest
+        below = rest[:, 2] < top
+        if not below.any():
+            return out
+        pel = np.array(mats[BONE_INDEX["pelvis"]])
+        H = self.H
+        samples = []
+        for s in ("L", "R"):
+            thigh = np.array(mats[BONE_INDEX[f"thigh_{s}"]])
+            shin = np.array(mats[BONE_INDEX[f"shin_{s}"]])
+            hip = thigh @ np.array([*self.J[f"hip_{s}"], 1.0])
+            knee = thigh @ np.array([*self.J[f"knee_{s}"], 1.0])
+            ankle = shin @ np.array([*self.J[f"ankle_{s}"], 1.0])
+            for t in np.linspace(0, 1, 7):
+                samples.append((hip[:3] + (knee[:3] - hip[:3]) * t, (0.058 - 0.022 * t) * H))
+            for t in np.linspace(0, 1, 7)[1:]:
+                samples.append((knee[:3] + (ankle[:3] - knee[:3]) * t, (0.036 - 0.014 * t) * H))
+        P = np.array([p for p, _ in samples])
+        Rr = np.array([r for _, r in samples])
+        v = out[below]
+        centre = (np.hstack([np.zeros((len(v), 1)), np.full((len(v), 1), cy), rest[below, 2:3], np.ones((len(v), 1))]) @ pel.T)[:, :3]
+        rel = v - centre
+        horiz = rel[:, :2]
+        r = np.linalg.norm(horiz, axis=1) + 1e-9
+        d = horiz / r[:, None]
+        need = r.copy()
+        pad = 0.018 * H
+        spread = 0.1 * H
+        for (p, rad) in zip(P, Rr):
+            q = p[None, :2] - centre[:, :2]
+            along = (q * d).sum(axis=1)
+            lateral = np.abs(q[:, 0] * d[:, 1] - q[:, 1] * d[:, 0])
+            dz = np.abs(p[2] - v[:, 2])
+            reach = along + rad + pad - lateral**2 / (2 * spread) - np.maximum(0, dz - 0.03 * H) * 1.5
+            need = np.maximum(need, reach)
+        v[:, :2] = centre[:, :2] + d * need[:, None]
+        out[below] = v
+        return out
+
+    def _forward(self, R):
+        mats = [None] * len(BONES)
+        for i, (name, head, _tail, parent) in enumerate(BONES):
+            h = self.J[head]
+            local = Matrix.Translation(h) @ R.get(name, Matrix.Identity(4)) @ Matrix.Translation(-h)
+            if name == "pelvis" and "root" in R:
+                local = R["root"] @ local
+            mats[i] = local if parent is None else mats[BONE_INDEX[parent]] @ local
+        return mats
+
+
+def _g(q, centre, width):
+    """A periodic bump (0–1) centred on `centre` in the cycle."""
+    d = (q - centre + 0.5) % 1.0 - 0.5
+    return math.exp(-(d * d) / (2 * width * width))
+
+
+def rot(x=0.0, y=0.0, z=0.0):
+    return (
+        Matrix.Rotation(math.radians(z), 4, "Z")
+        @ Matrix.Rotation(math.radians(y), 4, "Y")
+        @ Matrix.Rotation(math.radians(x), 4, "X")
+    )
+
+
+def pose_rotations(walk, breath, talk, hand="R"):
+    """Joint rotations (degrees about the character's axes) for one frame.
+    Forward swing of a limb is a negative X rotation; knee bend positive."""
+    R = {}
+    if walk is not None:
+        p = walk
+        for side, q in (("L", p), ("R", (p + 0.5) % 1.0)):
+            thigh = -(17.0 * math.cos(2 * math.pi * q) + 2.0)
+            knee = 5.0 + 12.0 * _g(q, 0.12, 0.07) + 50.0 * _g(q, 0.7, 0.11)
+            ankle = 6.0 * _g(q, 0.06, 0.05) - 16.0 * _g(q, 0.56, 0.07) - 8.0 * _g(q, 0.78, 0.1)
+            R[f"thigh_{side}"] = rot(x=thigh)
+            R[f"shin_{side}"] = rot(x=knee)
+            R[f"foot_{side}"] = rot(x=ankle)
+            same = math.cos(2 * math.pi * q)
+            R[f"upper_arm_{side}"] = rot(x=15.0 * same, y=(3 if side == "L" else -3))
+            R[f"forearm_{side}"] = rot(x=-(10.0 + 14.0 * max(0.0, -same)))
+        yaw = -5.0 * math.cos(2 * math.pi * p)
+        sway = 0.012 * math.sin(2 * math.pi * p) * 54 * GU
+        R["root"] = Matrix.Translation((sway, 0, 0))
+        R["pelvis"] = rot(z=yaw, y=2.0 * math.sin(2 * math.pi * p))
+        R["spine"] = rot(x=-3.0, z=-yaw * 1.6)
+        R["head"] = rot(z=yaw * 0.5)
+    else:
+        rise = 1.0 if breath else 0.0
+        R["spine"] = rot(x=-0.8 * rise)
+        R["chest"] = rot(x=-1.2 * rise)
+        R["upper_arm_L"] = rot(y=2.0 + rise * 0.6)
+        R["upper_arm_R"] = rot(y=-2.0 - rise * 0.6)
+        R["forearm_L"] = rot(x=-8.0)
+        R["forearm_R"] = rot(x=-8.0)
+        if breath:
+            R["root"] = Matrix.Translation((0.003, 0, 0))
+    if talk:
+        k = 1.0 if talk == 1 else 0.75
+        s = -1.0 if hand == "R" else 1.0
+        R[f"upper_arm_{hand}"] = rot(x=-28.0 * k, y=10.0 * s)
+        R[f"forearm_{hand}"] = rot(x=-62.0 * k, z=10.0 * k * s)
+        R["head"] = rot(x=2.0 * k)
+    return R
