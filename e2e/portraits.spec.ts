@@ -57,8 +57,12 @@ test('a later chapter’s namesake has her own portrait (Tamar, the mother, in C
   await newGame(page, 'A Journey to Bethlehem');
   await waitForWorld(page);
   // Chapter 2's Tamar (a cousin) and Chapter 3's (the player's mother) are
-  // different people with different portraits.
-  await expect(page.locator('#dialogue-speaker')).toContainText('Tamar');
+  // different people with different portraits. The narrator may open first.
+  const box = page.locator('section.dialogue');
+  const speaker = page.locator('#dialogue-speaker');
+  for (let i = 0; i < 4 && !(await speaker.textContent())?.includes('Tamar'); i++)
+    await box.getByRole('button', { name: /^(Continue|Show all text)$/ }).click();
+  await expect(speaker).toContainText('Tamar');
   const portrait = page.locator('section.dialogue .dialogue__portrait img.portrait');
   await expect(portrait).toHaveAttribute('data-portrait', 'tamar.journey-to-bethlehem');
   await expectLoaded(portrait);
