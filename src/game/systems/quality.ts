@@ -96,6 +96,14 @@ export function stepQuality(s: QualityState, deltaMs: number, highDpi = false): 
 }
 
 /**
+ * A level the player chose (simpler effects on, or back off): start there,
+ * and measure afresh from it.
+ */
+export function chosenLevel(level: EffectsLevel): QualityState {
+  return { ...INITIAL_QUALITY, level, lowPower: level === 'low' };
+}
+
+/**
  * A new scene is being painted and uploaded: that one-off hitch isn't the
  * device being slow, so start measuring again after a fresh warm-up.
  * (The level reached so far is kept.)

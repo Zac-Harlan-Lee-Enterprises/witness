@@ -26,12 +26,20 @@ export interface MountWorldOptions {
   forceWeather?: Weather | null;
   /** The player's high-contrast setting: keep the world bright and clear. */
   highContrast?: boolean;
+  /** The player asked for simpler visual effects. */
+  simpleEffects?: boolean;
+}
+
+/** Display settings the world follows (from the player's settings). */
+export interface WorldDisplay {
+  highContrast: boolean;
+  simpleEffects: boolean;
 }
 
 /** The world as the composition root sees it: the port, and display settings. */
 export interface WorldHandle extends WorldPort {
   /** The player's display settings changed (optional: test doubles may leave it out). */
-  setDisplay?(options: { highContrast: boolean }): void;
+  setDisplay?(options: WorldDisplay): void;
 }
 
 export function mountWorld(options: MountWorldOptions): Promise<WorldHandle> {
@@ -47,6 +55,7 @@ export function mountWorld(options: MountWorldOptions): Promise<WorldHandle> {
       artLighting: options.artLighting ?? 'auto',
       forceWeather: options.forceWeather ?? null,
       highContrast: options.highContrast ?? false,
+      simpleEffects: options.simpleEffects ?? false,
       viewport,
       onReady: () => {
         const canvas = game?.canvas;

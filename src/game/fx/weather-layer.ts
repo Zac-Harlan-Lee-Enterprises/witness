@@ -3,19 +3,15 @@ import type { SceneMood } from '@/application/ports';
 import type { TileGrid, TileKind, Weather } from '@/domain/world';
 import { hash, rng } from '../art/paint';
 import {
-  flashLevel,
-  FlashGate,
   gust,
+  Lightning,
   MAX_FLASH,
-  nextStrikeIn,
   NO_WEATHER_FX,
   rainSlant,
   stepWeather,
   stepWetness,
-  strikePattern,
   WEATHER_MIX,
   weatherBudget,
-  type Flash,
   type WeatherBudget,
   type WeatherMix,
 } from '../systems/weather';
@@ -104,9 +100,7 @@ export class WeatherLayer {
   private sheetFall = 0;
   private elapsed = 0;
   private windNow = 0;
-  private strikeIn: number;
-  private flashes: Flash[] = [];
-  private readonly gate = new FlashGate();
+  private readonly lightning: Lightning;
   private flashNow = 0;
 
   constructor(private readonly d: WeatherLayerDeps) {
@@ -116,7 +110,7 @@ export class WeatherLayer {
     this.reducedMotion = d.reducedMotion;
     this.share = d.share;
     this.r = rng(hash(d.grid.width, d.grid.height, 41));
-    this.strikeIn = nextStrikeIn(this.current.storm, this.r) * 0.3;
+    this.lightning = new Lightning(this.r);
     this.build();
   }
 
@@ -136,8 +130,16 @@ export class WeatherLayer {
   }
 
   /** What is on screen now, for diagnostics and tests. */
-  stats(): { drops: number; splashes: number; dust: number; leaves: number; wet: number } {
+  stats(): {
+    drops: number;
+    splashes: number;
+    dust: number;
+    leaves: number;
+    wet: number;
+    strikes: number;
+  } {
     return {
+      strikes: this.lightning.strikes,
       drops: this.rain?.getAliveParticleCount() ?? 0,
       splashes: this.splashes?.getAliveParticleCount() ?? 0,
       dust: this.dust?.getAliveParticleCount() ?? 0,
@@ -153,7 +155,6 @@ export class WeatherLayer {
   setMotion(reducedMotion: boolean): void {
     if (reducedMotion === this.reducedMotion) return;
     this.reducedMotion = reducedMotion;
-    this.flashes = [];
     this.rebuild();
   }
 
@@ -447,20 +448,9 @@ export class WeatherLayer {
 
   private updateLightning(dt: number, now: number): void {
     const m = this.current;
-    if (this.reducedMotion) {
-      this.flashNow = 0;
-      return;
-    }
-    this.strikeIn -= dt;
-    if (this.strikeIn <= 0) {
-      this.strikeIn = nextStrikeIn(m.storm, this.r);
-      if (Number.isFinite(this.strikeIn)) {
-        for (const f of strikePattern(this.r, now)) if (this.gate.allow(f.at)) this.flashes.push(f);
-      }
-    }
-    this.flashes = this.flashes.filter((f) => now - f.at <= f.duration);
+    const level = this.lightning.step(m.storm, dt, now, !this.reducedMotion);
     const indoor = this.d.indoor ? 0.35 : 1;
-    this.flashNow = flashLevel(this.flashes, now) * MAX_FLASH * indoor * Math.min(1, m.storm * 1.5);
+    this.flashNow = level * MAX_FLASH * indoor * Math.min(1, m.storm * 1.5);
   }
 
   private destroyObjects(): void {
@@ -479,8 +469,7 @@ export class WeatherLayer {
 
   destroy(): void {
     this.destroyObjects();
-    this.flashes = [];
-    this.gate.reset();
+    this.lightning.reset();
   }
 }
 

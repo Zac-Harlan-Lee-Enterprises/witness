@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  chosenLevel,
   effectsFor,
   effectsLabel,
   INITIAL_QUALITY,
@@ -83,6 +84,14 @@ describe('automatic quality', () => {
     const lite = run(30, 7.5, true);
     expect(restartWarmup(lite).level).toBe('lite');
     expect(restartWarmup(lite).elapsedMs).toBe(0);
+  });
+
+  it('starts where the player chose, and never steps down from simpler effects', () => {
+    const simple = chosenLevel('low');
+    expect(simple).toMatchObject({ level: 'low', lowPower: true });
+    expect(run(10, 20, true, simple).level).toBe('low');
+    const full = chosenLevel('full');
+    expect(full).toMatchObject({ level: 'full', lowPower: false, elapsedMs: 0 });
   });
 
   it('says what each level allows, dropping the costliest first', () => {

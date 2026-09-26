@@ -59,6 +59,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           ]}
           onChange={(v) => update({ reducedMotion: v as GameSettings['reducedMotion'] })}
         />
+        <Toggle
+          label="Simpler visual effects (lighter on battery)"
+          checked={s.simpleEffects}
+          onChange={(v) => update({ simpleEffects: v })}
+        />
       </section>
 
       <section aria-labelledby="set-play">

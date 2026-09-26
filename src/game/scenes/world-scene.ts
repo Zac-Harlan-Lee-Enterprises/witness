@@ -65,6 +65,7 @@ import { gradeFor } from '../systems/grade';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
 import { departed } from '../systems/life';
 import {
+  chosenLevel,
   effectsFor,
   effectsLabel,
   INITIAL_QUALITY,
@@ -118,6 +119,8 @@ export interface WorldSceneOptions {
   /** Force the weather everywhere (review builds); null follows the story. */
   forceWeather: Weather | null;
   highContrast: boolean;
+  /** The player asked for simpler visual effects (the lowest quality level). */
+  simpleEffects: boolean;
   /** The canvas's size and render resolution (device pixels per CSS pixel). */
   viewport: Viewport;
 }
@@ -201,6 +204,7 @@ export class WorldScene extends Phaser.Scene {
   private controlsEnabled = true;
   private reducedMotion = false;
   private highContrast: boolean;
+  private simpleEffects: boolean;
   private tilesPerSecond = 4.5;
   private lastTile = { x: -1, y: -1 };
   private insideExit: string | null = null;
@@ -219,6 +223,8 @@ export class WorldScene extends Phaser.Scene {
   constructor(private readonly opts: WorldSceneOptions) {
     super('world');
     this.highContrast = opts.highContrast;
+    this.simpleEffects = opts.simpleEffects;
+    if (opts.simpleEffects) this.quality = chosenLevel('low');
   }
 
   create(): void {
@@ -229,7 +235,7 @@ export class WorldScene extends Phaser.Scene {
     releaseUnusedTargets(this.game);
     fixCanvasBlendModes(this.game);
     // The Canvas renderer draws on the CPU: keep it at CSS resolution.
-    if (!this.gpu.webgl) this.opts.viewport.setCap(1);
+    this.opts.viewport.setCap(this.gpu.webgl ? effectsFor(this.quality.level).maxResolution : 1);
     makeSharedTextures(this.textures);
     makeFxTextures(this.textures);
     this.game.canvas.dataset.effects = effectsLabel(this.quality.level);
@@ -436,12 +442,25 @@ export class WorldScene extends Phaser.Scene {
     this.weather?.setWeather(w);
   }
 
-  /** Display settings from the player (high contrast keeps the world bright and clear). */
-  setDisplay(options: { highContrast: boolean }): void {
-    if (options.highContrast === this.highContrast) return;
-    this.highContrast = options.highContrast;
-    this.lightKey = '';
-    this.applyLighting();
+  /**
+   * Display settings from the player: high contrast keeps the world bright
+   * and clear; simpler effects drop to the lowest quality level (and turning
+   * them off again lets the world measure afresh).
+   */
+  setDisplay(options: { highContrast: boolean; simpleEffects: boolean }): void {
+    if (options.highContrast !== this.highContrast) {
+      this.highContrast = options.highContrast;
+      this.lightKey = '';
+      this.applyLighting();
+    }
+    if (options.simpleEffects !== this.simpleEffects) {
+      this.simpleEffects = options.simpleEffects;
+      const level = options.simpleEffects ? 'low' : 'full';
+      this.quality = chosenLevel(level);
+      this.onQualityLevel(level, false);
+      // Rebuild what the level decides at build time (crowds, decoration).
+      if (this.model) this.buildAmbient();
+    }
   }
 
   setPlayerMarks(marks: WorldSceneModel['player']['marks']): void {
@@ -683,6 +702,7 @@ export class WorldScene extends Phaser.Scene {
       c.weatherDrops = String(s.drops);
       c.weatherDust = String(s.dust + s.leaves);
       c.weatherWet = String(s.wet);
+      c.weatherStrikes = String(s.strikes);
     }
     this.ambient?.setWind(weather.wind);
     const flash = weather.flash;
@@ -738,11 +758,15 @@ export class WorldScene extends Phaser.Scene {
     this.game.canvas.dataset.postFx = this.postFx ? 'on' : 'off';
   }
 
-  /** The automatic quality moved down a level: shed what that level drops. */
-  private onQualityLevel(level: EffectsLevel): void {
+  /** The quality level changed (automatically, or by the player): apply what it allows. */
+  private onQualityLevel(level: EffectsLevel, automatic = true): void {
     const fx = effectsFor(level);
     this.game.canvas.dataset.effects = effectsLabel(level);
-    if (level === 'low') {
+    if (!automatic) {
+      this.lightKey = '';
+      this.applyLighting();
+      if (level === 'low') this.ambient?.reduce();
+    } else if (level === 'low') {
       this.enterLowPower();
     } else {
       // Recorded in "Copy diagnostics".

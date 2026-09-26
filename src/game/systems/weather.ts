@@ -214,6 +214,49 @@ export function flashLevel(flashes: readonly Flash[], now: number): number {
   return Math.min(1, level);
 }
 
+/**
+ * Lightning over time: waits a few seconds between strikes while a storm is
+ * strong enough (and starts counting as soon as a storm rises mid-scene),
+ * lets each strike's flicker through the FlashGate, and reports how bright
+ * the sky is now (0–1). Disabled (reduced motion), it never flashes.
+ */
+export class Lightning {
+  private wait = Infinity;
+  private flashes: Flash[] = [];
+  private readonly gate = new FlashGate();
+  /** Strikes so far (diagnostics). */
+  strikes = 0;
+
+  constructor(private readonly r: () => number) {}
+
+  /** Advance by `dt` seconds to time `now` (ms) in a storm of strength `storm` (0–1). */
+  step(storm: number, dt: number, now: number, enabled: boolean): number {
+    if (!enabled) {
+      this.flashes = [];
+      this.wait = Infinity;
+      return 0;
+    }
+    // A storm has risen: start counting (the first strike comes sooner).
+    if (!Number.isFinite(this.wait)) this.wait = nextStrikeIn(storm, this.r) * 0.5;
+    this.wait -= Math.max(0, dt);
+    if (this.wait <= 0) {
+      this.wait = nextStrikeIn(storm, this.r);
+      if (storm >= 0.5) {
+        this.strikes++;
+        for (const f of strikePattern(this.r, now)) if (this.gate.allow(f.at)) this.flashes.push(f);
+      }
+    }
+    this.flashes = this.flashes.filter((f) => now - f.at <= f.duration);
+    return flashLevel(this.flashes, now);
+  }
+
+  reset(): void {
+    this.flashes = [];
+    this.wait = Infinity;
+    this.gate.reset();
+  }
+}
+
 // ── Light under cloud ───────────────────────────────────────────────────────
 
 /**

@@ -6,6 +6,7 @@ import {
   flashLevel,
   gust,
   lerpRgb,
+  Lightning,
   MAX_FLASH,
   MAX_FLASHES_PER_SECOND,
   nextStrikeIn,
@@ -166,6 +167,33 @@ describe('lightning (WCAG 2.3.1: no more than three flashes in any second)', () 
     for (let i = 0; i < 100; i++) expect(nextStrikeIn(1, r)).toBeGreaterThanOrEqual(4);
     expect(nextStrikeIn(0.3, r)).toBe(Infinity);
     expect(nextStrikeIn(0, r)).toBe(Infinity);
+  });
+
+  it('strikes once a storm rises mid-scene, never in calm or with reduced motion', () => {
+    const run = (storm: (t: number) => number, enabled = true) => {
+      const l = new Lightning(rng(11));
+      const onsets: number[] = [];
+      let last = 0;
+      for (let t = 0; t < 120_000; t += 16) {
+        const level = l.step(storm(t), 0.016, t, enabled);
+        if (level > 0 && last === 0) onsets.push(t);
+        last = level;
+      }
+      return { strikes: l.strikes, onsets };
+    };
+    // Clear for 20 s, then a storm.
+    const rising = run((t) => (t < 20_000 ? 0 : 1));
+    expect(rising.strikes).toBeGreaterThan(4);
+    expect(rising.onsets.every((t) => t >= 20_000)).toBe(true);
+    expect(run(() => 0).strikes).toBe(0);
+    expect(run(() => 0.3).strikes).toBe(0);
+    expect(run(() => 1, false).onsets).toEqual([]);
+    // Never more than three flashes in any second.
+    for (const start of rising.onsets) {
+      expect(
+        rising.onsets.filter((t) => t >= start && t < start + 1000).length,
+      ).toBeLessThanOrEqual(MAX_FLASHES_PER_SECOND);
+    }
   });
 
   it('brightens quickly and fades, and stays low in contrast', () => {

@@ -121,14 +121,18 @@ export class GameRuntime {
       artLighting: this.services.config.artLighting,
       forceWeather: this.services.config.forceWeather,
       highContrast: settings.current.highContrast,
+      simpleEffects: settings.current.simpleEffects,
     });
     if (isStale()) {
       port.destroy();
       return;
     }
-    // High contrast keeps the world bright and clear (less gloom, no shimmer).
+    // High contrast keeps the world bright and clear; simpler effects spare the device.
     const stopDisplay = settings.store.subscribe(() =>
-      port.setDisplay?.({ highContrast: settings.current.highContrast }),
+      port.setDisplay?.({
+        highContrast: settings.current.highContrast,
+        simpleEffects: settings.current.simpleEffects,
+      }),
     );
     const unmount = (): void => {
       if (this.unmountWorld !== unmount) return;
