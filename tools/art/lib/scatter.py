@@ -77,9 +77,20 @@ def scatter(emitter, source, density, scale=(0.8, 1.2), seed=0, align=True, sink
     rs.inputs["Max"].default_value = scale[1]
     rs.inputs["Seed"].default_value = seed + 3
     L.new(rs.outputs["Value"], inst.inputs["Scale"])
+    # A random value per instance, kept through realizing as the "irand"
+    # attribute, so materials can vary each stone, tuft or leaf.
+    store = N.new("GeometryNodeStoreNamedAttribute")
+    store.data_type = "FLOAT"
+    store.domain = "INSTANCE"
+    store.inputs["Name"].default_value = "irand"
+    rv = N.new("FunctionNodeRandomValue")
+    rv.data_type = "FLOAT"
+    rv.inputs["Seed"].default_value = seed + 11
+    L.new(inst.outputs["Instances"], store.inputs["Geometry"])
+    L.new(rv.outputs["Value"], store.inputs["Value"])
     # Realised into real geometry, so the emitter alone decides visibility.
     realize = N.new("GeometryNodeRealizeInstances")
-    L.new(inst.outputs["Instances"], realize.inputs["Geometry"])
+    L.new(store.outputs["Geometry"], realize.inputs["Geometry"])
     out = realize.outputs["Geometry"]
     if keep:
         join = N.new("GeometryNodeJoinGeometry")

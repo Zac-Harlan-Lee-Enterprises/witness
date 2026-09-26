@@ -41,6 +41,15 @@ def alpha_bbox(arr, threshold=0.004):
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
+def over(top, bottom):
+    """Alpha-composite `top` over `bottom` (straight alpha, same size)."""
+    ta = top[:, :, 3:4]
+    ba = bottom[:, :, 3:4]
+    a = ta + ba * (1 - ta)
+    rgb = (top[:, :, :3] * ta + bottom[:, :, :3] * ba * (1 - ta)) / np.maximum(a, 1e-6)
+    return np.concatenate([rgb, a], axis=2)
+
+
 def downsample(arr, factor):
     """Box-filter by an integer factor, in premultiplied space."""
     h, w = arr.shape[:2]

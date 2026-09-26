@@ -49,9 +49,51 @@ def ground_shadow_offset(name, height):
     return (-v.x * k, v.y * k)
 
 
+def setup_indoor(scene):
+    """People indoors (the 'indoor' variant of their sheets): a warm key
+    from an oil lamp and the oven, high to the front left; cool, soft
+    daylight from a window on the right; warm light bounced off the
+    plaster from behind; and a dim, warm room instead of the sky."""
+    for obj in [o for o in scene.objects if o.type == "LIGHT" and (o.name.startswith("Sun") or o.name.startswith("Indoor"))]:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    def area(name, loc, target, energy, color, size):
+        data = bpy.data.lights.new(name, "AREA")
+        data.energy = energy
+        data.color = hex_rgb(color)[:3]
+        data.size = size
+        obj = bpy.data.objects.new(name, data)
+        scene.collection.objects.link(obj)
+        obj.location = loc
+        d = Vector(target) - Vector(loc)
+        obj.rotation_euler = (-d).to_track_quat("Z", "Y").to_euler()
+        return obj
+
+    target = (0.0, 0.0, 0.9)
+    area("IndoorKey", (-1.6, -1.9, 2.3), target, 95.0, "#ffb16a", 0.8)
+    area("IndoorWindow", (2.4, -0.8, 1.9), target, 55.0, "#dfe6ee", 1.4)
+    area("IndoorBounce", (0.2, 2.2, 2.6), target, 30.0, "#ffd2a0", 2.0)
+    world = bpy.data.worlds.get("Room") or bpy.data.worlds.new("Room")
+    scene.world = world
+    world.use_nodes = True
+    nt = world.node_tree
+    nt.nodes.clear()
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs["Color"].default_value = hex_rgb("#6a5440")
+    bg.inputs["Strength"].default_value = 0.35
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+    return None
+
+
 def setup(scene, name):
+    if name == "indoor":
+        return setup_indoor(scene)
+    for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Indoor")]:
+        bpy.data.objects.remove(obj, do_unlink=True)
     s = LIGHTS[name]
-    for obj in [o for o in scene.objects if o.type == "LIGHT"]:
+    # Only the sun is replaced: lights a place brings (a lamp, embers) stay.
+    for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Sun")]:
         bpy.data.objects.remove(obj, do_unlink=True)
     data = bpy.data.lights.new("Sun", "SUN")
     data.energy = s["strength"]
