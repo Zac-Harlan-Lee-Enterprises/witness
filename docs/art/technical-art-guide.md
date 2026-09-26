@@ -297,8 +297,8 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | Grandmother Shelomit's house (Ch. 2) | later day | 0.20 MB | 0.07 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
 | | lamplight (night) | 0.14 MB | 0.06 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
 | The shore at Capernaum (Ch. 2) | later day | 2.21 MB | 0.86 MB | 65.3 MB | 18.3 MB | 6 / 2 | 2 |
-| | night | 2.04 MB | 0.79 MB | 64.2 MB | 18.1 MB | 6 / 2 | 2 |
-| The open lake (Ch. 2) | night (its only set) | 0.41 MB | 0.18 MB | 61.4 MB | 16.9 MB | 4 / 1 | 2 |
+| | night | 1.68 MB | 0.66 MB | 64.1 MB | 18.0 MB | 6 / 2 | 2 |
+| The open lake (Ch. 2) | night (its only set) | 0.35 MB | 0.15 MB | 61.4 MB | 16.9 MB | 4 / 1 | 2 |
 | Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
 | A street in Colossae (Ch. 4) | morning | 1.02 MB | 0.37 MB | 51.6 MB | 14.3 MB | 4 / 1 | 2 |
 | | later day | 0.93 MB | 0.36 MB | 52.9 MB | 14.6 MB | 4 / 1 | 2 |
@@ -312,8 +312,8 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | night | 2.68 MB | 0.99 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
 | People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
-| People added for Chapter 2 | later day and indoor | 1.35 MB (40 files) | | | | | |
-| | night (with the player looks) | 1.83 MB (62 files) | | | | | |
+| People added for Chapter 2 | later day, indoor and lamp | 1.38 MB (42 files) | | | | | |
+| | night (the player looks' night sheets are Chapter 3's) | 1.12 MB (42 files) | | | | | |
 | People added for Chapter 4 | morning and indoor | 0.39 MB (18 files) | | | | | |
 | | later day | 0.30 MB (12 files) | | | | | |
 | | rain cloud | 1.18 MB (32 files) | | | | | |
@@ -345,10 +345,10 @@ The Laodicea road is the heaviest download so far: 140 sprites, most of them ree
 | A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
 | The Laodicea road (Ch. 4) | 105 MB | 105 MB |
 | Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
-| Grandmother Shelomit's house (Ch. 2) | 16–17 MB | 14–16 MB |
+| Grandmother Shelomit's house (Ch. 2) | 17–18 MB | 15–17 MB |
 | The shore at Capernaum, later day (Ch. 2) | 125 MB | 125 MB |
-| The shore at Capernaum, night (Ch. 2) | 113 MB | 113 MB |
-| The open lake (Ch. 2) | 87 MB | 87 MB |
+| The shore at Capernaum, night (Ch. 2) | 103–107 MB | 103–107 MB |
+| The open lake (Ch. 2) | 84 MB | 84 MB |
 | Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 24 / 40 MB |
 | The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 109 / 87 MB |
 | The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 81 / 77 MB |

@@ -287,7 +287,7 @@ DONE   : Every Chapter 2 place pre-rendered with the lake kit (tools/art/lib/kit
          canopy. Art fixes: the planks material had its seam mask inverted (every deck read as dark
          tiles), plaited rush mat, a cobbled earth floor surface, sun-greyed sails, hull rows split in
          stern/bow halves.
-TESTS  : Vitest (new: open water and glintsFor; a night-only lake manifest, empty variants rejected,
+TESTS  : Vitest 598 passed (new: open water and glintsFor; a night-only lake manifest, empty variants rejected,
          the shore's and the lake's sets by hour). e2e storm-on-galilee (waits for the lake's narration
          while its art loads) and smoke on 4421/5421. Captures: e2e/storm-art.spec.ts (desktop, tablet,
          phone), and with VITE_FORCE_WEATHER=storm.
