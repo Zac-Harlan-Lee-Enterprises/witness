@@ -251,8 +251,9 @@ class RomanRooms:
                 for i in range(nx + 1):
                     x = x0 + 0.04 + (x1 - x0 - 0.08) * i / nx
                     y = y0 + 0.04 + (y1 - y0 - 0.08) * j / ny
-                    sag = 0.004 * math.sin(i * 0.7) * math.sin(j * 0.9)
-                    row.append(bm.verts.new(self.P(x, y, 0.014 + sag)))
+                    # Laid on its own bed, clear of the mortar floor round it.
+                    sag = 0.003 * math.sin(i * 0.7) * math.sin(j * 0.9)
+                    row.append(bm.verts.new(self.P(x, y, 0.02 + sag)))
                 grid.append(row)
             for j in range(ny):
                 for i in range(nx):
