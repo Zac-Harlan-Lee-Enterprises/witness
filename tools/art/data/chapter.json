@@ -1,7 +1,15 @@
 {
+  "chapters": [
+    {
+      "id": "road-to-jericho",
+      "scenes": ["miriam-house", "jerusalem-market", "jericho-road", "jericho"],
+      "playerMarks": ["water-skin", "lamp", "cloak-roll", "torn-hem"]
+    }
+  ],
   "characters": [
     {
       "id": "miriam",
+      "chapter": "road-to-jericho",
       "key": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
       "appearance": {
         "skin": "#966b49",
@@ -13,10 +21,19 @@
         "beard": false,
         "build": "adult",
         "carry": "basket"
-      }
+      },
+      "appears": [
+        {
+          "scene": "miriam-house",
+          "entity": "miriam",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "malik",
+      "chapter": "road-to-jericho",
       "key": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
       "appearance": {
         "skin": "#764b32",
@@ -28,10 +45,25 @@
         "beard": true,
         "build": "adult",
         "carry": "bundle"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "malik",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "jericho",
+          "entity": "malik-inn",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "shimon",
+      "chapter": "road-to-jericho",
       "key": "#8a5a3a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
       "appearance": {
         "skin": "#865b3e",
@@ -43,10 +75,19 @@
         "beard": true,
         "build": "elder",
         "carry": "staff"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "shimon",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "tobiah",
+      "chapter": "road-to-jericho",
       "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
       "appearance": {
         "skin": "#9c714e",
@@ -58,10 +99,19 @@
         "beard": true,
         "build": "adult",
         "carry": "none"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "tobiah",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "hadassah",
+      "chapter": "road-to-jericho",
       "key": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
       "appearance": {
         "skin": "#ab7b55",
@@ -73,10 +123,19 @@
         "beard": false,
         "build": "adult",
         "carry": "spindle"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "hadassah",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "ezer",
+      "chapter": "road-to-jericho",
       "key": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
       "appearance": {
         "skin": "#956145",
@@ -88,10 +147,19 @@
         "beard": true,
         "build": "adult",
         "carry": "bread"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "ezer",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "menashe",
+      "chapter": "road-to-jericho",
       "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
       "appearance": {
         "skin": "#8b6043",
@@ -103,10 +171,31 @@
         "beard": true,
         "build": "adult",
         "carry": "jar"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "menashe",
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "scene": "jericho-road",
+          "entity": "menashe-road",
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "scene": "jericho",
+          "entity": "menashe-inn",
+          "poses": ["sit", "lie"],
+          "marks": ["bandaged", "rag-bandaged", "wrapped-in-cloak"]
+        }
+      ]
     },
     {
       "id": "hanan",
+      "chapter": "road-to-jericho",
       "key": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
       "appearance": {
         "skin": "#a17654",
@@ -118,10 +207,19 @@
         "beard": false,
         "build": "adult",
         "carry": "none"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jerusalem-market",
+          "entity": "hanan",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "salome",
+      "chapter": "road-to-jericho",
       "key": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
       "appearance": {
         "skin": "#865b3c",
@@ -133,10 +231,19 @@
         "beard": false,
         "build": "adult",
         "carry": "jar"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jericho",
+          "entity": "salome",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "rivka",
+      "chapter": "road-to-jericho",
       "key": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
       "appearance": {
         "skin": "#966b49",
@@ -148,10 +255,19 @@
         "beard": false,
         "build": "adult",
         "carry": "none"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jericho",
+          "entity": "rivka",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "natan",
+      "chapter": "road-to-jericho",
       "key": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
       "appearance": {
         "skin": "#966b49",
@@ -163,10 +279,19 @@
         "beard": false,
         "build": "child",
         "carry": "none"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jericho",
+          "entity": "natan",
+          "poses": ["lie", "sit"],
+          "marks": []
+        }
+      ]
     },
     {
       "id": "yair",
+      "chapter": "road-to-jericho",
       "key": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
       "appearance": {
         "skin": "#956145",
@@ -178,7 +303,15 @@
         "beard": true,
         "build": "adult",
         "carry": "basket"
-      }
+      },
+      "appears": [
+        {
+          "scene": "jericho",
+          "entity": "yair",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
     }
   ],
   "players": [
@@ -307,7 +440,114 @@
   ],
   "scenes": [
     {
+      "id": "miriam-house",
+      "chapter": "road-to-jericho",
+      "name": "Aunt Miriam’s house",
+      "kind": "indoor",
+      "mood": "home",
+      "layout": [
+        "################",
+        "################",
+        "#jj.os....tt.Lj#",
+        "#b.........t...#",
+        "#..uuuu........#",
+        "#..uuuu........#",
+        "#..............#",
+        "#j.........tt..#",
+        "#j...........mm#",
+        "#c...........rr#",
+        "#######DD#######"
+      ],
+      "legend": {
+        "#": "wall",
+        ".": "floor",
+        "u": "rug",
+        "j": "jars",
+        "o": "oven",
+        "t": "table",
+        "D": "door",
+        "s": "sacks",
+        "b": "basket",
+        "L": "loom",
+        "m": "mat",
+        "r": "bedroll",
+        "c": "crate"
+      },
+      "baseTile": "floor",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "miriam",
+          "kind": "npc",
+          "x": 6,
+          "y": 3,
+          "facing": "down",
+          "characterId": "miriam",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "satchel",
+          "kind": "feature",
+          "x": 13,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "herbs",
+          "kind": "feature",
+          "x": 3,
+          "y": 2,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "basket",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "house-door",
+          "x": 7,
+          "y": 10,
+          "w": 2,
+          "h": 1,
+          "to": "jerusalem-market"
+        }
+      ],
+      "spawns": {
+        "start": {
+          "x": 7,
+          "y": 5,
+          "facing": "up"
+        },
+        "from-market": {
+          "x": 7,
+          "y": 9,
+          "facing": "up"
+        }
+      }
+    },
+    {
       "id": "jerusalem-market",
+      "chapter": "road-to-jericho",
+      "name": "The lower market, Jerusalem",
+      "kind": "outdoor",
+      "mood": "city",
       "layout": [
         "##################################",
         "#.^^^^^^^......SSS..^^^^^^^^.....#",
@@ -358,6 +598,7 @@
         "C": "cloth"
       },
       "baseTile": "sand",
+      "crowd": true,
       "entities": [
         {
           "id": "hadassah",
@@ -367,7 +608,11 @@
           "facing": "down",
           "characterId": "hadassah",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "ezer",
@@ -377,7 +622,11 @@
           "facing": "down",
           "characterId": "ezer",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "menashe",
@@ -387,7 +636,11 @@
           "facing": "right",
           "characterId": "menashe",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "vessels",
@@ -397,7 +650,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "vessels",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "hanan",
@@ -407,7 +664,11 @@
           "facing": "left",
           "characterId": "hanan",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "steps-sign",
@@ -417,7 +678,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "sign",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "well",
@@ -427,7 +692,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "none",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "malik",
@@ -437,7 +706,11 @@
           "facing": "left",
           "characterId": "malik",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "donkey-1",
@@ -447,7 +720,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "donkey",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "donkey-2",
@@ -457,7 +734,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "donkey",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "bales",
@@ -467,7 +748,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "basket",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "shimon",
@@ -477,7 +762,11 @@
           "facing": "down",
           "characterId": "shimon",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "tobiah",
@@ -487,7 +776,11 @@
           "facing": "up",
           "characterId": "tobiah",
           "sprite": null,
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "cart",
@@ -497,7 +790,11 @@
           "facing": "down",
           "characterId": null,
           "sprite": "basket",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         },
         {
           "id": "gate-sign",
@@ -507,9 +804,613 @@
           "facing": "down",
           "characterId": null,
           "sprite": "sign",
-          "solid": true
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
         }
-      ]
+      ],
+      "exits": [
+        {
+          "id": "to-house",
+          "x": 5,
+          "y": 4,
+          "w": 1,
+          "h": 1,
+          "to": "miriam-house"
+        },
+        {
+          "id": "east-gate",
+          "x": 33,
+          "y": 11,
+          "w": 1,
+          "h": 2,
+          "to": "jericho-road"
+        }
+      ],
+      "spawns": {
+        "from-house": {
+          "x": 5,
+          "y": 5,
+          "facing": "down"
+        }
+      }
+    },
+    {
+      "id": "jericho-road",
+      "chapter": "road-to-jericho",
+      "name": "The road down to Jericho",
+      "kind": "outdoor",
+      "mood": "wilderness",
+      "layout": [
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "HHrHHHHHHrHHHHHHHHHHHHHHHHH,HHHHHHHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHr,,,,,,,,k,,,,W,,,,,k,,,,,,,HHHHHHH",
+        "HHHHHHHHHHHHHHH.........................HHHHHHHH",
+        "HHHHHHHHHHHHHHH.........................,,HHHHHH",
+        "HHHHHHHHHHHHHHH.HbHHHHHHrHHbHHbHHHHHHH..,,rrHHHH",
+        "HHHHHHHHHHHHHHH.bHHHHHHHHHHHHHHHHHHHHH..,,..HHHH",
+        "HHHHHHbHHHHHHHH.HHHHHHHHHHHHHHHHHHHHHH..,,..HHHH",
+        "HHHHHHHHHHHHHHH.HHHHHHHHHHHHbHHHHHHHHH..,,..HHHH",
+        "HHHHHHHbHrHHr.k..HHHHHHHHHHHHHHHHHHHHH..HH..bHHH",
+        "HHrHHHHHHHHH.....RRRRRRRRRRRRRRRRRRRHH..HH..HHHH",
+        ",,,,,,,,,,,,.....RRRRRRRRRRRRRRRRRRR.......b..rH",
+        "============.....==================r============",
+        "============.....r=================r============",
+        ",,,,,,,,,,,,.....RRRRRRRRRRRRRRRRRRR...........H",
+        "HHHHHHHHHHHHHHHwHRRRRRRRRRRRRRRRRRRR.........r.H",
+        "HHHHHHHHHHHHHH,w,HHHHHHHHHHHHHHHHHHH.........rrH",
+        "HHHHHHHHHHHHHH,w,HrHrrHHHHHHHHHHHHHH...........H",
+        "HHHHHHHHHHHHHH,w,HbHHHHHHHHHHHHRRRHHr..........H",
+        "HHHHHHHHHHHHHHHwwwwwwwwwmwwwwwwRRRHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHwwwwwmwwwwwwwwwwRRRHHHHbrbHHHHHHH",
+        "HHHHHHHHHHHHHHHwwwwwwwwwwwwwwwwRRRHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHRRRHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHbHHHHHHHHHHHHHHHHHHHHbHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+      ],
+      "legend": {
+        "R": "cliff",
+        "H": "hill",
+        ",": "scrub",
+        ".": "sand",
+        "=": "road",
+        "r": "rock",
+        "b": "bush",
+        "k": "cairn",
+        "W": "well",
+        "w": "wadi",
+        "m": "mud"
+      },
+      "baseTile": "scrub",
+      "crowd": false,
+      "entities": [
+        {
+          "id": "back-sign",
+          "kind": "sign",
+          "x": 0,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "crossroads",
+          "kind": "sign",
+          "x": 13,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cairn",
+          "kind": "clue",
+          "x": 14,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "clouds",
+          "kind": "clue",
+          "x": 12,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "clouds",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "wadi-edge",
+          "kind": "clue",
+          "x": 15,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "mud-line",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "bend-entrance",
+          "kind": "clue",
+          "x": 17,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "stone",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "red-rocks",
+          "kind": "feature",
+          "x": 16,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "stone",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "ridge-path",
+          "kind": "feature",
+          "x": 15,
+          "y": 9,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "stone",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cistern",
+          "kind": "feature",
+          "x": 27,
+          "y": 3,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "single-prints",
+          "kind": "clue",
+          "x": 36,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "prints",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "many-prints",
+          "kind": "clue",
+          "x": 42,
+          "y": 11,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "prints",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "broken-jar",
+          "kind": "clue",
+          "x": 40,
+          "y": 14,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "broken-jar",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "cut-purse",
+          "kind": "clue",
+          "x": 41,
+          "y": 13,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "purse",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "torn-cloth",
+          "kind": "clue",
+          "x": 43,
+          "y": 12,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "cloth",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "drag-marks",
+          "kind": "clue",
+          "x": 43,
+          "y": 16,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "drag",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "menashe-road",
+          "kind": "npc",
+          "x": 44,
+          "y": 17,
+          "facing": "up",
+          "characterId": "menashe",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": true,
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "id": "left-water",
+          "kind": "feature",
+          "x": 44,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "waterskin",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "left-bread",
+          "kind": "feature",
+          "x": 43,
+          "y": 18,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bread-cloth",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to-jericho",
+          "x": 47,
+          "y": 13,
+          "w": 1,
+          "h": 2,
+          "to": "jericho"
+        }
+      ],
+      "spawns": {
+        "from-jerusalem": {
+          "x": 1,
+          "y": 13,
+          "facing": "right"
+        }
+      }
+    },
+    {
+      "id": "jericho",
+      "chapter": "road-to-jericho",
+      "name": "Jericho, the city of palm trees",
+      "kind": "outdoor",
+      "mood": "oasis",
+      "layout": [
+        ",,P.....,,,.,.P,,,,,,,,,F,,,,,,,,,",
+        ",..^^^^^^^^^..,,,P,,,,,,,,,,,,,,,,",
+        "P..^^^^^^^^^..P,,,,,,,P,,,,,,,P,,,",
+        ",..^^^^^^^^^..,,,,~~~~R,,,,,,,,,,,",
+        "...^^^^^^^^^..P,,,~~~~~~~~~~~~~~,,",
+        "...####D####..,,,,~~~~Rqqqqqqqqq,,",
+        ".kl=========h.P,,,,,RRdddddddddd,,",
+        "..l==========.,,P,,,,,,qqqqqqqqq,,",
+        "..l=W========.P,,,,,,,ddddddddddP,",
+        "..l=========a.,,,,,,,,,,,,,,,P,,,,",
+        "=========================,,=,,,,,,",
+        "=============.,,,,,,,,,,,,,=,,,,,,",
+        "..lllllllllll.P,,,,,,,,####g#####,",
+        ",,,,,,,,,,,,,.,,P,,,,,,#Lb==^^^^#,",
+        ",,P,,,,,,,,,,.P,,,,,P,,#====^^^^#,",
+        ",,,,,F,,,,P,,.,,,,,,,,,#======o=#,",
+        ",,,,,,,,,,,,,.P,,,F,,,,#========#,",
+        ",dddddddd,,,,.,,,,,,,,,#========#,",
+        ",qqqqqqqq,P,,.P,,,,,,,,#F=======#,",
+        ",dddddddd,,,,.,,,,,,,,,#j======j#,",
+        ",,,P,,,,,,,,,.P,,,,,P,,##########,",
+        "P,,,,,,,P,,,,.,,,,,,,,,,,,,,,,,,,,"
+      ],
+      "legend": {
+        ",": "scrub",
+        ".": "sand",
+        "=": "paving",
+        "^": "roof",
+        "#": "wall",
+        "D": "door",
+        "W": "well",
+        "l": "fence",
+        "P": "palm",
+        "r": "rock",
+        "~": "water",
+        "g": "gate",
+        "o": "oven",
+        "j": "jars",
+        "F": "fig",
+        "R": "reeds",
+        "d": "soil",
+        "q": "crops",
+        "k": "sacks",
+        "h": "trough",
+        "a": "cart",
+        "b": "basket",
+        "L": "loom"
+      },
+      "baseTile": "scrub",
+      "crowd": true,
+      "entities": [
+        {
+          "id": "salome",
+          "kind": "npc",
+          "x": 8,
+          "y": 7,
+          "facing": "down",
+          "characterId": "salome",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "menashe-inn",
+          "kind": "npc",
+          "x": 5,
+          "y": 7,
+          "facing": "right",
+          "characterId": "menashe",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit", "lie"],
+          "marks": ["bandaged", "rag-bandaged", "wrapped-in-cloak"]
+        },
+        {
+          "id": "bedroll",
+          "kind": "feature",
+          "x": 5,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bedroll",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "pack-donkey",
+          "kind": "feature",
+          "x": 11,
+          "y": 6,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "pack-donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "broom",
+          "kind": "feature",
+          "x": 6,
+          "y": 6,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "broom",
+          "solid": false,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "malik-inn",
+          "kind": "npc",
+          "x": 10,
+          "y": 8,
+          "facing": "left",
+          "characterId": "malik",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "inn-donkey",
+          "kind": "feature",
+          "x": 11,
+          "y": 7,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "donkey",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "night",
+          "kind": "feature",
+          "x": 14,
+          "y": 10,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "lamp",
+          "solid": true,
+          "pose": "stand",
+          "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "spring",
+          "kind": "sign",
+          "x": 17,
+          "y": 4,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "sign",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "rivka",
+          "kind": "npc",
+          "x": 27,
+          "y": 16,
+          "facing": "up",
+          "characterId": "rivka",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "natan",
+          "kind": "npc",
+          "x": 29,
+          "y": 17,
+          "facing": "left",
+          "characterId": "natan",
+          "sprite": null,
+          "solid": true,
+          "pose": "lie",
+          "conditional": false,
+          "poses": ["lie", "sit"],
+          "marks": []
+        },
+        {
+          "id": "natan-mat",
+          "kind": "feature",
+          "x": 29,
+          "y": 17,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "bedroll",
+          "solid": false,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "yair",
+          "kind": "npc",
+          "x": 25,
+          "y": 16,
+          "facing": "right",
+          "characterId": "yair",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        }
+      ],
+      "exits": [],
+      "spawns": {
+        "from-road": {
+          "x": 1,
+          "y": 10,
+          "facing": "right"
+        }
+      }
     }
   ]
 }
