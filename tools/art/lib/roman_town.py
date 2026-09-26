@@ -302,45 +302,96 @@ class RomanTown:
         rng = self.rng
         bm, layer = self._rbm()
         stylobate = self._stylobate_rows()
-        # Stalls, jars, tables and the fountain stand on the paving.
+        # Stalls, jars, tables, the fountain and the potted bays (bushes in
+        # the paved street, as tile_bush decides) stand on the paving; a fig
+        # grows from a pit of bare earth.
         under = ("stall", "jars", "table", "fountain")
+
+        def potted(tx, ty):
+            return sum(m.kind(tx + dx, ty + dy) == "paving" for dx in (-1, 0, 1) for dy in (-1, 0, 1)) >= 4
 
         def paved(px, py):
             if any(a <= px <= b and s0 <= py <= s1 for a, b, s0, s1 in stylobate):
                 return False
-            k = m.kind(int(math.floor(px)), int(math.floor(py)))
-            return k in kinds or k in under
+            tx, ty = int(math.floor(px)), int(math.floor(py))
+            k = m.kind(tx, ty)
+            return k in kinds or k in under or (k == "bush" and potted(tx, ty))
 
         cells = [c for k in kinds for c in m.tiles(k)]
         first_x = min(c[0] for c in cells) if cells else 0
         first_y = min(c[1] for c in cells) if cells else 0
 
-        def fit(a, b, c, d):
-            """Shrink a slab to paved tiles: an edge that runs into anything
-            else moves in to the tile boundary."""
-            for _ in range(4):
-                n = 6
-                if not all(paved(a + (b - a) * (k + 0.5) / n, c + 0.01) for k in range(n)):
+        n = 6
+
+        def row_ok(y, a, b):
+            return all(paved(a + (b - a) * (k + 0.5) / n, y) for k in range(n))
+
+        def col_ok(x, c, d):
+            return all(paved(x, c + (d - c) * (k + 0.5) / n) for k in range(n))
+
+        def trim(a, b, c, d, across_first):
+            """Shrink a slab to the paving: a top or bottom edge that runs
+            into anything else moves in to the tile boundary (walls and
+            frontages lie on them); a side edge moves in until it clears
+            whatever it ran into (the stylobate's ends are not on a tile
+            boundary)."""
+
+            def rows(a, b, c, d):
+                if not row_ok(c + 0.01, a, b):
                     c = math.floor(c) + 1.0
-                if not all(paved(a + (b - a) * (k + 0.5) / n, d - 0.01) for k in range(n)):
+                if not row_ok(d - 0.01, a, b):
                     d = math.ceil(d) - 1.0
-                if not all(paved(a + 0.01, c + (d - c) * (k + 0.5) / n) for k in range(n)):
-                    a = math.floor(a) + 1.0
-                if not all(paved(b - 0.01, c + (d - c) * (k + 0.5) / n) for k in range(n)):
-                    b = math.ceil(b) - 1.0
+                return a, b, c, d
+
+            def sides(a, b, c, d):
+                while a < b and not col_ok(a + 0.01, c, d):
+                    a += 0.02
+                while b > a and not col_ok(b - 0.01, c, d):
+                    b -= 0.02
+                return a, b, c, d
+
+            for _ in range(4):
+                for step in (sides, rows) if across_first else (rows, sides):
+                    a, b, c, d = step(a, b, c, d)
                 if b - a < 0.1 or d - c < 0.1:
                     return None
             return a, b, c, d
 
+        def fit(a, b, c, d):
+            """The biggest slab left after trimming its top and bottom first
+            (a slab reaching into a wall row) or its sides first (one reaching
+            into a wall's column or the stylobate)."""
+            boxes = [box for box in (trim(a, b, c, d, False), trim(a, b, c, d, True)) if box]
+            return max(boxes, key=lambda q: (q[1] - q[0]) * (q[3] - q[2])) if boxes else None
+
+        def ends(y0, y1):
+            """Where a course's paving begins and ends: a slab reaching into
+            the wall at either end would be dropped whole (its top and bottom
+            edges fail first), leaving bare earth, so the end slabs are cut
+            to the paving instead."""
+            starts, stops = [], []
+            for yy in (y0 + 0.05, (y0 + y1) / 2, y1 - 0.05):
+                xs = [tx for tx in range(m.w) if paved(tx + 0.5, yy)]
+                if xs:
+                    starts.append(xs[0])
+                    stops.append(xs[-1] + 1)
+            return (max(starts), min(stops)) if starts else (first_x, m.w)
+
+        # The courses are laid from the street's first row of paving; a gate
+        # set in the wall above it gets a course of its own, one tile deep
+        # (a course starting in the wall row would leave a strip of bare
+        # earth under the house fronts).
+        top = min((c[1] for c in m.tiles(kinds[0])), default=first_y)
         y = float(first_y)
         while y < m.h:
-            row_h = 0.7 + rng.random() * 0.4
+            row_h = top - y if y < top else 0.7 + rng.random() * 0.4
+            start, stop = ends(y, y + row_h)
             # Courses start at the paving's edge, staggered by their first slab.
-            x = float(first_x) - rng.random() * 0.9
+            x = float(start) - rng.random() * 0.9
             while x < m.w:
                 ln = 1.0 + rng.random() * 0.9
                 cx, cy = x + ln / 2, y + row_h / 2
-                box = fit(max(x, first_x), x + ln, y, y + row_h)
+                box = fit(max(x, start), min(x + ln, stop), y, y + row_h) if min(x + ln, stop) - max(x, start) > 0.1 else None
                 if box and not paved((box[0] + box[1]) / 2, (box[2] + box[3]) / 2):
                     box = None
                 if box:
@@ -510,8 +561,7 @@ class RomanTown:
             if not m.near(x, y, ("paving",), 1):
                 continue
             pb, pl = self._rbm()
-            for a, b, c, d in ((x + 0.05, y + 0.05, x + 0.95, y + 0.17), (x + 0.05, y + 0.83, x + 0.95, y + 0.95), (x + 0.05, y + 0.05, x + 0.17, y + 0.95), (x + 0.83, y + 0.05, x + 0.95, y + 0.95)):
-                self._cbox(pb, pl, a, b, c, d, 0.0, 0.1, chamfer=0.02)
+            self._frame(pb, pl, x + 0.05, y + 0.05, x + 0.95, y + 0.95, 0.12, 0.0, 0.1, chamfer=0.02)
             self.to_ground(self._obj(f"treepit-{x}-{y}", pb, self._mat("marble-grey")))
             self.to_ground(common.box(f"treepit-soil-{x}-{y}", (0.66, 0.66, 0.02), self.P(x + 0.5, y + 0.5, 0.03), self._mat("soil"), None))
             for k in range(14):

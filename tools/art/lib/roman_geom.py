@@ -128,6 +128,14 @@ class RomanGeometry:
         cache[key] = make()
         return cache[key]
 
+    def _frame(self, bm, layer, x0, y0, x1, y1, t, z0, z1, chamfer=0.015):
+        """Four walls t thick round the rectangle (x0, y0)-(x1, y1) (a tub,
+        a basin, a kerb): the front and back run the full width and the
+        sides stand between them. Overlapping boxes would leave faces lying
+        on one another at the corners, which rendered as black notches."""
+        for a, b, c, d in ((x0, y0, x1, y0 + t), (x0, y1 - t, x1, y1), (x0, y0 + t, x0 + t, y1 - t), (x1 - t, y0 + t, x1, y1 - t)):
+            self._cbox(bm, layer, a, b, c, d, z0, z1, chamfer=chamfer)
+
     def _cbox(self, bm, layer, x0, y0, x1, y1, z0, z1, chamfer=0.015, r=None, point=None):
         """A box with its top edges chamfered, into `bm`: ground rectangle
         (x0, y0)-(x1, y1) in map tiles, from height z0 to z1. `point` maps

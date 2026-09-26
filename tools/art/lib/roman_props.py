@@ -156,9 +156,8 @@ class RomanProps:
         bm, layer = self._rbm()
         x0, y0, x1, y1 = x + 0.08, y + 0.12, x + 0.92, y + 0.88
         t = 0.09
-        for a, b, cc, d in ((x0, y0, x1, y0 + t), (x0, y1 - t, x1, y1), (x0, y0, x0 + t, y1), (x1 - t, y0, x1, y1)):
-            self._cbox(bm, layer, a, b, cc, d, 0.0, 0.58, chamfer=0.02)
-        self._cbox(bm, layer, x0, y0, x1, y1, 0.0, 0.12, chamfer=0.01)
+        self._frame(bm, layer, x0, y0, x1, y1, t, 0.0, 0.58, chamfer=0.02)
+        self._cbox(bm, layer, x0 + t, y0 + t, x1 - t, y1 - t, 0.0, 0.12, chamfer=0.01)
         objs.append(self._obj(f"{name}-tub", bm, R.vat_plaster("#e8e4d8", base="#aaa290")))
         objs.append(common.box(f"{name}-slurry", (x1 - x0 - 2 * t, y1 - y0 - 2 * t, 0.01), self.P((x0 + x1) / 2, (y0 + y1) / 2, 0.5), R.dye("fullers"), None))
         # A length of cloth soaking, one end hanging over the side.
@@ -428,9 +427,8 @@ class RomanProps:
         bx0, by0, bx1, by1 = x0 - 0.2, y0 + 0.05, x1 + 0.2, y1 - 0.02
         t = 0.13
         h = 0.62
-        for a, b, c, d in ((bx0, by0, bx1, by0 + t), (bx0, by1 - t, bx1, by1), (bx0, by0, bx0 + t, by1), (bx1 - t, by0, bx1, by1)):
-            self._cbox(bm, layer, a, b, c, d, 0.0, h, chamfer=0.025)
-        self._cbox(bm, layer, bx0, by0, bx1, by1, 0.0, 0.1, chamfer=0.01)
+        self._frame(bm, layer, bx0, by0, bx1, by1, t, 0.0, h, chamfer=0.025)
+        self._cbox(bm, layer, bx0 + t, by0 + t, bx1 - t, by1 - t, 0.0, 0.1, chamfer=0.01)
         # The back slab with its spout.
         self._cbox(bm, layer, bx0 + 0.22, by0 - 0.1, bx1 - 0.22, by0 + 0.08, 0.0, 1.4, chamfer=0.03)
         self._cbox(bm, layer, bx0 + 0.16, by0 - 0.13, bx1 - 0.16, by0 + 0.11, 1.4, 1.5, chamfer=0.03)

@@ -278,8 +278,7 @@ class RomanRooms:
         x0, x1, y0, y1 = min(xs), max(xs) + 1, min(ys), max(ys) + 1
         kb, kl = self._rbm()
         t = 0.12
-        for a, b, c, d in ((x0, y0, x1, y0 + t), (x0, y1 - t, x1, y1), (x0, y0, x0 + t, y1), (x1 - t, y0, x1, y1)):
-            self._cbox(kb, kl, a, b, c, d, 0.0, 0.14, chamfer=0.02)
+        self._frame(kb, kl, x0, y0, x1, y1, t, 0.0, 0.14, chamfer=0.02)
         self.to_ground(self._obj("garden-kerb", kb, self._mat("marble-grey")))
         soil = common.box("garden-soil", (x1 - x0 - 2 * t, y1 - y0 - 2 * t, 0.02), self.P((x0 + x1) / 2, (y0 + y1) / 2, 0.1), M.plain("#3e3024", 0.95, 0.1), None)
         self.to_ground(soil)
