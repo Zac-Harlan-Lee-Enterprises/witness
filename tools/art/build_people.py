@@ -56,11 +56,16 @@ import view  # noqa: E402
 FRAME_W = 44
 FRAME_H = 68
 FOOT_Y = 62
+# People at rest are drawn with the world camera (45°), not the figure
+# camera: lying or sitting, they lie along the ground, which the figure
+# camera foreshortens (a man lying on the road came out about 1 m long,
+# shorter than his own shadow).
+REST_TILT = 45.0
 REST_W = 84
-REST_H = 72
-REST_Y = 54
+REST_H = 96
+REST_Y = 60
 SHADOW_BOX = {"day": (-64, -42, 20, 12), "late": (-12, -66, 150, 14), "indoor": (-28, -18, 28, 12)}
-REST_SHADOW_BOX = {"day": (-70, -46, 48, 22), "late": (-40, -50, 110, 22), "indoor": (-46, -26, 46, 20)}
+REST_SHADOW_BOX = {"day": (-70, -46, 48, 36), "late": (-40, -50, 110, 36), "indoor": (-46, -40, 46, 36)}
 SHADOW_PPU = 1.0
 DIRECTIONS = [("down", 0.0), ("left", -90.0), ("right", 90.0), ("up", 180.0)]
 # Lying: the row names where the head is.
@@ -243,7 +248,7 @@ def render(job, a, manifest, tmp):
         for part in mark_parts:
             part.obj.visible_camera = True
             part.obj.hide_render = job.overlay is not None and part.mark != job.overlay
-        view.setup_figure_camera(scene, foot - fh_u / 2, fw, fh, a.ppu)
+        view.setup_figure_camera(scene, foot - fh_u / 2, fw, fh, a.ppu, tilt_deg=REST_TILT if rest else 32.0)
         sheet = np.zeros((fh * n_rows, fw * n_cols, 4), dtype=np.float32)
 
         def poses():

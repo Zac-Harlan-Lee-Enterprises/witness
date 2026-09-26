@@ -601,6 +601,11 @@ class PropsKit:
         objs.append(cloak)
         return objs
 
+    def floor_z(self, x, y):
+        """How far above the terrain something lying on tile (x, y) rests:
+        on top of the flagstones where the tile is paved."""
+        return 0.036 if self.map.kind(x, y) in ("paving", "gate") else 0.0
+
     # Clues on the road: things lying on the ground. Low, so people can stand
     # on them: flat sprites that sort by their northern edge.
     def entity_prints(self, name, x, y, e=None):
@@ -609,47 +614,70 @@ class PropsKit:
         them; one line of them, or a trampled crowd."""
         rng = self.rng
         many = e is not None and "many" in e["id"]
-        mat = M.plain("#9a876a", 0.85, 0.12)
+        mat = M.scuff("#8a765a", 0.85)
         objs = []
-        n = 16 if many else 6
-        for k in range(n):
-            if many:
-                px, py = x + 0.12 + rng.random() * 0.76, y + 0.1 + rng.random() * 0.8
+        if many:
+            # Several people, heading north up the gully: prints over prints.
+            for k in range(18):
+                px, py = x + 0.12 + rng.random() * 0.76, y + 0.08 + rng.random() * 0.84
                 a = -1.4 + rng.random() * 0.7
-            else:
-                px, py = x + 0.36 + (k % 2) * 0.2, y + 0.02 + k * 0.17
-                a = math.pi / 2 + (rng.random() - 0.5) * 0.2
-            for sub, (off, r) in enumerate(((0.0, 0.032), (0.07, 0.026))):
-                cx = px + math.cos(a) * off
-                cy = py + math.sin(a) * off
-                objs.append(self._ellipsoid(f"{name}-{k}-{sub}", self.P(cx, cy, 0.003), (r * 1.1, r * 0.8, 0.0025), mat, 12, 4))
+                objs.append(self._footprint(f"{name}-{k}", px, py, a, mat, 0.2 + rng.random() * 0.04))
+        else:
+            # One walker heading down the road: left, right, left...
+            for k in range(5):
+                a = math.pi / 2 + (rng.random() - 0.5) * 0.15
+                side = 0.07 if k % 2 else -0.07
+                objs.append(self._footprint(f"{name}-{k}", x + 0.5 + side, y + 0.12 + k * 0.22, a, mat, 0.21))
         return objs, y * 32.0, True
+
+    def _footprint(self, name, cx, cy, a, mat, length):
+        """One sandal print centred on (cx, cy), pointing along angle `a`
+        (map axes): heel, narrow waist, broad ball, rounded toe, its edges
+        fading into the dust (UV u across, v along)."""
+        bm = bmesh.new()
+        uv = bm.loops.layers.uv.new("UVMap")
+        # (fraction of the length, width in tiles)
+        stations = [(0.0, 0.035), (0.08, 0.07), (0.3, 0.062), (0.5, 0.068), (0.72, 0.09), (0.9, 0.08), (1.0, 0.03)]
+        ca, sa = math.cos(a), math.sin(a)
+        prev = None
+        for i, (f, w) in enumerate(stations):
+            s = (f - 0.5) * length
+            px, py = cx + ca * s, cy + sa * s
+            lx, ly = -sa * w / 2, ca * w / 2
+            row = [bm.verts.new(self.P(px + lx, py + ly, 0.003)), bm.verts.new(self.P(px - lx, py - ly, 0.003))]
+            if prev:
+                face = bm.faces.new((prev[0], prev[1], row[1], row[0]))
+                f0 = stations[i - 1][0]
+                for loop, (u, v) in zip(face.loops, ((0.0, f0), (1.0, f0), (1.0, f), (0.0, f))):
+                    loop[uv].uv = (u, v)
+            prev = row
+        return common.mesh_object(name, bm, mat, None)
 
     def entity_drag(self, name, x, y, e=None):
         """Scuffed drag marks: two ragged shallow furrows through the dust
         (heels dragged), crossing over the footprints, leading off the road."""
         rng = self.rng
-        mat = M.plain("#9c8a70", 0.92, 0.1)
-        ridge = M.plain("#c9b894", 0.95, 0.1)
+        mat = M.scuff("#86725a", 0.9)
         objs = []
         for side in (-0.09, 0.09):
             bm = bmesh.new()
-            rb = bmesh.new()
-            prev = prevr = None
-            steps = 14
+            uv = bm.loops.layers.uv.new("UVMap")
+            prev = None
+            steps = 18
             for i in range(steps + 1):
                 t = i / steps
                 cx = x + 0.15 + t * 0.7 + side
                 cy = y + 0.05 + t * 0.9 + math.sin(t * 5 + side * 20) * 0.04
-                w = 0.05 + rng.random() * 0.015
+                # Wider where the heels dug in, narrowing as they lifted.
+                w = (0.045 + rng.random() * 0.025) * (1.0 - 0.35 * t)
                 row = [bm.verts.new(self.P(cx - w, cy + w * 0.3, 0.003)), bm.verts.new(self.P(cx + w, cy - w * 0.3, 0.003))]
-                rrow = [rb.verts.new(self.P(cx + w, cy - w * 0.3, 0.005)), rb.verts.new(self.P(cx + w * 1.5, cy - w * 0.45, 0.003))]
                 if prev:
-                    bm.faces.new((prev[0], prev[1], row[1], row[0]))
-                    rb.faces.new((prevr[0], prevr[1], rrow[1], rrow[0]))
-                prev, prevr = row, rrow
+                    f = bm.faces.new((prev[0], prev[1], row[1], row[0]))
+                    ta = (i - 1) / steps
+                    for loop, (u, v) in zip(f.loops, ((0.0, ta), (1.0, ta), (1.0, t), (0.0, t))):
+                        loop[uv].uv = (u, v * 4.0)
+                prev = row
             objs.append(common.mesh_object(f"{name}-f{side}", bm, mat, None))
-            objs.append(common.mesh_object(f"{name}-r{side}", rb, ridge, None))
         return objs, y * 32.0, True
 
     def entity_broken_jar(self, name, x, y, e=None):
@@ -703,7 +731,7 @@ class PropsKit:
     def entity_purse(self, name, x, y, e=None):
         """An empty leather purse with its strings cut, lying open."""
         objs = []
-        c = self.P(x + 0.5, y + 0.55)
+        c = self.P(x + 0.5, y + 0.55, self.floor_z(x, y))
         bag = self._ellipsoid(f"{name}-bag", c + Vector((0, 0, 0.025)), (0.1, 0.08, 0.03), M.leather("#6a4a2c"), 16, 8)
         objs.append(bag)
         objs.append(self._ellipsoid(f"{name}-mouth", c + Vector((0.02, -0.06, 0.03)), (0.05, 0.02, 0.015), M.plain("#2a1c12", 0.8), 12, 6))
@@ -760,7 +788,7 @@ class PropsKit:
 
     def entity_waterskin(self, name, x, y, e=None):
         """A goatskin water bag lying on its side, its neck tied."""
-        c = self.P(x + 0.5, y + 0.55)
+        c = self.P(x + 0.5, y + 0.55, self.floor_z(x, y))
         skin = M.leather("#5b3b24")
         objs = [self._ellipsoid(f"{name}-bag", c + Vector((0, 0, 0.08)), (0.2, 0.13, 0.08), skin, 20, 10)]
         objs.append(self._branch(f"{name}-neck", c + Vector((0.18, 0.02, 0.08)), c + Vector((0.28, 0.04, 0.1)), 0.035, 0.025, skin, 8))
@@ -770,7 +798,7 @@ class PropsKit:
     def entity_bread_cloth(self, name, x, y, e=None):
         """Bread and dates on an unfolded cloth."""
         rng = self.rng
-        c = self.P(x + 0.5, y + 0.5)
+        c = self.P(x + 0.5, y + 0.5, self.floor_z(x, y))
         objs = [common.box(f"{name}-cloth", (0.5, 0.36, 0.01), c + Vector((0, 0, 0.006)), M.cloth("#d8cdb0", "#8a4f2f", "linen", 0.3, 0.04), None)]
         for k in range(2):
             objs.append(self._ellipsoid(f"{name}-loaf{k}", c + Vector((-0.1 + k * 0.16, 0.03, 0.03)), (0.08, 0.08, 0.025), M.plain("#b0804a", 0.7), 14, 6))
@@ -780,7 +808,7 @@ class PropsKit:
 
     def entity_broom(self, name, x, y, e=None):
         """A broom of bound palm fibre on a stick, leaning where it was left."""
-        c = self.P(x + 0.5, y + 0.55)
+        c = self.P(x + 0.5, y + 0.55, self.floor_z(x, y))
         objs = [self._branch(f"{name}-stick", c + Vector((-0.3, 0.1, 0.02)), c + Vector((0.2, -0.05, 0.03)), 0.014, 0.012, M.wood("#7a5634", 3.0), 6, bow=0.0)]
         head = self._lathe(f"{name}-head", [(0.02, 0.0), (0.05, 0.08), (0.1, 0.2), (0.11, 0.22)], c + Vector((0.2, -0.05, 0.03)), M.straw("#a88a58"), 16)
         head.data.transform(Matrix.Translation(c + Vector((0.2, -0.05, 0.03))) @ Matrix.Rotation(-1.45, 4, "Y") @ Matrix.Translation(-(c + Vector((0.2, -0.05, 0.03)))))
@@ -789,7 +817,7 @@ class PropsKit:
 
     def entity_bedroll(self, name, x, y, e=None):
         """A sleeping mat: a rush mat with a folded striped blanket."""
-        c = self.P(x + 0.5, y + 0.5)
+        c = self.P(x + 0.5, y + 0.5, self.floor_z(x, y))
         objs = [common.box(f"{name}-mat", (0.95, 0.62, 0.02), c + Vector((0, 0, 0.012)), M.straw("#b39a68"), None)]
         blanket = common.box(f"{name}-blanket", (0.4, 0.58, 0.05), c + Vector((0.24, 0.0, 0.045)), M.textile(["#7a3a2c", "#c9b996", "#3c4c5e", "#c9b996"], "bedroll-blanket", band=0.12), None, bevel=0.02)
         common.bake_modifiers(blanket)

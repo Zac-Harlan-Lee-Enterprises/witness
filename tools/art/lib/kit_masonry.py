@@ -92,7 +92,7 @@ class MasonryKit:
             f[layer] = r
             f.smooth = True
 
-    def yard_flags(self, kinds=("paving",), name="yard-flags", spacing=0.36):
+    def yard_flags(self, kinds=("paving",), name="yard-flags", spacing=0.32):
         """Field-stone flags laid irregularly: a jittered grid of cells, each a
         worn four- or five-sided stone with earth in the gaps; now and then
         two cells make one long stone, and a few are missing or sunk."""
@@ -100,6 +100,10 @@ class MasonryKit:
         rng = self.rng
         nx = int(m.w / spacing) + 2
         ny = int(m.h / spacing) + 2
+        # Where stones survive: patches about two tiles across.
+        from place import value_noise
+
+        field = value_noise(m.w * 4 + 8, m.h * 4 + 8, 7, 23)
         grid = [[(i * spacing + (rng.random() - 0.5) * spacing * 0.55, j * spacing + (rng.random() - 0.5) * spacing * 0.55) for i in range(nx + 1)] for j in range(ny + 1)]
         bm = bmesh.new()
         layer = bm.faces.layers.float.new("rand")
@@ -121,7 +125,11 @@ class MasonryKit:
                         used.add((i + 1, j))
                 used.add((i, j))
                 edge = m.near(int(cx), int(cy), set(k for k in ("sand", "scrub", "grass", "void")), 1)
-                if rng.random() < (0.12 if edge else 0.03):
+                # Worn: stones lifted or lost over the years, in patches, and
+                # most at the edges.
+                f = field[int(cy * 4), int(cx * 4)]
+                lost = 0.08 + 0.8 * min(1.0, max(0.0, (f - 0.38) / 0.3)) + (0.15 if edge else 0.0)
+                if rng.random() < lost:
                     continue
                 self._flag(bm, layer, corners, rng)
         obj = common.mesh_object(name, bm, self.paving, self.col_ground, smooth=True)
@@ -137,8 +145,8 @@ class MasonryKit:
             d = math.hypot(dx, dy) or 1.0
             k = max(0.0, 1 - gap / d)
             pts.append((cx + dx * k, cy + dy * k))
-        z0 = 0.028 + (rng.random() - 0.5) * 0.014 - (0.015 if rng.random() < 0.08 else 0.0)
-        tilt = ((rng.random() - 0.5) * 0.02, (rng.random() - 0.5) * 0.02)
+        z0 = 0.014 + (rng.random() - 0.5) * 0.012 - (0.01 if rng.random() < 0.15 else 0.0)
+        tilt = ((rng.random() - 0.5) * 0.025, (rng.random() - 0.5) * 0.025)
         r = rng.random()
         n = 3
         # Top: bilinear patch over the quad (or fan for 5), slightly domed.
@@ -153,7 +161,7 @@ class MasonryKit:
                     bx = pts[3][0] + (pts[2][0] - pts[3][0]) * u
                     by = pts[3][1] + (pts[2][1] - pts[3][1]) * u
                     px, py = ax + (bx - ax) * v, ay + (by - ay) * v
-                    dome = 0.012 * math.sin(math.pi * u) * math.sin(math.pi * v)
+                    dome = 0.005 * math.sin(math.pi * u) * math.sin(math.pi * v)
                     pz = z0 + dome + tilt[0] * (u - 0.5) + tilt[1] * (v - 0.5)
                     row.append(bm.verts.new(self.P(px, py, pz)))
                 grid.append(row)

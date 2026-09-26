@@ -92,7 +92,7 @@ class PlantsKit:
         height = 2.5 + rng.random() * 1.1
         lean_a = rng.random() * math.tau
         lean = 0.12 + rng.random() * 0.22
-        trunk_mat = M.palm_trunk("#6e5a44")
+        trunk_mat = M.palm_trunk("#7e6a54")
         # The trunk: a tube with a gentle curve, knobbly with leaf-base rings.
         n = 40
         seg = 14

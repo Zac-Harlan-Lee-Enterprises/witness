@@ -284,9 +284,11 @@ def _random_attr(n, name="rand"):
     return n.new("ShaderNodeAttribute", _attribute_name=name, _attribute_type="GEOMETRY")
 
 
-def limestone(color="#d6c8aa", name="limestone", worn=0.5):
+def limestone(color="#d6c8aa", name="limestone", worn=0.5, glow=0.0):
     """Jerusalem limestone: warm cream with grey weathering, pitted, with a
-    per-block variation from the builder's `rand` attribute."""
+    per-block variation from the builder's `rand` attribute. `glow` makes it
+    faintly self-lit: the cut tops of a cutaway's walls, which sit under the
+    invisible walls and would otherwise be black."""
 
     def build():
         n = Nodes(name)
@@ -311,10 +313,11 @@ def limestone(color="#d6c8aa", name="limestone", worn=0.5):
         col3 = n.mix((grime, "Result"), (col2, 2), shade(color, -0.42))
         h = n.math("ADD", (fine, "Fac"), (pits, "Distance"))
         bump = n.bump((h, "Value"), strength=0.35, distance=0.01)
-        n.bsdf(**{"Base Color": (col3, 2), "Roughness": 0.86, "Specular IOR Level": 0.3, "Normal": (bump, "Normal")})
+        extra = {"Emission Color": (col3, 2), "Emission Strength": glow} if glow else {}
+        n.bsdf(**{"Base Color": (col3, 2), "Roughness": 0.86, "Specular IOR Level": 0.3, "Normal": (bump, "Normal"), **extra})
         return n.mat
 
-    return cached(("limestone", color, name, worn), build)
+    return cached(("limestone", color, name, worn, glow), build)
 
 
 def plaster(color="#cdbd9e", name="plaster"):
@@ -492,6 +495,30 @@ def water():
     return cached(("water",), build)
 
 
+def scuff(color="#9c8a6c", opacity=0.7):
+    """Disturbed dust (heels dragged through it): streaks along the mark,
+    fading out at its edges so it lies in the ground rather than on it.
+    Expects UVs: u across the mark (0-1), v along it."""
+
+    def build():
+        n = Nodes(f"scuff-{color}")
+        uv = n.coords("UV")
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=uv)
+        # Streaks run along the mark: fast across it, slow along it.
+        stretch = n.new("ShaderNodeCombineXYZ", X=(n.math("MULTIPLY", (sep, "X"), 9.0), "Value"), Y=(n.math("MULTIPLY", (sep, "Y"), 1.2), "Value"))
+        streak = n.noise(1.0, 3.0, 0.6, (stretch, "Vector"))
+        # 1 in the middle of the mark, 0 at its edges.
+        centre = n.math("SUBTRACT", 1.0, (n.math("ABSOLUTE", (n.math("SUBTRACT", (n.math("MULTIPLY", (sep, "X"), 2.0), "Value"), 1.0), "Value")), "Value"))
+        soft = n.new("ShaderNodeMapRange", Value=(centre, "Value"), **{"From Min": 0.0, "From Max": 0.7, "To Min": 0.0, "To Max": 1.0})
+        grain = n.new("ShaderNodeMapRange", Value=(streak, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.45, "To Max": 1.0})
+        alpha = n.math("MULTIPLY", (n.math("MULTIPLY", (soft, "Result"), (grain, "Result")), "Value"), opacity)
+        col = n.mix((streak, "Fac"), shade(color, -0.12), shade(color, 0.1))
+        n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.97, "Alpha": (alpha, "Value")})
+        return n.mat
+
+    return cached(("scuff", color, opacity), build)
+
+
 def emissive(color="#ff8a3a", strength=6.0):
     def build():
         n = Nodes(f"glow-{color}")
@@ -577,6 +604,11 @@ def _layer_colour(n, L, noises):
         # Furrows, ruts or fibres running east-west.
         s = n.math("MULTIPLY", (noises["streak"], "Fac"), L["streak"])
         out = (n.mix((s, "Value"), out, shade(c, -0.3)), 2)
+    if L.get("cracks"):
+        # Fine shrinkage cracks, as in a mud-plastered floor.
+        v = n.new("ShaderNodeTexVoronoi", Scale=L.get("crack_scale", 2.5), Vector=n.coords("Object"), _feature="DISTANCE_TO_EDGE")
+        cr = n.new("ShaderNodeMapRange", Value=(v, "Distance"), **{"From Min": 0.0, "From Max": 0.012, "To Min": L["cracks"], "To Max": 0.0})
+        out = (n.mix((cr, "Result"), out, shade(c, -0.45)), 2)
     return out
 
 
@@ -880,9 +912,10 @@ def thatch(color="#9c8454", name=None):
     return cached(("thatch", color, name), build)
 
 
-def frond(color="#5a6a36", dry="#a8955c"):
+def frond(color="#5a6a36", dry="#a8955c", rough=0.48):
     """Date palm leaflets: waxy grey-green, yellowing on the oldest fronds
-    (per-instance random), paler beneath, a little translucent in the sun."""
+    (per-instance random), paler beneath, a little translucent in the sun.
+    Cut and dried (`rough` near 1) they lose their wax and their sheen."""
 
     def build():
         n = Nodes(f"frond-{color}")
@@ -893,15 +926,15 @@ def frond(color="#5a6a36", dry="#a8955c"):
         n.bsdf(
             **{
                 "Base Color": (back, 2),
-                "Roughness": 0.48,
-                "Specular IOR Level": 0.35,
+                "Roughness": rough,
+                "Specular IOR Level": 0.35 * min(1.0, (1.2 - rough) / 0.72),
                 "Subsurface Weight": 0.12,
                 "Subsurface Radius": (0.3, 0.5, 0.1),
             }
         )
         return n.mat
 
-    return cached(("frond", color, dry), build)
+    return cached(("frond", color, dry, rough), build)
 
 
 def palm_trunk(color="#6e5a44"):
@@ -922,14 +955,15 @@ def palm_trunk(color="#6e5a44"):
         col = n.mix((fm, "Value"), (col, 2), "#a8977a")
         _ = sepP
         h2 = n.math("ADD", (h, "Value"), (fib, "Fac"))
-        bump = n.bump((h2, "Value"), strength=0.85, distance=0.02)
+        # A gentle bump: the trunk is thin, and a strong one turns it black.
+        bump = n.bump((h2, "Value"), strength=0.3, distance=0.005)
         n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.95, "Normal": (bump, "Normal")})
         return n.mat
 
     return cached(("palmtrunk", color), build)
 
 
-def pool_water(tint="#6f8a70", deep="#3f6a5c"):
+def pool_water(tint="#9dbca0", deep="#5d8a78"):
     """Spring water: clear and a little green, darker with depth (absorption
     in the water body), reflecting the sky, with fine wind ripples."""
 
@@ -950,7 +984,7 @@ def pool_water(tint="#6f8a70", deep="#3f6a5c"):
                 "Normal": (bump, "Normal"),
             }
         )
-        vol = n.new("ShaderNodeVolumeAbsorption", Color=hex_rgb(deep), Density=0.55)
+        vol = n.new("ShaderNodeVolumeAbsorption", Color=hex_rgb(deep), Density=0.3)
         n.link(vol, "Volume", n.out, "Volume")
         return n.mat
 

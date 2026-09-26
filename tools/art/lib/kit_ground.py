@@ -464,9 +464,9 @@ class GroundKit:
             self.ground_objects.append(common.mesh_object(f"furrows-{x0}-{y}", bm, mat, self.col_ground, smooth=True))
         # Water standing in the channels between plots.
         chan = [(x, y) for x, y in m.tiles("soil") if m.kind(x, y - 1) == "crops" or m.kind(x, y + 1) == "crops"]
-        wet = M.water()
+        wet = M.plain("#4f4a3a", 0.25, 0.4)
         for x, y in chan[:: max(1, len(chan) // 12)]:
-            o = self._ellipsoid(f"channel-{x}-{y}", self.P(x + 0.5, y + 0.92, 0.01), (0.5, 0.05, 0.003), wet, 16, 4)
+            o = self._ellipsoid(f"channel-{x}-{y}", self.P(x + 0.5, y + 0.94, 0.004), (0.46, 0.035, 0.002), wet, 16, 4)
             self.to_ground(o)
 
     def tile_water(self):
@@ -476,6 +476,9 @@ class GroundKit:
         if not cells:
             return
         w = terrain.water_surface(self, cells, -0.14, M.pool_water(), self.col_ground)
+        # Refracting water would shade its own bed black (no caustics): light
+        # passes through it to the stones below.
+        w.visible_shadow = False
         self.ground_objects.append(w)
 
     def tile_hill(self):

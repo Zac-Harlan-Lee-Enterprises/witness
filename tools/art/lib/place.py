@@ -86,7 +86,7 @@ LAYER_LOOKS = {
     "scrub": {"color": "#a8956a", "scale": "mid", "dark": 0.14, "light": 0.08},
     "path": {"color": "#d0b98f", "dark": 0.05, "light": 0.08},
     "bed": {"color": "#8a7658", "scale": "mid"},
-    "yard": {"color": "#a38d6c", "scale": "mid", "grit": 0.4},
+    "yard": {"color": "#ab9471", "scale": "mid", "grit": 0.4, "dark": 0.08, "light": 0.06, "mottle": 0.25, "mottle_color": "#9a8262"},
     # wilderness
     "dust": {"color": "#d8c7a3", "ripple": 0.06, "grit": 0.5, "dark": 0.14, "light": 0.1, "chips": 0.35},
     "road": {"color": "#d2bf99", "grit": 0.55, "dark": 0.05, "light": 0.06},
@@ -101,9 +101,9 @@ LAYER_LOOKS = {
     "wet": {"color": "#6a5c44", "rough": 0.55, "scale": "mid"},
     "poolbed": {"color": "#a49a78", "scale": "mid", "mottle": 0.45, "mottle_color": "#6f7a58", "grit": 0.5, "rough": 0.6},
     # home
-    "floor": {"color": "#a8895f", "grit": 0.3, "scale": "mid", "dark": 0.08, "light": 0.05, "chips": 0.15},
-    "hearth": {"color": "#5a4a3c", "grit": 0.2, "scale": "mid", "mottle": 0.4, "mottle_color": "#3a302a"},
-    "trodden": {"color": "#b89a70", "dark": 0.06, "light": 0.05, "grit": 0.15},
+    "floor": {"color": "#a5875e", "grit": 0.35, "scale": "mid", "dark": 0.15, "light": 0.07, "chips": 0.15, "mottle": 0.3, "mottle_color": "#8e7050", "cracks": 0.3, "crack_scale": 2.2},
+    "hearth": {"color": "#6a5848", "grit": 0.25, "scale": "mid", "mottle": 0.45, "mottle_color": "#40352c"},
+    "trodden": {"color": "#b39670", "dark": 0.06, "light": 0.05, "grit": 0.12},
 }
 
 
@@ -238,7 +238,7 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
             self.roof = M.plaster("#d4c19c", "roof-plaster")
         elif self.style == "oasis":
             self.limestone = M.limestone("#cdb892", "fieldstone", worn=0.6)
-            self.paving = M.limestone("#c8b08a", "yard-paving", worn=0.5)
+            self.paving = M.limestone("#c2aa84", "yard-paving", worn=0.75)
             self.roof = M.plaster("#b89a74", "roof-mud")
             self.brick = M.mudbrick("#a8845c", "#bf9f78", "mudbrick", 0.6)
             self.brick_bare = M.mudbrick("#a07a52", "#b8966c", "mudbrick-bare", 0.25)
@@ -341,10 +341,25 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
         if name == "hilltop":
             return mask
         if name == "trodden":
+            if self.style == "home":
+                return self._near(("door",), 3.2, W, Hh, px, 12)
             return mask * np.clip(value_noise(W, Hh, 10, 12) * 1.4, 0, 1)
+        if name == "hearth":
+            return self._near(("oven",), 1.7, W, Hh, px, 14)
         if name == "rut":
             return self._ruts(W, Hh, px)
         return mask
+
+    def _near(self, kinds, radius, W, Hh, px, seed):
+        """A soft mask within `radius` tiles of the given kinds, broken up by noise."""
+        m = self.map
+        pts = [(x + 0.5, y + 0.5) for k in kinds for x, y in m.tiles(k)]
+        if not pts:
+            return np.zeros((Hh, W), dtype=np.float32)
+        ys, xs = np.mgrid[0:Hh, 0:W] / px
+        d = np.min([np.hypot(xs - x, ys - y) for x, y in pts], axis=0)
+        near = np.clip(1 - d / radius, 0, 1) ** 0.8
+        return (near * np.clip(value_noise(W, Hh, 9, seed) * 1.5 - 0.1, 0, 1)).astype(np.float32)
 
     def _ruts(self, W, Hh, px):
         """Two worn wheel tracks along each band of road, a gauge apart."""

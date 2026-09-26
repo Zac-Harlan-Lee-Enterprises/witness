@@ -82,6 +82,13 @@ const jobs = {
       ...rest,
     ],
   ],
+  // Bring older renders up to date (tiled grounds, half-resolution pages) without rendering.
+  upgrade: () => [
+    [
+      'tools/art/upgrade_place.py',
+      ...(rest.length ? rest : PLACES).map((id) => `public/art/${id}`),
+    ],
+  ],
   probe: () => {
     const [id, x0, y0, x1, y1, ppu = '1.5', ...extra] = rest;
     mkdirSync('test-results/art-probes', { recursive: true });

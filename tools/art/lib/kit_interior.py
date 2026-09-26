@@ -42,10 +42,12 @@ class InteriorKit:
         back = max(back_rows) + 1 if back_rows and back_rows[0] == 0 else 1
         front = m.h - 1
         west, east = 1, m.w - 1
-        self.exposure = 3.5
+        self.exposure = 3.1
         plaster = self.plaster
         stone = M.limestone("#bba98a", "cut-stone", worn=0.6)
-        cut = M.limestone("#a8977a", "wall-cut", worn=0.6)
+        # The cut tops read as a dark section through the wall (the invisible
+        # wall above them keeps every light off), not as holes.
+        cut = M.limestone("#a8977a", "wall-cut", worn=0.6, glow=0.025)
         # The back wall: plastered face at y = back, rising off the top of the view.
         face = common.box("back-wall", (m.w, 0.5, ROOM_H + 0.6), B(m.w / 2, back - 0.25, (ROOM_H + 0.6) / 2), plaster, None)
         self.to_ground(face)
@@ -208,12 +210,26 @@ class InteriorKit:
             xs = [d[0] for d in doors]
             cx = (min(xs) + max(xs) + 1) / 2
             # Sunlit ground outside bounces warm light in through the doorway.
-            light = self.add_light("door-daylight", "AREA", B(cx, m.h - 1.15, 0.9), 80.0, "#ffe6c2")
+            light = self.add_light("door-daylight", "AREA", B(cx, m.h - 1.15, 0.9), 110.0, "#ffe6c2")
             light.data.shape = "RECTANGLE"
             light.data.size = 1.8
             light.data.size_y = 1.6
             light.rotation_euler = (math.radians(75), 0, 0)
-        _ = back
+        # Light bounced off the sunlit floor and walls fills the room softly;
+        # without it (the invisible roof keeps the sky out) corners go black.
+        fill = self.add_light("room-fill", "AREA", B(m.w / 2, (back + m.h - 1) / 2, ROOM_H - 0.25), 50.0, "#ffd9a8")
+        fill.data.shape = "RECTANGLE"
+        fill.data.size = m.w - 2.5
+        fill.data.size_y = max(1.0, m.h - 2 - back)
+        # The front wall's inner face, lit by the doorway, bounces light back
+        # onto everything's south side: the side the camera sees. (A bounce
+        # card, as a photographer would use; the invisible wall itself stays
+        # dim, as it is seen from nowhere.)
+        card = self.add_light("front-bounce", "AREA", B(m.w / 2, m.h - 1.06, 1.2), 45.0, "#ffdcb0")
+        card.data.shape = "RECTANGLE"
+        card.data.size = m.w - 2.5
+        card.data.size_y = 1.4
+        card.rotation_euler = (math.radians(88), 0, 0)
 
     def _shafts(self, back):
         """Dust glowing in the sunlight that slants in through the window and

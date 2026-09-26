@@ -8,17 +8,22 @@
     blender -b --factory-startup -P tools/art/build_place.py -- \
         --scene jericho-road --probe 10 8 30 20 --out /tmp/probe.png [--ppu 1.5] [--variants late]
 
+    # Re-render part of a place already built: the ground and shade only, or
+    # only the things shown while a story condition holds:
+    ... -- --scene jericho --out public/art/jericho --only ground|conditional
+
 Writes, per lighting variant:
   ground-<v>.webp       the ground (terrain, paving, earth, grass, floors...)
                         with every standing thing's shadow and occlusion baked
                         in, except things shown only while a story condition
-                        holds (they carry their own shadow)
+                        holds (they carry their own shadow); cut into tiles
+                        ground-<v>-x<i>y<j>.webp when bigger than 2048 px
   ground-<v>-low.webp   the same at half resolution (phones, reduced effects)
   shade-<v>.webp        sun visibility on the ground (white = sunlit), coarse,
                         so the game can dim people standing in shade
   sprites-<v>-<n>.webp  atlas pages of every standing thing, each rendered
                         on its own with the rest of the place still casting
-                        shadows and bouncing light onto it
+                        shadows and bouncing light onto it (-low: half size)
 and manifest.json describing where everything goes and how it sorts.
 """
 import argparse
@@ -53,6 +58,15 @@ def args():
     p.add_argument("--samples", type=int, default=96)
     p.add_argument("--variants", nargs="+", default=None)
     p.add_argument("--probe", nargs=4, type=float, default=None)
+    p.add_argument(
+        "--only",
+        choices=["ground", "conditional", "sprites"],
+        default=None,
+        help="re-render the ground and shade only (keeping the sprites), only the things shown while "
+        "a story condition holds, or only the sprites named by --sprites (repacking the rest from the "
+        "pages already rendered)",
+    )
+    p.add_argument("--sprites", nargs="+", default=[], help="with --only sprites: ids or id prefixes (palm-)")
     return p.parse_args(argv)
 
 
@@ -144,16 +158,27 @@ def main():
     occluders = set(p.occluders)
     volumes = set(p.volumes)
     conditional = {o for sp in p.sprites if sp.conditional for o in sp.objects}
+    # Things lying flat (prints, drag marks, a mat) cast no shadow worth the
+    # name, only a black patch under themselves: the ground is rendered
+    # without them, so they can change without it.
+    flats = {o for sp in p.sprites if sp.flat for o in sp.objects}
+    # Grit and pebbles scattered over the ground: hidden while a flat thing
+    # renders, or they would punch black holes in it (they lie on top of it).
+    scattered = {o for o in p.ground_objects if any(m.type == "NODES" for m in o.modifiers)}
     W, H = p.map.w * TILE, p.map.h * TILE
 
-    def show(camera, hidden=()):
+    def show(camera, hidden=(), holdout=()):
         """Set camera visibility: `camera` objects are seen; occluders never
-        are; `hidden` objects are left out of the render entirely."""
+        are; `hidden` objects are left out of the render entirely; `holdout`
+        objects are seen as holes (transparent), cutting away whatever they
+        hide, while still casting shadows and bouncing light."""
         for o in scene.objects:
             if o.type not in ("MESH", "CURVES"):
                 continue
             o.hide_render = o in hidden
-            o.visible_camera = (o in camera) and (o not in occluders or bool(os.environ.get("SHOW_OCCLUDERS")))
+            o.is_holdout = o in holdout
+            seen = o in camera or o in holdout
+            o.visible_camera = seen and (o not in occluders or bool(os.environ.get("SHOW_OCCLUDERS")))
 
     if a.probe:
         x0, y0, x1, y1 = a.probe
@@ -174,26 +199,60 @@ def main():
     manifest = {"version": 1, "scene": p.map.id, "tiles": {"w": p.map.w, "h": p.map.h}, "ppu": a.ppu, "variants": {}}
     if p.style == "home":
         manifest["peopleLight"] = "indoor"
+    previous = None
+    if a.only:
+        previous = json.load(open(os.path.join(a.out, "manifest.json")))
+        variants = [v for v in variants if v in previous["variants"]]
+        if any(isinstance(v["ground"], str) for v in previous["variants"].values()):
+            raise SystemExit(f"{a.out} predates tiled grounds: run tools/art/upgrade_place.py on it first")
+    prev_pages = {}
+    grounds = {}
+
+    def ground_files(variant):
+        """Every ground file of a variant in the previous manifest (to clear stale tiles)."""
+        v = (previous or {}).get("variants", {}).get(variant) or {}
+        return {t["file"] for key in ("ground", "groundLow") for t in v.get(key, [])}
+
+    def previous_crops(variant, sid):
+        """A sprite's crops and entries from the pages already rendered."""
+        out = []
+        for entry in previous["variants"][variant]["sprites"]:
+            if entry["id"] != sid and not entry["id"].startswith(sid + "#"):
+                continue
+            key = (variant, entry["page"])
+            if key not in prev_pages:
+                prev_pages[key] = imageio.load(os.path.join(a.out, previous["variants"][variant]["pages"][entry["page"]]))
+            img = prev_pages[key]
+            out.append((img[entry["v"] : entry["v"] + entry["h"], entry["u"] : entry["u"] + entry["w"]].copy(), dict(entry)))
+        return out
+
     white = M.plain("#ffffff", 1.0, 0.0, "shade-probe")
-    ground_set = set(p.ground_objects) | volumes
-    for variant in variants:
-        lighting.setup(scene, variant)
+    meshes = {o for o in scene.objects if o.type in ("MESH", "CURVES")}
+
+    def ground_and_shade(variant):
         world_strength = scene.world.node_tree.nodes["Background"].inputs["Strength"]
         base_strength = world_strength.default_value
         # 1. Ground: standing things cast shadows but are not seen; conditional
         #    things are left out (they may not be there).
-        show(set(scene.objects) - set(sprite_objs), hidden=conditional)
+        show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats)
         scene.render.use_border = False
         ground = render_to(scene, os.path.join(tmp, f"ground-{variant}.png"))
-        imageio.save(ground, os.path.join(a.out, f"ground-{variant}.webp"), "WEBP", 86)
-        imageio.save(imageio.downsample(ground, 2), os.path.join(a.out, f"ground-{variant}-low.webp"), "WEBP", 84)
+        before = ground_files(variant)
+        grounds[variant] = {
+            "ground": imageio.save_tiles(ground, a.out, f"ground-{variant}", 86),
+            "groundLow": imageio.save_tiles(imageio.downsample(ground, 2), a.out, f"ground-{variant}-low", 84),
+        }
+        now = {t["file"] for tiles in grounds[variant].values() for t in tiles}
+        for f in before - now:
+            if os.path.exists(os.path.join(a.out, f)):
+                os.remove(os.path.join(a.out, f))
         # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no lamps).
         layer = scene.view_layers[0]
         layer.material_override = white
         world_strength.default_value = 0.0
         for light in p.lights:
             light.hide_render = True
-        show(set(scene.objects) - set(sprite_objs), hidden=conditional | volumes)
+        show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats | volumes)
         scene.render.resolution_percentage = 25
         probe = render_to(scene, os.path.join(tmp, f"shade-{variant}.png"))
         scene.render.resolution_percentage = 100
@@ -209,27 +268,21 @@ def main():
             vis = 0.85 + 0.15 * vis
         shade = np.dstack([vis, vis, vis, np.ones_like(vis)])
         imageio.save(shade, os.path.join(a.out, f"shade-{variant}.webp"), "WEBP", 90)
-        # 3. Each standing thing on its own.
-        entries = []
-        crops = []
-        for sp in p.sprites:
-            mine = set(sp.objects)
-            extra = set()
-            if sp.conditional:
-                cat = catcher_for(p, sp)
-                extra.add(cat)
-            others_conditional = conditional - mine
-            show(mine | extra, hidden=others_conditional | volumes)
-            x0, y0, x1, y1 = screen_rect(sp.objects)
-            if sp.conditional:
-                cx0, cy0, cx1, cy1 = screen_rect([cat], 0.0)
-                x0, y0, x1, y1 = min(x0, cx0), min(y0, cy0), max(x1, cx1), max(y1, cy1)
-            x0, y0 = max(0.0, x0), max(0.0, y0)
-            x1, y1 = min(W, x1), min(H, y1)
+
+    def render_sprite(sp, variant):
+        """One standing thing, cropped: (crop, screen left, top) or None."""
+        mine = set(sp.objects)
+        extra = {catcher_for(p, sp)} if sp.conditional else set()
+        others_conditional = conditional - mine
+        x0, y0, x1, y1 = screen_rect(sp.objects)
+        for cat in extra:
+            cx0, cy0, cx1, cy1 = screen_rect([cat], 0.0)
+            x0, y0, x1, y1 = min(x0, cx0), min(y0, cy0), max(x1, cx1), max(y1, cy1)
+        x0, y0 = max(0.0, x0), max(0.0, y0)
+        x1, y1 = min(W, x1), min(H, y1)
+        try:
             if x1 - x0 < 1 or y1 - y0 < 1:
-                for o in extra:
-                    bpy.data.objects.remove(o, do_unlink=True)
-                continue
+                return None
             r = scene.render
             r.use_border = True
             r.use_crop_to_border = True
@@ -238,32 +291,66 @@ def main():
             r.border_min_y = 1 - y1 / H
             r.border_max_y = 1 - y0 / H
             stem = os.path.join(tmp, f"{sp.id.replace(':', '_')}-{variant}")
-            if sp.conditional:
-                # The thing itself, lit and shadowed by everything around it...
-                show(mine, hidden=others_conditional | volumes)
-                img = render_to(scene, stem + ".png")
-                # ...and its own shadow alone, on a catcher only it shades.
-                cast = {}
-                for o in scene.objects:
-                    if o.type in ("MESH", "CURVES") and o not in mine and o not in extra:
-                        cast[o] = o.visible_shadow
-                        o.visible_shadow = False
-                show(extra, hidden=others_conditional | volumes)
-                shadow = render_to(scene, stem + "-shadow.png")
-                for o, v in cast.items():
-                    o.visible_shadow = v
-                img = imageio.over(img, shadow)
+            # The thing itself, lit and shadowed by everything around it.
+            # The ground in front of it is a holdout: parts sunk into the
+            # terrain, a floor or the dust (a boulder's buried side, a jar's
+            # foot) are cut away, rather than showing black where no light
+            # reaches. Things lying flat are on top of the ground already.
+            if sp.flat:
+                show(mine, hidden=others_conditional | volumes | extra | scattered)
             else:
-                img = render_to(scene, stem + ".png")
+                show(mine, hidden=others_conditional | volumes | extra, holdout=set(p.ground_objects) - mine)
+            img = render_to(scene, stem + ".png")
+            if sp.conditional:
+                # Its own shadow alone, on a catcher with nothing else in the
+                # scene: anything else would darken the catcher too (its own
+                # shadow, and the light it keeps from bouncing).
+                show(extra, hidden=meshes - mine - extra)
+                shadow = render_to(scene, stem + "-shadow.png")
+                # Drop the faint noise over the rest of the catcher (it would
+                # make the crop as big as the catcher).
+                shadow[:, :, 3] = np.where(shadow[:, :, 3] < 0.035, 0.0, shadow[:, :, 3])
+                # A shadow only darkens (the catcher also records some bounce).
+                shadow[:, :, :3] = 0.0
+                img = imageio.over(img, shadow)
+        finally:
             for o in extra:
                 bpy.data.objects.remove(o, do_unlink=True)
-            box = imageio.alpha_bbox(img)
-            if box is None:
+        box = imageio.alpha_bbox(img)
+        if box is None:
+            return None
+        bx0, by0, bx1, by1 = box
+        return img[by0:by1, bx0:bx1], int(round(x0 * a.ppu)) + bx0, int(round(y0 * a.ppu)) + by0
+
+    for variant in variants:
+        lighting.setup(scene, variant)
+        if a.only not in ("conditional", "sprites"):
+            ground_and_shade(variant)
+        if a.only == "ground":
+            manifest["variants"][variant] = {**previous["variants"][variant], **grounds[variant]}
+            print("VARIANT DONE", variant, "ground only")
+            continue
+        # 3. Each standing thing on its own (or, with --only conditional, just
+        #    the conditional ones; the rest are taken from the pages as they are).
+        entries = []
+        crops = []
+        def redo(sp):
+            if a.only == "conditional":
+                return sp.conditional
+            if a.only == "sprites":
+                return any(sp.id == s or (s.endswith("-") and sp.id.startswith(s)) for s in a.sprites)
+            return True
+
+        for sp in p.sprites:
+            if not redo(sp):
+                for crop, entry in previous_crops(variant, sp.id):
+                    crops.append(crop)
+                    entries.append(entry)
                 continue
-            bx0, by0, bx1, by1 = box
-            crop = img[by0:by1, bx0:bx1]
-            left = int(round(x0 * a.ppu)) + bx0
-            top = int(round(y0 * a.ppu)) + by0
+            made = render_sprite(sp, variant)
+            if made is None:
+                continue
+            crop, left, top = made
             for k, sx in enumerate(range(0, crop.shape[1], PAGE)):
                 piece = crop[:, sx : sx + PAGE]
                 crops.append(piece)
@@ -302,9 +389,14 @@ def main():
             low = f"sprites-{variant}-{page}-low.webp"
             imageio.save(imageio.downsample(arr[:h], 2), os.path.join(a.out, low), "WEBP", 86)
             low_files.append(low)
+        for stale in (previous or {}).get("variants", {}).get(variant, {}).get("pages", [])[len(page_files) :]:
+            for f in (stale, stale.replace(".webp", "-low.webp")):
+                if os.path.exists(os.path.join(a.out, f)):
+                    os.remove(os.path.join(a.out, f))
+        kept = previous["variants"][variant] if previous else {}
         manifest["variants"][variant] = {
-            "ground": f"ground-{variant}.webp",
-            "groundLow": f"ground-{variant}-low.webp",
+            "ground": grounds[variant]["ground"] if variant in grounds else kept["ground"],
+            "groundLow": grounds[variant]["groundLow"] if variant in grounds else kept["groundLow"],
             "shade": f"shade-{variant}.webp",
             "pages": page_files,
             "pagesLow": low_files,
