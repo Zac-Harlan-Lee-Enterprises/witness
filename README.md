@@ -130,4 +130,4 @@ git commit -m "Witness: Road to Jericho vertical slice"   # the root commit on m
 git switch -c feat/next-thing      # every later change goes through a branch + PR
 ```
 
-The root commit touches guarded paths (`.github/`, `.claude/settings.json`, `scripts/hooks/`, `scripts/lib/`, the translation registry), so the `commit-msg` hook will ask for a trailer naming you as the reviewer, e.g. add a final line `SECURITY-REVIEW: <your name>` to the message — only after you've looked at those files.
+After that, pull requests are optional: pushing to `main` is allowed, and CI then decides whether the site deploys.

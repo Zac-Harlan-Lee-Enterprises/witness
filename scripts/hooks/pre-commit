@@ -9,7 +9,6 @@ set -uo pipefail
 
 # shellcheck disable=SC1091
 source scripts/lib/policy.sh 2>/dev/null || true
-: "${PROTECTED_BRANCHES_RE:=(main|master|release(/[^[:space:]]*)?|production)}"
 : "${SECRET_RE:=-----BEGIN [A-Z ]*PRIVATE KEY-----}"
 
 EXIT=0
@@ -18,20 +17,7 @@ note() { printf "\033[1;34m[pre-commit]\033[0m %s\n" "$*"; }
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 
-# ── 1. Protected branch ────────────────────────────────────────────────────
-# The one exception is the repository's very first (root) commit, which has
-# nowhere else to go. Every later change goes through a feature branch + PR.
-branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
-if git rev-parse --verify -q HEAD >/dev/null; then
-  if [[ "$branch" =~ ^$PROTECTED_BRANCHES_RE$ ]]; then
-    fail "Refusing to commit directly on protected branch '$branch'."
-    echo "  → git switch -c feat/<slug>   # then re-commit" >&2
-  fi
-else
-  note "Root commit on '$branch' allowed (repository has no commits yet)."
-fi
-
-# ── 2. Debug artifacts, conflict markers, secrets (per staged file) ─────────
+# ── 1. Debug artifacts, conflict markers, secrets (per staged file) ─────────
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   content=$(git show ":$f" 2>/dev/null || true)
@@ -52,7 +38,7 @@ while IFS= read -r f; do
   fi
 done <<< "$STAGED"
 
-# ── 3. Valid JSON ──────────────────────────────────────────────────────────
+# ── 2. Valid JSON ──────────────────────────────────────────────────────────
 if command -v jq >/dev/null 2>&1; then
   while IFS= read -r f; do
     case "$f" in
@@ -62,7 +48,7 @@ if command -v jq >/dev/null 2>&1; then
   done <<< "$STAGED"
 fi
 
-# ── 4. Project gates (path-gated, same commands as CI) ──────────────────────
+# ── 3. Project gates (path-gated, same commands as CI) ──────────────────────
 CODE_RE='^(src/|tests/|e2e/|scripts/.*\.(ts|mjs)$|vite\.config\.ts$|playwright\.config\.ts$|tsconfig\.json$|eslint\.config\.js$|package\.json$)'
 if printf '%s\n' "$STAGED" | grep -qE "$CODE_RE"; then
   # Staged-vs-worktree gap: the checks read the worktree, so refuse if a gated

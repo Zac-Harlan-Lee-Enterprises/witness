@@ -112,7 +112,7 @@ The test scans `import … from`, `export … from`, side-effect `import '…'` 
 ├── scripts/                content validation, bundle report, icon rasteriser, git hooks, policy
 ├── public/icons/           icon.svg + PNGs rasterised from it (npm run icons)
 ├── docs/                   design, architecture, ADRs, governance, operations
-├── .github/workflows/      ci.yml, deploy-pages.yml (sensitive path)
+├── .github/workflows/      ci.yml, deploy-pages.yml
 ├── index.html              app shell (boot message, <noscript>)
 ├── vite.config.ts          build, PWA plugin, Vitest projects
 ├── playwright.config.ts    desktop / mobile / tablet projects, preview server on :4391
@@ -132,7 +132,7 @@ The test scans `import … from`, `export … from`, side-effect `import '…'` 
 | `src/shared` | `TypedEventBus`, `Store`, `createLogger`, `debounce`, `createId` | Framework-free utilities used by every layer except `domain`. |
 | `tests/` | `unit/` (per layer), `integration/` (full playthroughs), `content/`, `architecture/`, `ui/` (React Testing Library, jsdom), `fixtures/saves/`, `support/` (headless harness) | Vitest projects `unit` (node) and `ui` (jsdom) defined in `vite.config.ts`. |
 | `e2e/` | `smoke`, `chapter`, `saves`, `pwa`, `a11y`, `mobile`, `perf` specs | Runs against `vite preview` of the production build, so the service worker and lazy chunks behave as they do for players. |
-| `scripts/` | `validate-content.ts`, `report-bundle.mjs`, `generate-icons.mjs`, `hooks/`, `lib/policy.sh` | Build-time and harness tooling. `hooks/` and `lib/` are sensitive paths. |
+| `scripts/` | `validate-content.ts`, `report-bundle.mjs`, `generate-icons.mjs`, `hooks/`, `lib/policy.sh` | Build-time and harness tooling. |
 | `public/` | PWA icons only | The only static files. There is no other binary art or audio. |
 | `docs/` | This document, [adr/](adr/README.md), [save-data.md](save-data.md), [future-aws.md](future-aws.md) and the other guides linked from `AGENTS.md` | Durable design knowledge next to the code. |
 
@@ -528,7 +528,7 @@ classDiagram
 - `ContentKind` is one of `scripture, paraphrase, historical, reconstruction, interpretation, fiction, instruction`. The first five are `EDUCATIONAL_KINDS`, and are "publishable" only once their status is `approved` or `published`.
 - `ReviewStatus` is one of `ai-draft, human-draft, sources-attached, citations-verified, validated, in-review, approved, published, rejected`. `transitionReview()` allows only the next step (or `rejected`), requires a named reviewer for `approved`, and bumps `version` on `published`.
 - `checkRecordIntegrity()`: `scripture` records must not have a `body` and need at least one reference. `paraphrase` records must cite a passage. `historical` and `reconstruction` records need a body, a source or Scripture reference, and a confidence level other than `not-applicable`. Sensitive `interpretation` records need a `sensitivityNote`. `fiction` must not carry Scripture references. `approved`/`published` records need a reviewer, and `governance.version` must match the latest history entry.
-- `Translation` and `StoredPassage` live in [src/content/scripture/translations.ts](../src/content/scripture/translations.ts), a sensitive path. See [ADR-0008](adr/0008-scripture-text-provider.md).
+- `Translation` and `StoredPassage` live in [src/content/scripture/translations.ts](../src/content/scripture/translations.ts). See [ADR-0008](adr/0008-scripture-text-provider.md).
 
 ### 5.4 Runtime state and persistence
 

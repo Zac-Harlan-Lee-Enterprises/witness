@@ -21,7 +21,7 @@ What [`init.sh`](../init.sh) does, in order:
 1. Checks the Node version. If `.env.local` exists it uses it (public build-time settings only).
 2. Stops stale processes that this user owns on its ports.
 3. Runs `npm ci` only when the lockfile has changed.
-4. Symlinks the git hooks (`pre-commit`, `commit-msg`, `pre-push`).
+4. Symlinks the git hooks (`pre-commit`, `pre-push`).
 5. Warns (without failing) if Playwright's Chromium isn't installed.
 6. **Validates chapter content**, and stops if it is invalid.
 7. Starts Vite in the background, writing logs to `.logs/dev.log` and PIDs to `.pids/`.
@@ -87,14 +87,14 @@ The workflow is [`.github/workflows/deploy-pages.yml`](../.github/workflows/depl
 
 1. Push the repository to GitHub.
 2. Enable Pages with **GitHub Actions** as the source: **Settings → Pages → Source → GitHub Actions**, or `gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow`.
-3. Run `bash harden-github.sh <owner>/<repo>` (§10), so nothing reaches `main` without a pull request and a green `build-and-test`.
+3. Optional: run `bash harden-github.sh <owner>/<repo>` (§10) if you want GitHub to require a pull request and a green `build-and-test` for `main`.
 4. Merge a pull request. CI runs on `main`, then the deploy. The site is published at `https://<owner>.github.io/<repo>/`. To deploy without a merge, use **Actions → Deploy to GitHub Pages → Run workflow** on `main`.
 
 **Caveats**
 
-- The workflow always builds for `/<repo>/`. For a **user or organisation site** (a repository named `<owner>.github.io`) or a **custom domain**, the site is served from the root, so `VITE_BASE_PATH` must be `/`. Changing this means editing the workflow, which is a sensitive path: it needs human approval and a `SECURITY-REVIEW:` commit trailer.
+- The workflow always builds for `/<repo>/`. For a **user or organisation site** (a repository named `<owner>.github.io`) or a **custom domain**, the site is served from the root, so `VITE_BASE_PATH` must be `/`. Changing this means editing the workflow.
 - The deploy workflow doesn't run lint or E2E itself. It deploys only after CI (which runs both) has passed on that commit.
-- **Merging is publishing.** Every merge to `main` goes live within about 15 minutes (CI, then the deploy). The site is public, so unapproved educational content appears labelled "Awaiting editorial review" (preview mode; see [risks.md](risks.md) R15).
+- **Merging is publishing.** Every merge or push to `main` goes live within about 15 minutes (CI, then the deploy). The site is public, so unapproved educational content appears labelled "Awaiting editorial review" (preview mode; see [risks.md](risks.md) R15).
 - GitHub Pages **can't set custom response headers**, so you can't configure cache headers or a CSP header there. A `<meta>` CSP is the only option ([security-privacy.md](security-privacy.md#11-recommendations-not-yet-implemented)). Updates still work, because browsers check `sw.js` for a new version without using the HTTP cache by default.
 - **Shared origin.** Every project site of one owner is served from the same origin, `https://<owner>.github.io`. IndexedDB belongs to an origin, not a path. Other Pages sites under the same account (including a second copy of this game) can therefore read and write the `witness-game` database. Use a dedicated account or organisation, or a custom domain, for anything beyond testing.
 - The uploaded artifact includes source maps.

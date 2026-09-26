@@ -40,7 +40,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   echo "  branch:      $(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
   echo "  last commit: $(git log -1 --pretty=format:'%h %s (%ar)' 2>/dev/null || echo '(no commits yet)')"
   echo "  dirty files: $(git status --porcelain | wc -l | tr -d ' ')"
-  for h in pre-commit commit-msg pre-push; do
+  for h in pre-commit pre-push; do
     [[ -x "$(git rev-parse --git-path hooks)/$h" ]] && echo "  hook $h: installed" || echo "  hook $h: MISSING (bash init.sh installs it)"
   done
 else

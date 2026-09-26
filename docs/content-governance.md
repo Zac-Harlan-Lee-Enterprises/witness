@@ -52,7 +52,7 @@ References are stored separately from displayed text ([ADR-0008](adr/0008-script
 1. Open `src/content/scripture/translations.ts` and proofread every verse of the stored passage against <https://ebible.org/eng-web/LUK10.htm>.
 2. Set `approvedForDisplay: true` for `WEB`.
 3. Record the approval (who, when) in `claude-progress.txt` and in this document's approval log below.
-4. Commit with a trailer naming the approver: `SECURITY-REVIEW: <your name>` (the file is a sensitive path; the `commit-msg` hook requires it).
+4. Commit with the approver's name in the commit message.
 5. Run `npm test` — `tests/unit/infrastructure/scripture.test.ts` asserts the default is off, so update that expectation in the same commit.
 
 "World English Bible" is a trademark: never edit the stored text while keeping that name. To add another translation, add it to `TRANSLATIONS` with accurate license metadata; copyrighted translations need written permission first.

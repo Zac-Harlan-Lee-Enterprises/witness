@@ -122,11 +122,11 @@ fi
 if git rev-parse --git-dir >/dev/null 2>&1; then
   hooks_dir="$(git rev-parse --git-path hooks)"
   mkdir -p "$hooks_dir"
-  for h in pre-commit commit-msg pre-push; do
+  for h in pre-commit pre-push; do
     ln -sf "../../scripts/hooks/$h" "$hooks_dir/$h"
     chmod +x "scripts/hooks/$h"
   done
-  ok "Git hooks installed (pre-commit, commit-msg, pre-push)"
+  ok "Git hooks installed (pre-commit, pre-push)"
 else
   warn "Not a git repository — hooks not installed (run: git init)"
 fi

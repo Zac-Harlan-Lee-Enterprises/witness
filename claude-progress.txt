@@ -128,3 +128,18 @@ NEXT   : Review the PR from feat/grounded-realism, then, after it lands, run
          memory (docs/art/prototype-report.md §8), then measure on a real mid-range Android phone.
 BLOCKED: Owner: apply branch protection; decide on the deploy-pages VITE_BASE_PATH change (on hold);
          editorial approval of content records. No LICENSE file in the repo yet.
+
+--- 2026-09-25  Claude Opus 5.5 — automatic Pages deploys; approval gates removed ---
+DONE   : PR #2 merged: deploy-pages.yml deploys automatically when CI passes on a push to main
+         (workflow_run; exact CI-tested commit; guards pinned by tests/architecture/deploy-workflow.test.ts).
+         Pages enabled (GitHub Actions source). CI frame-rate floor set from measured runner speed.
+         Owner's decision: no approval gates. Removed ask rules, the sign-off commit hook, the
+         sensitive-path list, and blocks on merges, approvals, pushes to main, workflow runs and
+         GitHub API writes. Kept (unrecoverable): force-push, history rewriting, skipping hooks,
+         recursive deletes of home/root, repo deletion, package publishing and cloud deploys,
+         secret-file reads. Branch protection (harden-github.sh) is optional (sweep warns only).
+TESTS  : Vitest 335 → 338. Guard self-test 33/33. quality-sweep clean (one optional warning).
+NEXT   : Check the live site https://zac-harlan-lee-enterprises.github.io/witness/ after each merge
+         (gh run list --workflow deploy-pages.yml). Then the art roadmap: KTX2/Basis textures to cut
+         market texture memory (docs/art/prototype-report.md §8).
+BLOCKED: none. Content editorial approval and enabling Bible text remain human decisions by rule.
