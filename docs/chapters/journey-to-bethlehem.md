@@ -281,7 +281,6 @@ Choices never grade the player. The Scripture Connection comparisons respond to 
 
 ## 12. Known gaps
 
-- **Indoor night light.** The house at night still looks like day. The light model is owned by the renderer; the clock does reach "Night".
-- **No pre-rendered art yet.** Only the Jerusalem market has pre-rendered art. These places use the painted Canvas art until the realism pass models the new tiles.
+- **Pre-rendered art.** All three places are pre-rendered in 3D ([technical art guide](../art/technical-art-guide.md), [`kit_village.py`](../../tools/art/lib/kit_village.py)): the house by day and by lamplight, the lanes and the fold from mid-afternoon into the night. On the main path the fold is seen in the late sun and at sunset; it is at night only if you helped the clerk first (the sun sets while you carry the lamb, and the fields change to their night light around you) or go back down after dark.
 - **Hagit may be off-screen.** She is drawn at the door during her report, but the camera may not frame her if the player's bed is across the room.
 - **Leaving the house on the stranger branches.** The house exit stays open at night, so a player can visit Zerah at Hagit's or by the well. Leaving the house before lying down is allowed.
