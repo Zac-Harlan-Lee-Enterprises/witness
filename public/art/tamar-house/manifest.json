@@ -559,7 +559,8 @@
      "y": 58.6,
      "radius": 70.0
     }
-   ]
+   ],
+   "peopleLight": "indoor"
   },
   "night": {
    "ground": [
@@ -1143,8 +1144,8 @@
      "y": 58.6,
      "radius": 70.0
     }
-   ]
+   ],
+   "peopleLight": "lamp"
   }
- },
- "peopleLight": "indoor"
+ }
 }

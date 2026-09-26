@@ -312,6 +312,10 @@ describe('pre-rendered people', () => {
       shadows: undefined,
     }),
     'player-look-1@lamp': sheet({ overlay: { mark: 'lamp', of: 'player-look-1' } }),
+    'player-look-1@carrying-lamb': sheet({
+      overlay: { mark: 'carrying-lamb', of: 'player-look-1' },
+      shadows: undefined,
+    }),
     'player-look-1~sit': sheet({ pose: 'sit' }),
     'player-look-1~sit@rag-bandaged-x': sheet({
       pose: 'sit',
@@ -333,6 +337,18 @@ describe('pre-rendered people', () => {
       base: 'player-look-1',
       overlays: ['player-look-1@water-skin', 'player-look-1@lamp'],
     });
+  });
+
+  it('draws a lamb carried across the shoulders over the water skin, under a lamp', () => {
+    expect(pickSheets(people, player, ['carrying-lamb'])).toEqual({
+      base: 'player-look-1',
+      overlays: ['player-look-1@carrying-lamb'],
+    });
+    expect(pickSheets(people, player, ['lamp', 'carrying-lamb', 'water-skin'])?.overlays).toEqual([
+      'player-look-1@water-skin',
+      'player-look-1@carrying-lamb',
+      'player-look-1@lamp',
+    ]);
   });
 
   it('draws the letter case at the hip over the rolled cloak, under a lamp', () => {

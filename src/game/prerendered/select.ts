@@ -159,6 +159,8 @@ const OVERLAY_ORDER: readonly LookMark[] = [
   'cloak-roll',
   'water-skin',
   'letter-case',
+  // A lamb carried across the shoulders (Chapter 3), under a lamp held up.
+  'carrying-lamb',
   'lamp',
   'bandaged',
   'rag-bandaged',
