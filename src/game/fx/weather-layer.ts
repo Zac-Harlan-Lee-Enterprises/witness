@@ -41,6 +41,8 @@ const PUDDLE_GROUND: ReadonlySet<TileKind> = new Set<TileKind>([
 const NO_SPLASH: ReadonlySet<TileKind> = new Set<TileKind>(['water', 'void']);
 /** How fast rain falls on screen (world units per second). */
 const FALL = 430;
+/** World units per texel of the near and far sheets of rain. */
+const SHEET_SCALES = [0.6, 0.45] as const;
 
 export interface WeatherLayerDeps {
   scene: Phaser.Scene;
@@ -283,10 +285,10 @@ export class WeatherLayer {
       .setVisible(false);
     this.clouds.setTileScale(5, 5);
     this.objects.push(this.clouds);
-    if (this.share >= 0.5) {
+    if (this.share >= 1) {
       for (const [scale, depth] of [
-        [1.5, 3],
-        [1, 1],
+        [SHEET_SCALES[0], 3],
+        [SHEET_SCALES[1], 1],
       ] as const) {
         const sheet = s.add
           .tileSprite(0, 0, 16, 16, FX.sheet)
@@ -429,7 +431,7 @@ export class WeatherLayer {
       sheet.setVisible(show);
       if (!show) return;
       const speed = i === 0 ? 1.25 : 0.8;
-      const scale = i === 0 ? 1.5 : 1;
+      const scale = SHEET_SCALES[i] ?? 1;
       if (sheet.width !== w || sheet.height !== h) sheet.setSize(w, h);
       sheet
         .setPosition(x, y)

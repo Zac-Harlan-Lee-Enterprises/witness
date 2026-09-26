@@ -175,19 +175,23 @@ export function makeFxTextures(textures: Phaser.Textures.TextureManager): void {
     c.putImageData(img, 0, 0);
   });
   // Sheets of rain: faint slanting streaks (tileable), added over the view.
-  add(textures, FX.sheet, 256, 256, (c, w, h) => {
+  // (512 texels, shown at about two texels per world unit: fine hairlines.)
+  add(textures, FX.sheet, 512, 512, (c, w, h) => {
     const r = rng(19);
     const band = noiseField(w, [2, 5], 23);
-    for (let i = 0; i < 520; i++) {
+    for (let i = 0; i < 1600; i++) {
       const x = r() * w;
       const y = r() * h;
-      const len = 14 + r() * 30;
+      const len = 30 + r() * 70;
       const k = band[Math.floor(y) * w + Math.floor(x)] ?? 0.5;
       const a = 0.05 + 0.22 * Math.max(0, k - 0.35);
       c.strokeStyle = `rgba(210,222,235,${a.toFixed(3)})`;
-      c.lineWidth = 0.8 + r() * 0.6;
-      for (const dx of [0, w, -w]) {
-        for (const dy of [0, h, -h]) {
+      c.lineWidth = 1 + r() * 0.8;
+      // Wrap streaks that cross the top or left edge so the texture tiles.
+      const dxs = x - len * 0.36 < 0 ? [0, w] : [0];
+      const dys = y - len < 0 ? [0, h] : [0];
+      for (const dx of dxs) {
+        for (const dy of dys) {
           c.beginPath();
           c.moveTo(x + dx, y + dy);
           c.lineTo(x + dx - len * 0.36, y + dy - len);
