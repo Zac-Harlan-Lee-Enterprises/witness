@@ -24,6 +24,12 @@ export const TILE_KINDS = {
   bedroll: { solid: false },
   door: { solid: false },
   gate: { solid: false },
+  /** Straw strewn on the lower, animals' end of a village house. */
+  straw: { solid: false },
+  /** The raised family floor of a village house, a step above the animals' level. */
+  platform: { solid: false },
+  /** A threshing floor: flat beaten ground at the village edge, scattered with chaff. */
+  threshing: { solid: false },
   wall: { solid: true },
   roof: { solid: true },
   water: { solid: true },
@@ -51,6 +57,18 @@ export const TILE_KINDS = {
   reeds: { solid: true },
   fig: { solid: true },
   cloth: { solid: true },
+  /** A stone feeding trough for animals (a manger), built at the edge of the family floor. */
+  manger: { solid: true },
+  /** A dry-stone sheepfold wall, topped with thorny brushwood. */
+  sheepfold: { solid: true },
+  /** A dry-stone terrace wall holding up a hillside field (the step down to the next field). */
+  terrace: { solid: true },
+  /** Sheep resting together in a fold or a field. */
+  sheep: { solid: true },
+  /** A heap of straw and chaff (fodder and bedding). */
+  hay: { solid: true },
+  /** A small open fire ringed with stones, where shepherds keep warm. */
+  campfire: { solid: true },
   void: { solid: true },
 } as const;
 export type TileKind = keyof typeof TILE_KINDS;
@@ -93,6 +111,8 @@ export const LOOK_MARKS = [
   'water-skin',
   /** A tunic hem with a strip torn away. */
   'torn-hem',
+  /** A lamb carried home across the shoulders. */
+  'carrying-lamb',
 ] as const;
 export const LookMarkSchema = z.enum(LOOK_MARKS);
 export type LookMark = (typeof LOOK_MARKS)[number];

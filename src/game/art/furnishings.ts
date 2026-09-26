@@ -4,7 +4,8 @@ import { ellipse, mix, rgba, rng, shade, type Ctx } from './paint';
 
 /**
  * Things people made: stalls, pottery, the bread oven, a well, crates and
- * sacks, a loom, mats, a cart, a caravan tent. Painted in local coordinates
+ * sacks, a loom, mats, a cart, a caravan tent, a stone manger, a heap of
+ * straw and a shepherds' fire. Painted in local coordinates
  * (the tile spans 0–32; tall things may rise above 0). Returns false for
  * kinds it doesn't paint.
  */
@@ -360,6 +361,90 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
         c.fillStyle = rgba('#000000', 0.12);
         c.fillRect(9.5 + i * 8.5, 0, 1.5, 15 + (i % 2) * 3);
       }
+      return true;
+    }
+    case 'manger': {
+      // A feeding trough cut from one block of limestone, with fodder in it.
+      const stone = '#b3a283';
+      c.fillStyle = shade(stone, -0.28);
+      c.beginPath();
+      c.roundRect(2, 12, 28, 15, 3);
+      c.fill();
+      c.fillStyle = stone;
+      c.beginPath();
+      c.roundRect(2, 9, 28, 13, 3);
+      c.fill();
+      // The hollow, then straw heaped in it.
+      c.fillStyle = shade(stone, -0.45);
+      c.beginPath();
+      c.roundRect(5, 11, 22, 8, 2);
+      c.fill();
+      for (let i = 0; i < 14; i++) {
+        c.strokeStyle = i % 2 ? '#d9bd72' : '#b99a52';
+        c.lineWidth = 0.8;
+        const sx = 6 + r() * 20;
+        const sy = 12 + r() * 6;
+        c.beginPath();
+        c.moveTo(sx, sy);
+        c.lineTo(sx + (r() - 0.5) * 7, sy - 1 - r() * 2.5);
+        c.stroke();
+      }
+      c.fillStyle = rgba('#ffffff', 0.25);
+      c.fillRect(3, 9.5, 26, 1.2);
+      // Chisel marks on the face.
+      c.strokeStyle = rgba(shade(stone, -0.5), 0.45);
+      c.lineWidth = 0.5;
+      for (let i = 0; i < 5; i++) {
+        const mx = 5 + i * 5.5 + r();
+        c.beginPath();
+        c.moveTo(mx, 21);
+        c.lineTo(mx + 1.2, 25);
+        c.stroke();
+      }
+      return true;
+    }
+    case 'hay': {
+      // A loose heap of straw and chaff.
+      ellipse(c, 16, 22, 14, 8, '#a8894a');
+      ellipse(c, 15, 18, 12, 9, '#c9aa62');
+      ellipse(c, 13, 14, 8, 6, '#d9bd72');
+      for (let i = 0; i < 24; i++) {
+        const sx = 4 + r() * 24;
+        const sy = 9 + r() * 18;
+        c.strokeStyle = i % 3 ? '#e6cf8a' : '#9c7c3e';
+        c.lineWidth = 0.7;
+        c.beginPath();
+        c.moveTo(sx, sy);
+        c.lineTo(sx + (r() - 0.5) * 8, sy + (r() - 0.5) * 4);
+        c.stroke();
+      }
+      return true;
+    }
+    case 'campfire': {
+      // A ring of blackened stones, embers and a low flame.
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        ellipse(
+          c,
+          16 + Math.cos(a) * 9,
+          22 + Math.sin(a) * 5,
+          3,
+          2.2,
+          i % 2 ? '#8d8069' : '#6e6252',
+        );
+      }
+      ellipse(c, 16, 22, 6.5, 3.6, '#2a1a10');
+      c.strokeStyle = WOOD_DARK;
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.moveTo(11, 24);
+      c.lineTo(21, 20);
+      c.moveTo(12, 20);
+      c.lineTo(20, 24);
+      c.stroke();
+      ellipse(c, 16, 22, 4, 2.2, '#c2481e');
+      ellipse(c, 16, 19, 3.2, 4.5, rgba('#f08a2a', 0.9));
+      ellipse(c, 16, 18.5, 1.8, 3, rgba('#ffd27a', 0.95));
       return true;
     }
     default:

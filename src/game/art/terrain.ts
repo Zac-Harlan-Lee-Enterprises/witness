@@ -1,7 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import type { Look } from './direction';
 import { ellipse, fbm, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } from './paint';
-import { isPropTile, isStructure, type Site } from './site';
+import { isLowWall, isPropTile, isStructure, type Site } from './site';
 
 /**
  * Ground: flat material fills, broad light/dark variation that ignores the
@@ -18,10 +18,16 @@ const SPREAD: Partial<Record<TileKind, number>> = {
   mud: 3.5,
   soil: 3,
   road: 3,
+  threshing: 2.5,
   paving: 2,
   steps: 2,
+  straw: 1.5,
   floor: 1,
+  platform: 1,
 };
+
+/** Dry straw and chaff: pale gold stalks. */
+const STRAW = '#d9bd72';
 
 export function groundColor(look: Look, kind: TileKind): string {
   switch (kind) {
@@ -43,6 +49,13 @@ export function groundColor(look: Look, kind: TileKind): string {
     case 'mat':
     case 'bedroll':
       return look.ground.floor;
+    case 'platform':
+      // Lime-plastered, a shade paler than trodden earth.
+      return shade(look.ground.floor, 0.1);
+    case 'straw':
+      return mix(look.ground.floor, STRAW, 0.45);
+    case 'threshing':
+      return mix(look.ground.sand, '#e8d9ae', 0.5);
     default:
       return look.ground.sand;
   }
@@ -246,8 +259,7 @@ function besideSomething(site: Site, x: number, y: number): boolean {
     [0, 1],
   ] as const) {
     const k = site.kindAt(x + dx, y + dy);
-    if (k === 'wall' || k === 'roof' || k === 'fence' || k === 'cliff' || isPropTile(k))
-      return true;
+    if (k === 'wall' || k === 'roof' || k === 'cliff' || isLowWall(k) || isPropTile(k)) return true;
   }
   return false;
 }
@@ -473,6 +485,15 @@ function paintDetail(
     case 'rug':
       paintRug(ctx, site, look, tx, ty);
       return;
+    case 'straw':
+      paintStraw(ctx, X, Y, r);
+      return;
+    case 'platform':
+      paintPlatform(ctx, site, look, tx, ty, r);
+      return;
+    case 'threshing':
+      paintThreshing(ctx, site, look, tx, ty, r);
+      return;
     case 'wadi': {
       for (let i = 0; i < 7; i++)
         pebble(
@@ -507,6 +528,122 @@ function paintDetail(
     }
     default:
       return;
+  }
+}
+
+/** Loose straw on the animals' floor: crossing stalks, darker trodden patches. */
+function paintStraw(ctx: Ctx, X: number, Y: number, r: () => number): void {
+  for (let i = 0; i < 2; i++)
+    lumpy(ctx, X + r() * TILE, Y + r() * TILE, 5 + r() * 6, r, rgba('#6a4a24', 0.14), 7);
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 16; i++) {
+    const sx = X + r() * TILE;
+    const sy = Y + r() * TILE;
+    const a = r() * Math.PI;
+    const len = 4 + r() * 6;
+    ctx.strokeStyle = r() < 0.5 ? rgba(shade(STRAW, 0.15), 0.9) : rgba(shade(STRAW, -0.25), 0.8);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + Math.cos(a) * len, sy + Math.sin(a) * len * 0.6);
+    ctx.stroke();
+  }
+}
+
+/**
+ * The raised family floor: smooth lime plaster with trowel marks, and a
+ * lip where it steps down to the animals' straw (the step casts a shadow).
+ */
+function paintPlatform(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const base = groundColor(look, 'platform');
+  ctx.strokeStyle = rgba(shade(base, 0.12), 0.35);
+  ctx.lineWidth = 1;
+  if (r() < 0.5) {
+    ctx.beginPath();
+    ctx.arc(X + r() * TILE, Y + r() * TILE, 7 + r() * 8, r() * 6, r() * 6 + 1.4);
+    ctx.stroke();
+  }
+  speckle(ctx, X, Y, TILE, TILE, r, [shade(base, -0.12), shade(base, 0.12)], 6, 1);
+  const lower = (dx: number, dy: number): boolean => {
+    const n = site.groundAt(tx + dx, ty + dy);
+    return n === 'straw' || site.kindAt(tx + dx, ty + dy) === 'manger';
+  };
+  // The edge of the step: a pale plastered lip and a shadow falling onto the straw.
+  const lip = shade(base, 0.2);
+  const drop = rgba(look.shadow.color, 0.45);
+  if (lower(-1, 0)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y, 3, TILE);
+    ctx.fillStyle = drop;
+    ctx.fillRect(X - 5, Y, 5, TILE);
+  }
+  if (lower(1, 0)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X + TILE - 3, Y, 3, TILE);
+  }
+  if (lower(0, 1)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y + TILE - 3, TILE, 3);
+    ctx.fillStyle = drop;
+    ctx.fillRect(X, Y + TILE, TILE, 5);
+  }
+  if (lower(0, -1)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y, TILE, 2);
+  }
+}
+
+/** A threshing floor: hard, pale ground, chaff blown about, a ring of edging stones. */
+function paintThreshing(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const base = groundColor(look, 'threshing');
+  // Swept arcs where the threshing sledge went round.
+  ctx.strokeStyle = rgba(shade(base, -0.18), 0.35);
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.arc(X + 16 + (r() - 0.5) * 30, Y + 16 + (r() - 0.5) * 30, 14 + r() * 10, 0, Math.PI * 0.7);
+    ctx.stroke();
+  }
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < 9; i++) {
+    const cx = X + r() * TILE;
+    const cy = Y + r() * TILE;
+    ctx.strokeStyle = rgba(STRAW, 0.85);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + 2 + r() * 3, cy + (r() - 0.5) * 2);
+    ctx.stroke();
+  }
+  for (const [dx, dy] of [
+    [0, -1],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+  ] as const) {
+    if (site.groundAt(tx + dx, ty + dy) === 'threshing') continue;
+    for (let i = 0; i < 4; i++) {
+      const t = 3 + r() * 26;
+      const sx = dy !== 0 ? X + t : dx === 1 ? X + TILE - 3 : X + 3;
+      const sy = dx !== 0 ? Y + t : dy === 1 ? Y + TILE - 3 : Y + 3;
+      pebble(ctx, sx, sy, 2 + r() * 1.4, shade(look.ground.sand, -0.12));
+    }
   }
 }
 

@@ -5,9 +5,10 @@ import { rightHandIndex, type Pt, type Rig } from './rig';
 
 /**
  * Things people carry and wear over their clothes: a shepherd's staff, a
- * basket, an oil jar, a baker's tray, a spindle, a traveller's bundle, and
- * the player's satchel, water skin, lamp and rolled cloak. Each is drawn in
- * the layer where it belongs for the view:
+ * basket, an oil jar, a baker's tray, a spindle, a traveller's bundle, a lamb
+ * in the arms, a clay lamp held up, a clerk's wax tablet, and the player's
+ * satchel, water skin, lamp, rolled cloak and a lamb carried home across the
+ * shoulders. Each is drawn in the layer where it belongs for the view:
  *   behind — hidden by the body (drawn first)
  *   body   — over the tunic, under the arms
  *   front  — over everything
@@ -24,19 +25,29 @@ type Item =
   | 'satchel'
   | 'water-skin'
   | 'lamp'
-  | 'cloak-roll';
+  | 'cloak-roll'
+  | 'lamb'
+  | 'held-lamp'
+  | 'tablet'
+  | 'lamb-shoulders';
 
 const WOOD = '#7a5634';
 const LEATHER = '#6e4a2c';
 const STRAW = '#b08c56';
 const CLAY = '#b2714a';
+/** Undyed fleece, and the dark face and ears of a speckled lamb. */
+const FLEECE = '#ece4d2';
+const LAMB_FACE = '#3b2e26';
 
 export function itemsOf(d: Dress): Item[] {
   const items: Item[] = [];
-  if (d.carry !== 'none') items.push(d.carry);
+  // A carried lamp is held up in the hand; the player's own lamp hangs at the belt.
+  if (d.carry === 'lamp') items.push('held-lamp');
+  else if (d.carry !== 'none') items.push(d.carry);
   if (d.gear.waterSkin) items.push('water-skin');
   if (d.gear.lamp) items.push('lamp');
   if (d.gear.cloakRoll) items.push('cloak-roll');
+  if (d.gear.lambOnShoulders) items.push('lamb-shoulders');
   return items;
 }
 
@@ -49,6 +60,7 @@ function sideIndex(item: Item, r: Rig): 0 | 1 {
     case 'spindle':
     case 'bread':
     case 'water-skin':
+    case 'held-lamp':
       return right;
     default:
       return left;
@@ -60,13 +72,18 @@ export function layerOf(item: Item, r: Rig): CarryLayer {
   const side = r.dir === 'left' || r.dir === 'right';
   const onBack = item === 'bundle' || item === 'cloak-roll';
   if (onBack) return r.dir === 'up' ? 'front' : 'behind';
+  // Across the shoulders: behind the head from the front, over the back from behind.
+  if (item === 'lamb-shoulders') return r.dir === 'up' ? 'front' : 'body';
+  // Held against the chest with both arms.
+  if (item === 'lamb') return r.dir === 'up' ? 'behind' : 'front';
   const near = side ? sideIndex(item, r) === 1 : true;
   if (!near) return 'behind';
   if (r.dir === 'up') {
     // Seen from behind, things held in front are hidden; hip bags still show.
     return item === 'satchel' || item === 'water-skin' ? 'body' : 'behind';
   }
-  if (item === 'spindle' || item === 'bread') return 'front';
+  if (item === 'spindle' || item === 'bread' || item === 'held-lamp' || item === 'tablet')
+    return 'front';
   return 'body';
 }
 
@@ -391,6 +408,125 @@ function cloakRoll(ctx: Ctx, d: Dress, r: Rig): void {
   for (const s of [-1, 1]) ctx.fillRect(t.cx + s * half * 0.55 - 0.4, y - 2.2, 0.8, 4.4);
 }
 
+/** A woolly body: a fleece ellipse broken up with little curls. */
+function fleece(ctx: Ctx, cx: number, cy: number, rx: number, ry: number): void {
+  ellipse(ctx, cx + 0.4, cy + 0.6, rx, ry, rgba('#5a4a3a', 0.35));
+  ellipse(ctx, cx, cy, rx, ry, FLEECE);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    ellipse(
+      ctx,
+      cx + Math.cos(a) * rx * 0.55,
+      cy + Math.sin(a) * ry * 0.5,
+      rx * 0.28,
+      ry * 0.34,
+      i % 2 ? shade(FLEECE, -0.1) : shade(FLEECE, 0.06),
+    );
+  }
+  ellipse(ctx, cx - rx * 0.3, cy - ry * 0.35, rx * 0.35, ry * 0.25, rgba('#ffffff', 0.45));
+}
+
+/** A lamb's dark head with one pale ear and one black ear. */
+function lambHead(ctx: Ctx, x: number, y: number, facing: number): void {
+  ellipse(ctx, x, y, 1.5, 1.2, LAMB_FACE);
+  ellipse(ctx, x + facing * 1.1, y + 0.4, 0.8, 0.6, shade(LAMB_FACE, 0.15));
+  ellipse(ctx, x - facing * 1.1, y - 0.9, 0.9, 0.45, FLEECE, facing * 0.5);
+  ellipse(ctx, x + facing * 0.2, y - 1.1, 0.9, 0.45, '#1c1410', -facing * 0.4);
+  ellipse(ctx, x + facing * 0.5, y - 0.2, 0.25, 0.25, '#f2e6c8');
+}
+
+function lamb(ctx: Ctx, _d: Dress, r: Rig): void {
+  const side = r.dir === 'left' || r.dir === 'right';
+  const f = r.dir === 'left' ? -1 : 1;
+  const [h0, h1] = r.hands;
+  const cx = side ? h1.x + f * 1.2 : (h0.x + h1.x) / 2;
+  const cy = Math.min(h0.y, h1.y) - 2.2;
+  // Legs dangling below the arms.
+  ctx.strokeStyle = LAMB_FACE;
+  ctx.lineWidth = 0.6;
+  for (const dx of [-2.2, -0.8, 1, 2.3]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + dx, cy + 2);
+    ctx.lineTo(cx + dx * 1.1, cy + 4.4);
+    ctx.stroke();
+  }
+  fleece(ctx, cx, cy, 4.2, 2.8);
+  lambHead(ctx, cx + (side ? f : 1) * 4, cy - 1.6, side ? f : 1);
+}
+
+function lambOnShoulders(ctx: Ctx, d: Dress, r: Rig): void {
+  const t = torsoFrame(d, r);
+  const side = r.dir === 'left' || r.dir === 'right';
+  const f = r.dir === 'left' ? -1 : 1;
+  const y = t.top - 1.2;
+  if (side) {
+    // Seen from the side: the lamb's body curls over the shoulder, its head forward.
+    const x = t.cx - f * 1;
+    fleece(ctx, x, y, 3.6, 2.6);
+    lambHead(ctx, x + f * 3.4, y + 0.6, f);
+    ctx.strokeStyle = LAMB_FACE;
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x + f * 1.5, y + 2);
+    ctx.lineTo(x + f * 2.2, y + 5);
+    ctx.stroke();
+    return;
+  }
+  const half = r.build.shoulder / 2 + 1.4;
+  fleece(ctx, t.cx - half * 0.55, y, half * 0.6, 2.6);
+  fleece(ctx, t.cx + half * 0.55, y, half * 0.6, 2.6);
+  if (r.dir === 'up') {
+    fleece(ctx, t.cx, y + 0.4, half * 0.5, 2.4);
+    return;
+  }
+  // From the front: head over one shoulder, legs gathered at the chest.
+  lambHead(ctx, t.cx + half + 0.4, y + 0.4, 1);
+  ctx.strokeStyle = LAMB_FACE;
+  ctx.lineWidth = 0.6;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(t.cx + s * half * 0.9, y + 1.4);
+    ctx.lineTo(t.cx + s * 1.6, y + 4.2);
+    ctx.stroke();
+  }
+}
+
+function heldLamp(ctx: Ctx, _d: Dress, r: Rig): void {
+  const h = r.hands[sideIndex('held-lamp', r)];
+  const x = h.x;
+  const y = h.y - 1.6;
+  // A small wheel-made clay lamp with a spout and a flame.
+  ellipse(ctx, x, y, 2.1, 1.1, CLAY);
+  ellipse(ctx, x + 2, y - 0.1, 0.8, 0.5, shade(CLAY, -0.1));
+  ellipse(ctx, x - 0.3, y - 0.4, 0.6, 0.3, '#3a2014');
+  const glow = ctx.createRadialGradient(x + 2.2, y - 1.6, 0.2, x + 2.2, y - 1.6, 4);
+  glow.addColorStop(0, 'rgba(255,214,120,0.55)');
+  glow.addColorStop(1, 'rgba(255,190,90,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - 2, y - 6, 8.4, 8);
+  ellipse(ctx, x + 2.2, y - 1.3, 0.55, 1.1, '#f2a13a');
+  ellipse(ctx, x + 2.2, y - 1.1, 0.3, 0.6, '#fff0b0');
+}
+
+function tablet(ctx: Ctx, _d: Dress, r: Rig): void {
+  const h = r.hands[sideIndex('tablet', r)];
+  const x = h.x - 2.3;
+  const y = h.y - 3.6;
+  // A hinged wooden tablet with dark wax, and letters scratched in it.
+  ctx.fillStyle = shade(WOOD, 0.1);
+  ctx.fillRect(x, y, 4.6, 3.4);
+  ctx.fillStyle = '#3b2a1a';
+  ctx.fillRect(x + 0.5, y + 0.5, 3.6, 2.4);
+  ctx.strokeStyle = rgba('#d9c28c', 0.8);
+  ctx.lineWidth = 0.25;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + 0.9, y + 1 + i * 0.7);
+    ctx.lineTo(x + 3.6 - (i % 2) * 0.8, y + 1 + i * 0.7);
+    ctx.stroke();
+  }
+}
+
 const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   staff,
   basket,
@@ -402,4 +538,8 @@ const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   'water-skin': waterSkin,
   lamp,
   'cloak-roll': cloakRoll,
+  lamb,
+  'held-lamp': heldLamp,
+  tablet,
+  'lamb-shoulders': lambOnShoulders,
 };

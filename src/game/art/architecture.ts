@@ -1,5 +1,17 @@
 import type { Look } from './direction';
-import { ellipse, hash, mix, rgba, rng, shade, softShadow, speckle, TILE, type Ctx } from './paint';
+import {
+  ellipse,
+  hash,
+  lumpy,
+  mix,
+  rgba,
+  rng,
+  shade,
+  softShadow,
+  speckle,
+  TILE,
+  type Ctx,
+} from './paint';
 import { backWallSlots, type Site } from './site';
 
 /**
@@ -23,6 +35,9 @@ export function paintBuildings(ctx: Ctx, site: Site, look: Look): void {
   site.forEach((x, y) => {
     const k = site.kindAt(x, y);
     if (k === 'fence') paintLowWall(ctx, site, look, x, y);
+    else if (k === 'sheepfold') paintFoldWall(ctx, site, look, x, y);
+    else if (k === 'terrace') paintTerraceWall(ctx, site, look, x, y);
+    else if (k === 'gate' && isFoldGate(site, x, y)) paintFoldGate(ctx, look, x, y);
     else if (k === 'door' || k === 'gate') paintOpening(ctx, site, look, x, y);
   });
   site.forEach((x, y) => {
@@ -473,6 +488,137 @@ function paintLowWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number):
   ctx.fillStyle = rgba(shade(face, -0.5), 0.45);
   if (vertical) ctx.fillRect(x0 + w - 2, y0, 2, h);
   else ctx.fillRect(x0, y0 + h - 2, w, 2);
+}
+
+// ── Fields: sheepfolds and terraces ─────────────────────────────────────
+/** Rough field stones in a dry-stone course, no mortar. */
+function fieldStones(
+  ctx: Ctx,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  face: string,
+  r: () => number,
+  count: number,
+): void {
+  for (let i = 0; i < count; i++) {
+    const sx = x0 + 1 + r() * (w - 5);
+    const sy = y0 + 1.5 + r() * (h - 5);
+    const rx = 2.6 + r() * 2.2;
+    const ry = 1.8 + r() * 1.1;
+    ellipse(ctx, sx + rx, sy + ry + 0.8, rx, ry, rgba(shade(face, -0.55), 0.35));
+    ellipse(ctx, sx + rx, sy + ry, rx, ry, shade(face, (r() - 0.5) * 0.24));
+    ellipse(ctx, sx + rx - 1, sy + ry - 0.7, rx * 0.4, ry * 0.3, rgba('#ffffff', 0.22));
+  }
+}
+
+/**
+ * A sheepfold wall: waist-high dry stone, thicker than a garden wall, with
+ * thorny brushwood laid along the top to keep animals in and thieves out.
+ */
+function paintFoldWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 41));
+  const along = (dx: number, dy: number): boolean => {
+    const k = site.kindAt(tx + dx, ty + dy);
+    return k === 'sheepfold' || k === 'gate';
+  };
+  const vertical = (along(0, -1) || along(0, 1)) && !(along(-1, 0) || along(1, 0));
+  const face = mix(look.building.face, '#9c8a6c', 0.45);
+  const x0 = vertical ? X + 6 : X;
+  const w = vertical ? 20 : TILE;
+  const y0 = vertical ? Y : Y + 5;
+  const h = vertical ? TILE : 20;
+  ctx.fillStyle = shade(face, -0.12);
+  ctx.fillRect(x0, y0, w, h);
+  fieldStones(ctx, x0, y0, w, h, face, r, 9);
+  // Brushwood along the top: dark twiggy clumps with thorny tips.
+  const twig = '#4a3620';
+  for (let i = 0; i < 6; i++) {
+    const bx = vertical ? x0 + 3 + r() * (w - 6) : x0 + 2 + r() * (w - 4);
+    const by = vertical ? y0 + 2 + r() * (h - 4) : y0 + 1 + r() * 5;
+    lumpy(ctx, bx, by, 2.6 + r() * 1.6, r, rgba(mix(look.foliage.dark, twig, 0.5), 0.9), 6);
+    ctx.strokeStyle = rgba(twig, 0.9);
+    ctx.lineWidth = 0.6;
+    for (let t = 0; t < 3; t++) {
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + (r() - 0.5) * 8, by - 1 - r() * 4);
+      ctx.stroke();
+    }
+  }
+  ctx.fillStyle = rgba(shade(face, -0.5), 0.4);
+  if (vertical) ctx.fillRect(x0 + w - 2, y0, 2, h);
+  else ctx.fillRect(x0, y0 + h - 2, w, 2);
+}
+
+function isFoldGate(site: Site, tx: number, ty: number): boolean {
+  return [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ].some(([dx, dy]) => site.kindAt(tx + (dx ?? 0), ty + (dy ?? 0)) === 'sheepfold');
+}
+
+/** The fold's single way in: trodden earth between two upright gate stones. */
+function paintFoldGate(ctx: Ctx, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 43));
+  ctx.fillStyle = shade(look.ground.sand, -0.12);
+  ctx.fillRect(X + 2, Y, TILE - 4, TILE);
+  for (let i = 0; i < 8; i++)
+    ellipse(ctx, X + 6 + r() * 20, Y + 4 + r() * 24, 1.3, 1, rgba('#4a3620', 0.4));
+  const stone = mix(look.building.face, '#9c8a6c', 0.45);
+  for (const sx of [X + 1, X + TILE - 6]) {
+    ctx.fillStyle = rgba('#2a1a10', 0.3);
+    ctx.fillRect(sx + 1.5, Y + 6, 5, 22);
+    ctx.fillStyle = stone;
+    ctx.fillRect(sx, Y + 3, 5, 22);
+    ctx.fillStyle = rgba('#ffffff', 0.25);
+    ctx.fillRect(sx, Y + 3, 5, 1.5);
+  }
+}
+
+/**
+ * A terrace wall: the dry-stone step that holds up a hillside field. The
+ * upper field's edge is on top; the stone face drops toward the viewer.
+ */
+function paintTerraceWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 47));
+  const face = mix(look.building.face, '#a89272', 0.5);
+  // Top: the lip of the field above, with a few weeds.
+  ctx.fillStyle = shade(face, 0.1);
+  ctx.fillRect(X, Y + 4, TILE, 6);
+  // Face: coursed field stones, shadowed toward the foot.
+  ctx.fillStyle = shade(face, -0.18);
+  ctx.fillRect(X, Y + 10, TILE, 18);
+  fieldStones(ctx, X, Y + 10, TILE, 18, face, r, 10);
+  const grad = ctx.createLinearGradient(0, Y + 14, 0, Y + 28);
+  grad.addColorStop(0, rgba(look.shadow.color, 0));
+  grad.addColorStop(1, rgba(look.shadow.color, 0.4));
+  ctx.fillStyle = grad;
+  ctx.fillRect(X, Y + 14, TILE, 14);
+  if (r() < 0.6) {
+    ctx.strokeStyle = look.foliage.mid;
+    ctx.lineWidth = 0.9;
+    const gx = X + 4 + r() * 24;
+    ctx.beginPath();
+    ctx.moveTo(gx, Y + 9);
+    ctx.lineTo(gx - 1.5, Y + 4);
+    ctx.moveTo(gx, Y + 9);
+    ctx.lineTo(gx + 2, Y + 5);
+    ctx.stroke();
+  }
+  // Where the wall ends, a rounded end stone.
+  if (site.kindAt(tx - 1, ty) !== 'terrace') ellipse(ctx, X + 3, Y + 18, 4, 9, shade(face, -0.05));
+  if (site.kindAt(tx + 1, ty) !== 'terrace')
+    ellipse(ctx, X + TILE - 3, Y + 18, 4, 9, shade(face, -0.25));
 }
 
 // ── Inside Miriam's house: the back wall is where life hangs ─────────────

@@ -32,6 +32,10 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'cloth',
   'mat',
   'bedroll',
+  'manger',
+  'sheep',
+  'hay',
+  'campfire',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -45,7 +49,16 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'door',
   'gate',
   'fence',
+  'sheepfold',
+  'terrace',
 ]);
+
+/** Low dry-stone walls: drawn over the ground they stand on, like a fence. */
+const LOW_WALLS: ReadonlySet<TileKind> = new Set<TileKind>(['fence', 'sheepfold', 'terrace']);
+
+export function isLowWall(kind: TileKind): boolean {
+  return LOW_WALLS.has(kind);
+}
 
 const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig']);
 
@@ -80,6 +93,12 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   crops: 12,
   reeds: 22,
   cloth: 26,
+  manger: 10,
+  sheepfold: 16,
+  terrace: 14,
+  sheep: 9,
+  hay: 14,
+  campfire: 5,
 };
 
 export function isPropTile(kind: TileKind): boolean {
@@ -160,7 +179,7 @@ export function readSite(
     x >= 0 && y >= 0 && x < grid.width && y < grid.height;
   const groundAt = (x: number, y: number): TileKind => {
     const k = kindAt(x, y);
-    return PROP_TILES.has(k) || k === 'fence' ? groundUnder(grid, x, y, baseTile) : k;
+    return PROP_TILES.has(k) || LOW_WALLS.has(k) ? groundUnder(grid, x, y, baseTile) : k;
   };
   const opensSouth = (x: number, y: number): boolean => {
     if (!inside(x, y + 1)) return false;
@@ -203,12 +222,14 @@ export interface LightSpot {
   radius: number;
 }
 
-/** Hearth glows at ovens; indoors, lamp niches and windows along the back wall. */
+/** Hearth glows at ovens and campfires; indoors, lamp niches and windows along the back wall. */
 export function findLights(site: Site, indoor: boolean): LightSpot[] {
   const lights: LightSpot[] = [];
   site.forEach((x, y) => {
     if (site.kindAt(x, y) === 'oven')
       lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 12, radius: indoor ? 70 : 40 });
+    if (site.kindAt(x, y) === 'campfire')
+      lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 18, radius: 56 });
   });
   if (indoor) {
     backWallSlots(site).forEach(({ x, y, use }) => {
