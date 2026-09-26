@@ -155,6 +155,11 @@ describe('pre-rendered place art', () => {
     ).toBeNull();
   });
 
+  it('knows Chapter 4’s places', () => {
+    for (const id of ['ammia-workshop', 'colossae-street', 'lycus-road', 'philemon-house'])
+      expect(artPathFor(id)).toBe(`art/${id}/`);
+  });
+
   it('loads half-resolution art on small views and in low-power mode', () => {
     expect(wantsLowResolution(3, 3, false)).toBe(false); // desktop, close framing
     expect(wantsLowResolution(2.75, 3, false)).toBe(false); // tablet

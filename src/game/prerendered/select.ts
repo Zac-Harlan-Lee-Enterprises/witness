@@ -30,6 +30,7 @@ export const PLACES_WITH_ART = [
   'jericho-road',
   'jericho',
   // Chapter 4: A Letter from Paul
+  'ammia-workshop',
   'colossae-street',
   'lycus-road',
   'philemon-house',
