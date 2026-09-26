@@ -1,8 +1,10 @@
 # Visual prototype report: can Phaser deliver grounded historical realism?
 
-**Scope:** the lower market in Jerusalem (`jerusalem-market`), built as a production-quality slice with pre-rendered 3D-to-2D art. The player, the market's seven characters and four passers-by are rendered people. Everything else in the chapter is unchanged.
+**Scope:** the lower market in Jerusalem (`jerusalem-market`), built as a production-quality slice with pre-rendered 3D-to-2D art. The player, the market's seven characters and four passers-by are rendered people. Sections 1–8 report that prototype as it was.
 
-**Engine question:** stay with Phaser, run a Unity comparison, or migrate to Unity. The answer is in §7.
+**Since then** (§9): the pipeline builds any scene from its data, and every Chapter 1 place is pre-rendered (the house, the road and Jericho too), with people at rest, story marks and indoor light.
+
+**Engine question:** stay with Phaser, run a Unity comparison, or migrate to Unity. The answer is in §8.
 
 The screenshots referred to here were captured by [`e2e/market-art.spec.ts`](../../e2e/market-art.spec.ts) and [`e2e/visual-tour.spec.ts`](../../e2e/visual-tour.spec.ts) at identical positions and viewport sizes. The same builds are compared with and without the new art. They are not committed (they are several MB each run); re-create them with the commands in the [technical-art guide](technical-art-guide.md).
 
@@ -117,7 +119,7 @@ None of these blocks the target look at gameplay scale. Items 1 and 2 are the ne
 
 - **Close-ups.** Dialogue portraits rendered from the same procedural people looked like carved wooden figurines. The generated characters hold up at gameplay size (about 110–160 px) but not in close-up, so the illustrated SVG portraits stay.
 - **Close-ups need real assets, not another engine.** Realistic portraits would need hand-sculpted heads (in this same pipeline) or painted portraits. A different engine would face the same problem.
-- **Story marks** (bandages, a borrowed cloak, the player's gear) are not pre-rendered yet. People who show marks are painted, even in the market. The pipeline can render marks as layered sheets.
+- **Story marks** (bandages, a borrowed cloak, the player's gear) were not pre-rendered in the prototype: people who showed marks were painted, even in the market. They are now overlay sheets (§9).
 
 ## 8. Recommendation: continue with Phaser
 
@@ -144,6 +146,22 @@ A Unity WebGL build would add a runtime of tens of MB, slower start-up and weake
 
 1. GPU-compressed textures and fewer crowd variants, for memory.
 2. High-DPI rendering, for crispness.
-3. Layered mark sheets.
-4. Pre-rendering the other three places: 8–12 units each, reusing the families.
+3. Layered mark sheets (done: §9).
+4. Pre-rendering the other three places: 8–12 units each, reusing the families (done: §9).
 5. Measuring on a mid-range Android phone and an older iPad before shipping.
+
+## 9. Since the prototype: every place, story marks, one place in memory
+
+The pipeline now builds any place from its scene data, and every place in Chapter 1 is pre-rendered ([technical-art-guide.md](technical-art-guide.md)):
+
+- **Aunt Miriam's house**: a room in cutaway. Its walls and roof block light but are never seen; morning sun slants in through a barred east window and the door, with dust glowing in the beams, an oil lamp in a niche and embers in the tannur. People in it are lit for the room (their `indoor` sheets).
+- **The road down to Jericho**: Judean desert. One terrain mesh for hills, stepped cliffs, a wadi and the ridge path, registered with its tiles by a shear; angular stones and boulders, desert scrub, the cistern, and the story's evidence as marks in the dust (sandal prints, drag marks, a broken jar's oil stain).
+- **Jericho**: an oasis town. Date palms (their crowns fade while you walk behind them), figs, reeds and irrigated plots round a spring pool; mudbrick houses with timber-beamed roofs; a courtyard inn with a flagged yard worn back to earth in places, a well, a cart; a courtyard with a mud-roofed portico and a tannur.
+
+**Story marks** are pre-rendered too: bandages (plain, or torn from the player's tunic in its colour), the borrowed cloak, the spare cloak rolled on the player's back, the water skin and the lamp are overlay sheets drawn over the person, frame for frame; a torn hem is a sheet of its own; the traveler sits and lies in sheets of their own.
+
+**Memory:** a place's textures are released on the first frame nothing draws them, so one place is in memory at a time (the painted chapter held about 100 MB by Jericho). The ground is cut into tiles of at most 2048 px, so every texture fits any GPU. Per-place download and texture sizes, the in-game figures and the caching decision are in [technical-art-guide.md §9](technical-art-guide.md#9-measurements).
+
+Review captures of every place at desktop, tablet and phone sizes: `E2E_SHOTS=1 ART_SHOTS=<set> npx playwright test e2e/place-art.spec.ts --project=desktop-chromium`.
+
+Still to do: GPU-compressed textures (§8, item 1); half-resolution people sheets for phones (people are now most of a phone's texture memory); the market re-rendered with the newer kit (it predates tiled grounds and holdouts, and was only upgraded in place); and measurements on real phones.

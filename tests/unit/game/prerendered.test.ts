@@ -4,19 +4,29 @@ import { parsePeopleArt, parsePlaceArt } from '@/game/prerendered/manifest';
 import {
   appearanceKey,
   artPathFor,
+  behindCanopy,
   depthRow,
   LATE_FROM_HOUR,
+  pagesFor,
+  peopleLightFor,
+  pickSheets,
+  PLACE_ART,
   sampleShade,
   shadeTint,
-  sheetFor,
+  sheetsToLoad,
+  tileOrigin,
   turnPath,
   variantFor,
   wantsLowResolution,
 } from '@/game/prerendered/select';
+import { naturalColor } from '@/shared/color';
 
 const variant = {
-  ground: 'ground-day.webp',
-  groundLow: 'ground-day-low.webp',
+  ground: [
+    { file: 'ground-day-x0y0.webp', x: 0, y: 0 },
+    { file: 'ground-day-x1y0.webp', x: 1632, y: 0 },
+  ],
+  groundLow: [{ file: 'ground-day-low.webp', x: 0, y: 0 }],
   shade: 'shade-day.webp',
   pages: ['sprites-day-0.webp'],
   sprites: [
@@ -32,6 +42,19 @@ const variant = {
       base: 222.4,
       tiles: [[11, 6]],
     },
+    {
+      id: 'palm-14-8-crown',
+      x: 400,
+      y: 100,
+      w: 300,
+      h: 240,
+      page: 0,
+      u: 0,
+      v: 300,
+      base: 275,
+      tiles: [[14, 8]],
+      fade: true,
+    },
   ],
 };
 
@@ -46,6 +69,8 @@ describe('pre-rendered place art', () => {
     });
     expect(ok.error).toBeNull();
     expect(ok.art?.variants.day.sprites[0]?.id).toBe('stall-11-6');
+    expect(ok.art?.variants.day.sprites[0]?.fade).toBe(false);
+    expect(ok.art?.variants.day.sprites[1]?.fade).toBe(true);
     const bad = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -55,11 +80,30 @@ describe('pre-rendered place art', () => {
     });
     expect(bad.art).toBeNull();
     expect(bad.error).toBeTruthy();
+    // A ground given as one file (before grounds were tiled) is refused, not guessed at.
+    const untiled = parsePlaceArt({
+      version: 1,
+      scene: 'x',
+      tiles: { w: 34, h: 24 },
+      ppu: 3,
+      variants: { day: { ...variant, ground: 'ground-day.webp' } },
+    });
+    expect(untiled.art).toBeNull();
+  });
+
+  it('places each ground tile at its pixel offset, in game units', () => {
+    expect(tileOrigin({ x: 0, y: 0 }, 3)).toEqual({ x: 0, y: 0 });
+    expect(tileOrigin({ x: 1536, y: 1440 }, 3)).toEqual({ x: 512, y: 480 });
+    // The half-resolution ground has half the pixels per unit.
+    expect(tileOrigin({ x: 1152, y: 0 }, 1.5)).toEqual({ x: 768, y: 0 });
   });
 
   it('knows which places have art and where it is served', () => {
     expect(artPathFor('jerusalem-market')).toBe('art/jerusalem-market/');
-    expect(artPathFor('jericho-road')).toBeNull();
+    expect(artPathFor('jericho-road')).toBe('art/jericho-road/');
+    expect(artPathFor('miriam-house')).toBe('art/miriam-house/');
+    expect(artPathFor('nowhere')).toBeNull();
+    expect(Object.keys(PLACE_ART)).toContain('jericho');
   });
 
   it('uses the later-day light from mid-afternoon, only when it exists', () => {
@@ -69,11 +113,35 @@ describe('pre-rendered place art', () => {
     expect(variantFor(null, ['day', 'late'])).toBe('day');
   });
 
-  it('loads half-resolution art on small views (phones) and in low-power mode', () => {
+  it('lights people for the room indoors, and by the place’s sun outdoors', () => {
+    expect(peopleLightFor('day', undefined)).toBe('day');
+    expect(peopleLightFor('late', undefined)).toBe('late');
+    expect(peopleLightFor('day', 'indoor')).toBe('indoor');
+    const room = parsePlaceArt({
+      version: 1,
+      scene: 'miriam-house',
+      tiles: { w: 16, h: 11 },
+      ppu: 3,
+      peopleLight: 'indoor',
+      variants: { day: variant },
+    });
+    expect(room.art?.peopleLight).toBe('indoor');
+  });
+
+  it('loads half-resolution art on small views and in low-power mode', () => {
     expect(wantsLowResolution(3, 3, false)).toBe(false); // desktop, close framing
     expect(wantsLowResolution(2.75, 3, false)).toBe(false); // tablet
     expect(wantsLowResolution(1.75, 3, false)).toBe(true); // phone
     expect(wantsLowResolution(3, 3, true)).toBe(true);
+  });
+
+  it('takes the half-resolution sprite pages with the half-resolution ground, when they exist', () => {
+    const both = { pages: ['a.webp', 'b.webp'], pagesLow: ['a-low.webp', 'b-low.webp'] };
+    expect(pagesFor(both, false)).toEqual({ files: both.pages, scale: 1 });
+    expect(pagesFor(both, true)).toEqual({ files: both.pagesLow, scale: 0.5 });
+    expect(pagesFor({ pages: ['a.webp'] }, true)).toEqual({ files: ['a.webp'], scale: 1 });
+    // A mismatched set is not trusted.
+    expect(pagesFor({ pages: ['a.webp', 'b.webp'], pagesLow: ['a-low.webp'] }, true).scale).toBe(1);
   });
 
   it('sorts a sprite against people by its ground line', () => {
@@ -82,39 +150,102 @@ describe('pre-rendered place art', () => {
     // …and in front of someone on row 6.
     expect(depthRow((6 + 0.95) * 32)).toBeGreaterThan(6.5);
   });
+
+  it('fades a canopy only while someone is behind it and under it', () => {
+    const crown = { x: 400, y: 100, w: 300, h: 240, base: 275 }; // 100 x 80 units at 3 ppu
+    expect(behindCanopy(crown, 3, 450, 170)).toBe(true); // under the crown, north of the trunk
+    expect(behindCanopy(crown, 3, 450, 290)).toBe(false); // in front of the tree
+    expect(behindCanopy(crown, 3, 300, 170)).toBe(false); // off to the side
+    expect(behindCanopy(crown, 3, 450, 90)).toBe(false); // above the crown on screen
+  });
 });
 
 describe('pre-rendered people', () => {
   const player = PLAYER_APPEARANCES['look-1'];
-  const people = parsePeopleArt({
-    'player-look-1': {
-      appearance: appearanceKey(player),
-      sheets: { day: 'player-look-1-day.webp' },
-      frameWidth: 132,
-      frameHeight: 204,
-      originX: 66,
-      originY: 186,
-      ppu: 3,
-      columns: ['idle'],
-      rows: ['down'],
-      shadows: {
-        day: {
-          sheet: 's.webp',
-          frameWidth: 117,
-          frameHeight: 81,
-          originX: 21,
-          originY: 21,
-          ppu: 1.5,
-        },
-      },
+  const key = appearanceKey(player);
+  const sheet = (extra: object) => ({
+    appearance: key,
+    sheets: { day: 'x.webp' },
+    frameWidth: 132,
+    frameHeight: 204,
+    originX: 66,
+    originY: 186,
+    ppu: 3,
+    columns: ['idle'],
+    rows: ['down'],
+    shadows: {
+      day: { sheet: 's.webp', frameWidth: 117, frameHeight: 81, originX: 21, originY: 21, ppu: 1 },
     },
+    ...extra,
+  });
+  const rag = naturalColor(player.robe).toLowerCase();
+  const people = parsePeopleArt({
+    'player-look-1': sheet({}),
+    'player-look-1+torn-hem': sheet({ marks: ['torn-hem'] }),
+    'player-look-1@water-skin': sheet({
+      overlay: { mark: 'water-skin', of: 'player-look-1' },
+      shadows: undefined,
+    }),
+    'player-look-1@lamp': sheet({ overlay: { mark: 'lamp', of: 'player-look-1' } }),
+    'player-look-1~sit': sheet({ pose: 'sit' }),
+    'player-look-1~sit@rag-bandaged-x': sheet({
+      pose: 'sit',
+      overlay: { mark: 'rag-bandaged', of: 'player-look-1~sit', rag },
+    }),
+    'crowd-0': sheet({ appearance: 'someone|else' }),
   }).people;
 
-  it('finds a sheet by the authored appearance, and paints anyone with story marks', () => {
-    expect(sheetFor(people, player, [])).toBe('player-look-1');
-    expect(sheetFor(people, player, ['water-skin'])).toBeNull();
-    expect(sheetFor(people, PLAYER_APPEARANCES['look-2'], [])).toBeNull();
-    expect(sheetFor(null, player, [])).toBeNull();
+  it('reads sheets with poses, body marks and overlays', () => {
+    expect(people).not.toBeNull();
+    expect(people?.['player-look-1']?.pose).toBe('stand');
+    expect(people?.['player-look-1~sit']?.pose).toBe('sit');
+    expect(people?.['player-look-1@water-skin']?.shadows).toEqual({});
+  });
+
+  it('picks the sheet for someone, with overlays for what they carry', () => {
+    expect(pickSheets(people, player, [])).toEqual({ base: 'player-look-1', overlays: [] });
+    expect(pickSheets(people, player, ['lamp', 'water-skin'])).toEqual({
+      base: 'player-look-1',
+      overlays: ['player-look-1@water-skin', 'player-look-1@lamp'],
+    });
+  });
+
+  it('uses the torn-hem sheet for a torn hem, with the same overlays', () => {
+    expect(pickSheets(people, player, ['torn-hem', 'water-skin'])).toEqual({
+      base: 'player-look-1+torn-hem',
+      overlays: ['player-look-1@water-skin'],
+    });
+  });
+
+  it('draws people at rest from their own sheets, and matches rag bandages by tunic colour', () => {
+    expect(pickSheets(people, player, [], 'sit')?.base).toBe('player-look-1~sit');
+    expect(pickSheets(people, player, ['rag-bandaged'], 'sit', player.robe)).toEqual({
+      base: 'player-look-1~sit',
+      overlays: ['player-look-1~sit@rag-bandaged-x'],
+    });
+    // Another tunic's rags have no overlay: painted.
+    expect(pickSheets(people, player, ['rag-bandaged'], 'sit', '#112233')).toBeNull();
+    expect(pickSheets(people, player, [], 'lie')).toBeNull();
+  });
+
+  it('paints anyone whose marks have no art, or who has no sheet at all', () => {
+    expect(pickSheets(people, player, ['cloak-roll'])).toBeNull();
+    expect(pickSheets(people, PLAYER_APPEARANCES['look-2'], [])).toBeNull();
+    expect(pickSheets(null, player, [])).toBeNull();
+  });
+
+  it('loads every sheet of the people present, and the crowd only where there is one', () => {
+    if (!people) throw new Error('no people');
+    const ids = sheetsToLoad(people, [player], false, player.robe);
+    expect(ids).toContain('player-look-1+torn-hem');
+    expect(ids).toContain('player-look-1~sit@rag-bandaged-x');
+    expect(ids).not.toContain('crowd-0');
+    // Bandages torn from another tunic are never needed: not loaded.
+    expect(sheetsToLoad(people, [player], false, '#112233')).not.toContain(
+      'player-look-1~sit@rag-bandaged-x',
+    );
+    expect(sheetsToLoad(people, [player], false, '#112233')).toContain('player-look-1@lamp');
+    expect(sheetsToLoad(people, [], true)).toEqual(['crowd-0']);
   });
 
   it('keys appearances stably and distinctly', () => {

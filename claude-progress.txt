@@ -177,3 +177,26 @@ NEXT   : When Chapters 2–4 add characters: npm run art:data && npm run art:por
          npx vitest run tests/content/portraits.test.ts. Unify src/domain/appearance-key.ts with
          appearanceKey in src/game/prerendered/select.ts (select.ts could import the domain one).
 BLOCKED: none.
+--- 2026-09-26  Claude Opus 5.5 (art agent, worktree-agent-aac276231ddf55de0) — every Chapter 1 place pre-rendered ---
+DONE   : Generalized place builder (tools/art/lib/place.py + one kit per family: ground, masonry,
+         props, plants, mudbrick, interior; one tile_<kind> method per tile kind; build stops naming
+         any kind without one). export-art-data exports every chapter. Pre-rendered miriam-house
+         (cutaway room: window + door sun, dust beams, lamp, tannur, room fill and bounce),
+         jericho-road (terrain mesh with sheared registration, strata, wadi, stones, scrub, evidence
+         as scuffs in the dust) and jericho (palms with fading crowns, figs, pool, mudbrick houses,
+         inn yard, courtyard portico), morning + later day. People: rest poses (world camera),
+         story-mark overlays (bandages incl. tunic-coloured rags, cloak, cloak roll, water skin,
+         lamp), torn-hem sheets, indoor light. Runtime: FigureBook/pickSheets, overlay layers,
+         canopy fading, textures released per place, late→day fallback offline, grounds in
+         2048-px tiles, half-resolution sets for phones. Sprites cut by the ground (holdouts);
+         flat props out of the ground pass. Measurements + caching decision in
+         docs/art/technical-art-guide.md §9. Commits 9c65e26 efd00dc 80d3501 c3262cf 1e51b8f (+docs).
+TESTS  : Vitest ~341 → 377 (art-assets: manifests vs maps, provenance, tile coverage, every pose ×
+         mark × light has sheets). Playwright chapter/smoke/pwa: 10 passed + 1 intentional skip.
+         Captures: test-results/place-art/{before,final} (6 runs, desktop/tablet/phone).
+NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of every place's texture
+         memory): add a `-low` sheet per person in tools/art/build_people.py (box-filter like
+         upgrade_place.py) and pick it in loadPersons when wantsLowResolution. Then re-render the
+         market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
+BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
+         docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).

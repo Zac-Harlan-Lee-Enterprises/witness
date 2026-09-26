@@ -18,7 +18,7 @@ import {
 } from '@/domain/navigation';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
-import type { LookMark, Weather } from '@/domain/world';
+import type { LookMark, Pose, Weather } from '@/domain/world';
 import { inRect } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
 import { lookFor, shadowOffset } from '../art/direction';
@@ -38,16 +38,11 @@ import {
   type RendererInfo,
 } from '../phaser/renderer';
 import type { Viewport } from '../phaser/viewport';
-import { loadPeople, loadPerson, loadPlace, type PlaceTextures } from '../prerendered/loader';
-import type { ArtSprite, LightingVariant, PeopleArt, PersonSheet } from '../prerendered/manifest';
-import {
-  artPathFor,
-  depthRow,
-  sampleShade,
-  shadeTint,
-  sheetFor,
-  turnPath,
-} from '../prerendered/select';
+import { CanopyFader } from '../prerendered/canopy';
+import { prepareArt, type FigureBook } from '../prerendered/figures';
+import type { PlaceTextures } from '../prerendered/loader';
+import type { ArtSprite } from '../prerendered/manifest';
+import { depthRow, sampleShade, shadeTint, turnPath } from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
@@ -184,8 +179,8 @@ export class WorldScene extends Phaser.Scene {
   private cast: ShadowCast | null = null;
   /** Pre-rendered art for the place being shown (null: it is painted). */
   private place: PlaceTextures | null = null;
-  private peopleArt: PeopleArt | null = null;
-  private figures = new Map<string, RenderedFigure>();
+  private book: FigureBook | null = null;
+  private canopyFader: CanopyFader | null = null;
   private entitySprites = new Map<string, ArtSprite>();
   private playerFigure: RenderedFigure | null = null;
   private playerTurn: { frames: string[]; next: number } = { frames: [], next: 0 };
@@ -256,43 +251,19 @@ export class WorldScene extends Phaser.Scene {
    * people who will be shown. Anything missing falls back to painting.
    */
   async prepare(model: WorldSceneModel): Promise<void> {
-    this.place = null;
-    this.figures = new Map();
-    const path = artPathFor(model.sceneId);
-    if (!path) return;
     const vp = this.opts.viewport;
     // The art's resolution is chosen for the canvas pixels it will cover.
     const zoom = zoomFor(vp.cssWidth, vp.cssHeight, framingFor(this.opts.framing, 3)) * vp.ratio;
     const forced = this.opts.artLighting;
     const hour = forced === 'late' ? 24 : forced === 'day' ? 8 : model.lighting.hour;
-    const place = await loadPlace(
+    const art = await prepareArt(
       this,
-      model.sceneId,
-      path,
+      model,
       { hour, zoom, lowPower: this.quality.lowPower },
       this.opts.logger,
     );
-    if (!place) return;
-    const people = await loadPeople(this, this.opts.logger);
-    this.peopleArt = people;
-    if (people) {
-      const wanted = new Set<string>();
-      const want = (a: Appearance | null, marks: readonly LookMark[]): void => {
-        const id = a ? sheetFor(people, a, marks) : null;
-        if (id) wanted.add(id);
-      };
-      model.entities.forEach((e) => want(e.appearance, e.marks));
-      want(model.player.appearance, model.player.marks);
-      Object.keys(people)
-        .filter((id) => id.startsWith('crowd-'))
-        .forEach((id) => wanted.add(id));
-      for (const id of wanted) {
-        const sheet = people[id];
-        const tex = sheet ? await loadPerson(this, people, id, place.variant) : null;
-        if (sheet && tex) this.figures.set(id, figureOf(sheet, tex, place.variant));
-      }
-    }
-    this.place = place;
+    this.place = art.place;
+    this.book = art.book;
     this.compactArt();
   }
 
@@ -308,9 +279,10 @@ export class WorldScene extends Phaser.Scene {
       lowPower: this.quality.lowPower,
     });
     if (this.place && compactGround)
-      compactTexture(this.game, this.textures, this.place.ground, 'rgb565');
-    for (const f of this.figures.values())
-      compactTexture(this.game, this.textures, f.shadowKey, 'luminance');
+      for (const tile of this.place.ground)
+        compactTexture(this.game, this.textures, tile.key, 'rgb565');
+    for (const key of this.book?.shadowKeys() ?? [])
+      compactTexture(this.game, this.textures, key, 'luminance');
   }
 
   /** Close framing only where the place's art has the resolution for it. */
@@ -319,9 +291,13 @@ export class WorldScene extends Phaser.Scene {
     return framingFor(this.opts.framing, place ? place.art.ppu : ART_SCALE);
   }
 
-  private figureFor(appearance: Appearance, marks: readonly LookMark[]): RenderedFigure | null {
-    const id = sheetFor(this.peopleArt, appearance, marks);
-    return id ? (this.figures.get(id) ?? null) : null;
+  private figureFor(
+    appearance: Appearance,
+    marks: readonly LookMark[],
+    pose: Pose = 'stand',
+  ): RenderedFigure | null {
+    const rag = this.model?.player.appearance.robe ?? null;
+    return this.book?.figure(appearance, marks, pose, rag) ?? null;
   }
 
   private sunAt = (x: number, y: number): number => {
@@ -354,7 +330,7 @@ export class WorldScene extends Phaser.Scene {
       model.player.appearance.robe,
       this.cast,
       DEPTH.shadows,
-      (view) => (view.appearance ? this.figureFor(view.appearance, view.marks) : null),
+      (view) => (view.appearance ? this.figureFor(view.appearance, view.marks, view.pose) : null),
       place ? this.sunAt : null,
     );
     this.feedback = new Feedback(
@@ -638,6 +614,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.player.sprite.setFrame(name);
     this.player.shadow?.setFrame(name);
+    this.canopyFader?.update(this.player.sprite.x, this.player.sprite.y, dt);
     if (this.playerFigure && this.place) {
       const target = this.sunAt(this.player.sprite.x, this.player.sprite.y);
       this.playerLight += (target - this.playerLight) * 0.2;
@@ -1054,27 +1031,31 @@ export class WorldScene extends Phaser.Scene {
   private buildFromArt(place: PlaceTextures): void {
     const v = place.art.variants[place.variant] ?? place.art.variants.day;
     this.lightSpots = [];
-    this.layers.push(
-      this.add
-        .image(0, 0, place.ground)
-        .setOrigin(0, 0)
-        .setScale(1 / place.groundPpu)
-        .setDepth(DEPTH.ground),
-    );
+    this.canopyFader = new CanopyFader(place.art.ppu, () => this.reducedMotion);
+    for (const tile of place.ground)
+      this.layers.push(
+        this.add
+          .image(tile.x, tile.y, tile.key)
+          .setOrigin(0, 0)
+          .setScale(1 / place.groundPpu)
+          .setDepth(DEPTH.ground),
+      );
     for (const sprite of v.sprites) {
       if (sprite.id.startsWith('entity:')) {
         this.entitySprites.set(sprite.id.slice('entity:'.length), sprite);
         continue;
       }
       const image = this.artImage(place, sprite);
-      this.layers.push(image);
       if (TREE_SPRITE.test(sprite.id)) {
+        // Trees pivot at their foot so they can lean in the wind.
         const w = sprite.w / place.art.ppu;
         const h = sprite.h / place.art.ppu;
         const foot = Math.min(sprite.y + h, Math.max(sprite.y, sprite.base));
         image.setOrigin(0.5, (foot - sprite.y) / h).setPosition(sprite.x + w / 2, foot);
         this.trees.push(image);
       }
+      this.canopyFader.track(image, sprite);
+      this.layers.push(image);
     }
   }
 
@@ -1082,11 +1063,22 @@ export class WorldScene extends Phaser.Scene {
     const page = place.pages[sprite.page] ?? place.pages[0] ?? '';
     const tex = this.textures.get(page);
     const frame = `sprite:${sprite.id}`;
-    if (!tex.has(frame)) tex.add(frame, 0, sprite.u, sprite.v, sprite.w, sprite.h);
+    const k = place.spriteScale;
+    if (!tex.has(frame))
+      tex.add(
+        frame,
+        0,
+        sprite.u * k,
+        sprite.v * k,
+        Math.ceil(sprite.w * k),
+        Math.ceil(sprite.h * k),
+      );
+    // Anchored at the bottom centre, like painted props, so focus marks sit on it.
+    const ppu = place.art.ppu;
     return this.add
-      .image(sprite.x, sprite.y, page, frame)
-      .setOrigin(0, 0)
-      .setScale(1 / place.art.ppu)
+      .image(sprite.x + sprite.w / (2 * ppu), sprite.y + sprite.h / ppu, page, frame)
+      .setOrigin(0.5, 1)
+      .setScale(1 / (ppu * k))
       .setDepth(depthFor(depthRow(sprite.base)));
   }
 
@@ -1141,9 +1133,7 @@ export class WorldScene extends Phaser.Scene {
       reducedMotion: this.reducedMotion,
       lowPower: this.quality.lowPower,
       cast: this.cast,
-      crowd: [...this.figures.entries()]
-        .filter(([id]) => id.startsWith('crowd-'))
-        .map(([, f]) => f),
+      crowd: this.book?.crowd() ?? [],
       prerendered: this.place?.art.scene === model.sceneId,
       trees: this.trees,
       liveWater: (this.water?.count ?? 0) > 0,
@@ -1292,9 +1282,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * Free textures the new place doesn't use: art and people from the last
-   * place, and painted figures nobody wears any more. (They reload or
-   * repaint if needed again.) Keeps GPU memory to what is on screen.
+   * Free painted figures nobody wears any more (they repaint if needed).
+   * Pre-rendered places and people are released by the loader, per place,
+   * once nothing draws them (`beginPlace` in prerendered/loader.ts).
    */
   private releaseUnusedTextures(): void {
     const keep = new Set<string>();
@@ -1302,20 +1292,8 @@ export class WorldScene extends Phaser.Scene {
       const t = (o as { texture?: Phaser.Textures.Texture }).texture;
       if (t) keep.add(t.key);
     }
-    for (const f of this.figures.values()) {
-      keep.add(f.key);
-      keep.add(f.shadowKey);
-    }
-    const place = this.place?.art.scene === this.model?.sceneId ? this.place : null;
-    if (place) {
-      keep.add(place.ground);
-      place.pages.forEach((p) => keep.add(p));
-    }
-    for (const key of this.textures.getTextureKeys()) {
-      if (keep.has(key)) continue;
-      if (key.startsWith('art:') || key.startsWith('person:') || key.startsWith('fig1-'))
-        this.textures.remove(key);
-    }
+    for (const key of this.textures.getTextureKeys())
+      if (!keep.has(key) && key.startsWith('fig1-')) this.textures.remove(key);
   }
 
   private clear(): void {
@@ -1335,6 +1313,7 @@ export class WorldScene extends Phaser.Scene {
     this.layers = [];
     this.canopies = [];
     this.trees = [];
+    this.canopyFader = null;
     this.player.sprite?.destroy();
     this.player.sprite = null;
     this.player.shadow?.destroy();
@@ -1365,31 +1344,6 @@ function castFor(model: WorldSceneModel): ShadowCast | null {
     height,
     alpha: look.shadow.alpha * 0.75,
     color: parseInt(look.shadow.color.slice(1), 16),
-  };
-}
-
-function figureOf(
-  sheet: PersonSheet,
-  tex: { key: string; shadow: string },
-  variant: LightingVariant,
-): RenderedFigure {
-  const shadow = sheet.shadows[variant] ?? sheet.shadows.day;
-  return {
-    key: tex.key,
-    shadowKey: tex.shadow,
-    ppu: sheet.ppu,
-    originX: sheet.originX,
-    originY: sheet.originY,
-    frameWidth: sheet.frameWidth,
-    frameHeight: sheet.frameHeight,
-    turns: sheet.turns,
-    shadow: {
-      ppu: shadow.ppu,
-      originX: shadow.originX,
-      originY: shadow.originY,
-      frameWidth: shadow.frameWidth,
-      frameHeight: shadow.frameHeight,
-    },
   };
 }
 

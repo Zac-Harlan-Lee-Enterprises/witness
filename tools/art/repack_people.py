@@ -41,7 +41,7 @@ def repack(folder):
             packed, table = pack.pack_frames(frames, False)
             imageio.save(packed, os.path.join(folder, file), "WEBP", 90)
             atlas[file] = table
-        for variant, s in e["shadows"].items():
+        for variant, s in e.get("shadows", {}).items():
             file = s["sheet"]
             if file in atlas:
                 continue

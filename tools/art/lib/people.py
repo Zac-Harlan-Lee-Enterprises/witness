@@ -153,8 +153,11 @@ def apply_transform(obj):
 class Part:
     """A piece of the person: skinned (per-vertex bone weights) or rigid (one bone)."""
 
-    def __init__(self, obj, weights=None, bone=None, skirt=None, upright=None):
+    def __init__(self, obj, weights=None, bone=None, skirt=None, upright=None, mark=None):
         self.obj = obj
+        # The story mark this part shows (a bandage, the spare cloak...), if any:
+        # rendered as its own overlay sheet (see build_people.py).
+        self.mark = mark
         apply_transform(obj)
         n = len(obj.data.vertices)
         co = np.empty(n * 3, dtype=np.float64)
@@ -232,6 +235,7 @@ class Person:
         if a["build"] == "elder":
             self._mantle()
         self._carry()
+        self._marks()
         _ = (J, H)
 
     def _body(self, skin):
@@ -394,6 +398,16 @@ class Person:
         common.add_modifier(tunic, "SOLIDIFY", thickness=0.012, offset=1.0)
         common.add_modifier(tunic, "SUBSURF", levels=1, render_levels=1)
         common.bake_modifiers(tunic)
+        if "torn-hem" in self.marks:
+            # A strip torn from the left of the hem for bandages: shorter there,
+            # with a ragged edge (the cloth is folded up to the tear line).
+            cut = hem_z + 0.075 * H
+            for v in tunic.data.vertices:
+                x, y, z = v.co
+                if x > 0.004 and z < cut:
+                    k = min(1.0, (x - 0.004) / (0.05 * H))
+                    rag = 0.012 * H * (math.sin(x * 900) * 0.6 + math.sin(y * 700 + 1) * 0.4)
+                    v.co.z = max(z, hem_z + (0.075 * H + rag) * k)
         waist_z = J["waist"].z
         pel = J["pelvis"].z
         torso_w = nearest_bone_weights(J, ["pelvis", "spine", "chest", "upper_arm_L", "upper_arm_R"], 4.0)
@@ -458,10 +472,13 @@ class Person:
             self.parts.append(Part(strap, bone=f"foot_{s}"))
             if s == "L" and ({"bandaged", "rag-bandaged"} & self.marks):
                 wrap = ellipsoid(f"{self.name}-ankle-wrap", ank + Vector((0, 0, 0.01 * H)), (0.03 * H, 0.03 * H, 0.03 * H), self._bandage_mat(), self.col, 12, 8)
-                self.parts.append(Part(wrap, bone=f"shin_{s}"))
+                self.parts.append(Part(wrap, bone=f"shin_{s}", mark=self._bandage_mark()))
 
     def _bandage_mat(self):
         return M.cloth("#e6ddc9", None, "linen") if "bandaged" in self.marks else M.cloth(self.rag, None, "wool")
+
+    def _bandage_mark(self):
+        return "bandaged" if "bandaged" in self.marks else "rag-bandaged"
 
     def _headwear(self):
         a = self.a
@@ -554,7 +571,7 @@ class Person:
             )
             common.add_modifier(band, "SOLIDIFY", thickness=0.02 * h, offset=1.0)
             common.bake_modifiers(band)
-            self.parts.append(Part(band, bone="head"))
+            self.parts.append(Part(band, bone="head", mark=self._bandage_mark()))
 
     def _mantle(self):
         a = self.a
@@ -633,21 +650,88 @@ class Person:
             sack = ellipsoid(f"{self.name}-bundle", back, (0.1 * H, 0.07 * H, 0.12 * H), M.cloth("#8a7a5c", None, "wool"), self.col, 16, 10)
             self.parts.append(Part(sack, bone="chest"))
 
+    def _marks(self):
+        """Visible story marks: the player's water skin, lamp and rolled cloak,
+        and the spare cloak wrapped around someone. (Bandages are added with
+        the head and sandals; a torn hem with the tunic.)"""
+        J = self.J
+        H = self.H
+        cy = 0.35 * GU
+        leather = M.leather("#5b3b24")
+        cloak_col = M._toward("#7a4a34", "#8a6a50", 0.2)
+        if "water-skin" in self.marks:
+            # A goatskin bag at the right hip, its strap over the left shoulder.
+            c = J["hip_R"] + Vector((-0.07 * H, -0.015 * H, -0.035 * H))
+            bag = ellipsoid(f"{self.name}-waterskin", c, (0.036 * H, 0.03 * H, 0.052 * H), leather, self.col, 16, 10)
+            neck = capsule(f"{self.name}-waterskin-neck", c + Vector((0, 0, 0.045 * H)), c + Vector((0.01 * H, -0.004 * H, 0.075 * H)), 0.011 * H, leather, self.col)
+            tie = ellipsoid(f"{self.name}-waterskin-tie", c + Vector((0.01 * H, -0.004 * H, 0.077 * H)), (0.012 * H, 0.012 * H, 0.008 * H), M.plain("#3a2616", 0.8), self.col, 8, 5)
+            for o in (bag, neck, tie):
+                self.parts.append(Part(o, bone="pelvis", mark="water-skin"))
+            pts = [J["shoulder_L"] + Vector((-0.01, -0.012, 0.01)), J["chest"] + Vector((0, -0.074 * H, -0.02 * H)), c + Vector((0.006 * H, -0.02 * H, 0.06 * H))]
+            for i in range(2):
+                st = capsule(f"{self.name}-waterskin-strap{i}", pts[i], pts[i + 1], 0.006 * H, M.leather("#4a3020"), self.col)
+                self.parts.append(Part(st, bone="chest" if i == 0 else "spine", mark="water-skin"))
+        if "lamp" in self.marks:
+            # A small clay lamp hanging from the belt, front left.
+            bz = J["waist"].z - 0.03 * H
+            c = Vector((J["shoulder_L"].x * 0.55, cy - 0.075 * H, bz - 0.045 * H))
+            body = ellipsoid(f"{self.name}-lamp", c, (0.028 * H, 0.02 * H, 0.012 * H), M.terracotta("#b2714a", 0.1), self.col, 14, 8)
+            nozzle = ellipsoid(f"{self.name}-lamp-nozzle", c + Vector((-0.025 * H, -0.004 * H, 0.002 * H)), (0.014 * H, 0.01 * H, 0.008 * H), M.terracotta("#a8683f", 0.1), self.col, 8, 5)
+            cord = capsule(f"{self.name}-lamp-cord", c + Vector((0, 0, 0.012 * H)), Vector((c.x, c.y + 0.004 * H, bz)), 0.0025 * H, M.plain("#4a3322", 0.8), self.col)
+            for o in (body, nozzle, cord):
+                self.parts.append(Part(o, bone="pelvis", mark="lamp"))
+        if "cloak-roll" in self.marks:
+            # The spare cloak rolled and strapped across the upper back.
+            z = J["chest"].z + 0.02 * H
+            roll = capsule(f"{self.name}-cloakroll", (-0.1 * H, cy + 0.085 * H, z), (0.1 * H, cy + 0.085 * H, z), 0.03 * H, M.cloth(cloak_col, None, "wool"), self.col, 16)
+            self.parts.append(Part(roll, bone="chest", mark="cloak-roll"))
+            for sx in (-0.06, 0.06):
+                tie = loft(f"{self.name}-cloakroll-tie{sx}", [(sx * H, cy + 0.085 * H, z + 0.004 * H, 0.004 * H, 0.034 * H), (sx * H, cy + 0.085 * H, z - 0.004 * H, 0.004 * H, 0.034 * H)], M.plain("#4a3322", 0.8), self.col, segments=12)
+                self.parts.append(Part(tie, bone="chest", mark="cloak-roll"))
+        if "wrapped-in-cloak" in self.marks:
+            # The player's spare cloak around the shoulders, open at the front.
+            sh = J["shoulder_L"].x
+            ccy = 0.55 * GU
+            seg = 36
+            rings = [
+                (0, ccy, J["neck"].z + 0.01 * H, 0.075 * H, 0.065 * H),
+                (0, ccy, J["shoulder_L"].z - 0.005 * H, sh * 1.22, 0.09 * H),
+                (0, ccy, J["chest"].z - 0.02 * H, sh * 1.2, 0.095 * H),
+                (0, ccy, J["waist"].z - 0.03 * H, sh * 1.16, 0.105 * H),
+                (0, ccy, J["pelvis"].z - 0.1 * H, sh * 1.14, 0.11 * H),
+            ]
+
+            def skip(i, j):
+                return math.cos(2 * math.pi * j / seg) > 0.86
+
+            mantle = loft(f"{self.name}-cloak", rings, M.cloth(cloak_col, "#5a3a26", "wool", 0.3, 0.04), self.col, segments=seg, skip=skip)
+            common.add_modifier(mantle, "SOLIDIFY", thickness=0.016, offset=1.0)
+            common.add_modifier(mantle, "SUBSURF", levels=1, render_levels=1)
+            common.bake_modifiers(mantle)
+            self.parts.append(Part(mantle, nearest_bone_weights(J, ["pelvis", "spine", "chest", "upper_arm_L", "upper_arm_R"], 3.0), mark="wrapped-in-cloak"))
+
     # ── posing ─────────────────────────────────────────────────────────────
-    def pose(self, walk=None, breath=0.0, blink=False, talk=0, yaw=0.0):
-        """Place every part for one frame. `walk` is the cycle phase (0–1) or None."""
+    def pose(self, walk=None, breath=0.0, blink=False, talk=0, yaw=0.0, rest=None):
+        """Place every part for one frame. `walk` is the cycle phase (0–1) or
+        None; `rest` is None (standing), "sit" (cross-legged on the ground) or
+        "lie" (on the back, head toward the facing given by `yaw`)."""
         # Gesture with the free hand: the right hand may be holding a staff, spindle or tray.
         busy = self.a.get("carry", "none") in ("staff", "spindle", "bread")
-        R = pose_rotations(walk, breath, talk, hand="L" if busy else "R")
+        R = pose_rotations(walk, breath, talk, hand="L" if busy else "R", rest=rest)
+        if rest is not None:
+            R["root"] = self._rest_root(rest)
         mats = self._forward(R)
-        # Keep the lowest sole on the ground.
-        soles = []
-        for s in ("L", "R"):
-            for jn in (f"ankle_{s}", f"toe_{s}"):
-                bone = BONE_INDEX[f"foot_{s}"]
-                p = mats[bone] @ self.J[jn].to_4d()
-                soles.append(p.z - (0.042 * self.H if jn.startswith("ankle") else 0.012 * self.H))
-        dz = -min(soles)
+        if rest is None:
+            # Keep the lowest sole on the ground.
+            soles = []
+            for s in ("L", "R"):
+                for jn in (f"ankle_{s}", f"toe_{s}"):
+                    bone = BONE_INDEX[f"foot_{s}"]
+                    p = mats[bone] @ self.J[jn].to_4d()
+                    soles.append(p.z - (0.042 * self.H if jn.startswith("ankle") else 0.012 * self.H))
+            dz = -min(soles)
+        else:
+            dz = 0.0
         lift = Matrix.Translation((0, 0, dz))
         turn = Matrix.Rotation(yaw, 4, "Z")
         mats = [turn @ lift @ m for m in mats]
@@ -668,14 +752,45 @@ class Person:
             for bi in np.nonzero(W.sum(axis=0) > 1e-6)[0]:
                 m = np.array(mats[bi])
                 out += W[:, bi : bi + 1] * (hom @ m.T)[:, :3]
-            if part.skirt is not None:
+            if part.skirt is not None and rest != "lie":
                 out = self._tent(part, out, mats)
+            if rest is not None and (part.skirt is not None or part.mark == "wrapped-in-cloak"):
+                out = self._pool(out)
             part.obj.data.vertices.foreach_set("co", out.reshape(-1))
             part.obj.data.update()
         for eye in self.eyes:
             eye.scale = (1.0, 1.0, 0.15 if blink else 1.0)
         if self.mouth is not None:
             self.mouth.scale = (0.8 if talk else 1.0, 1.0, 3.2 if talk == 1 else (1.8 if talk == 2 else 1.0))
+
+    def _rest_root(self, rest):
+        """The root transform that sets the body down: hips on the ground
+        (sitting), or laid on the back with the head to the north (lying)."""
+        J = self.J
+        H = self.H
+        if rest == "sit":
+            return Matrix.Translation((0, 0.02 * H, -(J["hip_L"].z - 0.11 * H)))
+        pivot = J["pelvis"]
+        return (
+            Matrix.Translation((0, -0.02 * H, -(pivot.z - 0.085 * H)))
+            @ Matrix.Translation(pivot)
+            @ Matrix.Rotation(math.radians(-90), 4, "X")
+            @ Matrix.Translation(-pivot)
+        )
+
+    def _pool(self, out):
+        """Nothing below the ground: cloth that would sink spreads out on it."""
+        z0 = 0.004
+        below = out[:, 2] < z0
+        if below.any():
+            depth = z0 - out[below, 2]
+            r = out[below, :2]
+            n = np.linalg.norm(r, axis=1, keepdims=True) + 1e-6
+            out[below, :2] = r + r / n * np.minimum(depth, 0.25 * self.H)[:, None] * 0.35
+            # Folds as it settles, rather than a flat sheet.
+            ang = np.arctan2(r[:, 1], r[:, 0])
+            out[below, 2] = z0 + 0.006 * self.H * (1 + np.sin(ang * 7)) * np.clip(depth / (0.05 * self.H), 0, 1)
+        return out
 
     def _tent(self, part, out, mats):
         """Push the skirt out around the posed legs so knees and shins never
@@ -746,10 +861,42 @@ def rot(x=0.0, y=0.0, z=0.0):
     )
 
 
-def pose_rotations(walk, breath, talk, hand="R"):
+def pose_rotations(walk, breath, talk, hand="R", rest=None):
     """Joint rotations (degrees about the character's axes) for one frame.
     Forward swing of a limb is a negative X rotation; knee bend positive."""
     R = {}
+    if rest == "sit":
+        # Cross-legged: thighs forward and out, shins folded in, hands on the knees.
+        rise = 1.0 if breath else 0.0
+        for side, sgn in (("L", 1), ("R", -1)):
+            R[f"thigh_{side}"] = rot(x=-84.0, z=sgn * 42.0)
+            R[f"shin_{side}"] = rot(x=138.0, z=-sgn * 38.0)
+            R[f"foot_{side}"] = rot(x=28.0)
+            R[f"upper_arm_{side}"] = rot(x=-30.0, y=sgn * 10.0)
+            R[f"forearm_{side}"] = rot(x=-48.0, z=-sgn * 12.0)
+        R["spine"] = rot(x=-5.0 - 0.8 * rise)
+        R["chest"] = rot(x=-2.0 - 1.2 * rise)
+        R["head"] = rot(x=4.0)
+        if talk:
+            k = 1.0 if talk == 1 else 0.75
+            s = -1.0 if hand == "R" else 1.0
+            R[f"upper_arm_{hand}"] = rot(x=-40.0 * k, y=10.0 * s)
+            R[f"forearm_{hand}"] = rot(x=-70.0 * k, z=10.0 * k * s)
+        return R
+    if rest == "lie":
+        # On the back: legs straight but one knee a little raised, arms by the sides.
+        rise = 1.0 if breath else 0.0
+        R["thigh_L"] = rot(x=-14.0)
+        R["shin_L"] = rot(x=26.0)
+        R["foot_L"] = rot(x=-10.0)
+        R["foot_R"] = rot(x=-25.0)
+        R["upper_arm_L"] = rot(y=14.0)
+        R["upper_arm_R"] = rot(y=-10.0, x=-8.0)
+        R["forearm_L"] = rot(x=-12.0)
+        R["forearm_R"] = rot(x=-40.0)
+        R["chest"] = rot(x=-1.5 * rise)
+        R["head"] = rot(z=12.0, x=-6.0 + (3.0 if talk else 0.0))
+        return R
     if walk is not None:
         p = walk
         for side, q in (("L", p), ("R", (p + 0.5) % 1.0)):
