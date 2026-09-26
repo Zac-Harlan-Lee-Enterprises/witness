@@ -136,7 +136,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
       headwearColor: '#6b5a7a',
       beard: false,
       build: 'elder',
-      carry: 'lamp',
+      carry: 'jar',
     },
   },
   {
