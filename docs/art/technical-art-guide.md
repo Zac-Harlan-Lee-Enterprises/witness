@@ -65,7 +65,7 @@ The sky is Blender's multiple-scattering sky, set for the same sun. It gives the
 
 **Things that exist only in some lights** are tagged with the lights they belong to, `obj["variants"] = "night"` (or `"day,late"`); `build_place.py` leaves them out of every other light (`only_in`). At night the lamps in the niches, on the table and by the travellers' bedding are lit, doors are shut (lamplight at the cracks where someone is in), windows glow, and the daylight bounced in at a door is gone. Fires and lamps also go in `Place.flicker`, with the lights they burn in: the manifest lists them per set (`lights`: kind, centre, radius, strength), and the game draws a flickering pool of warm light over each, so the baked glow of a campfire or a lamp moves ([`ambient.ts`](../../src/game/scenes/ambient.ts), from the site's light spots).
 
-**The night bake and the game's grade.** The game grades night on top of any art: a multiply layer (blue-grey, darker at the edges) and a post-processing grade (less saturation, a blue white balance, bloom on bright lamps). Over a night bake the multiply is gentled (`overBakedArt`: 30% strength, the vignette at most 0.42), so the art is not darkened twice but still gathers the dark round the lamps; bloom makes the fire and lamps glow. Day art shown at night (a Chapter 1 place after dark) keeps the full night.
+**The night bake and the game's grade.** The game grades night on top of any art: a multiply layer (blue-grey, darker at the edges) and a post-processing grade (less saturation, a blue white balance, bloom on bright lamps). Over a night bake the multiply is gentled (`overBakedArt`: 30% strength, the vignette at most 0.42), so the art is not darkened twice but still gathers the dark round the lamps; bloom makes the fire and lamps glow. Day art shown at night (a Chapter 1 place after dark) keeps the full night. Look at a night set's ground after rendering it: once, on a GPU shared with another render, the fold's night ground came out with its terrain unlit (only the scattered grass caught the moon: a median of 1 of 255 against 29 when rendered again), and nothing else flags that.
 
 **Rooms** are lit as if closed: their side and front walls and their roof are *occluders*, invisible to the camera but blocking light (§4). Light comes in only through the openings: the sun through a window in the east wall and through the door, plus the room's own lights (an oil lamp in a niche, the oven's embers). A room renders at +3.1 EV over the outdoor exposure, as a camera adapts, and at 512 samples (its light is mostly bounced). Two lights stand in for what the closed shell would bounce: a soft warm panel low in the doorway (daylight off the sunlit ground outside) and a broad, dim warm panel under the roof (light off the floor and walls), without which the corners go black. The cut tops of the walls sit directly under the invisible walls, so no light reaches them: they glow faintly (`limestone(glow=)`) and read as a dark section through the wall, as in an architect's cutaway. The walls that block light are thinner than their tiles (0.45 m): at 40° a sunbeam drops a whole tile crossing a tile-thick wall, which would shut the morning sun out of any window. Dust shows in the sunbeams as a thin scattering volume confined to each beam: lit straight by the sun, it settles quickly (a volume filling the room did not, and the denoiser turned its noise into blotches).
 
@@ -290,12 +290,24 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | later day | 0.98 MB | 0.37 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
 | The Laodicea road (Ch. 4) | rain cloud (its only set) | 3.98 MB | 1.31 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
 | Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.15 MB | 22.9 MB | 6.5 MB | 2 / 1 | 1 |
+| Tamar's house (Ch. 3) | morning | 0.43 MB | 0.12 MB | 16.2 MB | 4.5 MB | 2 / 1 | 1 |
+| | night (lamplight) | 0.20 MB | 0.07 MB | 16.2 MB | 4.5 MB | 2 / 1 | 1 |
+| The lanes of Bethlehem (Ch. 3) | later day (its day set) | 1.50 MB | 0.53 MB | 58.6 MB | 16.1 MB | 4 / 1 | 2 |
+| | night | 1.11 MB | 0.40 MB | 57.4 MB | 15.8 MB | 4 / 1 | 2 |
+| The fold below Bethlehem (Ch. 3) | later day (its day set) | 3.21 MB | 1.10 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
+| | night | 2.68 MB | 0.99 MB | 62.8 MB | 17.6 MB | 4 / 1 | 2 |
 | People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
 | People added for Chapter 4 | morning and indoor | 0.39 MB (18 files) | | | | | |
 | | later day | 0.30 MB (12 files) | | | | | |
 | | rain cloud | 1.18 MB (32 files) | | | | | |
 | | lamp-lighting | 1.08 MB (35 files) | | | | | |
+| People seen in Chapter 3 (with the player's looks and the passers-by there) | indoor | 1.01 MB (42 files) | | | | | |
+| | lamp (the house at night) | 1.13 MB (42 files) | | | | | |
+| | later day | 1.58 MB (40 files) | | | | | |
+| | night (moonlight) | 1.21 MB (40 files) | | | | | |
+
+The fold below Bethlehem is the heaviest of Chapter 3 (138 sprites: the flock, olives, thorn shrubs, rocks and stones on the hills); at night its pages compress better (dark, little detail). A night set takes as much texture memory as a day set but downloads a fifth to a quarter less.
 
 The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
@@ -310,8 +322,11 @@ The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds 
 | Road down to Jericho | 89 MB | 47 MB |
 | Jericho, morning | 104 MB | 68 MB |
 | Jericho, later day | 122 MB | 87 MB |
+| Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 24 / 40 MB |
+| The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 109 / 87 MB |
+| The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 81 / 77 MB |
 
-People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
+Chapter 3's phone captures (a Pixel 7's 2.6× pixel ratio at the close framing) chose the full sets, so their figures are the desktop's (within a few MB). People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
 
 Before this work only the market was pre-rendered and nothing was released: by Jericho the painted chapter held about 100 MB of textures.
 
@@ -333,6 +348,11 @@ E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/place-art.spec.ts --project=
 
 # The market at fixed positions (the capture set the prototype report compares):
 E2E_SHOTS=1 ART_SHOTS=after-close npx playwright test e2e/market-art.spec.ts --project=desktop-chromium
+
+# Chapter 3's places (Tamar's house by day and by lamplight, the lanes and the fold in the late sun and at night)
+# on two routes (home: the main path; helped: the clerk helped first, so the fields turn to night around you):
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/bethlehem-art.spec.ts --project=desktop-chromium
+#   → test-results/bethlehem-art/<set>/<viewport>-<route>-<nn>-<name>.png and <viewport>-<route>-art.txt
 
 # Chapter 4's places (the workshop, the street, the Laodicea road in rain, Philemon's house at lamp-lighting)
 # on two routes (home: Kallias in his old cloak; reply: the tablets beside Ammia), at the same three sizes:

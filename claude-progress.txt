@@ -200,3 +200,21 @@ NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of ever
          market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
 BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
          docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).
+--- 2026-09-26  Claude Opus 5.5 (art agent, feat/art-journey-to-bethlehem) — Chapter 3 pre-rendered, night through the light plans ---
+DONE   : Merged feat/art-letter-from-paul and folded Chapter 3's night into Chapter 4's light-plan table
+         (lighting.PLACE_LIGHTS): a `night` light and set (shown 18:00–05:00), per-set people lights,
+         flickering baked fires/lamps per set (`lights`, optional strength), relight when the clock
+         crosses sets (select.relightTo, world-scene), overBakedArt over night bakes. Rendered
+         bethlehem-lanes and shepherds-fields (day set in later-day sun + night set), the goat in
+         tamar-house; people for all three in indoor/lamp/late/night (player with lamp and lamb).
+         Village kit: one-piece animal bodies, softer fleece, mud patch, warmer square, brighter
+         moon, gentle campfire pool. carrying-lamb overlay was missing from OVERLAY_ORDER (fixed).
+         e2e: endArrivalNarration (a pre-rendered place's arrival narration starts after load).
+TESTS  : Vitest 553 + 11 failing (unrendered places) → 564/564. journey-to-bethlehem + smoke on
+         4422: 9 passed, 1 intentional skip. bethlehem-art captures: 6/6 (desktop, tablet, phone).
+NEXT   : If the campfire's ring should not go near-white at night, give tile_campfire a night-only
+         light at about half power (tag the 150 W/40 W pair DAYLIT, add a NIGHT pair) and run
+         `node scripts/art-build.mjs place shepherds-fields --variants night`; then look at the
+         night ground (the first full render once came out unlit on a shared GPU).
+BLOCKED: none. Merge points: src/game/prerendered/{manifest,select,loader}.ts, world-scene.ts,
+         ambient.ts, systems/lighting.ts, e2e/support.ts, docs/art/*, public/art/people/people.json.
