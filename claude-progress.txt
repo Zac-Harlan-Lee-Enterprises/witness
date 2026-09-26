@@ -255,3 +255,26 @@ NEXT   : Content owner: move kallias-gathering (9,6) and zenon-reader (12,6) off
          Then merge the road's young grain into its ground layer to halve its 4 MB download.
 BLOCKED: none. Merge points: tools/art/lib/{place,lighting,people}.py, tools/art/build_{place,people}.py,
          src/game/prerendered/{manifest,select,loader}.ts, scripts/art-build.mjs, docs/art/*.
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-storm-on-galilee) — Chapter 2 pre-rendered ---
+DONE   : Every Chapter 2 place pre-rendered with the lake kit (tools/art/lib/kit_lake.py + lake_{boats,
+         houses,materials}.py): shelomit-house (later day + lamplight), capernaum-shore (later day +
+         moonlit night), open-lake (moonlit night only). Merged feat/realism-and-chapters and moved
+         Chapter 2's dusk/night onto its light plans: a third time key `night` (19:00-05:00;
+         LIGHTING_VARIANTS, variantFor, firstVariant; a place needs at least one set), lights `night`
+         and `lamplight` in lighting.LIGHTS, PLACE_LIGHTS entries, kits switch lamps via
+         set_light(light) (build_place calls it). Dusk sets and people dusk sheets dropped; night
+         people sheets re-rendered at +4.2 EV. Kept engine tweaks: lake/shallows are live water
+         (waterRegions), waterSky per set, open water glints at 0.3 (glintsFor), puddles on deck
+         and jetty, no splashes on lake water, the sail fades like a canopy. Art fixes: planks
+         material had its seam mask inverted (every deck read as dark tiles), plaited rush mat,
+         a cobbled earth floor surface, sun-greyed sails, hull rows split in stern/bow halves.
+TESTS  : Vitest 576 passed (new: open water and glintsFor; a night-only lake manifest, empty
+         variants rejected, night hours past midnight). e2e storm-on-galilee (now waits for the
+         lake's narration while its art loads) and smoke pass on 4421/5421. Captures:
+         e2e/storm-art.spec.ts 3/3 (desktop/tablet/phone), and with VITE_FORCE_WEATHER=storm.
+NEXT   : Judge the shore's afternoon light in game (a basalt town under a low sun reads dim: if it
+         should read brighter, add `self.exposure += 0.3` for the lake style in kit_lake.py
+         regional_materials and re-render capernaum-shore, ~20 min on the GPU).
+BLOCKED: none. Merge points with Chapter 3: tools/art/lib/lighting.py (LIGHTS night/lamplight,
+         PLACE_LIGHTS), src/game/prerendered/{manifest,select,loader}.ts (the night key),
+         build_people.py SHADOW_BOX night, scripts/art-build.mjs PLACES, people.json.

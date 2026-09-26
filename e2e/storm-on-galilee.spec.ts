@@ -22,7 +22,11 @@ const dialogueBox = (page: Page) => page.locator('section.dialogue');
  * (it may already have been read through by the previous step).
  */
 async function readNarration(page: Page): Promise<void> {
-  await page.waitForTimeout(400);
+  // A place's narration opens once the place is drawn: a pre-rendered place
+  // loads its art first, a painted one paints it.
+  await dialogueBox(page)
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .catch(() => undefined);
   await endDialogue(page);
 }
 
@@ -115,8 +119,9 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   // Evening: the boats put out (a labelled paraphrase of Mark 4:35–36), and the wind has dropped.
   await expect(dialogueBox(page)).toContainText('Scripture paraphrase');
   await expect(weather(page)).toHaveAttribute('data-weather', 'clear');
+  // To the end of the conversation (and on through the lake's first
+  // narration, if it opens at once: the lake's art is already loaded).
   await continueDialogue(page);
-  await endDialogue(page);
   await expectScene(page, 'Out on the lake');
   await readNarration(page); // under way
   await expect(weather(page)).toHaveAttribute('data-weather', 'clear');

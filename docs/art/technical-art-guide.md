@@ -234,7 +234,7 @@ A change to anything that casts shadows onto the ground (a building, a tree) nee
 | [`kit_lake.py`](../../tools/art/lib/kit_lake.py) (with [`lake_boats.py`](../../tools/art/lib/lake_boats.py), [`lake_houses.py`](../../tools/art/lib/lake_houses.py), [`lake_materials.py`](../../tools/art/lib/lake_materials.py)) | The Sea of Galilee (Chapter 2; the `lake` style: any scene with lake water or a boat's deck): `shingle`, `deck`, `jetty`, `lake`, `shallows`, `boat`, `hull`, `mast`, `nets`, `rack`; the story props `fish-jars`, `bailer`, `rope`, `oar`, `net-pile`, `floating-jars`, `towline`, `fish-basket` (and lakeside versions of `lamp` and `vessels`); Capernaum's basalt houses, basalt lanes, rocks, salt sacks and brine tubs; basalt walls and a cobbled floor for a Galilee room |
 | [`kit_roman.py`](../../tools/art/lib/kit_roman.py) (with `roman_*.py`) | Greco-Roman towns of Asia (Chapter 4, `ROMAN_CHAPTERS`): `tile-roof`, `column`, `vat`, `amphorae`, `couch`, `milestone`, `travertine`, `garden`, `lampstand`, `fountain`, `mosaic`, `roman-road`, `bridge`; Roman versions of `table`, `oven`, `cloth`, `bush`, `hill`, `grass`, `crops`, `water`, `fence`, `gate`, `sand`, `scrub`, `floor`, `rug`, paving, the structures of each style (a town frontage and stoa, farm buildings under tile roofs, rooms with Roman walls and floors) and the story props `wool`, `tablets`, `letter-sheets`, `letter-bundle`, `vessels` (the alum jars) and `pack-donkey` (a mule) |
 
-**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into one sprite per map row. The lake is baked calm: the game draws the wind, the rain and the storm's swell over it (its water shader covers `lake` and `shallows` tiles, with a darker sky and deep colour in a `night` set: `waterSky` in [`water.ts`](../../src/game/systems/water.ts)).
+**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into two sprites per map row (its stern and bow halves: between them a row holds only deck). The lake is baked calm: the game draws the wind, the rain and the storm's swell over it (its water shader covers `lake` and `shallows` tiles, with a darker sky and deep colour in a `night` set: `waterSky` in [`water.ts`](../../src/game/systems/water.ts)).
 
 **The Roman kit.** A place is Roman when its chapter is in `ROMAN_CHAPTERS`. It keeps the style its mood gives it (the street is `city`, the road `oasis`, the rooms `home`), so every shared builder still works; the kit, mixed in ahead of the others, overrides only what differs and calls the shared builder for any other place. It is split by subject: [`roman_geom.py`](../../tools/art/lib/roman_geom.py) (helpers, shared materials), [`roman_materials.py`](../../tools/art/lib/roman_materials.py) (stucco, roof tile, marble, bronze, dyes, river water, paving, opus signinum, mosaic, fresco, travertine, wool, papyrus, and the pattern images drawn by code: a mosaic's design, a painted wall, a milestone's worn lines), [`roman_arch.py`](../../tools/art/lib/roman_arch.py) (tile roofs of tegulae and imbrices with antefixes, the Ionic order, house fronts, doors, windows), [`roman_props.py`](../../tools/art/lib/roman_props.py), [`roman_town.py`](../../tools/art/lib/roman_town.py), [`roman_valley.py`](../../tools/art/lib/roman_valley.py) and [`roman_rooms.py`](../../tools/art/lib/roman_rooms.py). Kinds with a dash are built by `tile_` plus the kind with underscores (`tile-roof`: `tile_tile_roof`).
 
@@ -276,6 +276,11 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | later day | 1.59 MB | 0.61 MB | 58.4 MB | 17.0 MB | 6 / 2 | 1 |
 | Jericho | morning | 2.20 MB | 0.76 MB | 49.7 MB | 13.6 MB | 4 / 1 | 2 |
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
+| Grandmother Shelomit's house (Ch. 2) | later day | 0.20 MB | 0.07 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
+| | lamplight (night) | 0.14 MB | 0.06 MB | 7.4 MB | 2.1 MB | 1 / 1 | 1 |
+| The shore at Capernaum (Ch. 2) | later day | 2.21 MB | 0.86 MB | 65.3 MB | 18.3 MB | 6 / 2 | 2 |
+| | night | 2.04 MB | 0.79 MB | 64.2 MB | 18.1 MB | 6 / 2 | 2 |
+| The open lake (Ch. 2) | night (its only set) | 0.41 MB | 0.18 MB | 61.4 MB | 16.9 MB | 4 / 1 | 2 |
 | Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
 | A street in Colossae (Ch. 4) | morning | 1.02 MB | 0.37 MB | 51.6 MB | 14.3 MB | 4 / 1 | 2 |
 | | later day | 0.93 MB | 0.36 MB | 52.9 MB | 14.6 MB | 4 / 1 | 2 |
@@ -283,12 +288,16 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.15 MB | 22.9 MB | 6.5 MB | 2 / 1 | 1 |
 | People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
+| People added for Chapter 2 | later day and indoor | 1.35 MB (40 files) | | | | | |
+| | night (with the player looks) | 1.83 MB (62 files) | | | | | |
 | People added for Chapter 4 | morning and indoor | 0.39 MB (18 files) | | | | | |
 | | later day | 0.30 MB (12 files) | | | | | |
 | | rain cloud | 1.18 MB (32 files) | | | | | |
 | | lamp-lighting | 1.08 MB (35 files) | | | | | |
 
-The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
+The open lake downloads little (its water is smooth and compresses well). Its family boat is cut into sprites by map row, and each row in two, its stern and bow halves: most rows hold only the curved bulwarks at the two ends, and one sprite spanning the boat was mostly transparent texture (four sprite pages, 81.5 MB, before the split; two, 61.4 MB, after).
+
+The Laodicea road is the heaviest download so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
 **Phones** load about 28% of the texture memory desktops do (a place's low set is 12–17 MB against 44–58 MB). People sheets are the same on every device.
 
@@ -306,8 +315,12 @@ The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds 
 | A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
 | The Laodicea road (Ch. 4) | 105 MB | 105 MB |
 | Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
+| Grandmother Shelomit's house (Ch. 2) | 16–17 MB | 14–16 MB |
+| The shore at Capernaum, later day (Ch. 2) | 125 MB | 125 MB |
+| The shore at Capernaum, night (Ch. 2) | 113 MB | 113 MB |
+| The open lake (Ch. 2) | 87 MB | 87 MB |
 
-In the Chapter 4 captures (`letter-art.spec.ts`, September 2026) the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
+In the Chapter 4 captures (`letter-art.spec.ts`, September 2026), and in Chapter 2's (`storm-art.spec.ts`; the shore holds the most, with its passers-by), the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
 
 People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
 
@@ -336,6 +349,13 @@ E2E_SHOTS=1 ART_SHOTS=after-close npx playwright test e2e/market-art.spec.ts --p
 # on two routes (home: Kallias in his old cloak; reply: the tablets beside Ammia), at the same three sizes:
 E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/letter-art.spec.ts --project=desktop-chromium
 #   → test-results/letter-art/<set>/<viewport>-<route>-<nn>-<name>.png and <viewport>-<route>-art.txt
+
+# Chapter 2's places (the house, the shore in the afternoon and as the boats put out, the lake under way,
+# in the gust, in the storm and in the calm, the shore and the house at night), at the same three sizes;
+# with VITE_FORCE_WEATHER=storm (and ART_SHOTS=forced-storm), the same route in a storm everywhere
+# (it stops at the calm, which the forced storm never gives):
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/storm-art.spec.ts --project=desktop-chromium
+#   → test-results/storm-art/<set>/<viewport>-<nn>-<name>.png and <viewport>-art.txt
 
 # The whole chapter in every presentation variant
 E2E_SHOTS=1 npx playwright test e2e/visual-tour.spec.ts --project=desktop-chromium   # → test-results/tour/
