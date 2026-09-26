@@ -55,7 +55,6 @@ const LightSpotSchema = z.object({
   radius: z.number().positive(),
   strength: z.number().min(0).max(1).default(0.5),
 });
-export type ArtLight = z.infer<typeof LightSpotSchema>;
 
 /** Morning, later day, and (from dusk) night: the sets a place's art may have. */
 export const LIGHTING_VARIANTS = ['day', 'late', 'night'] as const;
