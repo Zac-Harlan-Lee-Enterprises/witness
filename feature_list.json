@@ -304,5 +304,32 @@
     "priority": 7,
     "hermetic": false,
     "passes": false
+  },
+  {
+    "id": "choices-visible-in-world",
+    "category": "functional",
+    "description": "Choices show in the world: the gear you packed, Menashe's bandages (linen or strips of your tunic) and your cloak on him, resting once cared for, supplies beside him on the road, the inn's donkey gone with Asher and a mat laid ready, Malik's pack donkey, the broom you swept with, Natan sitting up after the remedy.",
+    "verification": "npx vitest run --project unit tests/integration/playthrough.test.ts tests/unit/domain/looks.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "footsteps-by-surface",
+    "category": "functional",
+    "description": "Footsteps sound like the ground underfoot (stone, gravel, sand, earth, grass, mud, mat), triggered on each walk-cycle contact.",
+    "verification": "npx vitest run --project unit tests/unit/application/footsteps.test.ts tests/unit/infrastructure/audio.test.ts",
+    "priority": 5,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "prerendered-market",
+    "category": "visual",
+    "description": "The lower market is composited from pre-rendered 3D art (Blender, tools/art): ground with baked shadows, depth-sorted sprites, rendered people with baked shadows, turning and shade; morning and later-day light; painted fallback; provenance recorded for every file.",
+    "verification": "npx vitest run --project unit tests/unit/game/prerendered.test.ts tests/content/art-assets.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
   }
 ]

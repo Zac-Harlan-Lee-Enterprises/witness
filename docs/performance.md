@@ -2,7 +2,7 @@
 
 This page lists **measured results only**. Anything not measured is labelled as such under [Not measured yet](#5-not-measured-yet).
 
-Sizes come from the build of 2026-09-25 (`npm run perf:bundle`); the category breakdown and precache figures below are from 2026-09-24. The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
+Sizes come from the build of 2026-09-25 with the pre-rendered market (`npm run perf:bundle`); the font and icon breakdown is from 2026-09-24 and unchanged since. The frame rate is from runs of [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) on 2026-09-25, after the art and lighting upgrade.
 
 ---
 
@@ -12,15 +12,19 @@ From `npm run perf:bundle` ([`scripts/report-bundle.mjs`](../scripts/report-bund
 
 | Asset | Raw | Gzip | Loaded |
 |---|---:|---:|---|
-| `index-*.js`: React UI, application and domain code, Zod | 488.9 KB | 145.8 KB | initial |
+| `index-*.js`: React UI, application and domain code, Zod | 494.9 KB | 147.6 KB | initial |
 | `index-*.css` | 28.9 KB | 6.7 KB | initial |
-| **Initial JS + CSS** | **517.8 KB** | **152.6 KB** | first visit |
-| `mount-world-*.js`: **Phaser 3 world engine** and the procedural art | 1,258.8 KB | **338.0 KB** | lazy, when a chapter starts |
-| `road-to-jericho-*.js`: **Chapter 1 content** | 119.7 KB | **36.3 KB** | lazy, when the chapter starts |
+| **Initial JS + CSS** | **523.8 KB** | **154.3 KB** | first visit |
+| `mount-world-*.js`: **Phaser 3 world engine**, the procedural art and the pre-rendered art loader | 1,303.7 KB | **351.6 KB** | lazy, when a chapter starts |
+| `road-to-jericho-*.js`: **Chapter 1 content** | 121.3 KB | **36.7 KB** | lazy, when the chapter starts |
 | `workbox-window` + `virtual_pwa-register` | 6.8 KB | 2.8 KB | lazy, after start-up |
-| **Lazy total** | | **377.1 KB** | |
+| **Lazy total** | | **391.1 KB** | |
+| **Pre-rendered market art**, morning set (`art/**`, WebP + JSON) | 2,946.8 KB | (already compressed) | when you enter the market; precached |
+| Pre-rendered market art, later-day set (`*-late*`) | 2,661.2 KB | (already compressed) | only if the market is shown after 15:00; cached on first use |
 
-**The whole deployable site is ≈ 2.6 MB** (2,608.9 KB) excluding source maps. By category:
+**Against the painted build (commit f2018ef, measured the same way):** initial JS + CSS grew by 1.7 KB gzip and the lazy code by 14.0 KB gzip (Zod manifests, the loader, the people painter). The art is the real addition: **2.9 MB** for the morning set, plus 2.6 MB later-day art that the current story never requests. On a phone the market itself needs about 0.3 MB less, because it loads the half-resolution ground (146 KB instead of 461 KB).
+
+**The whole deployable site is ≈ 8.1 MB** (8,278.7 KB) excluding source maps, up from 2.6 MB (2,609.1 KB); the pre-rendered art is 5.5 MB of it. The code and font breakdown (from 2026-09-24, before the art):
 
 | Category | Size (raw) | Share |
 |---|---:|---:|
@@ -35,7 +39,7 @@ From `npm run perf:bundle` ([`scripts/report-bundle.mjs`](../scripts/report-bund
 
 The Phaser engine is the largest single item. Fonts are about a quarter of the site, and **OpenDyslexic is by far the largest font** (about 75% of all font bytes). Browsers download a font only when text uses it. The `.woff` files are fallbacks and are rarely fetched by current browsers.
 
-**Service-worker precache:** 19 files (all JS and CSS, the HTML, the icons, the manifest and the `.woff2` fonts). That is 2,151 KB uncompressed and about 842 KB gzip-compressed (computed from `dist/` on 2026-09-24). A first-time visitor downloads this **in the background** after the page is up, including the Phaser chunk and all three fonts, so the game can later be played offline.
+**Service-worker precache:** 61 files, **5,249 KB** (all JS and CSS, the HTML, the icons, the manifest, the `.woff2` fonts, and the morning set of market art). Of that, 2,338 KB is code, fonts and icons (the painted build precached 25 files, 2,286 KB) and 2,947 KB is art. A first-time visitor downloads this **in the background** after the page is up, so the game can later be played offline. Later-day art is not precached.
 
 ## 2. Runtime
 
@@ -54,9 +58,51 @@ The frame-rate assertion is only a floor (`fps > 20`), because CI runs without a
 
 A headless, software-rendered frame rate says little about real devices. It is useful only as a regression signal.
 
+## 2a. The pre-rendered market ([ADR-0014](adr/0014-prerendered-places.md))
+
+Measured on 2026-09-25 with [`e2e/market-perf.spec.ts`](../e2e/market-perf.spec.ts):
+
+- **Setup:** headless Chromium with software rendering (no GPU), production build, Apple M3 Pro host, nothing else running.
+- **Comparison:** the new build against commit f2018ef (the painted market), run from a worktree.
+- **Runs:** two alternating rounds. The ranges below span both.
+- **Not real devices:** no real phone or tablet was available, so the phone and tablet rows are viewport sizes in desktop Chromium.
+
+| | Painted market (before) | Pre-rendered market (after) |
+|---|---|---|
+| Desktop 1280×720, full effects, standing / walking | 41–42 / 40–41 fps | 36–37 / 36–38 fps |
+| Desktop, reduced effects (reduced motion) | 55–56 fps | 47–48 fps |
+| Tablet 820×1180, full effects | 38–40 fps | 36 fps |
+| Phone 412×915 | 60 fps | 60 fps |
+| Frames over 33 ms while walking (desktop, full) | 1–6% | 3–4% |
+| Chapter start (New game → world visible) | 0.60 s | 0.60–0.65 s |
+| House → market transition (desktop) | 0.96–1.00 s | 1.04–1.06 s |
+| House → market transition (phone) | 0.34 s | 0.33–0.36 s |
+| **Texture memory in the market** | **21 MB** | **94 MB** on desktop and tablet; about 72 MB on phones (half-resolution ground) |
+
+**Reading these numbers:**
+
+- Software rendering exaggerates fill cost. The 10–15% frame-rate drop on desktop comes from drawing larger textures and more layers, and should shrink on a GPU. That's an expectation, not a measurement.
+- The real cost is **memory**: about 4.5× the painted market. It breaks down as:
+
+  | Part | Size |
+  |---|---|
+  | Ground at 3 px per unit | 29 MB |
+  | One atlas page of standing things | 12 MB |
+  | 12 people (trimmed, packed) plus shadows | about 45 MB |
+
+- Next steps, not done yet:
+  - GPU-compressed textures (ASTC/ETC/BC via KTX2) would cut memory 4–8×.
+  - Fewer crowd variants would also help.
+
+**Download:** see §1. The art is precached for offline play. The morning set precaches; later-day files are cached the first time they're used.
+
 ## 3. How to reproduce
 
 ```bash
+# Market: pre-rendered vs painted (run the same spec in a worktree of the older commit for "before")
+PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium
+#   → test-results/market-perf/after.jsonl
+
 # Sizes
 npm run build && npm run perf:bundle
 

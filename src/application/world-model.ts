@@ -1,6 +1,7 @@
 import type { Chapter } from '@/domain/chapter';
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
+import { playerMarks, resolveLook } from '@/domain/looks';
 import type { GameState } from '@/domain/state/game-state';
 import { blockedFn, nearestOpen } from '@/domain/navigation';
 import { parseLayout, type Entity, type Scene } from '@/domain/world';
@@ -38,19 +39,21 @@ export function visibleEntities(
       const character = e.characterId
         ? chapter.characters.find((c) => c.id === e.characterId)
         : undefined;
+      const look = resolveLook({ pose: e.pose, facing: e.facing }, e.looks, state);
       return {
         id: e.id,
         kind: e.kind,
         label: e.label,
         x: e.x,
         y: e.y,
-        facing: e.facing,
+        facing: look.facing,
         solid: e.solid,
         appearance: character?.appearance ?? null,
         sprite: e.sprite ?? null,
         interactive: e.interaction !== undefined,
         verb: e.interaction?.verb ?? null,
-        pose: e.pose,
+        pose: look.pose,
+        marks: look.marks,
       };
     });
 }
@@ -97,7 +100,13 @@ export function buildSceneModel(
     baseTile: scene.baseTile,
     entities,
     exits: scene.exits.map(({ id, label, x, y, w, h }) => ({ id, label, x, y, w, h })),
-    player: { ...state.player, x: open.x, y: open.y, appearance: playerAppearance },
+    player: {
+      ...state.player,
+      x: open.x,
+      y: open.y,
+      appearance: playerAppearance,
+      marks: playerMarks(chapter.playerLooks, state),
+    },
   };
 }
 

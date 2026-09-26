@@ -68,8 +68,20 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
-          // The Phaser chunk is ~1.2 MB; precache it so the game works offline.
+          // Pre-rendered art (art/**: WebP layers and sheets with JSON manifests)
+          // is precached with everything else, so every place works offline —
+          // except the later-day variants, which the story never shows in the
+          // morning market: they are cached the first time they are used.
+          globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
+          globIgnores: ['**/art/**/*-late*.webp'],
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) => url.pathname.includes('/art/'),
+              handler: 'CacheFirst',
+              options: { cacheName: 'witness-art', expiration: { maxEntries: 200 } },
+            },
+          ],
+          // The Phaser chunk is ~1.2 MB and the largest art layer is under 2 MB.
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           navigateFallback: `${base}index.html`,
           cleanupOutdatedCaches: true,

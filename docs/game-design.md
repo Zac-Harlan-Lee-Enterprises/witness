@@ -140,6 +140,25 @@ The chapter's emotional arc — safe, busy, exposed, relieved — is carried by 
 
 People carry what they do (a shepherd's staff, an oil jar, a tray of bread, a spindle, a trader's bundle, a basket of herbs or figs; the player's satchel), blink, turn to face you when you come close, and move their mouths when they speak. The camera leans a little ahead of you while walking and frames both people during a conversation, above the dialogue box.
 
+### 7.0.1 Choices you can see
+
+Consequences show in the world as well as in the summary. None of them is a score: they show what happened, not who you are.
+
+| What you did | What you see |
+|---|---|
+| Packed water, a lamp or the spare cloak | You carry them: a water skin at your hip, a lamp at your belt, a rolled cloak on your back |
+| Bound Menashe's wounds with linen | Clean linen at his brow and ankle at the inn |
+| Had no linen and used your tunic | Strips of your tunic's colour on him, and a torn hem on you |
+| Gave him your cloak | He wears it at the inn; it's gone from your back |
+| Arranged his care | He lies resting on the mat instead of sitting |
+| Left him supplies and ran for help | On the road he sits up to wait, your water skin and bread beside him |
+| Told Salome, and Asher went for him | The inn's donkey is gone from the yard and a mat is laid out ready |
+| Waited for Malik's caravan | Malik's pack donkey stands in the inn yard |
+| Worked for his lodging | The broom you swept with leans by the inn door |
+| Delivered the remedy | Natan, feverish on his mat, sits up |
+
+These are content looks (`Entity.looks`, `Chapter.playerLooks`) and features with `visibleWhen`, checked in every playthrough test.
+
 ### 7.1 Aunt Miriam's house (`miriam-house`)
 
 [`scenes/miriam-house.ts`](../src/content/chapters/road-to-jericho/scenes/miriam-house.ts): indoor, 16×10. A stone room with an oven, tables, jars, a rug, and a door on the south wall.

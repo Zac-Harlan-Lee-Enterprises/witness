@@ -24,6 +24,11 @@ interface Variant {
   use: Parameters<typeof test.use>[0];
   highContrast?: boolean;
   reducedMotion?: boolean;
+  /**
+   * How the player helps the injured traveler: leave supplies and send help
+   * (the default), or bind his wounds, give him a cloak and walk him to the inn.
+   */
+  path?: 'send-help' | 'tend';
 }
 
 const VARIANTS: Variant[] = [
@@ -40,6 +45,7 @@ const VARIANTS: Variant[] = [
   { name: 'tablet', use: { viewport: { width: 820, height: 1180 }, hasTouch: true } },
   { name: 'high-contrast', use: { viewport: { width: 1280, height: 720 } }, highContrast: true },
   { name: 'reduced-motion', use: { viewport: { width: 1280, height: 720 } }, reducedMotion: true },
+  { name: 'tend', use: { viewport: { width: 1280, height: 720 } }, path: 'tend' },
 ];
 
 /** Let arrival banners, fades and notices settle before a world shot. */
@@ -90,8 +96,10 @@ for (const variant of VARIANTS) {
       await goTo(page, 'Go to Aunt Miriam’s house');
       await goTo(page, 'Use Travel satchel');
       const packing = page.getByRole('dialog', { name: 'Pack the Satchel' });
+      const tend = variant.path === 'tend';
       await packing.getByRole('button', { name: 'Pack one Water skin' }).click();
       await packing.getByRole('button', { name: 'Pack one Bread and dates' }).click();
+      if (tend) await packing.getByRole('button', { name: 'Pack one Spare cloak' }).click();
       await shot('packing-puzzle');
       await packing.getByRole('button', { name: 'Finish packing' }).click();
       await expect(packing.getByText('Solved!')).toBeVisible();
@@ -120,6 +128,8 @@ for (const variant of VARIANTS) {
       await route.getByRole('button', { name: 'Present my reasoning' }).click();
       await route.getByRole('button', { name: 'Continue' }).click();
       await shot('road-fork-world', SETTLE_MS);
+      // Tending the traveler needs water; the ridge walk drinks one skin, the cistern refills it.
+      if (tend) await goTo(page, 'Use Stone cistern');
 
       await goTo(page, 'Examine Broken jar');
       await endDialogue(page);
@@ -146,19 +156,42 @@ for (const variant of VARIANTS) {
       await goTo(page, 'Talk to The injured traveler');
       await continueDialogue(page);
       await shot('traveler-decision');
-      await choose(page, /Leave him what water and food you have/);
-      await endDialogue(page);
+      if (tend) {
+        await choose(page, /Clean and bind his wounds/);
+        await choose(page, 'Give him your cloak.');
+        await continueDialogue(page);
+        await expectScene(page, 'Jericho, the city of palm trees');
+        // The innkeeper hurries over as soon as you step into the courtyard.
+        await goTo(page, 'Talk to Salome the innkeeper');
+        await continueDialogue(page);
+        await shot('jericho-inn-dialogue', 900);
+        await choose(page, 'Here are two coins.');
+        // Arriving beside her afterwards opens her usual greeting.
+        await continueDialogue(page);
+        const thanks = page.locator('section.dialogue .choice').filter({ hasText: 'Thank you.' });
+        if ((await thanks.count()) > 0) await thanks.first().click();
+        await endDialogue(page);
+        await shot('jericho-inn-world', SETTLE_MS);
+      } else {
+        await choose(page, /Leave him what water and food you have/);
+        await endDialogue(page);
+        await shot('road-after-decision', SETTLE_MS);
 
-      await goTo(page, 'Go to the road on to Jericho');
-      await expectScene(page, 'Jericho, the city of palm trees');
-      await shot('jericho-arrival', 900);
-      await shot('jericho-world', SETTLE_MS);
-      await goTo(page, 'Talk to Salome the innkeeper');
-      await continueDialogue(page);
-      await shot('jericho-inn-dialogue');
-      await choose(page, /A man was robbed below the bend/);
+        await goTo(page, 'Go to the road on to Jericho');
+        await expectScene(page, 'Jericho, the city of palm trees');
+        await shot('jericho-arrival', 900);
+        await shot('jericho-world', SETTLE_MS);
+        await goTo(page, 'Talk to Salome the innkeeper');
+        await continueDialogue(page);
+        await shot('jericho-inn-dialogue');
+        await choose(page, /A man was robbed below the bend/);
+        await endDialogue(page);
+        await shot('jericho-inn-world', SETTLE_MS);
+      }
+      await goTo(page, 'Talk to Natan');
+      await choose(page, 'The road is dangerous — but I made it.');
       await endDialogue(page);
-      await shot('jericho-inn-world', SETTLE_MS);
+      await shot('jericho-courtyard-world', SETTLE_MS);
       await goTo(page, 'Talk to Rivka');
       await shot('jericho-rivka-dialogue', 800);
       await choose(page, 'I found a man who’d been robbed below the bend.');

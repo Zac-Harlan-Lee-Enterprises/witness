@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { createProfile, openApp, waitForWorld } from './support';
+import {
+  choose,
+  createProfile,
+  expectScene,
+  goTo,
+  openApp,
+  setFastSettings,
+  waitForWorld,
+} from './support';
 
 test('installs a service worker and keeps working offline after the first visit', async ({
   page,
@@ -19,9 +27,20 @@ test('installs a service worker and keeps working offline after the first visit'
   await context.setOffline(true);
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+  await setFastSettings(page);
   await createProfile(page, 'Offline');
   await page.getByRole('button', { name: 'New game' }).click();
   await waitForWorld(page); // Phaser + chapter content come from the precache
   await expect(page.locator('.hud__scene')).toHaveText('Aunt Miriam’s house');
+  // The market's pre-rendered art is precached too: it is drawn from it, not painted.
+  await choose(page, 'Of course. What do I need to know?');
+  await choose(page, 'I’ll head to the market.');
+  await page
+    .locator('section.dialogue')
+    .getByRole('button', { name: /^(Continue|End conversation)$/ })
+    .click();
+  await goTo(page, 'Go to the market');
+  await expectScene(page, 'The lower market, Jerusalem');
+  await expect(page.locator('.viewport canvas')).toHaveAttribute('data-art', 'prerendered:day');
   await context.setOffline(false);
 });

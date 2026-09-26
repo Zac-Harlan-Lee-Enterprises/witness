@@ -315,12 +315,18 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         next: 'leave-bread',
       }),
       say('leave-water', 'narrator', 'You set your water skin beside him.', {
-        effects: [{ type: 'takeItem', item: 'water-skin' }],
+        effects: [
+          { type: 'takeItem', item: 'water-skin' },
+          { type: 'setFlag', flag: 'left-water', value: true },
+        ],
         branches: [{ when: has('bread'), next: 'leave-bread' }],
         next: 'leave-promise',
       }),
       say('leave-bread', 'narrator', 'You unwrap your bread and dates and put them in his hands.', {
-        effects: [{ type: 'takeItem', item: 'bread' }],
+        effects: [
+          { type: 'takeItem', item: 'bread' },
+          { type: 'setFlag', flag: 'left-bread', value: true },
+        ],
         next: 'leave-promise',
       }),
       say('leave-promise', 'player', 'I’ll send someone from the inn. I promise.', {

@@ -10,10 +10,35 @@
  */
 export const TILE_UNITS = 32;
 
-export function zoomFor(width: number, height: number): number {
+/**
+ * "standard" shows about 15 tiles across a landscape screen; "close" brings
+ * people and materials forward (about 11 across), still leaving room above
+ * the dialogue box and keeping the next few steps in view.
+ */
+export type Framing = 'standard' | 'close';
+
+const FRAMES: Record<
+  Framing,
+  { across: number; portrait: number; phone: number; down: number; phoneDown: number }
+> = {
+  standard: { across: 15, portrait: 11, phone: 8.5, down: 10, phoneDown: 8.5 },
+  close: { across: 11.5, portrait: 9, phone: 7.5, down: 7.6, phoneDown: 7.5 },
+};
+
+/**
+ * The framing for a place: the close framing only where the art has the
+ * resolution for it (pixels per world unit ≥ the close zoom); painted places,
+ * at 2 px per unit, would blur, so they keep the standard framing.
+ */
+export function framingFor(wanted: Framing, artPpu: number): Framing {
+  return wanted === 'close' && artPpu >= 3 ? 'close' : 'standard';
+}
+
+export function zoomFor(width: number, height: number, framing: Framing = 'standard'): number {
+  const f = FRAMES[framing];
   const portrait = height > width;
-  const tilesAcross = width < 640 ? 8.5 : portrait ? 11 : 15;
-  const tilesDown = height < 640 ? 8.5 : 10;
+  const tilesAcross = width < 640 ? f.phone : portrait ? f.portrait : f.across;
+  const tilesDown = height < 640 ? f.phoneDown : f.down;
   const zoom = Math.min(width / (tilesAcross * TILE_UNITS), height / (tilesDown * TILE_UNITS));
   return Math.max(1, Math.min(3.25, Math.round(zoom * 4) / 4));
 }

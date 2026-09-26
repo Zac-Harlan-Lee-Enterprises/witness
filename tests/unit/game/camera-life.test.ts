@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { conversationCentre, LOOK_AHEAD, stepLookAhead, zoomFor } from '@/game/systems/camera';
+import {
+  conversationCentre,
+  framingFor,
+  LOOK_AHEAD,
+  stepLookAhead,
+  zoomFor,
+} from '@/game/systems/camera';
 import {
   crowdSize,
   departed,
@@ -90,5 +96,37 @@ describe('people leaving a scene', () => {
   it('removes someone who is no longer present (e.g. Menashe walking on with you)', () => {
     expect(departed(['miriam', 'menashe-road'], [{ id: 'miriam' }])).toEqual(['menashe-road']);
     expect(departed(['miriam'], [{ id: 'miriam' }, { id: 'new' }])).toEqual([]);
+  });
+});
+
+describe('camera framing', () => {
+  it('brings people and materials closer with the close framing, on every screen', () => {
+    for (const [w, h] of [
+      [1280, 720],
+      [1920, 1080],
+      [820, 1180],
+      [412, 915],
+    ] as const) {
+      const standard = zoomFor(w, h, 'standard');
+      const close = zoomFor(w, h, 'close');
+      // Closer wherever the zoom isn't already at its limit.
+      if (standard < 3.25) expect(close).toBeGreaterThan(standard);
+      else expect(close).toBe(standard);
+      expect(close).toBeLessThanOrEqual(3.25);
+    }
+  });
+
+  it('still shows several tiles in every direction when close', () => {
+    const zoom = zoomFor(1280, 720, 'close');
+    expect(1280 / (zoom * 32)).toBeGreaterThanOrEqual(11);
+    expect(720 / (zoom * 32)).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('framing by place', () => {
+  it('comes close only where the art has the resolution for it', () => {
+    expect(framingFor('close', 3)).toBe('close');
+    expect(framingFor('close', 2)).toBe('standard');
+    expect(framingFor('standard', 3)).toBe('standard');
   });
 });

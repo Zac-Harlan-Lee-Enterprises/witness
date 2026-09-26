@@ -1,12 +1,14 @@
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
+import { playerMarks } from '@/domain/looks';
 import type { DomainEvent } from '@/domain/events';
 import { MOVEMENT_SPEEDS, type GameSettings } from '@/domain/settings';
 import type { GameState } from '@/domain/state/game-state';
-import { inRect } from '@/domain/world';
+import { inRect, parseLayout, tileAt, type TileGrid } from '@/domain/world';
 import type { TypedEventBus } from '@/shared/event-bus';
 import type { Logger } from '@/shared/logger';
 import type { AnalyticsService } from './analytics';
+import { footstepSurface } from './footsteps';
 import type { DialogueController } from './dialogue-controller';
 import type { GameSession } from './game-session';
 import type { AudioPort, WorldConversation, WorldEmphasis, WorldEvent, WorldPort } from './ports';
@@ -60,8 +62,11 @@ type RequestEvent = Extract<
 export class GameController {
   private world: WorldPort | null = null;
   private readonly deferred: RequestEvent[] = [];
+  /** A "Go to…" destination chosen while the next place was still loading. */
+  private pendingTravel: string | null = null;
   private readonly unsubscribers: Array<() => void> = [];
   private entitiesKey = '';
+  private playerMarksKey = '';
   private lastStoryState: GameState | null = null;
   private disposed = false;
   private chapterStarted = false;
@@ -133,6 +138,7 @@ export class GameController {
     try {
       const model = buildSceneModel(session.chapter, session.state, this.deps.playerAppearance);
       this.entitiesKey = JSON.stringify(model.entities);
+      this.playerMarksKey = model.player.marks.join(',');
       await this.world?.loadScene(model);
       audio.setAmbience(scene.ambience);
       audio.setMusic(scene.music);
@@ -148,6 +154,7 @@ export class GameController {
       this.flushDeferred();
       // Story state may already satisfy a state trigger in the new place.
       this.queueStateTriggers();
+      this.travelIfPending();
     }
   }
 
@@ -173,10 +180,24 @@ export class GameController {
       case 'unreachable':
         this.deps.ui.pushToast('You can’t get there from here yet.', 'info', 'Not yet');
         break;
+      case 'footstep':
+        this.footstep(event.x, event.y);
+        break;
       case 'sceneReady':
         break;
     }
   };
+
+  private grid: { sceneId: string; grid: TileGrid } | null = null;
+
+  /** A footstep sounds like the ground it lands on. */
+  private footstep(x: number, y: number): void {
+    const { session, audio } = this.deps;
+    const sceneId = session.state.sceneId;
+    if (this.grid?.sceneId !== sceneId)
+      this.grid = { sceneId, grid: parseLayout(findScene(session.chapter, sceneId)) };
+    audio.playFootstep(footstepSurface(tileAt(this.grid.grid, x, y)));
+  }
 
   interactFocused(): void {
     const focus = this.deps.ui.getState().focus;
@@ -202,9 +223,22 @@ export class GameController {
 
   /** "Go to…" — walk (or jump) to an entity or exit, then use it. */
   travelTo(targetId: string): void {
-    if (!this.deps.ui.explorationAllowed && this.deps.ui.getState().overlay !== 'goto') return;
-    this.deps.ui.closeOverlay();
+    const { ui } = this.deps;
+    if (!ui.explorationAllowed && ui.getState().overlay !== 'goto') return;
+    ui.closeOverlay();
+    // The list already offers the new place, but the world still shows the old
+    // one until its art has loaded: go once it has.
+    if (ui.getState().transitioning) {
+      this.pendingTravel = targetId;
+      return;
+    }
     this.world?.travelTo(targetId, this.deps.settings().instantTravel);
+  }
+
+  private travelIfPending(): void {
+    const target = this.pendingTravel;
+    this.pendingTravel = null;
+    if (target && !this.isBusy()) this.world?.travelTo(target, this.deps.settings().instantTravel);
   }
 
   destinations(): Destination[] {
@@ -494,6 +528,12 @@ export class GameController {
     const next = session.state;
     this.lastStoryState = next;
     if (prev && !storyChanged(prev, next)) return;
+    const marks = playerMarks(session.chapter.playerLooks, session.state);
+    const marksKey = marks.join(',');
+    if (marksKey !== this.playerMarksKey) {
+      this.playerMarksKey = marksKey;
+      this.world.setPlayerMarks(marks);
+    }
     const scene = findScene(session.chapter, session.state.sceneId);
     const entities = visibleEntities(session.chapter, scene, session.state);
     const key = JSON.stringify(entities);

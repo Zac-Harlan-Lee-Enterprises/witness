@@ -1,4 +1,4 @@
-import type { AmbienceId, MusicId, SfxId } from '@/application/ports';
+import type { AmbienceId, FootstepSurface, MusicId, SfxId } from '@/application/ports';
 
 /**
  * Sound design as data (pure, unit-tested); synth-audio.ts turns it into
@@ -13,7 +13,8 @@ import type { AmbienceId, MusicId, SfxId } from '@/application/ports';
  * - Music plays short modal phrases over a drone rather than random notes.
  */
 export interface Tone {
-  kind: 'pluck' | 'bell' | 'breath';
+  /** pluck: lyre-like string; bell: inharmonic partials; breath: filtered noise; knock: a short falling thud. */
+  kind: 'pluck' | 'bell' | 'breath' | 'knock';
   freq: number;
   /** Seconds after the trigger. */
   at: number;
@@ -54,6 +55,40 @@ export const SFX: Record<SfxId, readonly Tone[]> = {
   door: [
     { kind: 'pluck', freq: 147, at: 0, dur: 0.22, gain: 0.35 },
     { kind: 'breath', freq: 600, at: 0, dur: 0.3, gain: 0.08 },
+  ],
+};
+
+/**
+ * Footsteps, quiet and short, one recipe per surface: a hard tap on stone,
+ * a gritty crunch on gravel, a soft hiss in sand, a dull thud on earth, a
+ * swish in grass, a squelch in mud, a muffled pat on a mat.
+ */
+export const FOOTSTEPS: Record<FootstepSurface, readonly Tone[]> = {
+  stone: [
+    { kind: 'breath', freq: 3200, at: 0, dur: 0.035, gain: 0.05 },
+    { kind: 'knock', freq: 190, at: 0, dur: 0.05, gain: 0.12 },
+  ],
+  gravel: [
+    { kind: 'breath', freq: 2600, at: 0, dur: 0.05, gain: 0.05 },
+    { kind: 'breath', freq: 3600, at: 0.02, dur: 0.04, gain: 0.04 },
+    { kind: 'breath', freq: 2000, at: 0.045, dur: 0.05, gain: 0.035 },
+  ],
+  sand: [{ kind: 'breath', freq: 1400, at: 0, dur: 0.09, gain: 0.035 }],
+  earth: [
+    { kind: 'knock', freq: 120, at: 0, dur: 0.07, gain: 0.1 },
+    { kind: 'breath', freq: 700, at: 0, dur: 0.06, gain: 0.03 },
+  ],
+  grass: [
+    { kind: 'breath', freq: 4200, at: 0, dur: 0.1, gain: 0.025 },
+    { kind: 'breath', freq: 2600, at: 0.03, dur: 0.07, gain: 0.02 },
+  ],
+  mud: [
+    { kind: 'knock', freq: 90, at: 0, dur: 0.09, gain: 0.08 },
+    { kind: 'breath', freq: 500, at: 0.02, dur: 0.1, gain: 0.04 },
+  ],
+  mat: [
+    { kind: 'breath', freq: 900, at: 0, dur: 0.05, gain: 0.02 },
+    { kind: 'knock', freq: 110, at: 0, dur: 0.04, gain: 0.05 },
   ],
 };
 

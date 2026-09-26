@@ -220,6 +220,79 @@ const PAINTERS: Record<string, Painter> = {
     ctx.fillStyle = '#e0b453';
     ctx.fillRect(10, 14, 10, 1);
   },
+  'pack-donkey': (ctx) => {
+    PAINTERS.donkey?.(ctx);
+    // Panniers and a bundle on a pack saddle.
+    ellipse(ctx, 10.5, 17, 4, 5, '#b08c56');
+    ellipse(ctx, 19.5, 17, 4, 5, '#a8844e');
+    ctx.strokeStyle = rgba('#6e5230', 0.8);
+    ctx.lineWidth = 0.5;
+    for (const x of [10.5, 19.5])
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.ellipse(x, 17 + i * 1.8, 3.6 - Math.abs(i) * 0.5, 0.8, 0, 0, Math.PI);
+        ctx.stroke();
+      }
+    ellipse(ctx, 15, 10.5, 5.5, 3, '#9c8660');
+    ellipse(ctx, 14, 9.6, 3, 1.2, rgba('#ffffff', 0.15));
+  },
+  waterskin: (ctx) => {
+    softShadow(ctx, 16, 25, 8, 2.5, 0.35);
+    ctx.fillStyle = '#5b3b24';
+    ctx.beginPath();
+    ctx.moveTo(14, 13);
+    ctx.quadraticCurveTo(8, 18, 10, 24);
+    ctx.quadraticCurveTo(16, 27, 22, 24);
+    ctx.quadraticCurveTo(24, 18, 18, 13);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 16, 12.5, 2, 1.2, '#3a2616');
+    ellipse(ctx, 13, 19, 1.6, 3, rgba('#e6c9a0', 0.18));
+  },
+  'bread-cloth': (ctx) => {
+    softShadow(ctx, 16, 24, 10, 2.5, 0.3);
+    ctx.fillStyle = '#e6dcc6';
+    ctx.beginPath();
+    ctx.moveTo(6, 22);
+    ctx.lineTo(16, 16);
+    ctx.lineTo(27, 21);
+    ctx.lineTo(17, 26);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 15, 20, 4.5, 2.4, '#b9854a');
+    ellipse(ctx, 14, 19.4, 2.2, 1, rgba('#ffffff', 0.2));
+    for (const [x, y] of [
+      [20, 21],
+      [21.5, 22.5],
+      [19, 23],
+    ] as const)
+      ellipse(ctx, x, y, 1.2, 0.8, '#4a2616');
+  },
+  broom: (ctx) => {
+    softShadow(ctx, 18, 27, 6, 2, 0.3);
+    ctx.strokeStyle = PALETTE.wood;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(12, 3);
+    ctx.lineTo(18, 21);
+    ctx.stroke();
+    ctx.fillStyle = '#c2a86a';
+    ctx.beginPath();
+    ctx.moveTo(16, 20);
+    ctx.lineTo(21, 19);
+    ctx.lineTo(24, 27);
+    ctx.lineTo(15, 28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = rgba('#8a6e3c', 0.8);
+    ctx.lineWidth = 0.4;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(17 + i, 20);
+      ctx.lineTo(16 + i * 1.8, 27.5);
+      ctx.stroke();
+    }
+  },
   bedroll: (ctx) => {
     softShadow(ctx, 16, 23, 13, 3, 0.3);
     ellipse(ctx, 16, 20, 13, 6, '#9c7b54');

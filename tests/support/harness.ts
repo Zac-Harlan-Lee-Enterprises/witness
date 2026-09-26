@@ -4,6 +4,7 @@ import { GameController } from '@/application/game-controller';
 import { GameSession } from '@/application/game-session';
 import type {
   AnalyticsEvent,
+  FootstepSurface,
   WorldConversation,
   WorldEmphasis,
   WorldEntityView,
@@ -19,6 +20,7 @@ import { PLAYER_APPEARANCES } from '@/domain/characters';
 import type { DomainEvent } from '@/domain/events';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import type { GameState } from '@/domain/state/game-state';
+import type { LookMark } from '@/domain/world';
 import { SilentAudio } from '@/infrastructure/audio/synth-audio';
 import { TypedEventBus } from '@/shared/event-bus';
 import { createLogger } from '@/shared/logger';
@@ -29,18 +31,38 @@ export function loadJericho(): Chapter {
   return cached;
 }
 
+/** An AudioPort double that records footsteps (everything else is silent). */
+export class RecordingAudio extends SilentAudio {
+  footsteps: FootstepSurface[] = [];
+  override playFootstep(surface: FootstepSurface): void {
+    this.footsteps.push(surface);
+  }
+}
+
 /** A WorldPort double: records what the app asked the world to do. */
 export class FakeWorld implements WorldPort {
   scenes: WorldSceneModel[] = [];
   entities: WorldEntityView[] = [];
   controlsEnabled = true;
   travels: string[] = [];
+  /** Hold scene loads open (like art still downloading) until `releaseLoads()`. */
+  holdLoads = false;
+  private held: Array<() => void> = [];
   async loadScene(model: WorldSceneModel): Promise<void> {
+    if (this.holdLoads) await new Promise<void>((resolve) => this.held.push(resolve));
     this.scenes.push(model);
     this.entities = model.entities;
   }
+  releaseLoads(): void {
+    this.holdLoads = false;
+    for (const resolve of this.held.splice(0)) resolve();
+  }
   updateEntities(entities: WorldEntityView[]): void {
     this.entities = entities;
+  }
+  playerMarks: LookMark[][] = [];
+  setPlayerMarks(marks: LookMark[]): void {
+    this.playerMarks.push(marks);
   }
   travelTo(targetId: string): void {
     this.travels.push(targetId);
@@ -73,6 +95,7 @@ export const flush = async (): Promise<void> => {
 
 export interface Harness {
   chapter: Chapter;
+  audio: RecordingAudio;
   bus: TypedEventBus<DomainEvent>;
   session: GameSession;
   ui: UiStore;
@@ -120,13 +143,14 @@ export async function createHarness(
     { name: 'test', track: (e) => analyticsSent.push(e) },
     () => options.analyticsConsent ?? false,
   );
+  const audio = new RecordingAudio();
   const controller = new GameController({
     session,
     bus,
     ui,
     dialogue,
     puzzles,
-    audio: new SilentAudio(),
+    audio,
     analytics,
     settings: () => DEFAULT_SETTINGS,
     reducedMotion: () => false,
@@ -138,6 +162,7 @@ export async function createHarness(
   await flush();
   return {
     chapter,
+    audio,
     bus,
     session,
     ui,

@@ -70,6 +70,49 @@ export const ENTITY_KINDS = [
   'feature',
 ] as const;
 
+export const POSES = ['stand', 'sit', 'lie'] as const;
+export type Pose = (typeof POSES)[number];
+
+/**
+ * Visible marks of what has happened to someone — how the story shows up on
+ * a person in the world. Each one is drawn by the world adapter; none is a
+ * score or a judgement.
+ */
+export const LOOK_MARKS = [
+  /** Clean linen bandages on the forehead and ankle. */
+  'bandaged',
+  /** Bandages torn from the player's own tunic (drawn in the player's tunic colour). */
+  'rag-bandaged',
+  /** Wearing the player's spare cloak around the shoulders. */
+  'wrapped-in-cloak',
+  /** A rolled cloak strapped to the satchel. */
+  'cloak-roll',
+  /** A clay oil lamp hanging from the belt. */
+  'lamp',
+  /** A water skin slung at the hip. */
+  'water-skin',
+  /** A tunic hem with a strip torn away. */
+  'torn-hem',
+] as const;
+export const LookMarkSchema = z.enum(LOOK_MARKS);
+export type LookMark = (typeof LOOK_MARKS)[number];
+
+/**
+ * A conditional change in how someone appears. Every look whose `when` holds
+ * applies, in order: later looks override pose and facing; marks accumulate.
+ */
+export const LookSchema = z.object({
+  when: ConditionSchema,
+  pose: z.enum(POSES).optional(),
+  facing: DirectionSchema.optional(),
+  marks: z.array(LookMarkSchema).default([]),
+});
+export type Look = z.infer<typeof LookSchema>;
+
+/** The player's looks only add marks (what they carry, what they gave away). */
+export const PlayerLookSchema = LookSchema.pick({ when: true, marks: true });
+export type PlayerLook = z.infer<typeof PlayerLookSchema>;
+
 export const EntitySchema = z.object({
   id: z.string().min(1),
   kind: z.enum(ENTITY_KINDS),
@@ -84,7 +127,9 @@ export const EntitySchema = z.object({
   visibleWhen: ConditionSchema.optional(),
   solid: z.boolean().default(true),
   /** How a character is shown (e.g. an injured traveler lying in the shade). */
-  pose: z.enum(['stand', 'sit', 'lie']).default('stand'),
+  pose: z.enum(POSES).default('stand'),
+  /** How the story changes the way this character appears (see LookSchema). */
+  looks: z.array(LookSchema).default([]),
   /** What interacting does: if `requires` holds, apply `effects`, then start `dialogue`. */
   interaction: z
     .object({

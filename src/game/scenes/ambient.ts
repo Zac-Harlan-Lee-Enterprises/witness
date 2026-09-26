@@ -3,12 +3,21 @@ import type { WorldSceneModel } from '@/application/ports';
 import { findPath, type Blocked, type Tile } from '@/domain/navigation';
 import type { Direction } from '@/domain/state/game-state';
 import type { TileKind } from '@/domain/world';
-import { FRAME, frameName } from '../art/characters';
 import { ART_SCALE, hash, rng } from '../art/paint';
+import { FRAME, walkColumn, WALK_CYCLE_TILES } from '../art/people/rig';
+import { frameName } from '../art/people/sheet';
 import type { CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
 import { crowdSize, crowdSpots, passerBy, startles } from '../systems/life';
-import { ensureCharacterTexture } from './actors';
+import {
+  addCastShadow,
+  addRenderedFigure,
+  ensureFigureTexture,
+  FEET_BELOW_CENTRE,
+  STAND_ORIGIN_Y,
+  type RenderedFigure,
+  type ShadowCast,
+} from './actors';
 import { TEX } from './textures';
 
 /**
@@ -22,7 +31,7 @@ import { TEX } from './textures';
  */
 const INV = 1 / ART_SCALE;
 const TILE = 32;
-const WALK_CYCLE = [FRAME.stepA, FRAME.stand, FRAME.stepB, FRAME.stand];
+const CROWD_SPEED = 1.5;
 const OPEN_GROUND: ReadonlySet<TileKind> = new Set<TileKind>([
   'paving',
   'sand',
@@ -41,13 +50,20 @@ export interface AmbientDeps {
   blocked: () => Blocked;
   player: () => { x: number; y: number };
   depthFor: (y: number) => number;
-  depths: { ground: number; fx: number; light: number };
+  depths: { ground: number; shadows: number; fx: number; light: number };
   reducedMotion: boolean;
   lowPower: boolean;
+  /** The sun's shadow for people (null indoors). */
+  cast: ShadowCast | null;
+  /** Pre-rendered passers-by for this place (empty: paint them). */
+  crowd: readonly RenderedFigure[];
+  /** The place is pre-rendered: leave out painted extras (pigeons) that would clash. */
+  prerendered: boolean;
 }
 
 interface Walker {
   sprite: Phaser.GameObjects.Sprite;
+  shadow: Phaser.GameObjects.Sprite | null;
   x: number;
   y: number;
   facing: Direction;
@@ -91,7 +107,7 @@ export class AmbientLife {
     this.buildLights();
     this.buildCrowd();
     if (this.d.lowPower) return;
-    if (model.mood === 'city') this.buildPigeons();
+    if (model.mood === 'city' && !this.d.prerendered) this.buildPigeons();
     if (this.still) return;
     this.buildSway();
     this.buildMotes();
@@ -130,14 +146,39 @@ export class AmbientLife {
     this.spots = crowdSpots(open, model.grid.width, model.grid.height, keep, this.r, count * 3);
     for (let i = 0; i < count && i < this.spots.length; i++) {
       const spot = this.spots[i] as Tile;
-      const key = ensureCharacterTexture(this.d.scene, passerBy(i, this.r));
       const facing = (['down', 'left', 'right', 'up'] as const)[i % 4] ?? 'down';
-      const sprite = this.d.scene.add
-        .sprite(0, 0, key, frameName(facing, 0))
-        .setOrigin(0.5, 1)
-        .setScale(INV);
+      const frame = frameName(facing, 0);
+      const rendered = this.d.crowd[i % Math.max(1, this.d.crowd.length)];
+      let sprite: Phaser.GameObjects.Sprite;
+      let shadow: Phaser.GameObjects.Sprite | null;
+      if (rendered) {
+        ({ sprite, shadow } = addRenderedFigure(
+          this.d.scene,
+          rendered,
+          frame,
+          this.d.depths.shadows,
+        ));
+      } else {
+        const key = ensureFigureTexture(this.d.scene, passerBy(i, this.r));
+        sprite = this.d.scene.add
+          .sprite(0, 0, key, frame)
+          .setOrigin(0.5, STAND_ORIGIN_Y)
+          .setScale(INV);
+        shadow = this.d.cast
+          ? addCastShadow(
+              this.d.scene,
+              key,
+              frame,
+              this.d.cast,
+              STAND_ORIGIN_Y,
+              this.d.depths.shadows,
+            )
+          : null;
+      }
+      if (shadow) this.objects.push(shadow);
       const walker: Walker = {
         sprite,
+        shadow,
         x: spot.x + 0.5,
         y: spot.y + 0.5,
         facing,
@@ -152,7 +193,8 @@ export class AmbientLife {
   }
 
   private place(w: Walker): void {
-    w.sprite.setPosition(w.x * TILE, w.y * TILE + 12).setDepth(this.d.depthFor(w.y));
+    w.sprite.setPosition(w.x * TILE, w.y * TILE + FEET_BELOW_CENTRE).setDepth(this.d.depthFor(w.y));
+    w.shadow?.setPosition(w.sprite.x, w.sprite.y);
   }
 
   private stepWalkers(dt: number): void {
@@ -178,7 +220,7 @@ export class AmbientLife {
           const dx = tx - w.x;
           const dy = ty - w.y;
           const dist = Math.hypot(dx, dy);
-          const step = 1.5 * dt;
+          const step = CROWD_SPEED * dt;
           if (Math.abs(dx) > Math.abs(dy)) w.facing = dx > 0 ? 'right' : 'left';
           else if (dy !== 0) w.facing = dy > 0 ? 'down' : 'up';
           if (dist <= step) {
@@ -193,11 +235,11 @@ export class AmbientLife {
           moving = true;
         }
       }
-      w.walk = moving ? w.walk + dt : 0;
-      const frame = moving
-        ? (WALK_CYCLE[Math.floor(w.walk / 0.15) % WALK_CYCLE.length] ?? 0)
-        : FRAME.stand;
-      w.sprite.setFrame(frameName(w.facing, frame));
+      w.walk = moving ? w.walk + CROWD_SPEED * dt : 0;
+      const frame = moving ? walkColumn(w.walk, WALK_CYCLE_TILES.crowd) : FRAME.idle;
+      const name = frameName(w.facing, frame);
+      w.sprite.setFrame(name);
+      w.shadow?.setFrame(name);
       this.place(w);
     }
   }
@@ -446,7 +488,11 @@ export class AmbientLife {
     this.flock?.birds.forEach((b) => b.destroy());
     this.flock = null;
     const keep = crowdSize(this.d.model.mood, true);
-    while (this.walkers.length > keep) this.walkers.pop()?.sprite.destroy();
+    while (this.walkers.length > keep) {
+      const w = this.walkers.pop();
+      w?.sprite.destroy();
+      w?.shadow?.destroy();
+    }
     this.tweens.forEach((t) => t.remove());
     this.tweens.length = 0;
     for (const o of this.objects) {

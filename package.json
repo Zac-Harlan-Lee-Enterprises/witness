@@ -24,6 +24,9 @@
     "content:validate": "tsx scripts/validate-content.ts",
     "content:publish-check": "tsx scripts/validate-content.ts --publish-check",
     "icons": "node scripts/generate-icons.mjs",
+    "art:data": "tsx scripts/export-art-data.ts",
+    "art:market": "node scripts/art-build.mjs market",
+    "art:people": "node scripts/art-build.mjs people",
     "deadcode": "knip",
     "perf:bundle": "node scripts/report-bundle.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build"

@@ -6,6 +6,11 @@ const traveler = (option: string): Condition => ({
   choice: 'choice-traveler',
   option,
 });
+const flag = (name: string): Condition => ({ type: 'flag', flag: name });
+const helpedHere: Condition = {
+  type: 'any',
+  of: [traveler('tend-walk'), traveler('tend-caravan')],
+};
 
 /** The edge of Jericho: a fictional wayside inn, the spring, and Rivka's courtyard. */
 export const JERICHO: ChapterInput['scenes'][number] = {
@@ -85,7 +90,18 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       y: 7,
       facing: 'right',
       pose: 'sit',
-      visibleWhen: { type: 'any', of: [traveler('tend-walk'), traveler('tend-caravan')] },
+      // How you helped shows on him: your linen or strips of your own tunic
+      // as bandages, your cloak around him, and rest once his care is arranged.
+      looks: [
+        { when: flag('bound-wounds'), marks: ['bandaged'] },
+        { when: flag('improvised-bandage'), marks: ['rag-bandaged'] },
+        {
+          when: { type: 'choiceMade', choice: 'choice-cloak', option: 'given' },
+          marks: ['wrapped-in-cloak'],
+        },
+        { when: flag('menashe-care-arranged'), pose: 'lie' },
+      ],
+      visibleWhen: helpedHere,
       interaction: { verb: 'talk', dialogue: 'd-menashe-inn' },
     },
     {
@@ -93,10 +109,30 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       kind: 'feature',
       label: 'Sleeping mat',
       sprite: 'bedroll',
-      x: 4,
+      x: 5,
       y: 7,
       solid: false,
-      visibleWhen: { type: 'any', of: [traveler('tend-walk'), traveler('tend-caravan')] },
+      // Laid out for the traveler: under him, or ready while Asher fetches him.
+      visibleWhen: { type: 'any', of: [helpedHere, flag('asher-sent')] },
+    },
+    {
+      id: 'pack-donkey',
+      kind: 'feature',
+      label: 'Malik’s pack donkey',
+      sprite: 'pack-donkey',
+      x: 11,
+      y: 6,
+      visibleWhen: traveler('tend-caravan'),
+    },
+    {
+      id: 'broom',
+      kind: 'feature',
+      label: 'The broom you swept with',
+      sprite: 'broom',
+      x: 6,
+      y: 6,
+      solid: false,
+      visibleWhen: { type: 'choiceMade', choice: 'choice-inn', option: 'worked' },
     },
     {
       id: 'malik-inn',
@@ -109,7 +145,16 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       visibleWhen: traveler('tend-caravan'),
       interaction: { verb: 'talk', dialogue: 'd-malik-inn' },
     },
-    { id: 'inn-donkey', kind: 'feature', label: 'The inn’s donkey', sprite: 'donkey', x: 11, y: 7 },
+    {
+      id: 'inn-donkey',
+      kind: 'feature',
+      label: 'The inn’s donkey',
+      sprite: 'donkey',
+      x: 11,
+      y: 7,
+      // Asher has taken it up the road to fetch the traveler.
+      visibleWhen: { type: 'not', condition: flag('asher-sent') },
+    },
     {
       id: 'night',
       kind: 'feature',
@@ -162,10 +207,20 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       x: 29,
       y: 17,
       facing: 'left',
-      pose: 'sit',
+      // Feverish on his mat until the remedy comes; then he sits up.
+      pose: 'lie',
+      looks: [{ when: flag('remedy-delivered'), pose: 'sit' }],
       interaction: { verb: 'talk', dialogue: 'd-natan' },
     },
-    { id: 'natan-mat', kind: 'feature', label: 'Natan’s mat', sprite: 'bedroll', x: 30, y: 17 },
+    {
+      id: 'natan-mat',
+      kind: 'feature',
+      label: 'Natan’s mat',
+      sprite: 'bedroll',
+      x: 29,
+      y: 17,
+      solid: false,
+    },
     {
       id: 'yair',
       kind: 'npc',

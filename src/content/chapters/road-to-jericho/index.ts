@@ -18,6 +18,9 @@ import { JERICHO_ROAD } from './scenes/jericho-road';
 import { JERUSALEM_MARKET } from './scenes/jerusalem-market';
 import { MIRIAM_HOUSE } from './scenes/miriam-house';
 
+const flagIs = (flag: string) => ({ type: 'flag' as const, flag });
+const carries = (item: string) => ({ type: 'hasItem' as const, item });
+
 /**
  * Chapter 1 — The Road to Jericho.
  * Authored as plain data; validated by ChapterSchema + validateChapterIntegrity
@@ -42,6 +45,16 @@ export const ROAD_TO_JERICHO: ChapterInput = {
   },
   opening: [{ type: 'startDialogue', dialogue: 'd-opening' }],
   timeCounter: 'hour',
+  // What you visibly carry once packed (and what giving things away changes).
+  playerLooks: [
+    {
+      when: { type: 'all', of: [flagIs('packed'), carries('water-skin')] },
+      marks: ['water-skin'],
+    },
+    { when: { type: 'all', of: [flagIs('packed'), carries('lamp')] }, marks: ['lamp'] },
+    { when: { type: 'all', of: [flagIs('packed'), carries('cloak')] }, marks: ['cloak-roll'] },
+    { when: flagIs('improvised-bandage'), marks: ['torn-hem'] },
+  ],
   lightItem: 'lamp',
   mainQuest: 'q-remedy',
   characters: CHARACTERS,

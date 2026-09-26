@@ -116,6 +116,8 @@ export class GameRuntime {
       input: this.services.input,
       onEvent: this.controller.handleWorldEvent,
       logger: this.services.logger,
+      framing: this.services.config.cameraFraming,
+      artLighting: this.services.config.artLighting,
     });
     if (isStale()) {
       port.destroy();
