@@ -125,7 +125,7 @@ def maps(head, V, skin_hex, beard=False, weathered=0.0):
     grey = 0.28 + 0.14 * darkness(skin_hex)
     alb = alb * (1 - grey) + lum * grey
     rough = np.full(n, 0.42 - 0.03 * P.child, F)
-    rough += -0.1 * np.clip(forehead + nose, 0, 1) + 0.06 * ears - 0.2 * lips - 0.04 * under
+    rough += -0.1 * np.clip(forehead + nose, 0, 1) + 0.06 * ears - 0.02 * lips - 0.04 * under
     rough += 0.06 * weathered
     pores = np.full(n, 0.45, F) + 0.5 * np.clip(nose, 0, 1) + 0.3 * np.clip(cheeks, 0, 1) + 0.25 * forehead - 0.4 * lips - 0.3 * lids
     pores = np.clip(pores * (1 - 0.6 * P.child) * (1 + 0.4 * weathered), 0, 1.4)

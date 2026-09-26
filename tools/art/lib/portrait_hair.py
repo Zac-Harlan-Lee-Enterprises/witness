@@ -346,7 +346,8 @@ class Hair:
         az, el = angles(roots, s)
         front = (np.abs(az) < 55)[:, None]
         if style in ("child", "short"):
-            swept = np.stack([np.sign(roots[:, 0] + 0.3) * 0.8, np.full(len(roots), 0.6, F), np.full(len(roots), 0.35, F)], 1)
+            side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.7
+            swept = np.stack([side, np.full(len(roots), 0.8, F), np.full(len(roots), 0.3, F)], 1)
             dirs = np.where(front, swept, dirs)
         self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003), flat=0.25 if style == "long" else 0.0, guard=True)
 
@@ -424,7 +425,7 @@ class Hair:
         P = self.P
         head = self.head
         w = brow_mask(head, self.V)
-        count = int((500 + 1800 * P.brow_thickness * (0.35 + 0.65 * P.masc)) * self.q)
+        count = int((250 + 250 * P.masc + 1800 * P.brow_thickness * (0.3 + 0.7 * P.masc)) * self.q)
         roots, nrm, _ = sample_surface(self.V, self.Q, self.N, w, count, self.rng)
         if len(roots) == 0:
             return

@@ -6,7 +6,7 @@
  *   npm run art:data      # export characters and maps for Blender
  *   npm run art:market    # render public/art/jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people    # render public/art/people (≈ 30 min)
- *   npm run art:portraits # render public/art/portraits (≈ 5 min a person)
+ *   npm run art:portraits # render public/art/portraits (≈ 25 min for 16 people)
  *   npm run art:portraits -- --who miriam player:look-1   # just some people
  */
 import { spawnSync } from 'node:child_process';
@@ -73,8 +73,6 @@ const jobs = {
     'public/art/portraits',
     '--manifest',
     'src/features/portraits/portrait-manifest.json',
-    '--samples',
-    '256',
   ],
 };
 const job = jobs[what];

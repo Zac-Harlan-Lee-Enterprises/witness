@@ -74,15 +74,17 @@ def _g(v):
     return np.exp(-v * v)
 
 
-def _lip(v, peak, border, tail):
-    """A lip's forward bulge across its height: 0 at the mouth line (v=0),
+def _lip(v, peak, border, tail, r0=0.45):
+    """A lip's forward bulge across its height: r0 at the mouth line (v=0),
     rising to 1 at `peak`, `border` of that at the edge of the red (v=1),
     then easing to nothing over `tail` (in lip heights) into the skin."""
-    rise = np.sin(np.clip(v / peak, 0, 1) * (np.pi / 2)) ** 1.35
+    # The lips meet already full (they press together, they do not taper to
+    # a groove), so only a soft crease runs between them.
+    rise = r0 + (1 - r0) * np.sin(np.clip(v / peak, 0, 1) * (np.pi / 2)) ** 1.35
     mid = 1 - (1 - border) * np.clip((v - peak) / (1 - peak), 0, 1) ** 1.5
     t = np.clip(1 - (v - 1) / tail, 0, 1)
     fall = border * t * t * (3 - 2 * t)
-    return np.where(v <= 1, rise * mid, fall) * (v > 0)
+    return np.where(v <= 1, rise * mid, fall) * (v >= 0)
 
 
 def _seg_dist(u, z, pts):
@@ -125,7 +127,7 @@ class Head:
         self.nasion = np.array([0, -9.0 * s - 0.25 * self.brow + 0.45 * c, 3.05 * s], F)
         # Nose.
         # Women's and children's noses are shorter and project less.
-        nl = P.nose_length * lower * (1.0 - 0.14 * c) * (0.89 + 0.11 * m)
+        nl = P.nose_length * fl * (1.0 - 0.12 * c) * (0.89 + 0.11 * m)
         self.subnasale_z = self.nasion[2] - 5.45 * nl
         proj = P.nose_projection * (1.0 - 0.35 * c) * (0.7 + 0.3 * m)
         self.tip = np.array([0, -10.35 * s - 1.7 * proj + 0.3 * c, self.subnasale_z + (1.0 + 0.1 * (1 - m)) * nl], F)
@@ -154,6 +156,7 @@ class Head:
         g, n = self.glabella, self.nasion
         sn, st, me, po = self.subnasale, self.stomion, self.menton, self.pogonion
         fore = 0.25 * c + 0.2 * (1 - P.masc)  # rounder, more upright foreheads
+        jf = 0.93 + 0.07 * P.masc  # a narrower lower jaw for women and children
         # Above the top row the relief continues straight up; the dome of the
         # skull (an ellipsoid, see _build) closes it.
         rows = [
@@ -164,17 +167,17 @@ class Head:
             (g[2], g[1] + 0.2 * self.brow, 7.3, 2.5, 10.3),
             (n[2] + 0.1, n[1] - 0.05, 7.1, 2.6, 10.0),
             (self.eye_z, -8.45 * s + 0.1 * c, 7.1, 2.75, 9.6),
-            (0.2 * s, -8.4 * s + 0.1 * c, 7.2 * fw, 2.6, 9.1),
-            (-1.4 * s, -8.75 * s, 7.05 * fw, 2.2, 8.4),
+            (self.eye_z + 0.33 * (sn[2] - self.eye_z), -8.4 * s + 0.1 * c, 7.2 * fw, 2.6, 9.1),
+            (self.eye_z + 0.72 * (sn[2] - self.eye_z), -8.75 * s, 7.05 * fw, 2.2, 8.4),
             (sn[2], sn[1] + 0.25, 6.7 * fw, 1.9, 7.4),
             (sn[2] - 0.7, sn[1] - 0.05, 6.45 * fw, 1.88, 7.0),
             (st[2] + 0.62, st[1] - 0.2, 6.3 * fw, 1.9, 6.6),
             (st[2], st[1] + 0.05, 6.2 * fw, 1.95, 6.3),
             (st[2] - 0.7, st[1] + 0.05, 6.1 * fw, 2.0, 6.1),
-            (st[2] - 1.6, st[1] + 0.4 - 0.15 * c, (5.95 + 0.1 * mb) * fw, 1.95 + 0.1 * mb, 6.0),
-            ((st[2] + po[2]) / 2 - 0.5, po[1] + 0.2, (5.85 + 0.15 * mb) * fw, 2.0 + 0.15 * mb, 5.9),
-            (po[2], po[1], (5.7 + 0.2 * mb) * fw, 2.05 + 0.15 * mb, 5.9),
-            (me[2] + 0.6, po[1] + 0.45, (5.4 + 0.15 * mb) * fw, 2.05, 5.9),
+            (st[2] - 1.6, st[1] + 0.4 - 0.15 * c, (5.95 + 0.1 * mb) * fw * jf, 1.95 + 0.1 * mb, 6.0),
+            ((st[2] + po[2]) / 2 - 0.5, po[1] + 0.2, (5.85 + 0.15 * mb) * fw * jf, 2.0 + 0.15 * mb, 5.9),
+            (po[2], po[1], (5.7 + 0.2 * mb) * fw * jf, 2.05 + 0.15 * mb, 5.9),
+            (me[2] + 0.6, po[1] + 0.45, (5.4 + 0.15 * mb) * fw * jf, 2.05, 5.9),
             (me[2] - 0.4, me[1] + 0.3, 5.2 * fw, 2.0, 5.9),
             (me[2] - 2.0, me[1] + 1.8, 5.2, 2.0, 6.0),
         ]
@@ -259,15 +262,20 @@ class Head:
             v = (z - st[2]) / np.maximum(hu, 0.05)
             # Upper lip: rolls out from the mouth line, fullest just below the
             # border, and carries on as the skin sloping up to the nose.
-            out += up_amp * k**0.7 * _lip(v, 0.55, 0.8, 1.1)
-            out += 0.045 * _g((v - 1.0) / 0.09) * k  # the raised border (white roll)
+            cu = up_amp * k**0.7
+            cl = lo_amp * k**0.8
+            # Both lips start from the same fullness where they meet, so the
+            # surface is continuous across the mouth line.
+            c0 = 0.45 * 0.5 * (cu + cl)
+            out += cu * _lip(v, 0.55, 0.8, 1.1, np.minimum(1.0, c0 / np.maximum(cu, 1e-6)))
+            out += 0.025 * _g((v - 1.0) / 0.09) * k  # the raised border (white roll)
             hl = lo_h * k**0.55
             v2 = (st[2] - z) / np.maximum(hl, 0.05)
             # Lower lip: fullest in the middle, turning under into the groove above the chin.
-            out += lo_amp * k**0.8 * _lip(v2, 0.45, 0.62, 0.9)
+            out += cl * _lip(v2, 0.45, 0.62, 0.9, np.minimum(1.0, c0 / np.maximum(cl, 1e-6))) * (v2 > 0)
             # The line between the lips, and the corners of the mouth.
             zl = st[2] - 0.06 * (u / mw) ** 2
-            out -= 0.12 * _g((z - zl) / 0.045) * np.clip((1.02 - au / mw) / 0.12, 0, 1)
+            out -= 0.1 * _g((z - zl) / 0.075) * np.clip((1.02 - au / mw) / 0.12, 0, 1)
             for sx in (-1, 1):
                 out -= 0.18 * _g((u - sx * mw) / 0.22) * _g((z - st[2]) / 0.22)
             # Philtrum: a groove with a ridge either side.
@@ -325,8 +333,13 @@ class Head:
     def _build(self):
         # The dome of the skull closes the relief above the forehead.
         s = self.s
-        dome = S.Ellipsoid((0, 0.95 * s, 2.0 * s), (10.0 * s, 11.9 * s, 11.35 * s))
-        face = S.Intersect(self._relief(), dome, 1.2)
+        ellipsoid = S.Ellipsoid((0, 0.95 * s, 2.0 * s), (10.0 * s, 11.9 * s, 11.35 * s))
+
+        def dome(p):
+            # Only above the forehead: lower down it would cut into the face.
+            return ellipsoid(p) - np.clip((8.5 * s - p[:, 2]) / 1.5, 0, 1) * 30.0
+
+        face = S.Intersect(self._relief(), S.Fn(dome, ellipsoid.bbox), 1.2)
         # The jawline: cut under a plane through the chin and the angles of the jaw.
         me = self.menton + np.array([0, 0, -0.15], F)
         go = self.gonion
@@ -388,12 +401,13 @@ class Head:
         parts.append(S.RoundCone(t + np.array([0, 0.62, -0.55], F), sn + np.array([0, -0.06, 0.14], F), 0.3 * w, 0.33 * w))
         body = S.Union(parts, 0.42 * s)
         wings = []
+        wl = 0.84 + 0.16 * P.masc  # smaller, finer wings for women and children
         for sx in (-1, 1):
             # Each wing curves from its base on the face forward to the tip.
             base = np.array([sx * 1.45 * w, sn[1] + 0.95, sn[2] + 0.42], F)
             front = t + np.array([sx * 0.78 * w, 0.8, -0.3], F)
-            wings.append(S.RoundCone(base, front, 0.46, 0.4))
-            wings.append(S.Ellipsoid((sx * 1.38 * w, sn[1] + 0.55, sn[2] + 0.56), (0.44 * w, 0.62, 0.48)))
+            wings.append(S.RoundCone(base, front, 0.46 * wl, 0.4 * wl))
+            wings.append(S.Ellipsoid((sx * 1.38 * w, sn[1] + 0.55, sn[2] + 0.56), (0.44 * w * wl, 0.62 * wl, 0.48 * wl)))
         return body, S.Union(wings, 0.25)
 
     def _nostrils(self, face):
@@ -403,8 +417,9 @@ class Head:
         sn = self.subnasale
         holes = []
         for sx in (-1, 1):
-            c = (sx * 0.62 * w, (t[1] + sn[1]) / 2 + 0.62, sn[2] + 0.2)
-            holes.append(S.Ellipsoid(c, (0.25 * w, 0.42, 0.22), S.rot(yaw=sx * 20, pitch=-20)))
+            nf = 1.0 - 0.2 * self.P.child  # smaller, further back on a child's short nose
+            c = (sx * 0.62 * w, max((t[1] + sn[1]) / 2 + 0.62, sn[1] - 0.05) + 0.12 * self.P.child, sn[2] + 0.2)
+            holes.append(S.Ellipsoid(c, (0.25 * w * nf, 0.42 * nf, 0.22 * nf), S.rot(yaw=sx * 20, pitch=-20)))
         return S.Subtract(face, S.Union(holes), 0.1)
 
     # ── Eyelids ────────────────────────────────────────────────────────────
