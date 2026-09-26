@@ -139,11 +139,25 @@ class RomanProps:
             col = {"madder": "#8a2418", "woad": "#2c3e6a", "purple": "#4a1e46"}.get(kind, stain)
             objs.append(self.skein(f"{name}-skein", c + Vector((0.33, -0.25, 0.64)), col, 0.28, twist=0.4))
         if hot:
-            # The stoke-hole at the foot, embers glowing in it.
+            # The stoke-hole at the foot: its dark mouth, a bed of embers on
+            # its sill (cracked coals, dim: a room renders about 3 EV brighter
+            # than outdoors, and a flat bright slab blew out to white), a low
+            # glow from inside that falls warm on the floor in front, and ash
+            # raked out onto it.
+            from kit_village import embers
+
             bm, layer = self._rbm()
             self._cbox(bm, layer, x + 0.38, y + 0.955, x + 0.62, y + 0.985, 0.1, 0.3, chamfer=0.01, r=0.5)
             objs.append(self._obj(f"{name}-stoke", bm, self._mat("dark")))
-            objs.append(common.box(f"{name}-embers", (0.18, 0.02, 0.05), self.P(x + 0.5, y + 0.99, 0.14), M.emissive("#ff5a1a", 4.0), None))
+            own = common.rng(int(x * 131 + y * 7))
+            for k in range(5):
+                ex = x + 0.42 + k * 0.04 + (own.random() - 0.5) * 0.015
+                objs.append(self._ellipsoid(f"{name}-ember{k}", self.P(ex, y + 0.975, 0.115 + own.random() * 0.012), (0.024, 0.014, 0.018), embers(1.4), 10, 6))
+            glow = self.add_light(f"{name}-fire", "POINT", self.P(x + 0.5, y + 1.02, 0.14), 2.2, "#ff7a30", radius=0.05)
+            _ = glow
+            self.flicker.append(("hearth", (x + 0.5) * 32, (y + 1.0) * 32, 20.0, list(self.light_plan.values()), 0.35))
+            ash = self._ellipsoid(f"{name}-ash", self.P(x + 0.5, y + 1.08, 0.003), (0.13, 0.07, 0.004), M.plain("#6e6862", 0.95), 16, 4)
+            self.to_ground(ash)
             steam = common.lathe(f"{name}-steam", [(0.32, 0.0), (0.36, 0.2), (0.33, 0.45), (0.24, 0.72), (0.1, 0.9)], 24, R.steam(), None)
             steam.data.transform(Matrix.Translation(c + Vector((0, 0, 0.6))))
             objs.append(steam)
