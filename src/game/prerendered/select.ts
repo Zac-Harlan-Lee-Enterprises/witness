@@ -30,6 +30,8 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 2: A Storm on Galilee
+  'shelomit-house',
   // Chapter 4: A Letter from Paul
   'ammia-workshop',
   'colossae-street',
