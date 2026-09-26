@@ -138,7 +138,7 @@ class Head:
         self.mb = mb
         # The mid-face, and still more the lower face, grow most between
         # childhood and adulthood.
-        lower = fl * P.lower_face * (1.0 - 0.26 * c) * (1.0 - 0.05 * (1 - m) * (1 - c))
+        lower = fl * P.lower_face * (1.0 - 0.26 * c) * (1.0 - 0.05 * (1 - m) * (1 - c)) * 0.96
         mid = fl * (1.0 - 0.13 * c)
         self.lower = lower
         self.eye_half = (3.15 + P.eye_spacing * 0.22) * s * (1.0 - 0.05 * c)
@@ -310,10 +310,10 @@ class Head:
         # Above the top row the relief continues straight up; the dome of the
         # skull (an ellipsoid, see _build) closes it.
         rows = [
-            (11.0 * s, (-6.3 - 0.3 * fore) * s, 6.0 * s, 2.05, 8.2 * s),
-            (9.5 * s, (-8.0 - 0.4 * fore) * s, 7.1 * s, 2.15, 9.6 * s),
-            (8.0 * s, (-8.85 - 0.3 * fore) * s, 7.35 * s, 2.25, 10.3 * s),
-            (6.0 * s, (-9.3 - 0.1 * fore) * s, 7.45 * s, 2.35, 10.45 * s),
+            (11.0 * s, (-6.3 - 0.3 * fore) * s, 6.0 * s, 1.95, 8.2 * s),
+            (9.5 * s, (-8.0 - 0.4 * fore) * s, 7.1 * s, 2.0, 9.6 * s),
+            (8.0 * s, (-8.85 - 0.3 * fore) * s, 7.35 * s, 2.08, 10.3 * s),
+            (6.0 * s, (-9.3 - 0.1 * fore) * s, 7.45 * s, 2.18, 10.45 * s),
             (g[2], g[1] + 0.2 * self.brow, 7.3 * s, 2.3, 10.3 * s),
             (n[2] + 0.1, n[1] - 0.05, 7.1 * s, 2.35, 10.0 * s),
             (self.eye_z, -8.45 * s + 0.1 * c, 7.1 * s, 2.4, 9.6 * s),

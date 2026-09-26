@@ -51,7 +51,7 @@ def hairline(masc, child):
     """Lowest elevation of the hair at each azimuth."""
     rec = 4.0 * masc * (1 - child)  # men's temples recede a little
     return [
-        (0, 25.0),
+        (0, 23.0 - 1.5 * masc * (1 - child)),
         (25, 26.0 + rec),
         (42, 25.0 + rec * 0.5),
         (58, 14.0),
@@ -364,8 +364,12 @@ class Hair:
         # At the hairline over the face, hair is swept back and to the side
         # (it ends naturally rather than being cut off above the eyes).
         if style in ("child", "short"):
-            side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.7
-            swept = np.stack([side, np.full(len(roots), 0.8, F), np.full(len(roots), 0.3, F)], 1)
+            # At the front, hair falls a little forward and to the side over
+            # the top of the forehead (not swept straight back, which reads as
+            # a helmet with a hard edge).
+            side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.8
+            forward = np.clip((el - 22.0) / 25.0, 0, 1)  # the hairline edge falls forward, the crown sweeps back
+            swept = np.stack([side, 0.8 - 1.3 * (1 - forward), 0.3 - 0.9 * (1 - forward)], 1).astype(F)
             dirs = np.where(front, swept, dirs)
         self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003), flat=0.25 if style == "long" else 0.0, guard=True)
         if P.child > 0.3:

@@ -338,11 +338,11 @@ def params_for(pid, appearance, player=False):
     p.scale = (0.9 + 0.1 * young_adult) * (0.955 + 0.045 * masc) * (1 + j(0.025))
     p.face_width = 1.0 + fw + j(0.06) + 0.04 * child + (0.03 if female else 0.0)
     p.face_length = 0.98 + fl + j(0.05) - (0.05 if female else 0.0)
-    p.lower_face = 1.0 + j(0.06) + 0.04 * mb - (0.04 if female else 0.0)
+    p.lower_face = 1.0 + j(0.05) + 0.02 * mb - (0.04 if female else 0.0)
     p.jaw_width = 1.0 + jw * (0.4 if female else 1.0) + j(0.07) + 0.04 * mb - 0.06 * child - (0.04 if female else 0.0)
     p.jaw_angle = j(0.6) + 0.35 * mb + (0.3 if shape == "square" else 0.0) - 0.5 * child
     p.chin = ch + j(0.7) + 0.2 * mb
-    p.chin_width = 1.0 + j(0.15) + 0.1 * mb - (0.1 if female else 0.0) + (0.15 if shape == "square" else 0.0)
+    p.chin_width = 1.0 + j(0.12) + 0.05 * mb - (0.1 if female else 0.0) + (0.1 if shape == "square" else 0.0)
     p.chin_cleft = max(0.0, j(1.4) - 0.6) * mb
     p.cheekbone = 0.5 + cb + j(0.3)
     p.fullness = 0.3 + j(0.3) + 0.35 * child + 0.28 * (1 - masc) - 0.1 * age_t + (0.12 if shape == "round" else 0.0)
@@ -395,8 +395,8 @@ def params_for(pid, appearance, player=False):
     lips = pick([("thin", 1.0), ("medium", 3.0), ("full", 3.0), ("very full", 1.2)])
     lv = {"thin": 0.2, "medium": 0.6, "full": 0.95, "very full": 1.3}[lips]
     p.mouth_width = 1.0 + j(0.07) - 0.08 * child
-    p.lip_upper = max(0.05, lv + j(0.15) + 0.15 * (1 - masc) - 0.35 * age_t)
-    p.lip_lower = max(0.1, lv + 0.12 + j(0.2) + 0.1 * (1 - masc) - 0.3 * age_t)
+    p.lip_upper = min(1.1 + 0.4 * (1 - masc), max(0.05, lv + j(0.15) + 0.15 * (1 - masc) - 0.35 * age_t))
+    p.lip_lower = min(1.15 + 0.4 * (1 - masc), max(0.1, lv + 0.12 + j(0.2) + 0.1 * (1 - masc) - 0.3 * age_t))
     p.bow = 0.5 + j(0.35) + 0.2 * child + 0.15 * (1 - masc)
     p.lip_projection = j(0.35)
     p.philtrum = 0.5 + j(0.3) + 0.2 * child
