@@ -74,6 +74,7 @@ def args():
         "pages already rendered)",
     )
     p.add_argument("--sprites", nargs="+", default=[], help="with --only sprites: ids or id prefixes (palm-)")
+    p.add_argument("--all", action="store_true", help="with --probe: show the things shown only while a story condition holds too")
     return p.parse_args(argv)
 
 
@@ -260,7 +261,7 @@ def main():
         w = (x1 - x0) * TILE
         h = (y1 - y0) * TILE
         view.setup_camera(scene, (x0 + x1) / 2 * TILE, (y0 + y1) / 2 * TILE, int(w * a.ppu), int(h * a.ppu), a.ppu)
-        show(set(scene.objects), hidden=conditional if "--all" not in sys.argv else ())
+        show(set(scene.objects), hidden=() if a.all else conditional)
         scene.render.film_transparent = False
         scene.render.filepath = a.out
         bpy.ops.render.render(write_still=True)

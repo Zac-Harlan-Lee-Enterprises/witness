@@ -132,7 +132,7 @@
     },
     {
       "path": "public/art/tamar-house/ground-*.webp",
-      "what": "Ground layer of Tamar's house in Bethlehem, a village house seen in cutaway (the animals' end a step down, deep in straw, with stone mangers along the family floor and steps up; the plastered back wall with niches, lamps, a shelf, strings of onions and garlic, a sickle, a pack saddle, bare rubble behind the animals; the cut-down walls and the partition to the guest room; sunlight through the east window, the door and the roof hatch; by lamplight at night, the door shut), with the shadows and occlusion of every standing thing baked in; morning ('day') and night ('night': lamplight) light, full and half resolution; cut into tiles of at most 2048 px where larger (ground-<light>-x<i>y<j>.webp).",
+      "what": "Ground layer of Tamar's house in Bethlehem, a village house seen in cutaway (the animals' end a step down, deep in straw, with stone mangers along the family floor and steps up; the plastered back wall with niches, lamps, a shelf, strings of onions and garlic, a sickle, a pack saddle, bare rubble behind the animals; the cut-down walls and the partition to the guest room; sunlight through the east window, the door and the roof hatch; by lamplight at night, the door shut), with the shadows and occlusion of every standing thing baked in; a day set in the morning light ('day') and a night set ('night': lamplight), full and half resolution; cut into tiles of at most 2048 px where larger (ground-<set>-x<i>y<j>.webp).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's tamar-house scene data (tile map, legend, mood, entities), with the village kit (tools/art/lib/kit_village.py). Geometry and materials are procedural (tools/art/lib/*.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
       "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
       "license": "Project licence (original work)",
@@ -156,7 +156,7 @@
     },
     {
       "path": "public/art/tamar-house/manifest.json",
-      "what": "Placement, sorting and atlas coordinates of the place's layers, and the fires and lamps burning in each light (for the game to make flicker).",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, the fires and lamps burning in each set (for the game to make flicker), and how people are lit in each set.",
       "origin": "Written by tools/art/build_place.py.",
       "tools": [],
       "license": "Project licence (original work)",
@@ -164,7 +164,7 @@
     },
     {
       "path": "public/art/bethlehem-lanes/ground-*.webp",
-      "what": "Ground layer of the lanes of Bethlehem (packed earth, dry weeds at the verges, the square by the east gate laid with rough flags, a threshing floor of beaten earth and bedrock drifted with chaff, a goat yard, the terrace wall at the village's edge, grit and stones, travellers' bedding and bundles), with the shadows and occlusion of every standing thing baked in; later-day ('late') and night ('night': moonlight, lamplight at the doors and by the travellers) light, full and half resolution; cut into tiles of at most 2048 px where larger (ground-<light>-x<i>y<j>.webp).",
+      "what": "Ground layer of the lanes of Bethlehem (packed earth, dry weeds at the verges, the square by the east gate laid with rough flags, a threshing floor of beaten earth and bedrock drifted with chaff, a goat yard, the terrace wall at the village's edge, grit and stones, travellers' bedding and bundles), with the shadows and occlusion of every standing thing baked in; a day set in the later-day light ('day', from mid-afternoon) and a night set ('night': moonlight, lamplight at the doors and by the travellers), full and half resolution; cut into tiles of at most 2048 px where larger (ground-<set>-x<i>y<j>.webp).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's bethlehem-lanes scene data (tile map, legend, mood, entities), with the village kit (tools/art/lib/kit_village.py). Geometry and materials are procedural (tools/art/lib/*.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
       "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
       "license": "Project licence (original work)",
@@ -188,7 +188,7 @@
     },
     {
       "path": "public/art/bethlehem-lanes/manifest.json",
-      "what": "Placement, sorting and atlas coordinates of the place's layers, and the fires and lamps burning in each light (for the game to make flicker).",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, the fires and lamps burning in each set (for the game to make flicker), and how people are lit in each set.",
       "origin": "Written by tools/art/build_place.py.",
       "tools": [],
       "license": "Project licence (original work)",
@@ -196,7 +196,7 @@
     },
     {
       "path": "public/art/shepherds-fields/ground-*.webp",
-      "what": "Ground layer of the fold below Bethlehem (dry pasture on terra rossa, ploughed terraces under olives held up by dry-stone terrace walls, young barley on the lower terrace, grey limestone hills with dry grass and thorny shrubs, the gully to an old cistern, damp ground by the trough), with the shadows and occlusion of every standing thing baked in; later-day ('late') and night ('night': moonlight and the shepherds' fire) light, full and half resolution; cut into tiles of at most 2048 px where larger (ground-<light>-x<i>y<j>.webp).",
+      "what": "Ground layer of the fold below Bethlehem (dry pasture on terra rossa, ploughed terraces under olives held up by dry-stone terrace walls, young barley on the lower terrace, grey limestone hills with dry grass and thorny shrubs, the gully to an old cistern, damp ground by the trough), with the shadows and occlusion of every standing thing baked in; a day set in the later-day light ('day', from mid-afternoon) and a night set ('night': moonlight and the shepherds' fire), full and half resolution; cut into tiles of at most 2048 px where larger (ground-<set>-x<i>y<j>.webp).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's shepherds-fields scene data (tile map, legend, mood, entities), with the village kit (tools/art/lib/kit_village.py). Geometry and materials are procedural (tools/art/lib/*.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
       "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
       "license": "Project licence (original work)",
@@ -220,7 +220,7 @@
     },
     {
       "path": "public/art/shepherds-fields/manifest.json",
-      "what": "Placement, sorting and atlas coordinates of the place's layers, and the fires and lamps burning in each light (for the game to make flicker).",
+      "what": "Placement, sorting and atlas coordinates of the place's layers, the fires and lamps burning in each set (for the game to make flicker), and how people are lit in each set.",
       "origin": "Written by tools/art/build_place.py.",
       "tools": [],
       "license": "Project licence (original work)",

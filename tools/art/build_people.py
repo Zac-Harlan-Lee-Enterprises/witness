@@ -133,14 +133,20 @@ def rag_hex(color):
 def scene_lights(s):
     """The lights people are seen in at a place: as its pre-rendered art
     says (its manifest's peopleLight, else each set's own peopleLight or
-    the set's name), else indoor for a room and day and late outdoors."""
+    the set's name), else as its light plan will (lighting.PLACE_LIGHTS:
+    so people can be rendered before or beside their place)."""
     path = os.path.join(HERE, "..", "..", "public", "art", s["id"], "manifest.json")
     if os.path.exists(path):
         art = json.load(open(path))
         if art.get("peopleLight"):
             return [art["peopleLight"]]
         return sorted({v.get("peopleLight", name) for name, v in art["variants"].items()})
-    return ["indoor"] if s["kind"] == "indoor" else ["day", "late"]
+    plan, light = lighting.plan_for(s["id"], s["kind"] == "indoor")
+    if isinstance(light, str):
+        return [light]
+    if isinstance(light, dict):
+        return sorted({light.get(name, name) for name in plan})
+    return sorted(plan)
 
 
 def plan(data, scenes):

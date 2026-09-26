@@ -78,10 +78,10 @@ LIGHTS = {
     "night": {
         "azimuth": math.radians(-66.0),  # the moon, south-south-east
         "elevation": math.radians(46.0),
-        "strength": 0.6,
+        "strength": 0.75,
         "color": "#98aeea",
         "angle": math.radians(0.6),
-        "sky_strength": 0.4,
+        "sky_strength": 0.5,
         # A clear night sky with stars (night_world).
         "stars": True,
         # The shade mask records all the light there is: the moon, the
@@ -116,7 +116,7 @@ def ev(name):
 #         "overcast", "lamp" or a light added beside them; None lights them
 #         by the sun of each set.
 # The people job renders exactly those lights for everyone seen there
-# (build_people.py reads each place's manifest: render places first).
+# (build_people.py reads each place's manifest, or this plan while it has none).
 PLACE_LIGHTS = {
     # Chapter 4. The Laodicea road is walked from mid-morning as the rain
     # sweeps down the valley (hours 11-14, always the morning set): rain

@@ -803,7 +803,7 @@ class Person:
                 self.parts.append(Part(st, bone="chest" if i == 0 else "spine", mark="letter-case"))
         if "lamp" in self.marks:
             # A small clay lamp hanging from the belt, front left; after dark
-            # (the night and lamplight sheets) it burns.
+            # (the night and lamp lights: build_people.DARK) it burns.
             bz = J["waist"].z - 0.03 * H
             c = Vector((J["shoulder_L"].x * 0.55, cy - 0.075 * H, bz - 0.045 * H))
             body = ellipsoid(f"{self.name}-lamp", c, (0.028 * H, 0.02 * H, 0.012 * H), M.terracotta("#b2714a", 0.1), self.col, 14, 8)

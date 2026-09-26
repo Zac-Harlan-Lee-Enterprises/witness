@@ -90,7 +90,7 @@ VILLAGE_GROUND = {
 VILLAGE_LOOKS = {
     "lane": {"color": "#b8a07a", "grit": 0.6, "dark": 0.16, "light": 0.1, "mottle": 0.4, "mottle_color": "#98805e", "chips": 0.4, "ripple": 0.08},
     "verge": {"color": "#9e8e66", "scale": "mid", "dark": 0.14, "light": 0.08, "mottle": 0.35, "mottle_color": "#857a52"},
-    "bed": {"color": "#8a7658", "scale": "mid"},
+    "bed": {"color": "#96825f", "scale": "mid", "grit": 0.35, "mottle": 0.3, "mottle_color": "#7e6c4e"},
     "threshing": {"color": "#cdb98f", "grit": 0.2, "dark": 0.06, "light": 0.08, "mottle": 0.3, "mottle_color": "#d9c48e", "streak": 0.12},
     "yard": {"color": "#85704f", "scale": "mid", "grit": 0.3, "mottle": 0.45, "mottle_color": "#6a5a40", "rough": 0.9},
     "dooryard": {"color": "#a58c68", "dark": 0.08, "light": 0.05, "grit": 0.25},
@@ -130,7 +130,7 @@ def fleece(color="#d8cbb0", name=None, dirt="#8a7656", speckle=None, ground_z=0.
     def build():
         n = M.Nodes(name or f"fleece-{color}-{speckle}-{ground_z:.2f}")
         obj = n.coords()
-        locks = n.new("ShaderNodeTexVoronoi", Scale=48.0, Vector=obj, _feature="SMOOTH_F1", Smoothness=0.6)
+        locks = n.new("ShaderNodeTexVoronoi", Scale=64.0, Vector=obj, _feature="SMOOTH_F1", Smoothness=0.7)
         clumps = n.noise(9.0, 5.0, 0.62, obj)
         fine = n.noise(140.0, 3.0, 0.6, obj)
         sepP = n.new("ShaderNodeSeparateXYZ", Vector=obj)
@@ -144,12 +144,12 @@ def fleece(color="#d8cbb0", name=None, dirt="#8a7656", speckle=None, ground_z=0.
             bm_ = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.58, "From Max": 0.64, "To Min": 0.0, "To Max": 1.0})
             sp = n.math("MAXIMUM", (sm, "Result"), (bm_, "Result"))
             col = n.mix((sp, "Value"), (col, 2), speckle)
-        crev = n.new("ShaderNodeMapRange", Value=(locks, "Distance"), **{"From Min": 0.25, "From Max": 0.6, "To Min": 0.0, "To Max": 0.45})
-        col2 = n.mix((crev, "Result"), (col, 2), M.shade(color, -0.55))
+        crev = n.new("ShaderNodeMapRange", Value=(locks, "Distance"), **{"From Min": 0.3, "From Max": 0.62, "To Min": 0.0, "To Max": 0.22})
+        col2 = n.mix((crev, "Result"), (col, 2), M.shade(color, -0.45))
         h = n.math("SUBTRACT", (clumps, "Fac"), (locks, "Distance"))
         h2 = n.math("MULTIPLY_ADD", (fine, "Fac"), 0.3)
         n._in(h2, 2, (h, "Value"))
-        bump = n.bump((h2, "Value"), strength=0.9, distance=0.02)
+        bump = n.bump((h2, "Value"), strength=0.55, distance=0.015)
         n.bsdf(
             **{
                 "Base Color": (col2, 2),
@@ -438,8 +438,9 @@ class VillageKit:
     def shape_mask(self, name, mask, W, Hh, px):
         """Village layers that follow more than their tiles: the fold's
         trampled ground fills the fold and spills out of the gate; ash
-        spreads round the fire; dry weeds break up at the verges; trodden
-        ground lies before the doors and along the ways in the house."""
+        spreads round the fire; mud round the trough; dry weeds break up at
+        the verges; trodden ground lies before the doors and along the ways
+        in the house."""
         if not self.village:
             return None
         from place import value_noise
@@ -457,6 +458,10 @@ class VillageKit:
             return self._pen_mask(W, Hh, px)
         if name == "footpath":
             return mask * np.clip(value_noise(W, Hh, 10, 99) * 1.6, 0, 1)
+        if name == "mire":
+            # Trampled wet ground round the trough and the cistern: a ragged
+            # patch where the flock stands to drink, not the mud's row of tiles.
+            return self._near(("mud", "trough"), 1.3, W, Hh, px, 17)
         if name == "trodden":
             from_door = self._near(("door",), 3.0, W, Hh, px, 12)
             by_steps = self._near(("steps",), 2.2, W, Hh, px, 13)
@@ -1327,6 +1332,47 @@ class VillageKit:
             self.straw_cover(f"{name}-spill", [(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (0, 1) if self.map.walkable(x + dx, y + dy)], 260.0, seed=x + y * 3)
 
     # ── animals ─────────────────────────────────────────────────────────────
+    def _barrel(self, name, L, W, D, zc, mat, square=2.5, taper=0.12, rings=40, around=36):
+        """An animal's body as one smooth closed surface along x (forward):
+        length L, width W, depth D, centred at height zc. Its plan and
+        section are superellipses (`square` > 2 is squarer), the front
+        narrower than the back by `taper`, the back a little higher over
+        the rump and the belly rounder than the back."""
+        bm = bmesh.new()
+
+        def se(c, e):
+            return math.copysign(abs(c) ** (2.0 / e), c)
+
+        verts = []
+        for i in range(1, rings):
+            th = math.pi * i / rings
+            t = -math.cos(th)  # -1 (rump) .. 1 (chest)
+            prof = se(math.sin(th), square)
+            w = W / 2 * prof * (1.0 - taper * (t + 1) / 2)
+            d = D / 2 * prof
+            x = L / 2 * t
+            ring = []
+            for j in range(around):
+                ph = math.tau * j / around
+                cy, cz = se(math.cos(ph), square), se(math.sin(ph), square)
+                # The back broad and flat-ish, the belly rounder.
+                if cz < 0:
+                    cy *= 1.0 - 0.12 * (-cz)
+                ring.append(bm.verts.new((x, w * cy, zc + d * cz + D * 0.03 * (1 - t) / 2)))
+            verts.append(ring)
+        back = bm.verts.new((-L / 2, 0, zc + D * 0.03))
+        front = bm.verts.new((L / 2, 0, zc))
+        for a, b in zip(verts, verts[1:]):
+            for j in range(around):
+                k = (j + 1) % around
+                bm.faces.new((a[j], a[k], b[k], b[j]))
+        for j in range(around):
+            k = (j + 1) % around
+            bm.faces.new((back, verts[0][k], verts[0][j]))
+            bm.faces.new((front, verts[-1][j], verts[-1][k]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return common.mesh_object(name, bm, mat, None)
+
     def quadruped(self, name, at, yaw, kind="sheep", pose="stand", seed=0, speckled=False, head_up=0.0, calling=False, scale=1.0):
         """A sheep, lamb or goat, built in its own space (x forward, y left, z
         up; the ground at z = 0) and placed at Blender point `at`, turned by
@@ -1365,18 +1411,19 @@ class VillageKit:
             objs.append(o)
             return o
 
-        # Body: barrel, shoulders, rump; the fleece lumpy at the silhouette.
-        body = ell("body", (0, 0, hb), (L / 2, W / 2, D / 2), body_mat, 32, 18)
-        ell("chest", (L * 0.28, 0, hb + D * 0.06), (L * 0.24, W * 0.46, D * 0.46), body_mat, 20, 12)
-        ell("rump", (-L * 0.3, 0, hb + D * 0.04), (L * 0.24, W * 0.5, D * 0.48), body_mat, 20, 12)
+        # Body: one smooth barrel (no seams between chest and rump), broad
+        # over the rump and narrower at the shoulders; a sheep's squarer in
+        # section, like a bolster of fleece, a goat's rounder and leaner.
+        body = self._barrel(f"{name}-body", L, W, D, hb, body_mat, square=2.5 if sheep else 2.1, taper=0.14 if sheep else 0.08)
+        objs.append(body)
         if sheep:
             for o in objs:
                 tex = bpy.data.textures.get("fleece-lumps") or bpy.data.textures.new("fleece-lumps", "CLOUDS")
-                tex.noise_scale = 0.06 * s
+                tex.noise_scale = 0.05 * s
                 tex.noise_depth = 2
-                common.add_modifier(o, "DISPLACE", texture=tex, strength=0.06 * s, mid_level=0.35)
+                common.add_modifier(o, "DISPLACE", texture=tex, strength=0.04 * s, mid_level=0.35)
             # The broad fat tail hanging behind.
-            ell("tail", (-L * 0.52, 0, hb - D * 0.12), (0.06 * s, W * 0.36, D * 0.42), body_mat, 16, 10)
+            ell("tail", (-L * 0.49, 0, hb - D * 0.1), (0.1 * s, W * 0.34, D * 0.4), body_mat, 16, 10)
         else:
             # Long black hair hanging from the flanks and belly.
             bm = bmesh.new()
@@ -1404,7 +1451,14 @@ class VillageKit:
         n0 = Vector((L * 0.4, 0, hb + D * 0.18))
         neck_len = (0.24 if sheep else 0.26) * s
         n1 = n0 + Vector((math.cos(rise), 0, math.sin(rise))) * neck_len
-        limb("neck", n0, n1, W * 0.34, W * 0.24, body_mat if sheep else head_mat)
+        # The neck, a fleece-covered column tapering from the body to the
+        # head, its end rounded off (no cut end showing).
+        neck_mat = body_mat if sheep else head_mat
+        neck = [limb("neck", n0, n1, W * 0.32, W * 0.17, neck_mat), ell("neck-end", n1, (W * 0.17, W * 0.17, W * 0.17), neck_mat, 14, 8)]
+        if sheep:
+            for o in neck:
+                common.add_modifier(o, "SUBSURF", levels=2, render_levels=2)
+                common.add_modifier(o, "DISPLACE", texture=bpy.data.textures["fleece-lumps"], strength=0.025 * s, mid_level=0.35)
         tilt = -0.9 + head_up * 0.6
         hl = (0.25 if sheep else 0.2) * s
         hd = Vector((math.cos(tilt), 0, math.sin(tilt)))
@@ -2437,7 +2491,7 @@ class VillageKit:
         if not self.village:
             return super().tile_paving()
         paving = self.paving
-        self.paving = M.limestone("#bba98a", "village-flags", worn=0.8)
+        self.paving = M.limestone("#a08a68", "village-flags", worn=0.9)
         try:
             self.yard_flags(kinds=("paving", "gate", "well"), name="square-flags", spacing=0.42)
         finally:
