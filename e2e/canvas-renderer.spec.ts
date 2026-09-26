@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { choose, continueDialogue, goTo } from './support';
+import { choose, continueDialogue, goTo, timeLimit } from './support';
 import { canvas, data, picture, stormAfterShimon, toMarket } from './world-probe';
 
 /**
@@ -11,7 +11,7 @@ test.use({ launchOptions: { args: ['--disable-webgl', '--disable-3d-apis'] } });
 
 test('the Canvas renderer still draws the world, with its light and weather', async ({ page }) => {
   test.skip(!!process.env.E2E_SHOTS, 'not a capture run');
-  test.setTimeout(120_000);
+  test.setTimeout(timeLimit(120_000));
   await stormAfterShimon(page);
   await toMarket(page);
   await expect(canvas(page)).toHaveAttribute('data-renderer', 'canvas');

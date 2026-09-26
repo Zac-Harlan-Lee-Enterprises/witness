@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { choose, continueDialogue, endDialogue, goTo } from './support';
+import { choose, continueDialogue, endDialogue, goTo, timeLimit } from './support';
 import { brightness, canvas, data, stormAfterShimon, toMarket } from './world-probe';
 
 /**
@@ -17,7 +17,7 @@ import { brightness, canvas, data, stormAfterShimon, toMarket } from './world-pr
  */
 test('the weather follows the story: a storm rises, then clears', async ({ page }) => {
   test.skip(!!process.env.E2E_SHOTS, 'not a capture run');
-  test.setTimeout(180_000);
+  test.setTimeout(timeLimit(180_000));
   await stormAfterShimon(page);
   await toMarket(page);
   await expect(canvas(page)).toHaveAttribute('data-weather', 'clear');
@@ -53,7 +53,7 @@ test('the weather follows the story: a storm rises, then clears', async ({ page 
 
 test('with reduced motion a storm darkens the light but nothing falls', async ({ page }) => {
   test.skip(!!process.env.E2E_SHOTS, 'not a capture run');
-  test.setTimeout(120_000);
+  test.setTimeout(timeLimit(120_000));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await stormAfterShimon(page);
   await toMarket(page);
