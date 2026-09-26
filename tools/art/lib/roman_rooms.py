@@ -442,9 +442,10 @@ class RomanRooms:
     def _flat_decal(obj):
         """A decal is seen by the camera only: rays bouncing, shadow rays and
         the floor's own occlusion (grime) pass it by, so its see-through
-        margin leaves no trace."""
+        margin leaves no trace. Tagged "decal", so sprites render without it."""
         for flag in ("visible_diffuse", "visible_glossy", "visible_transmission", "visible_shadow", "visible_volume_scatter"):
             setattr(obj, flag, False)
+        obj["decal"] = True
         return obj
 
     # ── dressing ────────────────────────────────────────────────────────────

@@ -233,7 +233,7 @@ Some choices worth knowing:
 - **Raised floors register like terrain.** A floor that people stand on above the ground (the stoa's stylobate, the bridge's deck) is sheared as the terrain is (`Q`, `QT`: a point at height h is placed h tiles south), so it shows over its own tiles and people walking on it look right; anything standing on it stands at the sheared point.
 - **The travertine** is shaped by the terrain (`terrain.RISE['travertine']`) and skinned with its own mesh, stepped into level pools behind scalloped rims (quantized upward, so the skin always lies over the terrain), with `wet` and `depth` attributes the material turns into water.
 - **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam; the tops of the abaci are cut sections and glow faintly, like the walls' cut tops (`_ionic_column(cut_top=True)`). The invisible roof is open over the garden, so the evening sky lights it. The colonnade's far (north) row stands between the camera and the room where the gathering is, so its sprites sort 1.3 rows north of their base: people up to two rows beyond it are drawn in front of the shafts instead of cut in half by them. This is a deliberate cheat, limited to that row; anyone south of it still sorts true.
-- **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime. Each is an irregular ellipse (`_decal`), not a rectangle, faded out before its rim: the denoiser's albedo guide sees a decal's whole outline, and a square one printed a faint square on the ground.
+- **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime. Each is an irregular ellipse (`_decal`), not a rectangle, faded out before its rim: the denoiser's albedo guide sees a decal's whole outline, and a square one printed a faint square on the ground. Decals are tagged (`obj["decal"]`) and left out of every sprite render ([`build_place.py`](../../tools/art/build_place.py)): as a see-through holdout, a decal still left a faint ghost of itself in the alpha of any sprite whose box reached it, which showed as a pale rectangle round the thing in the game.
 
 A builder reads `self.map` (tiles, runs, neighbours), builds geometry with the shared helpers (`self.P` for points on the terrain, `_lathe`, `_ellipsoid`, `_branch`, `boulder`, `rocks.stone`, materials in [`materials.py`](../../tools/art/lib/materials.py)), and either adds sprites with `self.sprite(id, base_row, objects, tiles, fade=?, flat=?)` or puts ground dressing in the ground layer with `self.to_ground(obj)` or a scatter emitter (`self.emitter` plus [`scatter.py`](../../tools/art/lib/scatter.py)). Walkable kinds also need a ground layer in `GROUND`. Give the method a docstring saying what it builds, and add the kind to the table above.
 
@@ -267,12 +267,16 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | Jericho | morning | 2.20 MB | 0.76 MB | 49.7 MB | 13.6 MB | 4 / 1 | 2 |
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
 | Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
-| A street in Colossae (Ch. 4) | morning | 1.07 MB | 0.38 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
+| A street in Colossae (Ch. 4) | morning | 1.08 MB | 0.39 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
 | | later day | 0.98 MB | 0.37 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
-| The Laodicea road (Ch. 4) | rain cloud (its only set) | 4.02 MB | 1.32 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
-| Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.16 MB | 23.1 MB | 6.5 MB | 2 / 1 | 1 |
-| People (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
+| The Laodicea road (Ch. 4) | rain cloud (its only set) | 3.98 MB | 1.31 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
+| Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.15 MB | 22.9 MB | 6.5 MB | 2 / 1 | 1 |
+| People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
+| People added for Chapter 4 | morning and indoor | 0.39 MB (18 files) | | | | | |
+| | later day | 0.30 MB (12 files) | | | | | |
+| | rain cloud | 1.18 MB (32 files) | | | | | |
+| | lamp-lighting | 1.08 MB (35 files) | | | | | |
 
 The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 

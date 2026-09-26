@@ -179,6 +179,10 @@ def main():
     # Grit and pebbles scattered over the ground: hidden while a flat thing
     # renders, or they would punch black holes in it (they lie on top of it).
     scattered = {o for o in p.ground_objects if any(m.type == "NODES" for m in o.modifiers)}
+    # Stains lying on the ground (tagged "decal"): left out of every sprite.
+    # A see-through holdout still leaves a faint ghost of itself in a
+    # sprite's alpha, and they never hide any part of a standing thing.
+    decals = {o for o in p.ground_objects if o.get("decal")}
     W, H = p.map.w * TILE, p.map.h * TILE
 
     def show(camera, hidden=(), holdout=()):
@@ -329,9 +333,9 @@ def main():
             # foot) are cut away, rather than showing black where no light
             # reaches. Things lying flat are on top of the ground already.
             if sp.flat:
-                show(mine, hidden=others_conditional | volumes | extra | scattered)
+                show(mine, hidden=others_conditional | volumes | extra | scattered | decals)
             else:
-                show(mine, hidden=others_conditional | volumes | extra, holdout=set(p.ground_objects) - mine)
+                show(mine, hidden=others_conditional | volumes | extra | decals, holdout=set(p.ground_objects) - mine - decals)
             img = render_to(scene, stem + ".png")
             if sp.conditional:
                 # Its own shadow alone, on a catcher with nothing else in the
