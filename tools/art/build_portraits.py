@@ -38,7 +38,8 @@ import portrait_finish  # noqa: E402
 import portrait_person  # noqa: E402
 
 SIZES = (512, 256, 128)
-QUALITY = {512: 86, 256: 88, 128: 90}
+# High enough that pores and skin grain survive compression (86 smoothed them away).
+QUALITY = {512: 93, 256: 92, 128: 90}
 DATA = os.path.join(HERE, "data", "portrait-people.json")
 
 
@@ -61,6 +62,7 @@ def args():
     p.add_argument("--frame", type=float, default=None)
     p.add_argument("--turn", type=float, default=None, help="review: degrees round the person (0 = from the front)")
     p.add_argument("--manifest", default=None, help="manifest path (default: <out>/portraits.json)")
+    p.add_argument("--reencode", default=None, help="write the WebP sizes again from the 512 px PNGs in this review folder (no rendering)")
     return p.parse_args(argv)
 
 
@@ -69,6 +71,13 @@ def write_manifest(path, entries):
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:
         f.write(json.dumps(entries, indent=2, sort_keys=True) + "\n")
+
+
+def write_sizes(img, out, pid):
+    """The shipped WebP files, from the 512 px master."""
+    for s in SIZES:
+        small = portrait_finish.resize(img, s)
+        imageio.save(small, os.path.join(out, f"{pid}-{s}.webp"), "WEBP", QUALITY[s])
 
 
 def everyone(data):
@@ -104,6 +113,15 @@ def main():
     manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
     tmp = tempfile.mkdtemp(prefix="witness-portraits-")
     rendered = []
+    if a.reencode:
+        for who in a.who or everyone(data):
+            pid = lookup(data, who)[0]
+            img = imageio.load(os.path.join(a.reencode, f"{pid}.png"))
+            img[:, :, 3] = 1.0
+            write_sizes(img, a.out, pid)
+            portrait_person.log("REENCODED", pid)
+        print("PORTRAITS DONE", flush=True)
+        return
     for who in a.who or everyone(data):
         pid, kind, key, app, player = lookup(data, who)
         size = a.size * a.supersample
@@ -122,9 +140,7 @@ def main():
             big = imageio.load(png)
         big[:, :, 3] = 1.0
         img = portrait_finish.resize(big, a.size, sharpen=0.0)
-        for s in SIZES:
-            small = portrait_finish.resize(img, s)
-            imageio.save(small, os.path.join(a.out, f"{pid}-{s}.webp"), "WEBP", QUALITY[s])
+        write_sizes(img, a.out, pid)
         manifest[pid] = {"kind": kind, "appearance": key}
         write_manifest(manifest_path, manifest)
         if a.review:
