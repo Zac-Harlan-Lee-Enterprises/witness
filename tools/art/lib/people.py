@@ -204,6 +204,29 @@ def nearest_bone_weights(J, names, falloff=4.0, sharp=None):
     return fn
 
 
+def _speckled_wool():
+    """A speckled lamb's short, curly fleece: cream, flecked and spotted with
+    dark brown."""
+
+    def build():
+        n = M.Nodes("speckled-wool")
+        obj = n.coords()
+        curls = n.new("ShaderNodeTexVoronoi", Scale=90.0, Vector=obj, _feature="SMOOTH_F1", Smoothness=0.7)
+        spots = n.new("ShaderNodeTexVoronoi", Scale=26.0, Vector=obj, Randomness=1.0)
+        sm = n.new("ShaderNodeMapRange", Value=(spots, "Distance"), **{"From Min": 0.14, "From Max": 0.22, "To Min": 1.0, "To Max": 0.0})
+        big = n.noise(4.0, 3.0, 0.5, obj)
+        bm_ = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.6, "From Max": 0.66, "To Min": 0.0, "To Max": 1.0})
+        sp = n.math("MAXIMUM", (sm, "Result"), (bm_, "Result"))
+        col = n.mix((sp, "Value"), "#e6dcc6", "#4a3828")
+        crev = n.new("ShaderNodeMapRange", Value=(curls, "Distance"), **{"From Min": 0.3, "From Max": 0.6, "To Min": 0.0, "To Max": 0.35})
+        col2 = n.mix((crev, "Result"), (col, 2), "#6a5a48", "MULTIPLY")
+        bump = n.bump((curls, "Distance"), strength=0.6, distance=0.006)
+        n.bsdf(**{"Base Color": (col2, 2), "Roughness": 0.95, "Sheen Weight": 0.3, "Sheen Tint": (col, 2), "Normal": (bump, "Normal")})
+        return n.mat
+
+    return M.cached(("speckled-wool",), build)
+
+
 class Person:
     def __init__(self, appearance, marks=(), rag="#3e6b73", name="person"):
         self.a = appearance
@@ -649,6 +672,62 @@ class Person:
             back = J["chest"] + Vector((0, 0.1 * H, -0.02 * H))
             sack = ellipsoid(f"{self.name}-bundle", back, (0.1 * H, 0.07 * H, 0.12 * H), M.cloth("#8a7a5c", None, "wool"), self.col, 16, 10)
             self.parts.append(Part(sack, bone="chest"))
+        elif kind == "lamb":
+            # A newborn lamb held against the chest in both arms (in the lap, sitting).
+            c = J["pelvis"] + Vector((0, -0.12 * H, 0.08 * H))
+            for o in self._lamb(c, 0.8, speckled=False):
+                self.parts.append(Part(o, bone="pelvis"))
+        elif kind == "lamp":
+            # A small clay lamp held up in the right hand, burning.
+            hand = J["hand_R"]
+            at = hand + Vector((0.0, -0.02 * H, 0.012 * H))
+            body = ellipsoid(f"{self.name}-lamp", at, (0.03 * H, 0.022 * H, 0.012 * H), M.terracotta("#b2714a", 0.1), self.col, 14, 8)
+            nozzle = ellipsoid(f"{self.name}-lamp-nozzle", at + Vector((0.0, -0.028 * H, 0.002 * H)), (0.012 * H, 0.016 * H, 0.008 * H), M.terracotta("#a8683f", 0.1), self.col, 8, 5)
+            flame = ellipsoid(f"{self.name}-lamp-flame", at + Vector((0.0, -0.036 * H, 0.02 * H)), (0.005 * H, 0.005 * H, 0.014 * H), M.emissive("#ffc070", 40.0), self.col, 8, 6)
+            flame.visible_shadow = False
+            for o in (body, nozzle, flame):
+                self.parts.append(Part(o, bone="hand_R"))
+            data = bpy.data.lights.new(f"{self.name}-lamp-light", "POINT")
+            data.energy = 3.0
+            data.color = common.hex_rgb("#ffae5a")[:3]
+            data.shadow_soft_size = 0.02
+            light = bpy.data.objects.new(f"{self.name}-lamp-light", data)
+            self.col.objects.link(light)
+            self.lamp_light = (light, at + Vector((0.0, -0.05 * H, 0.03 * H)))
+        elif kind == "tablet":
+            # A wax writing tablet held against the left forearm, a stylus in the right hand.
+            hand = J["hand_L"]
+            tab = common.box(f"{self.name}-tablet", (0.1 * H, 0.012 * H, 0.075 * H), material=M.wood("#8a6444", 9.0), col=self.col, bevel=0.002)
+            tab.location = hand + Vector((0.0, -0.035 * H, 0.03 * H))
+            tab.rotation_euler = (0.5, 0.0, 0.25)
+            common.bake_modifiers(tab)
+            face = common.box(f"{self.name}-tablet-wax", (0.085 * H, 0.004 * H, 0.06 * H), material=M.plain("#3a2c1c", 0.4, 0.45), col=self.col)
+            face.location = hand + Vector((0.004 * H, -0.042 * H, 0.032 * H))
+            face.rotation_euler = (0.5, 0.0, 0.25)
+            self.parts += [Part(tab, bone="hand_L"), Part(face, bone="hand_L")]
+            rh = J["hand_R"]
+            stylus = capsule(f"{self.name}-stylus", rh + Vector((0, -0.01, 0)), rh + Vector((0.01 * H, -0.02 * H, 0.08 * H)), 0.0035 * H, M.plain("#8a6a3e", 0.35, 0.6), self.col)
+            self.parts.append(Part(stylus, bone="hand_R"))
+
+    def _lamb(self, c, size, speckled=False, mark=None):
+        """A small lamb for carrying (in arms, or across the shoulders): a
+        woolly body, a pale head with dark eyes and drooping ears, folded
+        legs; `c` its middle. Returns its objects (placed by the caller's bone)."""
+        s = size
+        wool = _speckled_wool() if speckled else M.cloth("#e8dfcb", None, "wool")
+        head_mat = M.cloth("#d8cab2", None, "wool")
+        dark = M.plain("#1a1410", 0.3, 0.5)
+        objs = []
+        body = ellipsoid(f"{self.name}-lamb-body", c, (0.2 * s, 0.11 * s, 0.1 * s), wool, self.col, 18, 10)
+        objs.append(body)
+        head = ellipsoid(f"{self.name}-lamb-head", c + Vector((0.2 * s, -0.04 * s, 0.05 * s)), (0.075 * s, 0.05 * s, 0.055 * s), head_mat, self.col, 12, 8)
+        objs.append(head)
+        for side in (-1, 1):
+            objs.append(ellipsoid(f"{self.name}-lamb-ear{side}", c + Vector((0.17 * s, -0.04 * s + side * 0.045 * s, 0.04 * s)), (0.02 * s, 0.012 * s, 0.04 * s), head_mat, self.col, 8, 6))
+            objs.append(ellipsoid(f"{self.name}-lamb-eye{side}", c + Vector((0.24 * s, -0.07 * s, 0.065 * s)), (0.008 * s, 0.006 * s, 0.008 * s), dark, self.col, 6, 4))
+            for fx in (0.1, -0.1):
+                objs.append(capsule(f"{self.name}-lamb-leg{side}{fx}", c + Vector((fx * s, side * 0.05 * s, -0.06 * s)), c + Vector((fx * s + 0.02 * s, side * 0.05 * s, -0.19 * s)), 0.018 * s, head_mat, self.col, 8))
+        return objs
 
     def _marks(self):
         """Visible story marks: the player's water skin, lamp and rolled cloak,
@@ -672,14 +751,45 @@ class Person:
                 st = capsule(f"{self.name}-waterskin-strap{i}", pts[i], pts[i + 1], 0.006 * H, M.leather("#4a3020"), self.col)
                 self.parts.append(Part(st, bone="chest" if i == 0 else "spine", mark="water-skin"))
         if "lamp" in self.marks:
-            # A small clay lamp hanging from the belt, front left.
+            # A small clay lamp hanging from the belt, front left; after dark
+            # (the night and lamplight sheets) it burns.
             bz = J["waist"].z - 0.03 * H
             c = Vector((J["shoulder_L"].x * 0.55, cy - 0.075 * H, bz - 0.045 * H))
             body = ellipsoid(f"{self.name}-lamp", c, (0.028 * H, 0.02 * H, 0.012 * H), M.terracotta("#b2714a", 0.1), self.col, 14, 8)
             nozzle = ellipsoid(f"{self.name}-lamp-nozzle", c + Vector((-0.025 * H, -0.004 * H, 0.002 * H)), (0.014 * H, 0.01 * H, 0.008 * H), M.terracotta("#a8683f", 0.1), self.col, 8, 5)
             cord = capsule(f"{self.name}-lamp-cord", c + Vector((0, 0, 0.012 * H)), Vector((c.x, c.y + 0.004 * H, bz)), 0.0025 * H, M.plain("#4a3322", 0.8), self.col)
-            for o in (body, nozzle, cord):
+            flame = ellipsoid(f"{self.name}-lamp-flame", c + Vector((-0.036 * H, -0.004 * H, 0.016 * H)), (0.005 * H, 0.005 * H, 0.013 * H), M.emissive("#ffc070", 40.0), self.col, 8, 6)
+            flame.visible_shadow = False
+            flame["night_only"] = True
+            for o in (body, nozzle, cord, flame):
                 self.parts.append(Part(o, bone="pelvis", mark="lamp"))
+        if "carrying-lamb" in self.marks:
+            # The lost lamb carried home across the shoulders: its body across
+            # the back of the neck, its head hanging by one shoulder, its legs
+            # gathered in front of the chest (where the hands would hold them).
+            wool = _speckled_wool()
+            pale = M.cloth("#d8cab2", None, "wool")
+            dark = M.plain("#1a1410", 0.3, 0.5)
+            sz = J["shoulder_L"].z + 0.02 * H
+            sh = J["shoulder_L"].x
+            back = J["neck"].y + 0.06 * H
+            ln = sh * 1.35
+            parts = [
+                ellipsoid(f"{self.name}-carried-body", (0.0, back, sz + 0.035 * H), (ln, 0.07 * H, 0.068 * H), wool, self.col, 20, 12),
+                ellipsoid(f"{self.name}-carried-rump", (sh * 0.95, back, sz + 0.03 * H), (0.07 * H, 0.068 * H, 0.066 * H), wool, self.col, 14, 10),
+                ellipsoid(f"{self.name}-carried-head", (-ln * 1.05, back - 0.05 * H, sz + 0.01 * H), (0.05 * H, 0.04 * H, 0.045 * H), pale, self.col, 14, 10),
+            ]
+            for side in (-1, 1):
+                parts.append(ellipsoid(f"{self.name}-carried-ear{side}", (-ln * 1.02, back - 0.05 * H + side * 0.035 * H, sz - 0.015 * H), (0.012 * H, 0.01 * H, 0.03 * H), pale, self.col, 8, 6))
+            parts.append(ellipsoid(f"{self.name}-carried-eye", (-ln * 1.12, back - 0.085 * H, sz + 0.02 * H), (0.008 * H, 0.006 * H, 0.008 * H), dark, self.col, 6, 4))
+            chest_z = J["chest"].z - 0.02 * H
+            for k, (x0, x1) in enumerate(((-ln * 0.65, -sh * 0.55), (-ln * 0.5, -sh * 0.4), (ln * 0.6, sh * 0.55), (ln * 0.48, sh * 0.4))):
+                a = Vector((x0, back - 0.02 * H, sz + 0.01 * H))
+                b = Vector((x1, cy - 0.085 * H, chest_z + (0.02 * H if k % 2 else 0.0)))
+                parts.append(capsule(f"{self.name}-carried-leg{k}", a, b, 0.014 * H, pale, self.col, 8))
+                parts.append(ellipsoid(f"{self.name}-carried-hoof{k}", tuple(b + Vector((0, -0.005 * H, -0.01 * H))), (0.012 * H, 0.012 * H, 0.014 * H), dark, self.col, 6, 4))
+            for o in parts:
+                self.parts.append(Part(o, bone="chest", mark="carrying-lamb"))
         if "cloak-roll" in self.marks:
             # The spare cloak rolled and strapped across the upper back.
             z = J["chest"].z + 0.02 * H
@@ -716,8 +826,18 @@ class Person:
         None; `rest` is None (standing), "sit" (cross-legged on the ground) or
         "lie" (on the back, head toward the facing given by `yaw`)."""
         # Gesture with the free hand: the right hand may be holding a staff, spindle or tray.
-        busy = self.a.get("carry", "none") in ("staff", "spindle", "bread")
+        carry = self.a.get("carry", "none")
+        busy = carry in ("staff", "spindle", "bread", "lamp", "tablet", "lamb")
         R = pose_rotations(walk, breath, talk, hand="L" if busy else "R", rest=rest)
+        if rest is None and carry == "lamp":
+            # The lamp held up before him, lighting the way.
+            R["upper_arm_R"] = rot(x=-36.0, y=-14.0)
+            R["forearm_R"] = rot(x=-82.0, z=6.0)
+        elif rest is None and carry == "lamb":
+            # Both arms cradling the lamb against the chest.
+            for side, sgn in (("L", 1), ("R", -1)):
+                R[f"upper_arm_{side}"] = rot(x=-22.0, y=sgn * 6.0)
+                R[f"forearm_{side}"] = rot(x=-78.0, z=-sgn * 24.0)
         if rest is not None:
             R["root"] = self._rest_root(rest)
         mats = self._forward(R)
@@ -758,6 +878,10 @@ class Person:
                 out = self._pool(out)
             part.obj.data.vertices.foreach_set("co", out.reshape(-1))
             part.obj.data.update()
+        lamp = getattr(self, "lamp_light", None)
+        if lamp is not None:
+            light, at = lamp
+            light.location = mats[BONE_INDEX["hand_R"]] @ at
         for eye in self.eyes:
             eye.scale = (1.0, 1.0, 0.15 if blink else 1.0)
         if self.mouth is not None:

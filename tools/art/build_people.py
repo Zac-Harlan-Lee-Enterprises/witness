@@ -27,8 +27,10 @@ Standing sheet layout (frames FRAME_W x FRAME_H game units, feet at FOOT_Y):
     columns:  0 idle, 1 breath, 2 blink, 3 talk, 4 talk (mouth half),
               5-12 walk cycle (8 frames, from left-foot contact) — walkers only
     row 4:    turning in-betweens: down-left, down-right, up-left, up-right
-Lighting variants: day, late (the sun of the places) and indoor (a lamp and
-a window, for rooms). People are seen from a slightly lower camera than the
+Lighting variants: day, late and night (the sun or moon of the places),
+indoor (a lamp and a window, for rooms by day) and lamplight (rooms at
+night: lamps and the hearth). A scene needs the lights its place was
+rendered in (its manifest's variants: a room's night is lamplight). People are seen from a slightly lower camera than the
 world (faces read) with height still 1:1 on screen; shadows lie on the
 ground and use the world camera.
 """
@@ -64,8 +66,10 @@ REST_TILT = 45.0
 REST_W = 84
 REST_H = 96
 REST_Y = 60
-SHADOW_BOX = {"day": (-64, -42, 20, 12), "late": (-12, -66, 150, 14), "indoor": (-28, -18, 28, 12)}
-REST_SHADOW_BOX = {"day": (-70, -46, 48, 36), "late": (-40, -50, 110, 36), "indoor": (-46, -40, 46, 36)}
+SHADOW_BOX = {"day": (-64, -42, 20, 12), "late": (-12, -66, 150, 14), "indoor": (-28, -18, 28, 12), "night": (-44, -66, 20, 12), "lamplight": (-30, -20, 30, 12)}
+REST_SHADOW_BOX = {"day": (-70, -46, 48, 36), "late": (-40, -50, 110, 36), "indoor": (-46, -40, 46, 36), "night": (-56, -72, 48, 36), "lamplight": (-48, -42, 48, 36)}
+# Lights after dark: a lamp carried at the belt burns in these.
+DARK = {"night", "lamplight"}
 SHADOW_PPU = 1.0
 DIRECTIONS = [("down", 0.0), ("left", -90.0), ("right", 90.0), ("up", 180.0)]
 # Lying: the row names where the head is.
@@ -125,12 +129,24 @@ def rag_hex(color):
     return color.lstrip("#").lower()
 
 
-def plan(data, scenes):
+def scene_lights(scene, out):
+    """The people lights a scene needs: those its place was rendered in (a
+    room's morning is 'indoor', its night 'lamplight'), or, before it has
+    been, the morning and later day (a room: 'indoor')."""
+    indoor = scene["kind"] == "indoor"
+    path = os.path.join(os.path.dirname(os.path.abspath(out)), scene["id"], "manifest.json")
+    variants = list(json.load(open(path))["variants"]) if os.path.exists(path) else (["day"] if indoor else ["day", "late"])
+    if indoor:
+        return sorted({"lamplight" if v == "night" else "indoor" for v in variants})
+    return variants
+
+
+def plan(data, scenes, out="public/art/people"):
     """Every sheet the given scenes need: who appears, standing or at rest,
     with which marks, in which light."""
     by_id = {s["id"]: s for s in data["scenes"]}
     wanted = [by_id[s] for s in scenes]
-    light = lambda s: ["indoor"] if s["kind"] == "indoor" else ["day", "late"]  # noqa: E731
+    light = lambda s: scene_lights(s, out)  # noqa: E731
     jobs = {}
 
     def add(job):
@@ -196,8 +212,9 @@ def render(job, a, manifest, tmp):
     scene = common.reset(a.samples)
     build_marks = set(job.marks) | ({job.overlay} if job.overlay else set())
     app = dict(job.appearance)
-    if job.pose != "stand":
-        # At rest the hands are empty (and Menashe's jar was broken on the road).
+    if job.pose != "stand" and app.get("carry") != "lamb":
+        # At rest the hands are empty (and Menashe's jar was broken on the road);
+        # a newborn lamb stays in the lap.
         app["carry"] = "none"
     person = people.Person(app, marks=build_marks, rag=job.rag or "#3e6b73", name=job.pid)
     bpy.ops.mesh.primitive_plane_add(size=24.0, location=(0, 0, 0))
@@ -239,6 +256,8 @@ def render(job, a, manifest, tmp):
     todo = [v for v in job.variants if v not in entry["sheets"]]
     for variant in todo:
         lighting.setup(scene, variant)
+        # Night people are exposed as the night places are (the eye adapts).
+        scene.view_settings.exposure = -1.4 + lighting.exposure(variant)
         # 1. The person (no ground), from the figure camera. An overlay shows
         #    only its mark; the body is a holdout, hiding what it hides.
         ground.hide_render = True
@@ -248,6 +267,8 @@ def render(job, a, manifest, tmp):
         for part in mark_parts:
             part.obj.visible_camera = True
             part.obj.hide_render = job.overlay is not None and part.mark != job.overlay
+            if part.obj.get("night_only") and variant not in DARK:
+                part.obj.hide_render = True
         view.setup_figure_camera(scene, foot - fh_u / 2, fw, fh, a.ppu, tilt_deg=REST_TILT if rest else 32.0)
         sheet = np.zeros((fh * n_rows, fw * n_cols, 4), dtype=np.float32)
 
@@ -300,7 +321,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="witness-people-")
     manifest_path = os.path.join(a.out, "people.json")
     manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
-    jobs = plan(data, a.scenes) if a.scenes else []
+    jobs = plan(data, a.scenes, a.out) if a.scenes else []
     for who in a.who:
         pid, key, app, walks = lookup(data, who)
         jobs.append(Job(pid, pid, key, app, walks, a.variants or ["day", "late"]))
