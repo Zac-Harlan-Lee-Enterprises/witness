@@ -2,15 +2,23 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseChapter } from '@/content';
+import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
+import { LETTER_FROM_PAUL } from '@/content/chapters/letter-from-paul';
 import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
+import { STORM_ON_GALILEE } from '@/content/chapters/storm-on-galilee';
+import type { Chapter } from '@/domain/chapter';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
 import { parseLayout, type LookMark, type Pose } from '@/domain/world';
 import {
+  LIGHTING_VARIANTS,
   MAX_ART_TEXTURE,
   parsePeopleArt,
   parsePlaceArt,
   type ArtTile,
+  type ArtVariant,
   type PeopleArt,
+  type PeopleLight,
+  type PlaceArt,
 } from '@/game/prerendered/manifest';
 import { appearanceKey, PLACE_ART, PLACES_WITH_ART, pickSheets } from '@/game/prerendered/select';
 
@@ -73,7 +81,22 @@ interface AssetEntry {
   license: string;
 }
 
-const chapter = parseChapter(ROAD_TO_JERICHO);
+const chapters: Chapter[] = [
+  ROAD_TO_JERICHO,
+  STORM_ON_GALILEE,
+  JOURNEY_TO_BETHLEHEM,
+  LETTER_FROM_PAUL,
+].map((c) => parseChapter(c));
+
+/** The chapter a scene belongs to. */
+function chapterOf(sceneId: string): Chapter | undefined {
+  return chapters.find((c) => c.scenes.some((s) => s.id === sceneId));
+}
+
+/** Every lighting variant a place's art has (in the order of the day). */
+function variantsOf(art: PlaceArt): ArtVariant[] {
+  return LIGHTING_VARIANTS.flatMap((v) => (art.variants[v] ? [art.variants[v]] : []));
+}
 const people: PeopleArt | null = parsePeopleArt(
   JSON.parse(readFileSync(join(ART, 'people', 'people.json'), 'utf8')),
 ).people;
@@ -104,7 +127,7 @@ describe('pre-rendered places', () => {
   });
 
   for (const [sceneId, path] of Object.entries(PLACE_ART)) {
-    const scene = chapter.scenes.find((s) => s.id === sceneId);
+    const scene = chapterOf(sceneId)?.scenes.find((s) => s.id === sceneId);
     const read = () => {
       const dir = join(ROOT, 'public', path);
       const { art, error } = parsePlaceArt(
@@ -125,8 +148,7 @@ describe('pre-rendered places', () => {
       expect(art.peopleLight === 'indoor', 'rooms light people indoors').toBe(
         scene.kind === 'indoor',
       );
-      for (const v of [art.variants.day, art.variants.late]) {
-        if (!v) continue;
+      for (const v of variantsOf(art)) {
         for (const f of [
           ...[...v.ground, ...v.groundLow].map((t) => t.file),
           v.shade,
@@ -156,8 +178,7 @@ describe('pre-rendered places', () => {
     it(`${sceneId}: every texture fits any GPU, and the ground's tiles cover the whole place`, () => {
       const { dir, art } = read();
       if (!art) return;
-      for (const v of [art.variants.day, art.variants.late]) {
-        if (!v) continue;
+      for (const v of variantsOf(art)) {
         for (const f of [...v.pages, ...(v.pagesLow ?? [])]) {
           const size = webpSize(join(dir, f));
           expect(Math.max(size.w, size.h), f).toBeLessThanOrEqual(MAX_ART_TEXTURE);
@@ -181,8 +202,7 @@ describe('pre-rendered places', () => {
     it(`${sceneId}: every story prop is pre-rendered (none is painted over the art)`, () => {
       const { art } = read();
       if (!art || !scene) return;
-      for (const v of [art.variants.day, art.variants.late]) {
-        if (!v) continue;
+      for (const v of variantsOf(art)) {
         const ids = new Set(v.sprites.map((s) => s.id));
         const missing = scene.entities
           .filter((e) => !e.characterId && e.sprite && e.sprite !== 'none')
@@ -200,7 +220,7 @@ describe('pre-rendered places', () => {
       .map((f) => readFileSync(join(lib, f), 'utf8'))
       .join('\n');
     for (const id of PLACES_WITH_ART) {
-      const scene = chapter.scenes.find((s) => s.id === id);
+      const scene = chapterOf(id)?.scenes.find((s) => s.id === id);
       for (const kind of new Set(Object.values(scene?.legend ?? {})))
         expect(source, `def tile_${kind} (tools/art/lib)`).toContain(`def tile_${kind}(self)`);
     }
@@ -210,21 +230,28 @@ describe('pre-rendered places', () => {
     const data = JSON.parse(
       readFileSync(join(ROOT, 'tools', 'art', 'data', 'chapter.json'), 'utf8'),
     ) as {
-      characters: Array<{ id: string; key: string }>;
+      characters: Array<{ id: string; chapter: string; key: string }>;
       players: Array<{ id: string; key: string }>;
       scenes: Array<{ id: string; layout: string[]; legend: Record<string, string> }>;
     };
-    for (const c of chapter.characters)
-      expect(data.characters.find((d) => d.id === c.id)?.key, c.id).toBe(
-        appearanceKey(c.appearance),
-      );
+    // Every chapter whose places have art.
+    const withArt = chapters.filter((c) =>
+      c.scenes.some((s) => (PLACES_WITH_ART as readonly string[]).includes(s.id)),
+    );
+    for (const chapter of withArt) {
+      for (const c of chapter.characters)
+        expect(
+          data.characters.find((d) => d.id === c.id && d.chapter === chapter.id)?.key,
+          `${chapter.id}: ${c.id}`,
+        ).toBe(appearanceKey(c.appearance));
+      for (const s of chapter.scenes) {
+        const exported = data.scenes.find((d) => d.id === s.id);
+        expect(exported?.layout, s.id).toEqual(s.layout);
+        expect(exported?.legend, s.id).toEqual(s.legend);
+      }
+    }
     for (const [id, a] of Object.entries(PLAYER_APPEARANCES))
       expect(data.players.find((d) => d.id === id)?.key, id).toBe(appearanceKey(a));
-    for (const s of chapter.scenes) {
-      const exported = data.scenes.find((d) => d.id === s.id);
-      expect(exported?.layout, s.id).toEqual(s.layout);
-      expect(exported?.legend, s.id).toEqual(s.legend);
-    }
   });
 });
 
@@ -256,9 +283,19 @@ describe('pre-rendered people', () => {
   const rags = Object.values(PLAYER_APPEARANCES).map((a) => a.robe);
 
   for (const id of PLACES_WITH_ART) {
-    const scene = chapter.scenes.find((s) => s.id === id);
-    if (!scene) continue;
-    const light = scene.kind === 'indoor' ? 'indoor' : 'day';
+    const chapter = chapterOf(id);
+    const scene = chapter?.scenes.find((s) => s.id === id);
+    if (!chapter || !scene) continue;
+    /** Every light people are shown in here: the room's own, or each light the place has. */
+    const lights = (): PeopleLight[] => {
+      if (scene.kind === 'indoor') return ['indoor'];
+      const art = parsePlaceArt(
+        JSON.parse(
+          readFileSync(join(ROOT, 'public', PLACE_ART[id] ?? '', 'manifest.json'), 'utf8'),
+        ),
+      ).art;
+      return art ? LIGHTING_VARIANTS.filter((v) => art.variants[v]) : ['day'];
+    };
 
     it(`${id}: everyone who appears has sheets for every pose and story mark they can show`, () => {
       const missing: string[] = [];
@@ -271,8 +308,10 @@ describe('pre-rendered people', () => {
             for (const rag of marks.includes('rag-bandaged') ? rags : [null]) {
               const pick = pickSheets(people, c.appearance, marks, pose, rag);
               if (!pick) missing.push(`${c.id} ${pose} [${marks.join(', ')}] ${rag ?? ''}`);
-              else if (!people?.[pick.base]?.sheets[light])
-                missing.push(`${c.id} ${pose}: no ${light} light`);
+              else
+                for (const light of lights())
+                  if (!people?.[pick.base]?.sheets[light])
+                    missing.push(`${c.id} ${pose}: no ${light} light`);
             }
       }
       expect(missing, 'Run node scripts/art-build.mjs people').toEqual([]);
@@ -286,7 +325,8 @@ describe('pre-rendered people', () => {
           if (!pick) missing.push(`${look} [${marks.join(', ')}]`);
           else
             for (const sid of [pick.base, ...pick.overlays])
-              if (!people?.[sid]?.sheets[light]) missing.push(`${sid}: no ${light} light`);
+              for (const light of lights())
+                if (!people?.[sid]?.sheets[light]) missing.push(`${sid}: no ${light} light`);
         }
       expect(missing, 'Run node scripts/art-build.mjs people').toEqual([]);
     });

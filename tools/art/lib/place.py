@@ -41,6 +41,7 @@ import scatter
 import terrain
 from kit_ground import GroundKit
 from kit_interior import InteriorKit
+from kit_lake import LAKE_GROUND, LAKE_LOOKS, LAKE_SOLID, LakeKit, is_lake
 from kit_masonry import MasonryKit
 from kit_mudbrick import MudbrickKit
 from kit_plants import PlantsKit
@@ -51,7 +52,7 @@ SOLID = {
     "wall", "roof", "water", "well", "olive", "palm", "rock", "cliff", "hill", "bush", "stall", "table",
     "jars", "cairn", "fence", "oven", "crate", "sacks", "basket", "loom", "cart", "tent", "trough",
     "crops", "reeds", "fig", "cloth", "void",
-}
+} | LAKE_SOLID
 STRUCTURE = {"wall", "roof", "door"}
 
 # Which ground layer each walkable kind is painted with, per style. Solid
@@ -105,6 +106,9 @@ LAYER_LOOKS = {
     "hearth": {"color": "#6a5848", "grit": 0.25, "scale": "mid", "mottle": 0.45, "mottle_color": "#40352c"},
     "trodden": {"color": "#b39670", "dark": 0.06, "light": 0.05, "grit": 0.12},
 }
+# The lakeside and the open lake (kit_lake.py).
+GROUND.update(LAKE_GROUND)
+LAYER_LOOKS.update(LAKE_LOOKS)
 
 
 def B(x, y, z=0.0):
@@ -198,6 +202,8 @@ def value_noise(w, h, cell, seed):
 
 
 def style_for(scene):
+    if is_lake(scene):
+        return "lake"
     mood = scene.get("mood")
     if mood in GROUND:
         return mood
@@ -205,7 +211,7 @@ def style_for(scene):
 
 
 # ── the builder ─────────────────────────────────────────────────────────────
-class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
+class Place(LakeKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
     """Builds a whole place. Kits supply the tile builders; this class reads
     the map, shapes the terrain and dispatches."""
 
@@ -252,6 +258,8 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
             self.paving = M.limestone("#c6b08a", "threshold", worn=0.5)
             self.roof = M.plaster("#d4c19c", "roof-plaster")
             self.plaster = M.lime_plaster("#dccdb0", "room-plaster", soot=0.55)
+        # A region's own stone and ground (Galilee: basalt), and per-light changes.
+        self.regional_materials()
 
     # ── heights ─────────────────────────────────────────────────────────────
     def H(self, x, y):
@@ -387,8 +395,10 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
         m = self.map
         if self.style == "city":
             return self._ground_city()
+        if self.style == "lake":
+            return self.lake_ground()
         names, images = self._masks()
-        layers = [dict(LAYER_LOOKS[n]) for n in names]
+        layers = [dict(getattr(self, "looks", {}).get(n) or LAYER_LOOKS[n]) for n in names]
         self._extra_masks(names, images)
         rock = None
         red = None
@@ -484,6 +494,8 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
             self.oasis_structures()
         elif self.style == "home":
             self.room_shell()
+        elif self.style == "lake":
+            self.lake_structures()
         elif self.map.tiles("wall") or self.map.tiles("roof"):
             self._buildings()
 
@@ -553,6 +565,8 @@ class Place(GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit
             self.dress_oasis()
         elif self.style == "home":
             self.dress_home()
+        elif self.style == "lake":
+            self.dress_lake()
 
     # ── shared helpers ──────────────────────────────────────────────────────
     def _rand_attr(self, obj, value=None):

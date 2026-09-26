@@ -649,6 +649,66 @@ class Person:
             back = J["chest"] + Vector((0, 0.1 * H, -0.02 * H))
             sack = ellipsoid(f"{self.name}-bundle", back, (0.1 * H, 0.07 * H, 0.12 * H), M.cloth("#8a7a5c", None, "wool"), self.col, 16, 10)
             self.parts.append(Part(sack, bone="chest"))
+        elif kind == "oar":
+            # An oar held upright in the right hand, its blade up.
+            hand = J["hand_R"]
+            x, y = hand.x - 0.004 * H, hand.y - 0.045 * H
+            wood = M.wood("#8a6c4c", 3.0)
+            # (Its tip stays inside the sheet's frame: 62 units above the feet.)
+            loom = capsule(f"{self.name}-oar", (x, y, 0.01 * H), (x, y, 0.84 * H), 0.012 * H, wood, self.col)
+            self.parts.append(Part(loom, bone="hand_R", upright=tuple(hand)))
+            blade = common.box(f"{self.name}-oar-blade", (0.095 * H, 0.012 * H, 0.3 * H), (x, y, 0.98 * H), wood, self.col, bevel=0.004)
+            common.bake_modifiers(blade)
+            self.parts.append(Part(blade, bone="hand_R", upright=tuple(hand)))
+        elif kind == "net":
+            # A folded net over the left shoulder, hanging in a heavy bundle
+            # front and back, its cork floats showing.
+            import lake_materials as LM
+
+            sh = J["shoulder_L"]
+            pts = [
+                Vector((sh.x * 0.72, -0.11 * H, 0.6 * H)),
+                Vector((sh.x * 0.86, -0.075 * H, 0.72 * H)),
+                Vector((sh.x * 0.95, 0.0 * H, 0.81 * H)),
+                Vector((sh.x * 0.9, 0.08 * H, 0.74 * H)),
+                Vector((sh.x * 0.76, 0.12 * H, 0.58 * H)),
+            ]
+            bm = bmesh.new()
+            rings = []
+            seg = 12
+            steps = 24
+            for i in range(steps + 1):
+                t = i / steps
+                k = min(int(t * (len(pts) - 1)), len(pts) - 2)
+                f = t * (len(pts) - 1) - k
+                c = pts[k].lerp(pts[k + 1], f)
+                d = (pts[k + 1] - pts[k]).normalized()
+                side = Vector((1, 0, 0))
+                up = d.cross(side).normalized()
+                r = (0.055 + 0.018 * math.sin(t * 17.0) + 0.02 * (1 - abs(2 * t - 1))) * H
+                ring = []
+                for j in range(seg):
+                    a = math.tau * j / seg
+                    lump = 1.0 + 0.12 * math.sin(a * 3 + i * 1.7)
+                    ring.append(bm.verts.new(c + (side * math.cos(a) * 0.8 + up * math.sin(a)) * r * lump))
+                rings.append(ring)
+            for a_, b_ in zip(rings, rings[1:]):
+                for j in range(seg):
+                    jj = (j + 1) % seg
+                    bm.faces.new((a_[j], a_[jj], b_[jj], b_[j]))
+            uv = bm.loops.layers.uv.new("UVMap")
+            for f in bm.faces:
+                for loop in f.loops:
+                    loop[uv].uv = (loop.vert.co.x * 3.0, loop.vert.co.z * 3.0)
+            netm = LM.net("#8c7658", mesh=0.06, thread=0.14, veil=0.75, name="net-carried")
+            bundle = common.mesh_object(f"{self.name}-net", bm, netm, self.col)
+            self.parts.append(Part(bundle, bone="chest"))
+            cork = M.plain("#8a6a44", 0.85)
+            for q, t in enumerate((0.15, 0.35, 0.62, 0.85)):
+                k = min(int(t * (len(pts) - 1)), len(pts) - 2)
+                c = pts[k].lerp(pts[k + 1], t * (len(pts) - 1) - k)
+                fl = ellipsoid(f"{self.name}-float{q}", c + Vector((0.035 * H, -0.02 * H, 0.0)), (0.018 * H, 0.014 * H, 0.012 * H), cork, self.col, 10, 6)
+                self.parts.append(Part(fl, bone="chest"))
 
     def _marks(self):
         """Visible story marks: the player's water skin, lamp and rolled cloak,
@@ -716,7 +776,7 @@ class Person:
         None; `rest` is None (standing), "sit" (cross-legged on the ground) or
         "lie" (on the back, head toward the facing given by `yaw`)."""
         # Gesture with the free hand: the right hand may be holding a staff, spindle or tray.
-        busy = self.a.get("carry", "none") in ("staff", "spindle", "bread")
+        busy = self.a.get("carry", "none") in ("staff", "spindle", "bread", "oar")
         R = pose_rotations(walk, breath, talk, hand="L" if busy else "R", rest=rest)
         if rest is not None:
             R["root"] = self._rest_root(rest)

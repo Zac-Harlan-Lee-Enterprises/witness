@@ -5,6 +5,7 @@ Everything here is authoring-time only. Players never run Blender; they
 download the rendered images this pipeline writes into public/art/.
 """
 import math
+import os
 import random
 
 import bmesh
@@ -18,6 +19,10 @@ def reset(samples=64):
     scene.render.engine = "CYCLES"
     prefs = bpy.context.preferences.addons["cycles"].preferences
     try:
+        # WITNESS_CYCLES_DEVICE=CPU renders on the CPU (when the GPU is busy
+        # or short of memory).
+        if os.environ.get("WITNESS_CYCLES_DEVICE", "").upper() == "CPU":
+            raise RuntimeError("CPU asked for")
         prefs.compute_device_type = "METAL"
         prefs.refresh_devices()
         for d in prefs.devices:

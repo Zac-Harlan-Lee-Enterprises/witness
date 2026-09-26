@@ -44,10 +44,17 @@ class InteriorKit:
         west, east = 1, m.w - 1
         self.exposure = 3.1
         plaster = self.plaster
-        stone = M.limestone("#bba98a", "cut-stone", worn=0.6)
+        # A region may build its walls of its own stone (Galilee: basalt).
+        stone = getattr(self, "wall_stone", None) or M.limestone("#bba98a", "cut-stone", worn=0.6)
         # The cut tops read as a dark section through the wall (the invisible
         # wall above them keeps every light off), not as holes.
-        cut = M.limestone("#a8977a", "wall-cut", worn=0.6, glow=0.025)
+        cut = getattr(self, "wall_cut", None) or M.limestone("#a8977a", "wall-cut", worn=0.6, glow=0.025)
+        # The window is in the side wall facing the room's daylight: east for
+        # the morning sun, west for the later-day sun.
+        import lighting
+
+        self.room_sun = next((v for v in getattr(self, "variants", ["day"]) if v in ("day", "late")), "day")
+        window_x0 = 0 if lighting.sun_vector(self.room_sun).x < 0 else east
         # The back wall: plastered face at y = back, rising off the top of the view.
         face = common.box("back-wall", (m.w, 0.5, ROOM_H + 0.6), B(m.w / 2, back - 0.25, (ROOM_H + 0.6) / 2), plaster, None)
         self.to_ground(face)
@@ -59,7 +66,7 @@ class InteriorKit:
             # at the room's inner face), so low sun still slants through a window.
             wx0, wx1 = (x1 - WALL_T, x1) if x0 == 0 else (x0, x0 + WALL_T)
             full = common.box(f"side-{x0}", (wx1 - wx0, m.h - back + 1, ROOM_H), B((wx0 + wx1) / 2, (back + m.h) / 2 - 0.5, ROOM_H / 2), plaster, None)
-            if x0 == east:
+            if x0 == window_x0:
                 full = self._window_wall(full, x0, x1, back)
             self.occluder(full)
             stub = common.box(f"side-stub-{x0}", (x1 - x0, m.h - back, STUB_H), B((x0 + x1) / 2, (back + m.h) / 2, STUB_H / 2), stone, None, bevel=0.03)
@@ -124,8 +131,9 @@ class InteriorKit:
         common.bake_modifiers(wall)
         bpy.data.objects.remove(hole)
         # Wooden grille bars in the opening cast striped light.
+        bar_x = x1 - WALL_T / 2 if x0 == 0 else x0 + WALL_T / 2
         for k in range(3):
-            bar = common.box(f"window-bar{k}", (0.1, 0.035, 0.95), B(x0 + WALL_T / 2, wy - 0.25 + k * 0.25, 1.55), self.wood, None)
+            bar = common.box(f"window-bar{k}", (0.1, 0.035, 0.95), B(bar_x, wy - 0.25 + k * 0.25, 1.55), self.wood, None)
             self.occluder(bar)
         _ = m
         return wall
@@ -239,13 +247,13 @@ class InteriorKit:
         import lighting
 
         m = self.map
-        sun = lighting.sun_vector("day")
+        sun = lighting.sun_vector(getattr(self, "room_sun", "day"))
         d = Vector((-sun.x, -sun.y, -sun.z))  # the light's direction (Blender axes)
-        east = m.w - 1
+        # The window's inner face: on the east wall, or the west for a later sun.
+        wx = m.w - 1 if sun.x >= 0 else 1
         wy = back + 3.4
         openings = [
-            # The window: its inner face on the east wall.
-            [B(east, wy - 0.37, 1.1), B(east, wy + 0.37, 1.1), B(east, wy + 0.37, 2.0), B(east, wy - 0.37, 2.0)],
+            [B(wx, wy - 0.37, 1.1), B(wx, wy + 0.37, 1.1), B(wx, wy + 0.37, 2.0), B(wx, wy - 0.37, 2.0)],
         ]
         doors = m.tiles("door")
         if doors:

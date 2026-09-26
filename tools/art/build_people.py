@@ -27,10 +27,11 @@ Standing sheet layout (frames FRAME_W x FRAME_H game units, feet at FOOT_Y):
     columns:  0 idle, 1 breath, 2 blink, 3 talk, 4 talk (mouth half),
               5-12 walk cycle (8 frames, from left-foot contact) — walkers only
     row 4:    turning in-betweens: down-left, down-right, up-left, up-right
-Lighting variants: day, late (the sun of the places) and indoor (a lamp and
-a window, for rooms). People are seen from a slightly lower camera than the
-world (faces read) with height still 1:1 on screen; shadows lie on the
-ground and use the world camera.
+Lighting variants: day, late, dusk and night (the light of the places, as
+each place's manifest lists them) and indoor (a lamp and a window, for
+rooms). People are seen from a slightly lower camera than the world (faces
+read) with height still 1:1 on screen; shadows lie on the ground and use
+the world camera.
 """
 import argparse
 import json
@@ -64,8 +65,22 @@ REST_TILT = 45.0
 REST_W = 84
 REST_H = 96
 REST_Y = 60
-SHADOW_BOX = {"day": (-64, -42, 20, 12), "late": (-12, -66, 150, 14), "indoor": (-28, -18, 28, 12)}
-REST_SHADOW_BOX = {"day": (-70, -46, 48, 36), "late": (-40, -50, 110, 36), "indoor": (-46, -40, 46, 36)}
+SHADOW_BOX = {
+    "day": (-64, -42, 20, 12),
+    "late": (-12, -66, 150, 14),
+    # No sun at dusk: only the soft shadow of the sky, close about the feet.
+    "dusk": (-26, -16, 26, 12),
+    # The moon in the south-east: shadows reach up and to the left.
+    "night": (-70, -64, 22, 12),
+    "indoor": (-28, -18, 28, 12),
+}
+REST_SHADOW_BOX = {
+    "day": (-70, -46, 48, 36),
+    "late": (-40, -50, 110, 36),
+    "dusk": (-46, -40, 46, 36),
+    "night": (-78, -66, 48, 36),
+    "indoor": (-46, -40, 46, 36),
+}
 SHADOW_PPU = 1.0
 DIRECTIONS = [("down", 0.0), ("left", -90.0), ("right", 90.0), ("up", 180.0)]
 # Lying: the row names where the head is.
@@ -89,6 +104,7 @@ def args():
     p.add_argument("--variants", nargs="+", default=None)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--only", nargs="+", default=None, help="only sheets whose id is one of these")
+    p.add_argument("--lights", nargs="+", default=[], help="the lights of places: <scene>=<light>,<light>...")
     return p.parse_args(argv)
 
 
@@ -125,12 +141,27 @@ def rag_hex(color):
     return color.lstrip("#").lower()
 
 
-def plan(data, scenes):
+def place_lights(scene, art_root, given=None):
+    """The lights people are shown in at a place: indoors, the room's own
+    light; outdoors, the lights given for it (--lights, from the same table
+    the places are rendered with), else every lighting variant the place was
+    rendered in (its manifest), else the morning and later-day sun."""
+    if scene["kind"] == "indoor":
+        return ["indoor"]
+    if given and scene["id"] in given:
+        return sorted(given[scene["id"]])
+    path = os.path.join(art_root, scene["id"], "manifest.json") if art_root else None
+    if path and os.path.exists(path):
+        return sorted(json.load(open(path))["variants"].keys())
+    return ["day", "late"]
+
+
+def plan(data, scenes, art_root=None, given=None):
     """Every sheet the given scenes need: who appears, standing or at rest,
     with which marks, in which light."""
     by_id = {s["id"]: s for s in data["scenes"]}
     wanted = [by_id[s] for s in scenes]
-    light = lambda s: ["indoor"] if s["kind"] == "indoor" else ["day", "late"]  # noqa: E731
+    light = lambda s: place_lights(s, art_root, given)  # noqa: E731
     jobs = {}
 
     def add(job):
@@ -239,6 +270,7 @@ def render(job, a, manifest, tmp):
     todo = [v for v in job.variants if v not in entry["sheets"]]
     for variant in todo:
         lighting.setup(scene, variant)
+        scene.view_settings.exposure = -1.4 + lighting.exposure(variant)
         # 1. The person (no ground), from the figure camera. An overlay shows
         #    only its mark; the body is a holdout, hiding what it hides.
         ground.hide_render = True
@@ -300,7 +332,8 @@ def main():
     tmp = tempfile.mkdtemp(prefix="witness-people-")
     manifest_path = os.path.join(a.out, "people.json")
     manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
-    jobs = plan(data, a.scenes) if a.scenes else []
+    given = {k: v.split(",") for k, v in (s.split("=", 1) for s in a.lights)}
+    jobs = plan(data, a.scenes, os.path.dirname(os.path.abspath(a.out)), given) if a.scenes else []
     for who in a.who:
         pid, key, app, walks = lookup(data, who)
         jobs.append(Job(pid, pid, key, app, walks, a.variants or ["day", "late"]))

@@ -27,10 +27,28 @@ const CANDIDATES = [
 ].filter(Boolean);
 
 /** Places with pre-rendered art (keep in step with PLACES_WITH_ART in src/game/prerendered/select.ts). */
-const PLACES = ['miriam-house', 'jerusalem-market', 'jericho-road', 'jericho'];
+const PLACES = [
+  'miriam-house',
+  'jerusalem-market',
+  'jericho-road',
+  'jericho',
+  'shelomit-house',
+  'capernaum-shore',
+  'open-lake',
+];
 
 /** Samples per place: rooms need more (their light is mostly bounced). */
-const SAMPLES = { 'miriam-house': '512' };
+const SAMPLES = { 'miriam-house': '512', 'shelomit-house': '512' };
+
+/**
+ * The lights a place is rendered in, when its story shows it in others than
+ * the morning and later-day sun (build_place's default; a room: the morning).
+ */
+const VARIANTS = {
+  'shelomit-house': ['late', 'night'],
+  'capernaum-shore': ['late', 'dusk', 'night'],
+  'open-lake': ['dusk', 'night'],
+};
 
 const [what, ...rest] = process.argv.slice(2);
 const blender = CANDIDATES.find((c) => existsSync(c));
@@ -50,6 +68,7 @@ function place(id, extra = []) {
     '3',
     '--samples',
     SAMPLES[id] ?? '96',
+    ...(VARIANTS[id] && !extra.includes('--variants') ? ['--variants', ...VARIANTS[id]] : []),
     ...extra,
   ];
 }
@@ -81,6 +100,8 @@ const jobs = {
       '48',
       '--scenes',
       ...PLACES,
+      '--lights',
+      ...Object.entries(VARIANTS).map(([id, lights]) => `${id}=${lights.join(',')}`),
       ...rest,
     ],
   ],

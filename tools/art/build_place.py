@@ -67,6 +67,7 @@ def args():
         "pages already rendered)",
     )
     p.add_argument("--sprites", nargs="+", default=[], help="with --only sprites: ids or id prefixes (palm-)")
+    p.add_argument("--all", action="store_true", help="with --probe: show the things shown only while a story condition holds too")
     return p.parse_args(argv)
 
 
@@ -148,9 +149,22 @@ def main():
         raise SystemExit(f"No scene {a.scene} in tools/art/data/chapter.json (run npm run art:data)")
     tmp = tempfile.mkdtemp(prefix=f"witness-{a.scene}-")
     scene = common.reset(a.samples)
-    p = place.Place(scene_data).build()
-    scene.view_settings.exposure = -1.4 + p.exposure
+    p = place.Place(scene_data)
     variants = a.variants or default_variants(p)
+    # The place knows the lights it will be shown in before it is built
+    # (a room's window faces its sun; lamps that burn only at night).
+    p.variants = list(variants)
+    p.build()
+
+    def light(variant):
+        """Set up one lighting variant: the sky and sun, whatever the place
+        changes for it (lamps lit at night), and the exposure."""
+        lighting.setup(scene, variant)
+        if hasattr(p, "set_variant"):
+            p.set_variant(variant)
+        scene.view_settings.exposure = -1.4 + p.exposure + lighting.exposure(variant)
+
+    light(variants[0])
     sprite_objs = [o for sp in p.sprites for o in sp.objects]
     for o in sprite_objs:
         if not o.users_collection:
@@ -182,11 +196,10 @@ def main():
 
     if a.probe:
         x0, y0, x1, y1 = a.probe
-        lighting.setup(scene, variants[0])
         w = (x1 - x0) * TILE
         h = (y1 - y0) * TILE
         view.setup_camera(scene, (x0 + x1) / 2 * TILE, (y0 + y1) / 2 * TILE, int(w * a.ppu), int(h * a.ppu), a.ppu)
-        show(set(scene.objects), hidden=conditional if "--all" not in sys.argv else ())
+        show(set(scene.objects), hidden=() if a.all else conditional)
         scene.render.film_transparent = False
         scene.render.filepath = a.out
         bpy.ops.render.render(write_still=True)
@@ -246,12 +259,21 @@ def main():
         for f in before - now:
             if os.path.exists(os.path.join(a.out, f)):
                 os.remove(os.path.join(a.out, f))
-        # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no lamps).
+        # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no
+        #    lamps); with no sun (dusk), sky visibility: open ground is lit,
+        #    ground under eaves and beside walls less so. A room by night is
+        #    lit by its lamps: there it is lamplight (no moon, no sky), so
+        #    people in the dark corners are dimmer than by the lamp.
+        lamplit = p.style == "home" and variant == "night"
         layer = scene.view_layers[0]
         layer.material_override = white
-        world_strength.default_value = 0.0
+        if lamplit or lighting.LIGHTS.get(variant, {}).get("strength", 1.0) > 0:
+            world_strength.default_value = 0.0
+        suns = [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Sun")]
         for light in p.lights:
-            light.hide_render = True
+            light.hide_render = not lamplit
+        for sun in suns:
+            sun.hide_render = lamplit
         show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats | volumes)
         scene.render.resolution_percentage = 25
         probe = render_to(scene, os.path.join(tmp, f"shade-{variant}.png"))
@@ -260,10 +282,14 @@ def main():
         world_strength.default_value = base_strength
         for light in p.lights:
             light.hide_render = False
+        for sun in suns:
+            sun.hide_render = False
         lum = probe[:, :, :3].mean(axis=2)
         lit = np.percentile(lum, 97)
         vis = np.clip(lum / max(1e-4, lit), 0, 1)
-        if p.style == "home":
+        if lamplit:
+            vis = 0.4 + 0.6 * np.sqrt(vis)
+        elif p.style == "home":
             # Indoors people are lit for the room; only the sunbeam brightens them.
             vis = 0.85 + 0.15 * vis
         shade = np.dstack([vis, vis, vis, np.ones_like(vis)])
@@ -323,7 +349,7 @@ def main():
         return img[by0:by1, bx0:bx1], int(round(x0 * a.ppu)) + bx0, int(round(y0 * a.ppu)) + by0
 
     for variant in variants:
-        lighting.setup(scene, variant)
+        light(variant)
         if a.only not in ("conditional", "sprites"):
             ground_and_shade(variant)
         if a.only == "ground":
