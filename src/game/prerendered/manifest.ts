@@ -27,9 +27,26 @@ const SpriteSchema = z.object({
 });
 export type ArtSprite = z.infer<typeof SpriteSchema>;
 
+/**
+ * Every GPU the game runs on holds a texture this big (WebGL 2's minimum;
+ * many phones stop at 4096). Bigger images (a large place's ground) are cut
+ * into tiles no bigger, and atlas pages are this size at most.
+ */
+export const MAX_ART_TEXTURE = 2048;
+
+/** One tile of an image cut up to fit the GPU (neighbours overlap by a pixel or two). */
+const TileSchema = z.object({
+  file: z.string().min(1),
+  /** Its top-left in the whole image (texture pixels). */
+  x: z.number().int().nonnegative(),
+  y: z.number().int().nonnegative(),
+});
+export type ArtTile = z.infer<typeof TileSchema>;
+
 const VariantSchema = z.object({
-  ground: z.string().min(1),
-  groundLow: z.string().min(1),
+  /** The ground, in tiles of at most MAX_ART_TEXTURE px (one, for a small place). */
+  ground: z.array(TileSchema).min(1),
+  groundLow: z.array(TileSchema).min(1),
   shade: z.string().min(1),
   pages: z.array(z.string().min(1)).min(1),
   /** The same pages at half resolution (phones, reduced effects), if built. */

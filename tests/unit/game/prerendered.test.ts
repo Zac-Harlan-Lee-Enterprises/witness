@@ -14,6 +14,7 @@ import {
   sampleShade,
   shadeTint,
   sheetsToLoad,
+  tileOrigin,
   turnPath,
   variantFor,
   wantsLowResolution,
@@ -21,8 +22,11 @@ import {
 import { naturalColor } from '@/shared/color';
 
 const variant = {
-  ground: 'ground-day.webp',
-  groundLow: 'ground-day-low.webp',
+  ground: [
+    { file: 'ground-day-x0y0.webp', x: 0, y: 0 },
+    { file: 'ground-day-x1y0.webp', x: 1632, y: 0 },
+  ],
+  groundLow: [{ file: 'ground-day-low.webp', x: 0, y: 0 }],
   shade: 'shade-day.webp',
   pages: ['sprites-day-0.webp'],
   sprites: [
@@ -76,6 +80,22 @@ describe('pre-rendered place art', () => {
     });
     expect(bad.art).toBeNull();
     expect(bad.error).toBeTruthy();
+    // A ground given as one file (before grounds were tiled) is refused, not guessed at.
+    const untiled = parsePlaceArt({
+      version: 1,
+      scene: 'x',
+      tiles: { w: 34, h: 24 },
+      ppu: 3,
+      variants: { day: { ...variant, ground: 'ground-day.webp' } },
+    });
+    expect(untiled.art).toBeNull();
+  });
+
+  it('places each ground tile at its pixel offset, in game units', () => {
+    expect(tileOrigin({ x: 0, y: 0 }, 3)).toEqual({ x: 0, y: 0 });
+    expect(tileOrigin({ x: 1536, y: 1440 }, 3)).toEqual({ x: 512, y: 480 });
+    // The half-resolution ground has half the pixels per unit.
+    expect(tileOrigin({ x: 1152, y: 0 }, 1.5)).toEqual({ x: 768, y: 0 });
   });
 
   it('knows which places have art and where it is served', () => {
@@ -108,14 +128,11 @@ describe('pre-rendered place art', () => {
     expect(room.art?.peopleLight).toBe('indoor');
   });
 
-  it('loads half-resolution art on small views, in low-power mode, and when the GPU cannot hold the ground', () => {
+  it('loads half-resolution art on small views and in low-power mode', () => {
     expect(wantsLowResolution(3, 3, false)).toBe(false); // desktop, close framing
     expect(wantsLowResolution(2.75, 3, false)).toBe(false); // tablet
     expect(wantsLowResolution(1.75, 3, false)).toBe(true); // phone
     expect(wantsLowResolution(3, 3, true)).toBe(true);
-    // The road is 48 tiles wide: 4608 px at 3 ppu.
-    expect(wantsLowResolution(3, 3, false, 4608, 16384)).toBe(false);
-    expect(wantsLowResolution(3, 3, false, 4608, 4096)).toBe(true);
   });
 
   it('takes the half-resolution sprite pages with the half-resolution ground, when they exist', () => {
@@ -219,10 +236,15 @@ describe('pre-rendered people', () => {
 
   it('loads every sheet of the people present, and the crowd only where there is one', () => {
     if (!people) throw new Error('no people');
-    const ids = sheetsToLoad(people, [player], false);
+    const ids = sheetsToLoad(people, [player], false, player.robe);
     expect(ids).toContain('player-look-1+torn-hem');
     expect(ids).toContain('player-look-1~sit@rag-bandaged-x');
     expect(ids).not.toContain('crowd-0');
+    // Bandages torn from another tunic are never needed: not loaded.
+    expect(sheetsToLoad(people, [player], false, '#112233')).not.toContain(
+      'player-look-1~sit@rag-bandaged-x',
+    );
+    expect(sheetsToLoad(people, [player], false, '#112233')).toContain('player-look-1@lamp');
     expect(sheetsToLoad(people, [], true)).toEqual(['crowd-0']);
   });
 

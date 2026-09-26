@@ -8,8 +8,35 @@
  "ppu": 3.0,
  "variants": {
   "day": {
-   "ground": "ground-day.webp",
-   "groundLow": "ground-day-low.webp",
+   "ground": [
+    {
+     "file": "ground-day-x0y0.webp",
+     "x": 0,
+     "y": 0
+    },
+    {
+     "file": "ground-day-x1y0.webp",
+     "x": 1632,
+     "y": 0
+    },
+    {
+     "file": "ground-day-x0y1.webp",
+     "x": 0,
+     "y": 1152
+    },
+    {
+     "file": "ground-day-x1y1.webp",
+     "x": 1632,
+     "y": 1152
+    }
+   ],
+   "groundLow": [
+    {
+     "file": "ground-day-low.webp",
+     "x": 0,
+     "y": 0
+    }
+   ],
    "shade": "shade-day.webp",
    "pages": [
     "sprites-day-0.webp"
@@ -1409,11 +1436,41 @@
      "u": 495,
      "v": 1468
     }
+   ],
+   "pagesLow": [
+    "sprites-day-0-low.webp"
    ]
   },
   "late": {
-   "ground": "ground-late.webp",
-   "groundLow": "ground-late-low.webp",
+   "ground": [
+    {
+     "file": "ground-late-x0y0.webp",
+     "x": 0,
+     "y": 0
+    },
+    {
+     "file": "ground-late-x1y0.webp",
+     "x": 1632,
+     "y": 0
+    },
+    {
+     "file": "ground-late-x0y1.webp",
+     "x": 0,
+     "y": 1152
+    },
+    {
+     "file": "ground-late-x1y1.webp",
+     "x": 1632,
+     "y": 1152
+    }
+   ],
+   "groundLow": [
+    {
+     "file": "ground-late-low.webp",
+     "x": 0,
+     "y": 0
+    }
+   ],
    "shade": "shade-late.webp",
    "pages": [
     "sprites-late-0.webp"
@@ -2813,6 +2870,9 @@
      "u": 495,
      "v": 1468
     }
+   ],
+   "pagesLow": [
+    "sprites-late-0-low.webp"
    ]
   }
  }

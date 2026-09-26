@@ -31,7 +31,7 @@ export class FigureBook {
     const appearances: Appearance[] = [model.player.appearance];
     for (const e of model.entities) if (e.appearance) appearances.push(e.appearance);
     const crowd = crowdSize(model.mood, false) > 0;
-    const ids = sheetsToLoad(people, appearances, crowd);
+    const ids = sheetsToLoad(people, appearances, crowd, model.player.appearance.robe);
     return FigureBook.from(people, await loadPersons(scene, people, ids, light));
   }
 

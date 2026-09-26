@@ -762,13 +762,14 @@ export class WorldScene extends Phaser.Scene {
     const v = place.art.variants[place.variant] ?? place.art.variants.day;
     this.lightSpots = [];
     this.canopyFader = new CanopyFader(place.art.ppu, () => this.reducedMotion);
-    this.layers.push(
-      this.add
-        .image(0, 0, place.ground)
-        .setOrigin(0, 0)
-        .setScale(1 / place.groundPpu)
-        .setDepth(DEPTH.ground),
-    );
+    for (const tile of place.ground)
+      this.layers.push(
+        this.add
+          .image(tile.x, tile.y, tile.key)
+          .setOrigin(0, 0)
+          .setScale(1 / place.groundPpu)
+          .setDepth(DEPTH.ground),
+      );
     for (const sprite of v.sprites) {
       if (sprite.id.startsWith('entity:')) {
         this.entitySprites.set(sprite.id.slice('entity:'.length), sprite);

@@ -14,6 +14,7 @@ import {
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
+  tileOrigin,
   variantFor,
   wantsLowResolution,
   type ShadeMask,
@@ -32,9 +33,10 @@ export interface PlaceTextures {
   variant: LightingVariant;
   /** How people are lit here (their sheets' variant). */
   peopleLight: PeopleLight;
-  /** Pixels per game unit of the loaded ground texture. */
+  /** Pixels per game unit of the loaded ground textures. */
   groundPpu: number;
-  ground: string;
+  /** The ground's tiles: texture keys and where each goes (game units, top-left). */
+  ground: ReadonlyArray<{ key: string; x: number; y: number }>;
   pages: string[];
   /** Scale of the loaded pages' pixels against the manifest's (0.5: half-resolution pages). */
   spriteScale: number;
@@ -126,13 +128,6 @@ function textureMegabytes(scene: Phaser.Scene): number {
   return bytes / (1024 * 1024);
 }
 
-function maxTextureSize(scene: Phaser.Scene): number {
-  const renderer = scene.sys.game.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer>;
-  return typeof renderer.getMaxTextureSize === 'function'
-    ? renderer.getMaxTextureSize()
-    : Number.POSITIVE_INFINITY;
-}
-
 function readShade(scene: Phaser.Scene, key: string): ShadeMask | null {
   const source = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
   const canvas = document.createElement('canvas');
@@ -166,26 +161,27 @@ export async function loadPlace(
   }
   const available = LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
   const wanted = variantFor(options.hour, available);
-  const groundPx = Math.max(art.tiles.w, art.tiles.h) * 32 * art.ppu;
-  const low = wantsLowResolution(
-    options.zoom,
-    art.ppu,
-    options.lowPower,
-    groundPx,
-    maxTextureSize(scene),
-  );
+  const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
+  const groundPpu = low ? art.ppu / 2 : art.ppu;
   // The later-day set is cached the first time it is used; offline before
   // then, the morning set stands in for it rather than painting the place.
   for (const variant of wanted === 'day' ? (['day'] as const) : ([wanted, 'day'] as const)) {
     const v = art.variants[variant] ?? art.variants.day;
     const prefix = `art:${sceneId}:${variant}`;
-    const ground = `${prefix}:ground${low ? '-low' : ''}`;
+    const tiles = low ? v.groundLow : v.ground;
+    const ground = tiles.map((tile, i) => ({
+      key: `${prefix}:ground${low ? '-low' : ''}${i}`,
+      ...tileOrigin(tile, groundPpu),
+    }));
     const shadeKey = `${prefix}:shade`;
     const sheets = pagesFor(v, low);
     const suffix = sheets.scale < 1 ? '-low' : '';
     const pages = sheets.files.map((_, i) => `${prefix}:page${i}${suffix}`);
     const failed = await images(scene, [
-      [ground, `${BASE}${path}${low ? v.groundLow : v.ground}`],
+      ...tiles.map((tile, i): [string, string] => [
+        ground[i]?.key ?? '',
+        `${BASE}${path}${tile.file}`,
+      ]),
       [shadeKey, `${BASE}${path}${v.shade}`],
       ...sheets.files.map((file, i): [string, string] => [
         pages[i] as string,
@@ -200,7 +196,7 @@ export async function loadPlace(
       art,
       variant,
       peopleLight: peopleLightFor(variant, art.peopleLight),
-      groundPpu: low ? art.ppu / 2 : art.ppu,
+      groundPpu,
       ground,
       pages,
       spriteScale: sheets.scale,

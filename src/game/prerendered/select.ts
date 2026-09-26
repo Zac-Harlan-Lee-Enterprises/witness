@@ -54,18 +54,17 @@ export function peopleLightFor(variant: LightingVariant, room: 'indoor' | undefi
 /**
  * Half-resolution art when the view is small enough that it barely shows
  * (below two-thirds of the full set's resolution: phones), saving about
- * 20 MB of texture memory, when the device has asked for simpler effects,
- * or when the full ground is bigger than the GPU can hold in one texture
- * (`groundPx`: its longest side in pixels; `maxTexture`: the GPU's limit).
+ * three quarters of the texture memory, or when the device has asked for
+ * simpler effects. (No texture is bigger than MAX_ART_TEXTURE, so the GPU's
+ * own limit never forces it.)
  */
-export function wantsLowResolution(
-  zoom: number,
-  ppu: number,
-  lowPower: boolean,
-  groundPx = 0,
-  maxTexture = Number.POSITIVE_INFINITY,
-): boolean {
-  return lowPower || zoom < (ppu * 2) / 3 || groundPx > maxTexture;
+export function wantsLowResolution(zoom: number, ppu: number, lowPower: boolean): boolean {
+  return lowPower || zoom < (ppu * 2) / 3;
+}
+
+/** Where a ground tile goes in the world (game units), from its pixel offset and the ground's ppu. */
+export function tileOrigin(tile: { x: number; y: number }, ppu: number): { x: number; y: number } {
+  return { x: tile.x / ppu, y: tile.y / ppu };
 }
 
 /**
@@ -167,17 +166,21 @@ export function pickSheets(
 /**
  * Every sheet a place may need, loaded before it is shown so the story can
  * change how people look without a pause: for each appearance present,
- * all its sheets (standing, at rest, with body marks, overlays); and the
+ * all its sheets (standing, at rest, with body marks, overlays), except
+ * bandages torn from another tunic than the player's (`rag`); and the
  * passers-by if the place has any.
  */
 export function sheetsToLoad(
   people: PeopleArt,
   appearances: readonly Appearance[],
   crowd: boolean,
+  rag: string | null = null,
 ): string[] {
   const keys = new Set(appearances.map(appearanceKey));
+  const want = rag ? naturalColor(rag).toLowerCase() : null;
   return Object.entries(people)
     .filter(([id, s]) => keys.has(s.appearance) || (crowd && id.startsWith('crowd-')))
+    .filter(([, s]) => s.overlay?.rag === undefined || s.overlay.rag === want)
     .map(([id]) => id)
     .sort();
 }
