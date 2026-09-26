@@ -14,10 +14,8 @@ import {
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
-  peopleLightOrder,
   tileOrigin,
   variantFor,
-  variantLoadOrder,
   wantsLowResolution,
   type ShadeMask,
 } from './select';
@@ -165,11 +163,10 @@ export async function loadPlace(
   const wanted = variantFor(options.hour, available);
   const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
   const groundPpu = low ? art.ppu / 2 : art.ppu;
-  // A set not yet cached may fail to load offline; then another light stands
-  // in for it (the morning's, if the place has one) rather than painting it.
-  for (const variant of variantLoadOrder(wanted, available)) {
-    const v = art.variants[variant];
-    if (!v) continue;
+  // The later-day set is cached the first time it is used; offline before
+  // then, the morning set stands in for it rather than painting the place.
+  for (const variant of wanted === 'day' ? (['day'] as const) : ([wanted, 'day'] as const)) {
+    const v = art.variants[variant] ?? art.variants.day;
     const prefix = `art:${sceneId}:${variant}`;
     const tiles = low ? v.groundLow : v.ground;
     const ground = tiles.map((tile, i) => ({
@@ -198,7 +195,7 @@ export async function loadPlace(
     return {
       art,
       variant,
-      peopleLight: peopleLightFor(variant, art.peopleLight),
+      peopleLight: peopleLightFor(variant, art.peopleLight, v.peopleLight),
       groundPpu,
       ground,
       pages,
@@ -222,13 +219,21 @@ export async function loadPeople(scene: Phaser.Scene, logger: Logger): Promise<P
   return people;
 }
 
-/** A sheet in a light: the light asked for, else the nearest there is. */
+/**
+ * A sheet in a light: the light asked for, else the nearest there is (a
+ * room's for lamp-lighting), else the morning's (or any there is).
+ */
 function pick<T>(byLight: Partial<Record<PeopleLight, T>>, light: PeopleLight): T | undefined {
-  for (const l of peopleLightOrder(light)) {
-    const found = byLight[l];
-    if (found !== undefined) return found;
-  }
-  return undefined;
+  return (
+    byLight[light] ??
+    (light === 'lamp' ? byLight.indoor : undefined) ??
+    (light === 'night' ? byLight.late : undefined) ??
+    byLight.day ??
+    byLight.late ??
+    byLight.indoor ??
+    byLight.overcast ??
+    byLight.lamp
+  );
 }
 
 export interface PersonTextures {

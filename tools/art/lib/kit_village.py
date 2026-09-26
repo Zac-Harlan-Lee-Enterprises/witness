@@ -1762,17 +1762,6 @@ class VillageKit:
             objs.append(t)
         return objs
 
-    def entity_wool(self, name, x, y, e=None):
-        """A heap of washed fleeces and a basket of carded wool."""
-        c = self.P(x + 0.5, y + 0.55, self.floor_z(x, y))
-        objs = []
-        for k, (dx, dy) in enumerate(((-0.15, 0.05), (0.15, -0.02), (0.0, 0.1))):
-            f = self._ellipsoid(f"{name}-fleece{k}", c + Vector((dx, dy, 0.07 + k * 0.03)), (0.22, 0.16, 0.07), fleece("#e8dfc8"), 18, 10)
-            objs.append(f)
-        objs.append(self._lathe(f"{name}-basket", [(0.1, 0), (0.15, 0.08), (0.16, 0.14), (0.17, 0.16)], c + Vector((0.38, -0.12, 0.0)), M.straw("#a88a58"), 24))
-        objs.append(self._ellipsoid(f"{name}-carded", c + Vector((0.38, -0.12, 0.15)), (0.13, 0.13, 0.05), fleece("#f0e8d6"), 16, 8))
-        return objs
-
     def entity_thorn_branch(self, name, x, y, e=None):
         """A cut thorn branch pulled tight across the gap in the terrace wall:
         a tangle of grey thorny twigs lashed to a stake either side."""

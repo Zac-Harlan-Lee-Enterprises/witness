@@ -38,6 +38,9 @@ RISE = {
     # terrace strength)
     "hill": (2.6, 2.6, 0.45, 0.62, 0.3, 0.14),
     "cliff": (5.0, 1.2, 0.5, 0.97, 0.7, 0.3),
+    # The white travertine of Hierapolis (kit_roman.py): flat pools behind
+    # rims, stepping up the hillside in sheer little falls.
+    "travertine": (2.6, 2.6, 0.08, 0.9, 0.3, 0.9),
 }
 
 

@@ -131,9 +131,32 @@ def pack(items):
     return places
 
 
-def default_variants(p):
-    """Interiors are seen only in the morning; outdoor places in both lights."""
-    return ["day"] if p.style == "home" else ["day", "late"]
+def light_plan(p):
+    """Each set the manifest will have and the light it is rendered in
+    (lighting.PLACE_LIGHTS): rooms one morning set, outdoor places a
+    morning and a later-day set, unless the story shows the place in its
+    own light (a road under rain cloud, a house at lamp-lighting)."""
+    return p.light_plan
+
+
+def people_light(p):
+    """How people are lit there (the manifest's peopleLight), or None: by
+    the sun of each set; or {set: people light} (each set's own)."""
+    return p.people_light
+
+
+def set_extras(p, variant, plan):
+    """What a set of the manifest says beyond its layers: the fires and
+    lamps burning in its light (for the game to make flicker), and its own
+    people light when the place gives one per set."""
+    extras = {}
+    spots = p.light_spots(plan.get(variant, variant))
+    if spots:
+        extras["lights"] = spots
+    people = people_light(p)
+    if isinstance(people, dict) and variant in people:
+        extras["peopleLight"] = people[variant]
+    return extras
 
 
 def catcher_for(p, sp):
@@ -168,14 +191,20 @@ def main():
         raise SystemExit(f"No scene {a.scene} in tools/art/data/chapter.json (run npm run art:data)")
     tmp = tempfile.mkdtemp(prefix=f"witness-{a.scene}-")
     scene = common.reset(a.samples)
+    # Small bright lights (lamps, embers) reflected in glossy things make
+    # fireflies that the denoiser smears into blotches: clamp the indirect light.
+    scene.cycles.sample_clamp_indirect = 10.0
+    scene.cycles.blur_glossy = 0.5
     p = place.Place(scene_data).build()
     scene.view_settings.exposure = -1.4 + p.exposure
-    variants = a.variants or default_variants(p)
+    plan = light_plan(p)
+    variants = a.variants or list(plan)
 
-    def only_in(o, variant):
-        """Whether a thing exists in this lighting variant (untagged: in all)."""
+    def only_in(o, light):
+        """Whether a thing exists in a light (tagged obj["variants"] = "night"
+        or "day,late"; untagged: in all)."""
         tag = o.get("variants") if hasattr(o, "get") else None
-        return not tag or variant in str(tag).split(",")
+        return not tag or light in str(tag).split(",")
     sprite_objs = [o for sp in p.sprites for o in sp.objects]
     for o in sprite_objs:
         if not o.users_collection:
@@ -190,6 +219,10 @@ def main():
     # Grit and pebbles scattered over the ground: hidden while a flat thing
     # renders, or they would punch black holes in it (they lie on top of it).
     scattered = {o for o in p.ground_objects if any(m.type == "NODES" for m in o.modifiers)}
+    # Stains lying on the ground (tagged "decal"): left out of every sprite.
+    # A see-through holdout still leaves a faint ghost of itself in a
+    # sprite's alpha, and they never hide any part of a standing thing.
+    decals = {o for o in p.ground_objects if o.get("decal")}
     W, H = p.map.w * TILE, p.map.h * TILE
 
     absent = set()
@@ -208,19 +241,22 @@ def main():
             seen = o in camera or o in holdout
             o.visible_camera = seen and (o not in occluders or bool(os.environ.get("SHOW_OCCLUDERS")))
 
-    def set_variant(variant):
-        """Light the scene for a variant: its sun or moon and exposure, and
-        only the things and lights that exist in it."""
-        lighting.setup(scene, variant)
-        scene.view_settings.exposure = -1.4 + p.exposure + lighting.exposure(variant) + p.variant_exposure.get(variant, 0.0)
+    def light_up(variant):
+        """Set the light a variant is rendered in and its exposure (and the
+        place's own for that light), with only the things and lights that
+        exist in that light."""
+        light = plan.get(variant, variant)
+        lighting.setup(scene, light)
+        scene.view_settings.exposure = -1.4 + p.exposure + lighting.ev(light) + p.variant_exposure.get(light, 0.0)
         absent.clear()
-        absent.update(o for o in scene.objects if o.type in ("MESH", "CURVES") and not only_in(o, variant))
-        for light in p.lights:
-            light.hide_render = not only_in(light, variant)
+        absent.update(o for o in scene.objects if o.type in ("MESH", "CURVES") and not only_in(o, light))
+        for lamp in p.lights:
+            lamp.hide_render = not only_in(lamp, light)
+        return light
 
     if a.probe:
         x0, y0, x1, y1 = a.probe
-        set_variant(variants[0])
+        light_up(variants[0])
         w = (x1 - x0) * TILE
         h = (y1 - y0) * TILE
         view.setup_camera(scene, (x0 + x1) / 2 * TILE, (y0 + y1) / 2 * TILE, int(w * a.ppu), int(h * a.ppu), a.ppu)
@@ -235,8 +271,8 @@ def main():
     wpx, hpx = int(W * a.ppu), int(H * a.ppu)
     view.setup_camera(scene, W / 2, H / 2, wpx, hpx, a.ppu)
     manifest = {"version": 1, "scene": p.map.id, "tiles": {"w": p.map.w, "h": p.map.h}, "ppu": a.ppu, "variants": {}}
-    if p.style == "home":
-        manifest["peopleLight"] = "indoor"
+    if isinstance(people_light(p), str):
+        manifest["peopleLight"] = people_light(p)
     previous = None
     if a.only:
         previous = json.load(open(os.path.join(a.out, "manifest.json")))
@@ -284,14 +320,21 @@ def main():
         for f in before - now:
             if os.path.exists(os.path.join(a.out, f)):
                 os.remove(os.path.join(a.out, f))
-        # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no lamps).
-        #    At night: all the light there is (the moon, the fires and lamps).
-        night = lighting.is_night(variant)
+        # 2. Light on the ground (white diffuse, no dust): by default the sun
+        #    alone; under cloud, the sky; at lamp-lighting, the lamps; at
+        #    night, all there is (the moon, the fires and lamps).
+        light_name = plan.get(variant, variant)
+        spec = lighting.LIGHTS.get(light_name, {})
+        source = spec.get("shade", "sun")
+        suns = [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Sun")]
         layer = scene.view_layers[0]
         layer.material_override = white
-        world_strength.default_value = 0.0
+        if source != "sky":
+            world_strength.default_value = 0.0
         for light in p.lights:
-            light.hide_render = not (night and only_in(light, variant))
+            light.hide_render = source not in ("lamps", "all") or not only_in(light, light_name)
+        for sun in suns:
+            sun.hide_render = source not in ("sun", "all")
         show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats | volumes)
         scene.render.resolution_percentage = 25
         probe = render_to(scene, os.path.join(tmp, f"shade-{variant}.png"))
@@ -299,16 +342,18 @@ def main():
         layer.material_override = None
         world_strength.default_value = base_strength
         for light in p.lights:
-            light.hide_render = not only_in(light, variant)
+            light.hide_render = not only_in(light, light_name)
+        for sun in suns:
+            sun.hide_render = False
         lum = probe[:, :, :3].mean(axis=2)
         lit = np.percentile(lum, 97)
         vis = np.clip(lum / max(1e-4, lit), 0, 1)
-        if p.style == "home" and night:
-            # A room at night: lit by its lamps and hearth; the dark corners dim people.
-            vis = 0.4 + 0.6 * vis
-        elif p.style == "home":
-            # Indoors people are lit for the room; only the sunbeam brightens them.
-            vis = 0.85 + 0.15 * vis
+        floor = spec.get("shade_floor", spec.get("room_shade_floor", 0.85) if p.style == "home" else None)
+        if floor is not None:
+            # Indoors people are lit for the room (only the sunbeam, or a
+            # lamp's pool, brightens them; at night its dark corners dim
+            # them); under cloud the shade is soft.
+            vis = floor + (1 - floor) * vis
         shade = np.dstack([vis, vis, vis, np.ones_like(vis)])
         imageio.save(shade, os.path.join(a.out, f"shade-{variant}.webp"), "WEBP", 90)
 
@@ -340,9 +385,9 @@ def main():
             # foot) are cut away, rather than showing black where no light
             # reaches. Things lying flat are on top of the ground already.
             if sp.flat:
-                show(mine, hidden=others_conditional | volumes | extra | scattered)
+                show(mine, hidden=others_conditional | volumes | extra | scattered | decals)
             else:
-                show(mine, hidden=others_conditional | volumes | extra, holdout=set(p.ground_objects) - mine)
+                show(mine, hidden=others_conditional | volumes | extra | decals, holdout=set(p.ground_objects) - mine - decals)
             img = render_to(scene, stem + ".png")
             if sp.conditional:
                 # Its own shadow alone, on a catcher with nothing else in the
@@ -366,14 +411,11 @@ def main():
         return img[by0:by1, bx0:bx1], int(round(x0 * a.ppu)) + bx0, int(round(y0 * a.ppu)) + by0
 
     for variant in variants:
-        set_variant(variant)
+        light_up(variant)
         if a.only not in ("conditional", "sprites"):
             ground_and_shade(variant)
         if a.only == "ground":
-            manifest["variants"][variant] = {**previous["variants"][variant], **grounds[variant]}
-            spots = p.light_spots(variant)
-            if spots:
-                manifest["variants"][variant]["lights"] = spots
+            manifest["variants"][variant] = {**previous["variants"][variant], **grounds[variant], **set_extras(p, variant, plan)}
             print("VARIANT DONE", variant, "ground only")
             continue
         # 3. Each standing thing on its own (or, with --only conditional, just
@@ -447,10 +489,8 @@ def main():
             "pages": page_files,
             "pagesLow": low_files,
             "sprites": entries,
+            **set_extras(p, variant, plan),
         }
-        spots = p.light_spots(variant)
-        if spots:
-            manifest["variants"][variant]["lights"] = spots
         print("VARIANT DONE", variant, len(entries))
     # Lights rendered before and not in this run are kept (a place can be
     # rendered one light at a time: --variants late, then --variants night).

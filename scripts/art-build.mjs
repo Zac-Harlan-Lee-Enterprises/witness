@@ -32,24 +32,29 @@ const PLACES = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 3: A Journey to Bethlehem
   'tamar-house',
   'bethlehem-lanes',
   'shepherds-fields',
+  // Chapter 4: A Letter from Paul
+  'ammia-workshop',
+  'colossae-street',
+  'lycus-road',
+  'philemon-house',
 ];
 
-/** Samples per place: rooms need more (their light is mostly bounced). */
-const SAMPLES = { 'miriam-house': '512', 'tamar-house': '512', 'shepherds-fields': '160' };
-
 /**
- * The lights each place is rendered in, where its story needs other than the
- * default (outdoors morning and later day, a room its morning): Bethlehem's
- * house by day and by lamplight, its lanes and fields from mid-afternoon
- * into the night.
+ * Samples per place: rooms need more (their light is mostly bounced), and so
+ * do the fields at night (a moon, a fire, and a great deal of grass). The
+ * lights each place is rendered in are its light plan (PLACE_LIGHTS in
+ * tools/art/lib/lighting.py).
  */
-const VARIANTS = {
-  'tamar-house': ['day', 'night'],
-  'bethlehem-lanes': ['late', 'night'],
-  'shepherds-fields': ['late', 'night'],
+const SAMPLES = {
+  'miriam-house': '512',
+  'tamar-house': '512',
+  'shepherds-fields': '160',
+  'ammia-workshop': '512',
+  'philemon-house': '640',
 };
 
 const [what, ...rest] = process.argv.slice(2);
@@ -70,7 +75,6 @@ function place(id, extra = []) {
     '3',
     '--samples',
     SAMPLES[id] ?? '96',
-    ...(VARIANTS[id] && !extra.includes('--variants') ? ['--variants', ...VARIANTS[id]] : []),
     ...extra,
   ];
 }

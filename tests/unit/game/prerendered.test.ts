@@ -11,7 +11,6 @@ import {
   NIGHT_FROM_HOUR,
   pagesFor,
   peopleLightFor,
-  peopleLightOrder,
   pickSheets,
   PLACE_ART,
   relightTo,
@@ -21,7 +20,6 @@ import {
   tileOrigin,
   turnPath,
   variantFor,
-  variantLoadOrder,
   wantsLowResolution,
 } from '@/game/prerendered/select';
 import { naturalColor } from '@/shared/color';
@@ -137,64 +135,55 @@ describe('pre-rendered place art', () => {
     expect(variantFor(20, ['day'])).toBe('day');
   });
 
-  it('draws a place rendered only in the lights its story shows in the nearest it has', () => {
-    // Bethlehem's lanes: from mid-afternoon into the night, no morning.
-    expect(variantFor(16, ['late', 'night'])).toBe('late');
-    expect(variantFor(9, ['late', 'night'])).toBe('late');
-    expect(variantFor(21, ['late', 'night'])).toBe('night');
+  it('draws a place seen from mid-afternoon into the night in its day and night sets', () => {
+    // Bethlehem's lanes: the story shows them from hour 16; their day set is
+    // rendered in the later-day light (the light plan), their night set by the moon.
+    expect(variantFor(16, ['day', 'night'])).toBe('day');
+    expect(variantFor(21, ['day', 'night'])).toBe('night');
     const art = parsePlaceArt({
       version: 1,
       scene: 'bethlehem-lanes',
       tiles: { w: 38, h: 24 },
       ppu: 3,
       variants: {
-        late: variant,
-        night: { ...variant, lights: [{ kind: 'lamp', x: 176, y: 128, radius: 34 }] },
+        day: variant,
+        night: {
+          ...variant,
+          peopleLight: 'night',
+          lights: [{ kind: 'lamp', x: 176, y: 128, radius: 34 }],
+        },
       },
     });
     expect(art.error).toBeNull();
-    expect(art.art?.variants.day).toBeUndefined();
     expect(art.art?.variants.night?.lights[0]?.kind).toBe('lamp');
     // Its glow is baked in, so its flickering pool is gentler than a painted one's.
     expect(art.art?.variants.night?.lights[0]?.strength).toBe(0.5);
-    const none = parsePlaceArt({
+    expect(art.art?.variants.night?.peopleLight).toBe('night');
+    // Every place has a day set: the one the game falls back to.
+    const nightOnly = parsePlaceArt({
       version: 1,
       scene: 'x',
       tiles: { w: 2, h: 2 },
       ppu: 3,
-      variants: {},
+      variants: { night: variant },
     });
-    expect(none.error).toMatch(/at least one light/);
+    expect(nightOnly.art).toBeNull();
   });
 
-  it('changes a place’s light as the story clock crosses into one its art has', () => {
+  it('changes a place’s set as the story clock crosses into one its art has', () => {
     // The sun sets while you carry the lamb back to the fold.
-    expect(relightTo('late', 18, ['late', 'night'])).toBe('night');
-    expect(relightTo('late', 17, ['late', 'night'])).toBeNull();
+    expect(relightTo('day', NIGHT_FROM_HOUR, ['day', 'night'])).toBe('night');
+    expect(relightTo('day', 17, ['day', 'night'])).toBeNull();
     // A place without night art stays as it is after dark.
     expect(relightTo('late', 20, ['day', 'late'])).toBeNull();
-    expect(relightTo('day', 20, ['day', 'night'])).toBe('night');
-  });
-
-  it('falls back, if a light fails to load offline, to the morning set or else the nearest', () => {
-    expect(variantLoadOrder('day', ['day', 'late'])).toEqual(['day']);
-    expect(variantLoadOrder('late', ['day', 'late'])).toEqual(['late', 'day']);
-    expect(variantLoadOrder('night', ['day', 'night'])).toEqual(['night', 'day']);
-    expect(variantLoadOrder('night', ['late', 'night'])).toEqual(['night', 'late']);
-    expect(variantLoadOrder('late', ['late', 'night'])).toEqual(['late', 'night']);
+    // Morning comes.
+    expect(relightTo('night', 6, ['day', 'night'])).toBe('day');
   });
 
   it('lights people for the room indoors, and by the place’s sun outdoors', () => {
     expect(peopleLightFor('day', undefined)).toBe('day');
     expect(peopleLightFor('late', undefined)).toBe('late');
     expect(peopleLightFor('day', 'indoor')).toBe('indoor');
-    // After dark: by the moon outdoors, by lamps and the hearth in a room.
-    expect(peopleLightFor('night', undefined)).toBe('night');
-    expect(peopleLightFor('night', 'indoor')).toBe('lamplight');
-    // A missing sheet is stood in for by the nearest light.
-    expect(peopleLightOrder('lamplight').slice(0, 2)).toEqual(['lamplight', 'indoor']);
-    expect(peopleLightOrder('night').slice(0, 2)).toEqual(['night', 'late']);
-    expect(new Set(peopleLightOrder('day')).size).toBe(5);
     const room = parsePlaceArt({
       version: 1,
       scene: 'miriam-house',
@@ -204,6 +193,60 @@ describe('pre-rendered place art', () => {
       variants: { day: variant },
     });
     expect(room.art?.peopleLight).toBe('indoor');
+  });
+
+  it('lights people as each set says, where a place’s sets differ', () => {
+    // Tamar's house: by the room's own light by day, by its lamps at night.
+    const house = parsePlaceArt({
+      version: 1,
+      scene: 'tamar-house',
+      tiles: { w: 18, h: 11 },
+      ppu: 3,
+      variants: {
+        day: { ...variant, peopleLight: 'indoor' },
+        night: { ...variant, peopleLight: 'lamp' },
+      },
+    });
+    expect(house.error).toBeNull();
+    const v = house.art?.variants;
+    expect(peopleLightFor('day', house.art?.peopleLight, v?.day.peopleLight)).toBe('indoor');
+    expect(peopleLightFor('night', house.art?.peopleLight, v?.night?.peopleLight)).toBe('lamp');
+    // A set's own light wins over the place's; outdoors at night, the moon.
+    expect(peopleLightFor('night', 'indoor', 'lamp')).toBe('lamp');
+    expect(peopleLightFor('night', undefined, 'night')).toBe('night');
+    expect(peopleLightFor('night', undefined)).toBe('night');
+  });
+
+  it('lights people as a place asks: under rain cloud, or at lamp-lighting', () => {
+    expect(peopleLightFor('day', 'overcast')).toBe('overcast');
+    expect(peopleLightFor('day', 'lamp')).toBe('lamp');
+    for (const light of ['overcast', 'lamp'] as const) {
+      const place = parsePlaceArt({
+        version: 1,
+        scene: 'lycus-road',
+        tiles: { w: 46, h: 28 },
+        ppu: 3,
+        peopleLight: light,
+        variants: { day: variant },
+      });
+      expect(place.error).toBeNull();
+      expect(place.art?.peopleLight).toBe(light);
+    }
+    expect(
+      parsePlaceArt({
+        version: 1,
+        scene: 'x',
+        tiles: { w: 1, h: 1 },
+        ppu: 3,
+        peopleLight: 'moonlight',
+        variants: { day: variant },
+      }).art,
+    ).toBeNull();
+  });
+
+  it('knows Chapter 4’s places', () => {
+    for (const id of ['ammia-workshop', 'colossae-street', 'lycus-road', 'philemon-house'])
+      expect(artPathFor(id)).toBe(`art/${id}/`);
   });
 
   it('loads half-resolution art on small views and in low-power mode', () => {
@@ -258,7 +301,11 @@ describe('pre-rendered people', () => {
   });
   const rag = naturalColor(player.robe).toLowerCase();
   const people = parsePeopleArt({
-    'player-look-1': sheet({}),
+    'player-look-1': sheet({ sheets: { day: 'x.webp', overcast: 'o.webp', lamp: 'l.webp' } }),
+    'player-look-1@letter-case': sheet({
+      overlay: { mark: 'letter-case', of: 'player-look-1' },
+      shadows: undefined,
+    }),
     'player-look-1+torn-hem': sheet({ marks: ['torn-hem'] }),
     'player-look-1@water-skin': sheet({
       overlay: { mark: 'water-skin', of: 'player-look-1' },
@@ -286,6 +333,20 @@ describe('pre-rendered people', () => {
       base: 'player-look-1',
       overlays: ['player-look-1@water-skin', 'player-look-1@lamp'],
     });
+  });
+
+  it('draws the letter case at the hip over the rolled cloak, under a lamp', () => {
+    expect(pickSheets(people, player, ['letter-case'])).toEqual({
+      base: 'player-look-1',
+      overlays: ['player-look-1@letter-case'],
+    });
+    expect(pickSheets(people, player, ['lamp', 'letter-case', 'water-skin'])?.overlays).toEqual([
+      'player-look-1@water-skin',
+      'player-look-1@letter-case',
+      'player-look-1@lamp',
+    ]);
+    expect(people?.['player-look-1']?.sheets.overcast).toBe('o.webp');
+    expect(people?.['player-look-1']?.sheets.lamp).toBe('l.webp');
   });
 
   it('uses the torn-hem sheet for a torn hem, with the same overlays', () => {

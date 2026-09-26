@@ -36,6 +36,7 @@ import numpy as np
 from mathutils import Matrix, Vector
 
 import common
+import lighting
 import materials as M
 import scatter
 import terrain
@@ -45,6 +46,7 @@ from kit_masonry import MasonryKit
 from kit_mudbrick import MudbrickKit
 from kit_plants import PlantsKit
 from kit_props import PropsKit
+from kit_roman import RomanKit
 from kit_village import VillageKit
 
 # Mirrors TILE_KINDS in src/domain/world.ts: which kinds block movement.
@@ -52,7 +54,11 @@ SOLID = {
     "wall", "roof", "water", "well", "olive", "palm", "rock", "cliff", "hill", "bush", "stall", "table",
     "jars", "cairn", "fence", "oven", "crate", "sacks", "basket", "loom", "cart", "tent", "trough",
     "crops", "reeds", "fig", "cloth", "void",
+    # Chapter 3 (kit_village.py)
     "manger", "sheepfold", "terrace", "sheep", "hay", "campfire",
+    # Chapter 4 (kit_roman.py)
+    "tile-roof", "column", "vat", "amphorae", "couch", "milestone", "travertine", "garden", "lampstand",
+    "fountain",
 }
 STRUCTURE = {"wall", "roof", "door"}
 
@@ -61,7 +67,10 @@ STRUCTURE = {"wall", "roof", "door"}
 # its base (baseTile or the first listed).
 GROUND = {
     "city": {
-        "layers": ["earth", "scrub", "path", "bed"],
+        "layers": ["earth", "scrub", "path", "bed", "hillside"],
+        # Only for a city on terrain (Colossae under Mount Cadmus); the
+        # market's flat ground is its own (_ground_city).
+        "kinds": {"paving": "bed", "gate": "bed", "steps": "bed", "sand": "earth", "scrub": "scrub", "hill": "hillside"},
     },
     "wilderness": {
         "layers": ["dust", "wscrub", "road", "wadi", "mud", "path", "hilltop", "rut"],
@@ -70,11 +79,14 @@ GROUND = {
                   "well": "dust"},
     },
     "oasis": {
-        "layers": ["earth", "grass", "path", "yard", "soil", "wet", "poolbed"],
+        "layers": ["earth", "grass", "path", "yard", "soil", "wet", "poolbed", "meadow", "lane", "setts", "sinter"],
         "kinds": {"sand": "path", "scrub": "grass", "paving": "yard", "soil": "soil", "crops": "soil",
                   "water": "poolbed", "reeds": "wet", "palm": "grass", "fig": "grass", "gate": "yard", "door": "yard",
                   "well": "yard", "trough": "yard", "cart": "yard", "sacks": "yard", "fence": "earth",
-                  "basket": "yard", "loom": "yard", "oven": "yard", "jars": "yard", "wall": "earth", "roof": "earth"},
+                  "basket": "yard", "loom": "yard", "oven": "yard", "jars": "yard", "wall": "earth", "roof": "earth",
+                  # Chapter 4: the Lycus valley (kit_roman.py)
+                  "grass": "meadow", "hill": "meadow", "road": "lane", "roman-road": "setts", "bridge": "setts",
+                  "travertine": "sinter"},
     },
     "home": {
         "layers": ["floor", "hearth", "trodden"],
@@ -106,6 +118,14 @@ LAYER_LOOKS = {
     "floor": {"color": "#a5875e", "grit": 0.35, "scale": "mid", "dark": 0.15, "light": 0.07, "chips": 0.15, "mottle": 0.3, "mottle_color": "#8e7050", "cracks": 0.3, "crack_scale": 2.2},
     "hearth": {"color": "#6a5848", "grit": 0.25, "scale": "mid", "mottle": 0.45, "mottle_color": "#40352c"},
     "trodden": {"color": "#b39670", "dark": 0.06, "light": 0.05, "grit": 0.12},
+    # Chapter 4 (kit_roman.py): Mount Cadmus's grassy foothills; the Lycus
+    # valley after rain (wet grass, a muddy lane, the gravel bed of the
+    # highway, the white travertine of Hierapolis)
+    "hillside": {"color": "#8a8456", "scale": "mid", "dark": 0.16, "light": 0.08, "mottle": 0.4, "mottle_color": "#6c6c40", "grit": 0.25, "chips": 0.2},
+    "meadow": {"color": "#7c8448", "scale": "mid", "dark": 0.16, "light": 0.06, "mottle": 0.45, "mottle_color": "#626c3a", "grit": 0.15, "rough": 0.72},
+    "lane": {"color": "#806c50", "grit": 0.5, "dark": 0.1, "light": 0.03, "mottle": 0.4, "mottle_color": "#5e4e3a", "rough": 0.42},
+    "setts": {"color": "#6e675a", "grit": 0.55, "scale": "mid", "dark": 0.1, "light": 0.04, "rough": 0.5},
+    "sinter": {"color": "#e2ded2", "grit": 0.08, "scale": "mid", "dark": 0.06, "light": 0.03, "mottle": 0.25, "mottle_color": "#d2cbb8", "rough": 0.55},
 }
 
 
@@ -207,7 +227,13 @@ def style_for(scene):
 
 
 # ── the builder ─────────────────────────────────────────────────────────────
-class Place(VillageKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
+def tile_builder(kind):
+    """The method that builds a tile kind: tile_ plus the kind, dashes as
+    underscores (tile-roof: tile_tile_roof)."""
+    return "tile_" + kind.replace("-", "_")
+
+
+class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
     """Builds a whole place. Kits supply the tile builders; this class reads
     the map, shapes the terrain and dispatches. (VillageKit comes first: it
     builds the Judean hill village of Chapter 3 and hands everything else on
@@ -235,6 +261,18 @@ class Place(VillageKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit,
         self.col_ground = common.collection("ground")
         self.heights = None
         self._materials()
+
+    # ── the story's light ───────────────────────────────────────────────────
+    @property
+    def light_plan(self):
+        """{set: light}: each set of the manifest and the light it is
+        rendered in (lighting.PLACE_LIGHTS)."""
+        return lighting.plan_for(self.map.id, self.style == "home")[0]
+
+    @property
+    def people_light(self):
+        """How people are lit here (the manifest's peopleLight), or None."""
+        return lighting.plan_for(self.map.id, self.style == "home")[1]
 
     # ── palette ─────────────────────────────────────────────────────────────
     def _materials(self):
@@ -284,14 +322,14 @@ class Place(VillageKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit,
     # ── build ───────────────────────────────────────────────────────────────
     def build(self):
         m = self.map
-        missing = [k for k in m.kinds() if not hasattr(self, f"tile_{k}")]
+        missing = [k for k in m.kinds() if not hasattr(self, tile_builder(k))]
         if missing:
             raise SystemExit(f"No builder for tile kinds {missing} in {m.id}: add Place.tile_<kind> (tools/art/lib)")
         self.heights = self.shape_heights(terrain.heights(self))
         self._ground()
         self._structures()
         for k in m.kinds():
-            getattr(self, f"tile_{k}")()
+            getattr(self, tile_builder(k))()
         self._entities()
         self._dressing()
         return self
@@ -408,7 +446,7 @@ class Place(VillageKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit,
 
     def _ground(self):
         m = self.map
-        if self.style == "city" and not self.village:
+        if self.style == "city" and self.heights is None and not self.village:
             return self._ground_city()
         names, images = self._masks()
         layers = [dict(self.layer_look(n)) for n in names]
