@@ -53,6 +53,32 @@ if (process.platform === 'darwin')
 const SET = process.env.ART_SHOTS ?? 'current';
 const SETTLE_MS = 5200;
 
+/**
+ * Click through every conversation until none is open and none opens again
+ * (arriving somewhere can start one a moment later).
+ */
+async function settleDialogue(page: Page): Promise<void> {
+  let quiet = 0;
+  for (let i = 0; i < 120 && quiet < 6; i++) {
+    const box = page.locator('section.dialogue');
+    if ((await box.count()) === 0) {
+      quiet++;
+      await page.waitForTimeout(500);
+      continue;
+    }
+    quiet = 0;
+    const next = box.getByRole('button', { name: /^(Continue|Show all text|End conversation)$/ });
+    if (
+      await next
+        .first()
+        .isVisible()
+        .catch(() => false)
+    )
+      await next.first().click();
+    else await box.locator('.choice').first().click();
+  }
+}
+
 async function canvasInfo(page: Page): Promise<string> {
   const canvas = page.locator('.viewport canvas');
   const art = await canvas.getAttribute('data-art');
@@ -148,28 +174,25 @@ for (const vp of VIEWPORTS) {
           await choose(page, /Ammia kept your old cloak/);
           await continueDialogue(page);
           await expectScene(page, 'A street in Colossae');
-          await endDialogue(page);
+          await settleDialogue(page);
         } else {
           await choose(page, /I’ll write it down and carry it to her/);
-          for (let i = 0; i < 12; i++) {
-            const box = page.locator('section.dialogue');
-            if ((await box.count()) === 0) break;
-            const next = box.getByRole('button', {
-              name: /^(Continue|Show all text|End conversation)$/,
-            });
-            if (!(await next.isVisible().catch(() => false))) break;
-            await next.click();
-          }
+          await settleDialogue(page);
           await shot('road-after', SETTLE_MS);
           await goTo(page, /Go to the road back to Colossae/);
           await expectScene(page, 'A street in Colossae');
-          await endDialogue(page);
+          await settleDialogue(page);
         }
         await shot('street-return', SETTLE_MS);
 
+        // Travel once more if a conversation opened just as we set off.
         await goTo(page, 'Go to Philemon’s house');
+        if ((await page.locator('.hud__scene').textContent()) !== 'Philemon’s house') {
+          await settleDialogue(page);
+          await goTo(page, 'Go to Philemon’s house');
+        }
         await expectScene(page, 'Philemon’s house');
-        await endDialogue(page);
+        await settleDialogue(page);
         await shot('gathering', SETTLE_MS);
         await goTo(page, 'Talk to Ammia');
         await continueDialogue(page);
