@@ -27,6 +27,7 @@
     "art:data": "tsx scripts/export-art-data.ts",
     "art:market": "node scripts/art-build.mjs market",
     "art:people": "node scripts/art-build.mjs people",
+    "art:portraits": "node scripts/art-build.mjs portraits",
     "deadcode": "knip",
     "perf:bundle": "node scripts/report-bundle.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build"

@@ -162,3 +162,18 @@ NEXT   : Measure on a real mid-range Android phone and an older iPad (docs/perfo
          `PERF_MARKET=1` numbers are emulation only. Then GPU-compressed textures for the market
          art (per-format KTX from tools/art, loaded with Phaser's multi-format `load.texture`).
 BLOCKED: Thunder/rain sound needs an application-layer cue (AudioPort) — not a world change.
+--- 2026-09-26  Claude Opus 5.5 — realistic rendered portraits (branch feat/realistic-portraits) ---
+DONE   : Replaced the cartoon SVG portraits with rendered, photographic heads and shoulders of all
+         12 Chapter 1 characters and the 4 player looks. Offline Blender pipeline
+         (tools/art/build_portraits.py, tools/art/lib/portrait_*.py, npm run art:portraits):
+         SDF-sculpted anatomical heads meshed with OpenVDB, per-id variation, eyes with cornea and
+         tear line, subsurface skin with regional colour, hair curves (Principled Hair), cloth
+         shells, short portrait lighting, 85 mm lens. Portrait.tsx shows them (SVG fallback),
+         lookup by appearance key (src/domain/appearance-key.ts); dialogue portrait 104 px.
+         Photographic finish chosen over a Kuwahara painterly pass (docs/art/portraits.md §5).
+TESTS  : Vitest 340 → 355. Playwright portraits/smoke/a11y/pwa: 14 passed, 5 skipped (opt-in
+         captures, keyboard test on mobile). typecheck, lint, prettier, knip clean.
+NEXT   : When Chapters 2–4 add characters: npm run art:data && npm run art:portraits, then
+         npx vitest run tests/content/portraits.test.ts. Unify src/domain/appearance-key.ts with
+         appearanceKey in src/game/prerendered/select.ts (select.ts could import the domain one).
+BLOCKED: none.

@@ -1,19 +1,51 @@
+import { useState } from 'react';
 import type { Appearance } from '@/domain/characters';
+import { portraitImage } from '../portraits/portrait-art';
 
 /**
- * Original SVG portrait generated from the same Appearance data as the world
- * sprite (same proportions, ink outline, eyes and head covering), framed as
- * a small medallion. Decorative: the speaker's name is always shown as text.
+ * A person's portrait. Decorative: the speaker's name is always shown as text.
+ *
+ * A pre-rendered portrait (tools/art/build_portraits.py) is shown when one
+ * exists for how the person looks now. It has a fixed size and a matching
+ * background while it loads, so nothing moves. Otherwise (or if the image
+ * cannot load) an original SVG drawn from the same Appearance data is shown.
  */
 const INK = '#2a170b';
 
 export function Portrait({
   appearance,
   size = 72,
+  characterId = null,
 }: {
   appearance: Appearance | null;
   size?: number;
+  /** Whose portrait this is, when two people could look alike. */
+  characterId?: string | null;
 }) {
+  const [failed, setFailed] = useState<string | null>(null);
+  const art = appearance ? portraitImage(appearance, characterId) : null;
+  if (art && failed !== art.src) {
+    return (
+      <img
+        className="portrait portrait--rendered"
+        src={art.src}
+        srcSet={art.srcSet}
+        sizes={`${size}px`}
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        data-portrait={art.id}
+        onError={() => setFailed(art.src)}
+      />
+    );
+  }
+  return <DrawnPortrait appearance={appearance} size={size} />;
+}
+
+/** The original drawn (SVG) portrait, and the narrator's scroll. */
+function DrawnPortrait({ appearance, size }: { appearance: Appearance | null; size: number }) {
   if (!appearance) {
     return (
       <svg

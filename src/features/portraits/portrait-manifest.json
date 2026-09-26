@@ -1,0 +1,66 @@
+{
+  "ezer": {
+    "appearance": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
+    "kind": "character"
+  },
+  "hadassah": {
+    "appearance": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
+    "kind": "character"
+  },
+  "hanan": {
+    "appearance": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
+    "kind": "character"
+  },
+  "malik": {
+    "appearance": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
+    "kind": "character"
+  },
+  "menashe": {
+    "appearance": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
+    "kind": "character"
+  },
+  "miriam": {
+    "appearance": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
+    "kind": "character"
+  },
+  "natan": {
+    "appearance": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+    "kind": "character"
+  },
+  "player-look-1": {
+    "appearance": "#a8734a|#2b1d14|#3f6f8f|#d9b25f|wrap|#e8dcc0|clean|child|satchel",
+    "kind": "player"
+  },
+  "player-look-2": {
+    "appearance": "#8d5a3a|#1f1611|#7a3b2e|#e3c27a|scarf|#c96f3b|clean|child|satchel",
+    "kind": "player"
+  },
+  "player-look-3": {
+    "appearance": "#c08a5e|#3a2a1c|#556b3a|#f0e0b0|band|#8a2f2f|clean|child|satchel",
+    "kind": "player"
+  },
+  "player-look-4": {
+    "appearance": "#6f4630|#141010|#6b5a8e|#e8d49a|none|#6b5a8e|clean|child|satchel",
+    "kind": "player"
+  },
+  "rivka": {
+    "appearance": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
+    "kind": "character"
+  },
+  "salome": {
+    "appearance": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
+    "kind": "character"
+  },
+  "shimon": {
+    "appearance": "#8a5a3a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
+    "kind": "character"
+  },
+  "tobiah": {
+    "appearance": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
+    "kind": "character"
+  },
+  "yair": {
+    "appearance": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
+    "kind": "character"
+  }
+}

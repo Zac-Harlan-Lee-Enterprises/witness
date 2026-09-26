@@ -49,7 +49,7 @@ export function ChapterSelect({
   return (
     <main className="screen chapter-select" aria-labelledby="chapters-title">
       <div className="player-banner">
-        <Portrait appearance={PLAYER_APPEARANCES[profile.look]} size={48} />
+        <Portrait appearance={PLAYER_APPEARANCES[profile.look]} size={56} />
         <p>
           Playing as <strong>{profile.displayName}</strong>
         </p>

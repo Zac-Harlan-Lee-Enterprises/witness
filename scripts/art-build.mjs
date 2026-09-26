@@ -6,6 +6,8 @@
  *   npm run art:data      # export characters and maps for Blender
  *   npm run art:market    # render public/art/jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people    # render public/art/people (≈ 30 min)
+ *   npm run art:portraits # render public/art/portraits (≈ 25 min for 16 people)
+ *   npm run art:portraits -- --who miriam player:look-1   # just some people
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -63,6 +65,15 @@ const jobs = {
     '--who',
     ...PEOPLE,
   ],
+  // Everyone in tools/art/data/chapter.json (characters and player looks)
+  // unless --who is given; the manifest is bundled by src/features/portraits.
+  portraits: [
+    'tools/art/build_portraits.py',
+    '--out',
+    'public/art/portraits',
+    '--manifest',
+    'src/features/portraits/portrait-manifest.json',
+  ],
 };
 const job = jobs[what];
 if (!job) {
@@ -70,6 +81,8 @@ if (!job) {
   process.exit(1);
 }
 const [script, ...args] = job;
+// Anything after the job name goes to the build script (e.g. --who miriam).
+args.push(...process.argv.slice(3));
 const r = spawnSync(blender, ['-b', '--factory-startup', '-P', script, '--', ...args], {
   stdio: 'inherit',
 });
