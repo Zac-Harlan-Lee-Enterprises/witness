@@ -49,6 +49,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "lib"))
 sys.path.insert(0, HERE)
 import common  # noqa: E402
+import downsample_people  # noqa: E402
 import imageio  # noqa: E402
 import lighting  # noqa: E402
 import materials as M  # noqa: E402
@@ -369,8 +370,10 @@ def main():
     for job in jobs:
         if render(job, a, manifest, tmp):
             json.dump(manifest, open(manifest_path, "w"), indent=1, sort_keys=True)
-            # Trim every frame to what is visible and pack the sheets into atlases.
+            # Trim every frame to what is visible and pack the sheets into atlases,
+            # then make the half-resolution copies phones load (only what changed).
             repack_people.repack(a.out)
+            downsample_people.downsample(a.out)
             manifest = json.load(open(manifest_path))
             print("PERSON DONE", job.id)
     print("PEOPLE DONE")
