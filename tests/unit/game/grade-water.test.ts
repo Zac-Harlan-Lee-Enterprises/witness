@@ -10,6 +10,7 @@ const base: GradeInput = {
   hour: 12,
   indoor: false,
   weather: CALM,
+  wet: 0,
   highContrast: false,
   reducedMotion: false,
 };
@@ -52,6 +53,16 @@ describe('post-processing grade', () => {
     expect(storm.exposure).toBeLessThan(clear.exposure);
     expect(storm.gain[2]).toBeGreaterThan(storm.gain[0]);
     expect(storm.bloom).toBeLessThan(clear.bloom);
+  });
+
+  it('makes wet ground darker and richer after rain, outdoors only', () => {
+    const dry = gradeFor(base);
+    const wet = gradeFor({ ...base, wet: 1 });
+    expect(wet.exposure).toBeLessThan(dry.exposure);
+    expect(wet.saturation).toBeGreaterThan(dry.saturation);
+    expect(gradeFor({ ...base, indoor: true, wet: 1 })).toEqual(
+      gradeFor({ ...base, indoor: true }),
+    );
   });
 
   it('shimmers with heat only in the open wilderness at midday, and never with reduced motion', () => {

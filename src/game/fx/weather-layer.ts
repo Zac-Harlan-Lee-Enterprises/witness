@@ -124,6 +124,11 @@ export class WeatherLayer {
     return this.windNow;
   }
 
+  /** How wet the ground is (0–1). */
+  get wetness(): number {
+    return this.wet;
+  }
+
   /** Lightning's brightening of the scene now (0 … MAX_FLASH). */
   get flash(): number {
     return this.flashNow;

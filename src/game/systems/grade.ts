@@ -46,6 +46,8 @@ export interface GradeInput {
   hour: number | null;
   indoor: boolean;
   weather: WeatherMix;
+  /** How wet the ground is (0–1): wet earth and stone are darker and richer. */
+  wet: number;
   /** Keep the world bright and clear (the player's high-contrast setting). */
   highContrast: boolean;
   reducedMotion: boolean;
@@ -190,6 +192,14 @@ export function gradeFor(input: GradeInput): Grade {
     // No sun to glint in: bloom only for lamps and lightning under cloud.
     bloom: base.bloom * (1 - 0.5 * cloud),
     haze: hazeFor(input),
+  };
+  // Wet ground: darker, deeper colour (outdoors), lingering after the rain.
+  const wet = input.indoor ? 0 : Math.min(1, Math.max(0, input.wet));
+  g = {
+    ...g,
+    exposure: g.exposure * (1 - 0.03 * wet),
+    contrast: g.contrast + 0.03 * wet,
+    saturation: g.saturation * (1 + 0.08 * wet),
   };
   if (input.highContrast) {
     // Legibility first: no darkening, no flattening, no shimmer.

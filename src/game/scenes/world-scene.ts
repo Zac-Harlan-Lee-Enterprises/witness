@@ -716,6 +716,7 @@ export class WorldScene extends Phaser.Scene {
             hour: this.lighting.hour,
             indoor: model.kind === 'indoor',
             weather: mix,
+            wet: weather.wetness,
             highContrast: this.highContrast,
             reducedMotion: this.reducedMotion,
           }),
