@@ -39,6 +39,7 @@ function before(id, size = 256) {
       ['show', `${compareAt}:public/art/portraits/${id}-${size}.webp`],
       {
         maxBuffer: 1 << 24,
+        stdio: ['ignore', 'pipe', 'ignore'], // people new since then are expected
       },
     );
     return dataUrl(buf);
