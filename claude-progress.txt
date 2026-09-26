@@ -177,3 +177,21 @@ NEXT   : When Chapters 2–4 add characters: npm run art:data && npm run art:por
          npx vitest run tests/content/portraits.test.ts. Unify src/domain/appearance-key.ts with
          appearanceKey in src/game/prerendered/select.ts (select.ts could import the domain one).
 BLOCKED: none.
+--- 2026-09-26  Claude Opus 5.5 — portraits, second pass (branch feat/portraits-v2) ---
+DONE   : Second pass on the rendered portraits, for all four chapters. New portrait data
+         (src/content/portrait-cast.ts, scripts/export-portrait-data.ts → tools/art/data/
+         portrait-people.json, npm run art:portrait-data): every speaking character in every
+         chapter (39) + 4 player looks; biblical figures never; later namesakes get
+         <id>.<chapter id>. Casting (age, sex, sun, mood, scars) for everyone. Pipeline:
+         face/nose/eye/lip types + small asymmetry, expressions in the relief, nose bridge as
+         relief, lips with a Cupid's bow and a lower-border apex, hooding, child proportions
+         and baby hair, skin maps (oil, pores, lines, freckles, moles, scars, stubble, lid rims,
+         lips) and a richer skin shader, darker warmer eyes with soft catchlights, wound wraps
+         with a tail, veils with deep folds, men's head cloths with a cord, hemmed necklines,
+         collarbones, cooler fill light; render at 1024 → 512, WebP q93. Review sheets
+         (npm run art:portrait-sheets) per chapter + v1/v2. docs/art/portraits.md §9.
+TESTS  : Vitest 489 (portraits content test rewritten for all chapters; new
+         tests/unit/content/portrait-cast.test.ts). e2e portraits spec: + Chapter 3 namesake.
+NEXT   : Judge in-game at 60–104 px on a real phone; if faces still read CG at 256 px,
+         the next lever is a displacement pass for skin detail (currently bump only).
+BLOCKED: none.
