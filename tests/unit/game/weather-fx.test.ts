@@ -12,6 +12,7 @@ import {
   nextStrikeIn,
   overcast,
   rainSlant,
+  sameSky,
   sameWeather,
   stepWeather,
   stepWetness,
@@ -230,5 +231,24 @@ describe('light under cloud', () => {
     expect(lerpRgb(0x000000, 0xffffff, 0.5)).toBe(0x808080);
     expect(lerpRgb(0x102030, 0x405060, 0)).toBe(0x102030);
     expect(lerpRgb(0x102030, 0x405060, 2)).toBe(0x405060);
+  });
+});
+
+describe('the light layer skips frames where nothing moved (code review)', () => {
+  const place = {};
+  const clear = WEATHER_MIX.clear;
+  const base = { place, hour: 10, mix: clear, highContrast: false, lowPower: false };
+
+  it('is the same sky for a new but equal weather mix (the mix is rebuilt every frame)', () => {
+    expect(sameSky(base, { ...base, mix: { ...clear } })).toBe(true);
+  });
+
+  it('recomputes when the place, hour, weather, contrast or power mode changes, or on the first frame', () => {
+    expect(sameSky(null, base)).toBe(false);
+    expect(sameSky(base, { ...base, place: {} })).toBe(false);
+    expect(sameSky(base, { ...base, hour: 11 })).toBe(false);
+    expect(sameSky(base, { ...base, mix: WEATHER_MIX.storm })).toBe(false);
+    expect(sameSky(base, { ...base, highContrast: true })).toBe(false);
+    expect(sameSky(base, { ...base, lowPower: true })).toBe(false);
   });
 });

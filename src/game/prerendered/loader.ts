@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { Logger } from '@/shared/logger';
+import { textureMegabytes } from '../phaser/texture-memory';
 import {
   LIGHTING_VARIANTS,
   parsePeopleArt,
@@ -83,6 +84,8 @@ async function images(scene: Phaser.Scene, files: Array<[string, string]>): Prom
 /** Textures from before the current place, waiting until nothing draws them. */
 const stale = new Set<string>();
 let watching: Phaser.Scene | null = null;
+/** Places being prepared: nothing is released until their loads have kept what they use. */
+let preparing = 0;
 
 function keep(key: string): void {
   stale.delete(key);
@@ -94,15 +97,32 @@ function keep(key: string): void {
  * draws them (the old place is cleared only when the new one is built).
  */
 export function beginPlace(scene: Phaser.Scene): void {
+  preparing++;
   for (const key of scene.textures.getTextureKeys())
     if (key.startsWith(PLACE_PREFIX) || key.startsWith(PERSON_PREFIX)) stale.add(key);
   if (watching === scene) return;
   watching = scene;
   scene.events.on('postupdate', () => release(scene));
+  scene.events.once('destroy', () => {
+    if (watching !== scene) return;
+    watching = null;
+    stale.clear();
+    preparing = 0;
+  });
+}
+
+/**
+ * The place's art has loaded (or failed): what it uses has been kept, so the
+ * rest may go once nothing draws it. Releasing earlier would drop sheets the
+ * new place is about to keep (preloaded overlays, poses), only to download
+ * them again.
+ */
+export function endPlace(): void {
+  preparing = Math.max(0, preparing - 1);
 }
 
 function release(scene: Phaser.Scene): void {
-  if (stale.size === 0) return;
+  if (stale.size === 0 || preparing > 0) return;
   const drawn = new Set<string>();
   for (const obj of scene.children.list) {
     const tex = (obj as Partial<Phaser.GameObjects.Image>).texture;
@@ -118,15 +138,7 @@ function release(scene: Phaser.Scene): void {
     }
   }
   // Keep the texture memory the canvas reports (data-texture-mb) true after a release.
-  if (removed) scene.game.canvas.dataset.textureMb = textureMegabytes(scene).toFixed(1);
-}
-
-/** Approximate GPU memory of every loaded texture (RGBA, uncompressed), in MB. */
-function textureMegabytes(scene: Phaser.Scene): number {
-  let bytes = 0;
-  for (const key of scene.textures.getTextureKeys())
-    for (const src of scene.textures.get(key).source) bytes += src.width * src.height * 4;
-  return bytes / (1024 * 1024);
+  if (removed) scene.game.canvas.dataset.textureMb = textureMegabytes(scene.textures).toFixed(1);
 }
 
 function readShade(scene: Phaser.Scene, key: string): ShadeMask | null {
@@ -244,7 +256,10 @@ export interface PersonTextures {
   key: string;
   /** The cast-shadow sheet (overlays have none). */
   shadow: string | null;
+  /** The light of the body sheet loaded. */
   light: PeopleLight;
+  /** The light of the shadow sheet loaded (it can fall back differently from the body's). */
+  shadowLight?: PeopleLight;
 }
 
 /**
@@ -302,7 +317,10 @@ async function attemptPersons(
         s.frameHeight,
       );
     const used = (Object.keys(sheet.sheets) as PeopleLight[]).find((l) => sheet.sheets[l] === file);
-    out.set(id, { key, shadow: shadowKey, light: used ?? light });
+    const shadowLight = s
+      ? (Object.keys(sheet.shadows) as PeopleLight[]).find((l) => sheet.shadows[l] === s)
+      : undefined;
+    out.set(id, { key, shadow: shadowKey, light: used ?? light, shadowLight });
   }
   return out;
 }

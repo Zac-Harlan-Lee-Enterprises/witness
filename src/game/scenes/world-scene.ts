@@ -27,7 +27,8 @@ import { headTop, isFootfall, walkColumn, WALK_CYCLE_TILES } from '../art/people
 import { frameName } from '../art/people/sheet';
 import { FX, makeFxTextures } from '../fx/fx-textures';
 import { POST_FX_KEY, WorldPostFX } from '../fx/post-fx';
-import { bytesPerPixel, compactTexture } from '../phaser/compact-textures';
+import { compactTexture } from '../phaser/compact-textures';
+import { textureMegabytes } from '../phaser/texture-memory';
 import { WaterSurface } from '../fx/water-surface';
 import { WeatherLayer } from '../fx/weather-layer';
 import {
@@ -79,7 +80,13 @@ import {
   type QualityState,
 } from '../systems/quality';
 import { wantsCompactGround } from '../systems/resolution';
-import { overcast, WEATHER_MIX, type WeatherMix } from '../systems/weather';
+import {
+  overcast,
+  sameSky,
+  WEATHER_MIX,
+  type SkyInputs,
+  type WeatherMix,
+} from '../systems/weather';
 import { sunForWater, waterLook, waterSky } from '../systems/water';
 import {
   Actors,
@@ -197,6 +204,8 @@ export class WorldScene extends Phaser.Scene {
   /** Colour grade + vignette in one multiply layer (texture redrawn only when the light changes). */
   private light: Phaser.GameObjects.Image | null = null;
   private lightKey = '';
+  /** What the light layer was last worked out from (see refreshSky). */
+  private skyInputs: SkyInputs | null = null;
   private lampGlow: Phaser.GameObjects.Image | null = null;
   private lighting: WorldLighting = { hour: null, lamp: false };
   /** Lightning without post-processing: a brief additive wash over the view. */
@@ -1254,9 +1263,20 @@ export class WorldScene extends Phaser.Scene {
   /** The multiply layer: time of day, the place's mood and the sky (repainted when they change). */
   private refreshSky(): void {
     if (!this.model || !this.light) return;
+    const mix: WeatherMix = this.weather?.mix ?? WEATHER_MIX[this.weatherNow];
+    const inputs: SkyInputs = {
+      place: this.model,
+      hour: this.lighting.hour,
+      mix,
+      highContrast: this.highContrast,
+      lowPower: this.quality.lowPower,
+    };
+    // Called every frame from the weather; most frames nothing has moved. A
+    // cleared lightKey still forces a repaint (resize, a rebuilt layer).
+    if (this.lightKey !== '' && sameSky(this.skyInputs, inputs)) return;
+    this.skyInputs = inputs;
     const indoor = this.model.kind === 'indoor';
     const l = this.withMood(lightingFor(this.lighting.hour, indoor));
-    const mix: WeatherMix = this.weather?.mix ?? WEATHER_MIX[this.weatherNow];
     const o = overcast(mix, indoor);
     // High contrast: keep the world bright and clear (only a trace of the weather).
     const sky = this.highContrast ? { ...o, alpha: o.alpha * 0.35, vignette: 0 } : o;
@@ -1432,14 +1452,4 @@ function castFor(model: WorldSceneModel): ShadowCast | null {
     alpha: look.shadow.alpha * 0.75,
     color: parseInt(look.shadow.color.slice(1), 16),
   };
-}
-
-/** Approximate GPU memory of every loaded texture (level 0, in its GPU format), in MB. */
-function textureMegabytes(textures: Phaser.Textures.TextureManager): number {
-  let bytes = 0;
-  for (const key of textures.getTextureKeys()) {
-    for (const src of textures.get(key).source)
-      bytes += src.width * src.height * bytesPerPixel(src);
-  }
-  return bytes / (1024 * 1024);
 }

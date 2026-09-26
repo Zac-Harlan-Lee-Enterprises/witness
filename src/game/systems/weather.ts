@@ -286,3 +286,28 @@ export function lerpRgb(a: number, b: number, t: number): number {
   };
   return ch(16) | ch(8) | ch(0);
 }
+
+/** Everything the light layer's colour depends on, besides the place itself. */
+export interface SkyInputs {
+  /** The place being shown (a new build means a new sky). */
+  place: object;
+  hour: number | null;
+  mix: WeatherMix;
+  highContrast: boolean;
+  lowPower: boolean;
+}
+
+/**
+ * The light layer only needs recomputing when one of its inputs moved: most
+ * frames (steady weather, the clock still) it can skip the work entirely.
+ */
+export function sameSky(a: SkyInputs | null, b: SkyInputs): boolean {
+  return (
+    a !== null &&
+    a.place === b.place &&
+    a.hour === b.hour &&
+    a.highContrast === b.highContrast &&
+    a.lowPower === b.lowPower &&
+    sameWeather(a.mix, b.mix)
+  );
+}

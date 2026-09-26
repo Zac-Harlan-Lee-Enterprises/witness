@@ -56,14 +56,3 @@ export function compactTexture(
   done.add(tex);
   return true;
 }
-
-/** Bytes a pixel of a texture on the GPU (as uploaded here or by Phaser). */
-export function bytesPerPixel(source: Phaser.Textures.TextureSource): number {
-  const wrapper = source.glTexture;
-  if (!wrapper) return 4;
-  const gl = wrapper.gl;
-  if (wrapper.format === gl.LUMINANCE || wrapper.format === gl.ALPHA) return 1;
-  // RGB is only ever uploaded here, as 5-6-5.
-  if (wrapper.format === gl.RGB) return 2;
-  return 4;
-}

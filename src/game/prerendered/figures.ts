@@ -5,7 +5,14 @@ import type { LookMark, Pose } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
 import type { RenderedFigure } from '../scenes/actors';
 import { crowdSize } from '../systems/life';
-import { beginPlace, loadPeople, loadPersons, loadPlace, type PersonTextures } from './loader';
+import {
+  beginPlace,
+  endPlace,
+  loadPeople,
+  loadPersons,
+  loadPlace,
+  type PersonTextures,
+} from './loader';
 import type { PeopleArt, PersonSheet } from './manifest';
 import { artPathFor, pickSheets, sheetsToLoad } from './select';
 import type { PlaceTextures } from './loader';
@@ -82,7 +89,12 @@ export class FigureBook {
 }
 
 function figureOf(sheet: PersonSheet, tex: PersonTextures): RenderedFigure | null {
-  const shadow = sheet.shadows[tex.light] ?? sheet.shadows.day ?? sheet.shadows.late;
+  // The shadow's frame metrics must match the shadow sheet actually loaded.
+  const shadow =
+    (tex.shadowLight ? sheet.shadows[tex.shadowLight] : undefined) ??
+    sheet.shadows[tex.light] ??
+    sheet.shadows.day ??
+    sheet.shadows.late;
   if (!shadow || !tex.shadow) return null;
   return {
     key: tex.key,
@@ -116,11 +128,15 @@ export async function prepareArt(
   logger: Logger,
 ): Promise<{ place: PlaceTextures | null; book: FigureBook | null }> {
   beginPlace(scene);
-  const path = artPathFor(model.sceneId);
-  if (!path) return { place: null, book: null };
-  const place = await loadPlace(scene, model.sceneId, path, options, logger);
-  if (!place) return { place: null, book: null };
-  const people = await loadPeople(scene, logger);
-  const book = people ? await FigureBook.load(scene, people, model, place.peopleLight) : null;
-  return { place, book };
+  try {
+    const path = artPathFor(model.sceneId);
+    if (!path) return { place: null, book: null };
+    const place = await loadPlace(scene, model.sceneId, path, options, logger);
+    if (!place) return { place: null, book: null };
+    const people = await loadPeople(scene, logger);
+    const book = people ? await FigureBook.load(scene, people, model, place.peopleLight) : null;
+    return { place, book };
+  } finally {
+    endPlace();
+  }
 }

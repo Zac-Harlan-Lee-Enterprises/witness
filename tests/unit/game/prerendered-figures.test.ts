@@ -58,6 +58,32 @@ describe('the figure book', () => {
     expect(book.figure(player, [], 'lie', null)).toBeNull();
   });
 
+  it("takes a shadow's frame metrics from the light its sheet was loaded in, not the body's", () => {
+    const lateShadow = { ...shadow, sheet: 's-late.webp', frameWidth: 160, originX: 12 };
+    const art = parsePeopleArt({
+      'player-look-1': sheet({ shadows: { day: shadow, late: lateShadow } }),
+    }).people;
+    if (!art) throw new Error('people');
+    // The body fell back to its day sheet; the shadow loaded is the late one.
+    const lit = FigureBook.from(
+      art,
+      new Map([
+        [
+          'player-look-1',
+          {
+            key: 'person:x.webp',
+            shadow: 'person:s-late.webp',
+            light: 'day' as const,
+            shadowLight: 'late' as const,
+          },
+        ],
+      ]),
+    );
+    const figure = lit.figure(player, [], 'stand', null);
+    expect(figure?.shadow.frameWidth).toBe(160);
+    expect(figure?.shadow.originX).toBe(12);
+  });
+
   it('lists the passers-by it has', () => {
     expect(book.crowd().map((f) => f.key)).toEqual(['person:c.webp']);
   });
