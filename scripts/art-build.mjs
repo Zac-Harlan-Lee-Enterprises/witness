@@ -27,10 +27,30 @@ const CANDIDATES = [
 ].filter(Boolean);
 
 /** Places with pre-rendered art (keep in step with PLACES_WITH_ART in src/game/prerendered/select.ts). */
-const PLACES = ['miriam-house', 'jerusalem-market', 'jericho-road', 'jericho'];
+const PLACES = [
+  'miriam-house',
+  'jerusalem-market',
+  'jericho-road',
+  'jericho',
+  'tamar-house',
+  'bethlehem-lanes',
+  'shepherds-fields',
+];
 
 /** Samples per place: rooms need more (their light is mostly bounced). */
-const SAMPLES = { 'miriam-house': '512' };
+const SAMPLES = { 'miriam-house': '512', 'tamar-house': '512', 'shepherds-fields': '160' };
+
+/**
+ * The lights each place is rendered in, where its story needs other than the
+ * default (outdoors morning and later day, a room its morning): Bethlehem's
+ * house by day and by lamplight, its lanes and fields from mid-afternoon
+ * into the night.
+ */
+const VARIANTS = {
+  'tamar-house': ['day', 'night'],
+  'bethlehem-lanes': ['late', 'night'],
+  'shepherds-fields': ['late', 'night'],
+};
 
 const [what, ...rest] = process.argv.slice(2);
 const blender = CANDIDATES.find((c) => existsSync(c));
@@ -50,6 +70,7 @@ function place(id, extra = []) {
     '3',
     '--samples',
     SAMPLES[id] ?? '96',
+    ...(VARIANTS[id] && !extra.includes('--variants') ? ['--variants', ...VARIANTS[id]] : []),
     ...extra,
   ];
 }

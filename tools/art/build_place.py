@@ -25,6 +25,13 @@ Writes, per lighting variant:
                         on its own with the rest of the place still casting
                         shadows and bouncing light onto it (-low: half size)
 and manifest.json describing where everything goes and how it sorts.
+
+Lighting variants are `day`, `late` and `night`. Anything tagged
+`obj["variants"] = "night"` (or "day,late"...) exists only in those
+variants: a lamp lit only after dark, the daylight bounced in at a door.
+At night the shade mask records all the light there is (the moon and the
+place's own fires and lamps), and the manifest lists the fires and lamps
+(`lights`) so the game can make them flicker.
 """
 import argparse
 import json
@@ -151,6 +158,11 @@ def main():
     p = place.Place(scene_data).build()
     scene.view_settings.exposure = -1.4 + p.exposure
     variants = a.variants or default_variants(p)
+
+    def only_in(o, variant):
+        """Whether a thing exists in this lighting variant (untagged: in all)."""
+        tag = o.get("variants") if hasattr(o, "get") else None
+        return not tag or variant in str(tag).split(",")
     sprite_objs = [o for sp in p.sprites for o in sp.objects]
     for o in sprite_objs:
         if not o.users_collection:
@@ -167,22 +179,35 @@ def main():
     scattered = {o for o in p.ground_objects if any(m.type == "NODES" for m in o.modifiers)}
     W, H = p.map.w * TILE, p.map.h * TILE
 
+    absent = set()
+
     def show(camera, hidden=(), holdout=()):
         """Set camera visibility: `camera` objects are seen; occluders never
         are; `hidden` objects are left out of the render entirely; `holdout`
         objects are seen as holes (transparent), cutting away whatever they
-        hide, while still casting shadows and bouncing light."""
+        hide, while still casting shadows and bouncing light. Things that do
+        not exist in the current lighting variant are always left out."""
         for o in scene.objects:
             if o.type not in ("MESH", "CURVES"):
                 continue
-            o.hide_render = o in hidden
+            o.hide_render = o in hidden or o in absent
             o.is_holdout = o in holdout
             seen = o in camera or o in holdout
             o.visible_camera = seen and (o not in occluders or bool(os.environ.get("SHOW_OCCLUDERS")))
 
+    def set_variant(variant):
+        """Light the scene for a variant: its sun or moon and exposure, and
+        only the things and lights that exist in it."""
+        lighting.setup(scene, variant)
+        scene.view_settings.exposure = -1.4 + p.exposure + lighting.exposure(variant) + p.variant_exposure.get(variant, 0.0)
+        absent.clear()
+        absent.update(o for o in scene.objects if o.type in ("MESH", "CURVES") and not only_in(o, variant))
+        for light in p.lights:
+            light.hide_render = not only_in(light, variant)
+
     if a.probe:
         x0, y0, x1, y1 = a.probe
-        lighting.setup(scene, variants[0])
+        set_variant(variants[0])
         w = (x1 - x0) * TILE
         h = (y1 - y0) * TILE
         view.setup_camera(scene, (x0 + x1) / 2 * TILE, (y0 + y1) / 2 * TILE, int(w * a.ppu), int(h * a.ppu), a.ppu)
@@ -247,11 +272,13 @@ def main():
             if os.path.exists(os.path.join(a.out, f)):
                 os.remove(os.path.join(a.out, f))
         # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no lamps).
+        #    At night: all the light there is (the moon, the fires and lamps).
+        night = lighting.is_night(variant)
         layer = scene.view_layers[0]
         layer.material_override = white
         world_strength.default_value = 0.0
         for light in p.lights:
-            light.hide_render = True
+            light.hide_render = not (night and only_in(light, variant))
         show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats | volumes)
         scene.render.resolution_percentage = 25
         probe = render_to(scene, os.path.join(tmp, f"shade-{variant}.png"))
@@ -259,11 +286,14 @@ def main():
         layer.material_override = None
         world_strength.default_value = base_strength
         for light in p.lights:
-            light.hide_render = False
+            light.hide_render = not only_in(light, variant)
         lum = probe[:, :, :3].mean(axis=2)
         lit = np.percentile(lum, 97)
         vis = np.clip(lum / max(1e-4, lit), 0, 1)
-        if p.style == "home":
+        if p.style == "home" and night:
+            # A room at night: lit by its lamps and hearth; the dark corners dim people.
+            vis = 0.4 + 0.6 * vis
+        elif p.style == "home":
             # Indoors people are lit for the room; only the sunbeam brightens them.
             vis = 0.85 + 0.15 * vis
         shade = np.dstack([vis, vis, vis, np.ones_like(vis)])
@@ -323,11 +353,14 @@ def main():
         return img[by0:by1, bx0:bx1], int(round(x0 * a.ppu)) + bx0, int(round(y0 * a.ppu)) + by0
 
     for variant in variants:
-        lighting.setup(scene, variant)
+        set_variant(variant)
         if a.only not in ("conditional", "sprites"):
             ground_and_shade(variant)
         if a.only == "ground":
             manifest["variants"][variant] = {**previous["variants"][variant], **grounds[variant]}
+            spots = p.light_spots(variant)
+            if spots:
+                manifest["variants"][variant]["lights"] = spots
             print("VARIANT DONE", variant, "ground only")
             continue
         # 3. Each standing thing on its own (or, with --only conditional, just
@@ -402,8 +435,19 @@ def main():
             "pagesLow": low_files,
             "sprites": entries,
         }
+        spots = p.light_spots(variant)
+        if spots:
+            manifest["variants"][variant]["lights"] = spots
         print("VARIANT DONE", variant, len(entries))
-    json.dump(manifest, open(os.path.join(a.out, "manifest.json"), "w"), indent=1)
+    # Lights rendered before and not in this run are kept (a place can be
+    # rendered one light at a time: --variants late, then --variants night).
+    path = os.path.join(a.out, "manifest.json")
+    if not a.only and a.variants and os.path.exists(path):
+        before = json.load(open(path))
+        if before.get("tiles") == manifest["tiles"] and before.get("ppu") == manifest["ppu"]:
+            for name, v in before.get("variants", {}).items():
+                manifest["variants"].setdefault(name, v)
+    json.dump(manifest, open(path, "w"), indent=1)
     print("PLACE DONE", a.scene)
 
 
