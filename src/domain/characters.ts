@@ -35,6 +35,10 @@ export const AppearanceSchema = z.object({
       'lamp',
       /** A wax writing tablet and stylus (a clerk or scribe). */
       'tablet',
+      /** A pair of wooden writing tablets and a stylus (a scribe). */
+      'tablets',
+      /** A cylindrical leather case for carrying letters (a letter carrier). */
+      'scroll-case',
     ])
     .default('none'),
 });

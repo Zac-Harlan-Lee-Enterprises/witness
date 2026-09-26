@@ -206,7 +206,7 @@ export const SHEPHERDS_FIELDS: ChapterInput['scenes'][number] = {
       'A tuft of speckled wool is caught on the thorns where the path drops into the gully.',
       23,
       18,
-      'wool',
+      'snagged-wool',
     ),
     sign(
       'terrace-gap',

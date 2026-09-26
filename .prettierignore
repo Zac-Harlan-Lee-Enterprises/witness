@@ -14,3 +14,5 @@ claude-progress.txt
 test-results
 public/sw.js
 *.md
+# Agent worktrees (Claude Code)
+.claude/worktrees

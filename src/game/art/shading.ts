@@ -52,7 +52,7 @@ export function paintShadows(
     const Y = y * TILE;
     const tallAt = (dx: number, dy: number): boolean => {
       const n = site.kindAt(x + dx, y + dy);
-      return n === 'wall' || n === 'roof' || n === 'cliff' || isLowWall(n);
+      return n === 'wall' || n === 'roof' || n === 'tile-roof' || n === 'cliff' || isLowWall(n);
     };
     const c = look.shadow.color;
     if (tallAt(0, -1)) band(ctx, [X, Y], [X, Y + 10], [X, Y, TILE, 10], c, ao * 0.9);
@@ -88,9 +88,25 @@ function castShape(m: Ctx, kind: TileKind, x: number, y: number, h: number): voi
   switch (kind) {
     case 'wall':
     case 'roof':
+    case 'tile-roof':
     case 'cliff':
     case 'hill':
       m.fillRect(x, y, TILE, TILE);
+      return;
+    case 'travertine':
+      m.fillRect(x, y + 8, TILE, TILE - 8);
+      return;
+    case 'column':
+    case 'lampstand':
+    case 'milestone':
+      // A tall, thin thing throws a long, narrow shadow.
+      m.beginPath();
+      m.moveTo(x + 11, y + 26);
+      m.lineTo(x + 21, y + 26);
+      m.lineTo(x + 21 + h * 0.2, y + 22 - h * 0.25);
+      m.lineTo(x + 11 + h * 0.2, y + 22 - h * 0.25);
+      m.closePath();
+      m.fill();
       return;
     case 'fence':
     case 'sheepfold':
@@ -158,7 +174,7 @@ export function paintInteriorLight(ctx: Ctx, site: Site, look: Look): void {
   // Darker toward the walls.
   site.forEach((x, y) => {
     const k = site.groundAt(x, y);
-    if (k === 'wall' || k === 'roof' || k === 'void') return;
+    if (k === 'wall' || k === 'roof' || k === 'tile-roof' || k === 'void') return;
     const X = x * TILE;
     const Y = y * TILE;
     const wall = (dx: number, dy: number): boolean => site.kindAt(x + dx, y + dy) === 'wall';

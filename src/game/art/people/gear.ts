@@ -6,8 +6,9 @@ import { rightHandIndex, type Pt, type Rig } from './rig';
 /**
  * Things people carry and wear over their clothes: a shepherd's staff, a
  * basket, an oil jar, a baker's tray, a spindle, a traveller's bundle, a lamb
- * in the arms, a clay lamp held up, a clerk's wax tablet, and the player's
- * satchel, water skin, lamp, rolled cloak and a lamb carried home across the
+ * in the arms, a clay lamp held up, a clerk's wax tablet, a scribe's writing
+ * tablets, a letter carrier's leather case, and the player's satchel, water
+ * skin, lamp, rolled cloak, letter case and a lamb carried home across the
  * shoulders. Each is drawn in the layer where it belongs for the view:
  *   behind — hidden by the body (drawn first)
  *   body   — over the tunic, under the arms
@@ -29,7 +30,10 @@ type Item =
   | 'lamb'
   | 'held-lamp'
   | 'tablet'
-  | 'lamb-shoulders';
+  | 'lamb-shoulders'
+  | 'tablets'
+  | 'scroll-case'
+  | 'letter-case';
 
 const WOOD = '#7a5634';
 const LEATHER = '#6e4a2c';
@@ -38,6 +42,8 @@ const CLAY = '#b2714a';
 /** Undyed fleece, and the dark face and ears of a speckled lamb. */
 const FLEECE = '#ece4d2';
 const LAMB_FACE = '#3b2e26';
+const WAX = '#3b3128';
+const BOXWOOD = '#b99a64';
 
 export function itemsOf(d: Dress): Item[] {
   const items: Item[] = [];
@@ -48,6 +54,7 @@ export function itemsOf(d: Dress): Item[] {
   if (d.gear.lamp) items.push('lamp');
   if (d.gear.cloakRoll) items.push('cloak-roll');
   if (d.gear.lambOnShoulders) items.push('lamb-shoulders');
+  if (d.gear.letterCase) items.push('letter-case');
   return items;
 }
 
@@ -61,6 +68,7 @@ function sideIndex(item: Item, r: Rig): 0 | 1 {
     case 'bread':
     case 'water-skin':
     case 'held-lamp':
+    case 'letter-case':
       return right;
     default:
       return left;
@@ -78,11 +86,19 @@ export function layerOf(item: Item, r: Rig): CarryLayer {
   if (item === 'lamb') return r.dir === 'up' ? 'behind' : 'front';
   const near = side ? sideIndex(item, r) === 1 : true;
   if (!near) return 'behind';
+  const hipBag =
+    item === 'satchel' || item === 'water-skin' || item === 'scroll-case' || item === 'letter-case';
   if (r.dir === 'up') {
     // Seen from behind, things held in front are hidden; hip bags still show.
-    return item === 'satchel' || item === 'water-skin' ? 'body' : 'behind';
+    return hipBag ? 'body' : 'behind';
   }
-  if (item === 'spindle' || item === 'bread' || item === 'held-lamp' || item === 'tablet')
+  if (
+    item === 'spindle' ||
+    item === 'bread' ||
+    item === 'held-lamp' ||
+    item === 'tablet' ||
+    item === 'tablets'
+  )
     return 'front';
   return 'body';
 }
@@ -97,7 +113,14 @@ export function paintCarry(ctx: Ctx, d: Dress, r: Rig, layer: CarryLayer): void 
 
 // ── Straps across the body ───────────────────────────────────────────────
 function strapFor(ctx: Ctx, d: Dress, r: Rig, item: Item): void {
-  if (item !== 'satchel' && item !== 'water-skin' && item !== 'bundle' && item !== 'cloak-roll')
+  if (
+    item !== 'satchel' &&
+    item !== 'water-skin' &&
+    item !== 'bundle' &&
+    item !== 'cloak-roll' &&
+    item !== 'scroll-case' &&
+    item !== 'letter-case'
+  )
     return;
   const t = torsoFrame(d, r);
   const side = r.dir === 'left' || r.dir === 'right';
@@ -112,7 +135,7 @@ function strapFor(ctx: Ctx, d: Dress, r: Rig, item: Item): void {
     ctx.quadraticCurveTo(s.x + f * 0.4, (s.y + t.waist) / 2, s.x - f * 0.6, t.waist + 2.5);
   } else {
     // Across the chest from one shoulder to the opposite hip.
-    const fromRight = item === 'satchel' || item === 'bundle';
+    const fromRight = item === 'satchel' || item === 'bundle' || item === 'scroll-case';
     const rightScreen = rightHandIndex(r.dir);
     const shoulderIdx = fromRight ? rightScreen : rightScreen === 0 ? 1 : 0;
     const s = r.shoulders[shoulderIdx];
@@ -527,6 +550,82 @@ function tablet(ctx: Ctx, _d: Dress, r: Rig): void {
   }
 }
 
+/** A scribe's pair of wooden tablets (wax inside), held against the chest, and a stylus. */
+function tablets(ctx: Ctx, _d: Dress, r: Rig): void {
+  const h = r.hands[sideIndex('tablets', r)];
+  const side = r.dir === 'left' || r.dir === 'right';
+  const w = side ? 2.6 : 5.2;
+  const x = h.x - w / 2;
+  const y = h.y - 5.6;
+  const g = ctx.createLinearGradient(x, y, x + w, y + 6.4);
+  g.addColorStop(0, shade(BOXWOOD, 0.18));
+  g.addColorStop(1, shade(BOXWOOD, -0.3));
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, w, 6.4);
+  if (!side) {
+    // The dark wax of the open leaf, scratched with lines of writing.
+    ctx.fillStyle = WAX;
+    ctx.fillRect(x + 0.6, y + 0.6, w - 1.2, 5.2);
+    ctx.strokeStyle = rgba('#d8c9a8', 0.55);
+    ctx.lineWidth = 0.22;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + 1, y + 1.5 + i * 1.2);
+      ctx.lineTo(x + w - 1.2 - (i % 2) * 0.8, y + 1.5 + i * 1.2);
+      ctx.stroke();
+    }
+  }
+  // The binding cord and the stylus tucked beside it.
+  ctx.fillStyle = shade(BOXWOOD, -0.45);
+  ctx.fillRect(x - 0.2, y + 2.8, w + 0.4, 0.5);
+  ctx.strokeStyle = '#8a8a8a';
+  ctx.lineWidth = 0.45;
+  ctx.beginPath();
+  ctx.moveTo(x + w + 0.4, y - 0.8);
+  ctx.lineTo(x + w + 0.9, y + 5.4);
+  ctx.stroke();
+}
+
+/** A cylindrical leather letter case on a strap, at the hip. */
+function scrollCase(ctx: Ctx, d: Dress, r: Rig): void {
+  const p = hipPoint(d, r, 'scroll-case');
+  const side = r.dir === 'left' || r.dir === 'right';
+  const w = side ? 2.2 : 3;
+  const h = 7.2;
+  const g = ctx.createLinearGradient(p.x - w, 0, p.x + w, 0);
+  g.addColorStop(0, shade(LEATHER, 0.3));
+  g.addColorStop(0.5, shade(LEATHER, 0.05));
+  g.addColorStop(1, shade(LEATHER, -0.4));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(p.x - w / 2, p.y - h / 2, w, h, 1.2);
+  ctx.fill();
+  // Cap and bands.
+  ctx.fillStyle = shade(LEATHER, -0.3);
+  ctx.fillRect(p.x - w / 2 - 0.2, p.y - h / 2, w + 0.4, 1.3);
+  ctx.fillStyle = rgba('#d9b460', 0.8);
+  ctx.fillRect(p.x - w / 2, p.y + 0.6, w, 0.4);
+}
+
+/** The player's flat leather letter case at the hip, its flap buckled against rain. */
+function letterCase(ctx: Ctx, d: Dress, r: Rig): void {
+  const p = hipPoint(d, r, 'letter-case');
+  const w = 3.6;
+  const h = 4.4;
+  ctx.fillStyle = shade(LEATHER, -0.1);
+  ctx.beginPath();
+  ctx.roundRect(p.x - w / 2, p.y - h / 2, w, h, 0.8);
+  ctx.fill();
+  ctx.fillStyle = shade(LEATHER, 0.2);
+  ctx.beginPath();
+  ctx.moveTo(p.x - w / 2, p.y - h / 2);
+  ctx.lineTo(p.x + w / 2, p.y - h / 2);
+  ctx.lineTo(p.x, p.y + 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ellipse(ctx, p.x, p.y + 0.2, 0.4, 0.4, '#c9a66a');
+}
+
 const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   staff,
   basket,
@@ -542,4 +641,7 @@ const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   'held-lamp': heldLamp,
   tablet,
   'lamb-shoulders': lambOnShoulders,
+  tablets,
+  'scroll-case': scrollCase,
+  'letter-case': letterCase,
 };

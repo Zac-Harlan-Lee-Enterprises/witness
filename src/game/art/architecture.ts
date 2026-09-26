@@ -12,7 +12,7 @@ import {
   TILE,
   type Ctx,
 } from './paint';
-import { backWallSlots, type Site } from './site';
+import { backWallSlots, isBuilding, type Site } from './site';
 
 /**
  * Buildings. A wall that faces the viewer is drawn as a FRONT that rises
@@ -30,6 +30,7 @@ export function paintBuildings(ctx: Ctx, site: Site, look: Look): void {
   site.forEach((x, y) => {
     const k = site.kindAt(x, y);
     if (k === 'roof') paintRoof(ctx, site, look, x, y);
+    else if (k === 'tile-roof') paintTileRoof(ctx, site, look, x, y);
     else if (k === 'wall' && !site.isFrontWall(x, y)) paintWallCap(ctx, site, look, x, y);
   });
   site.forEach((x, y) => {
@@ -53,7 +54,7 @@ function paintWallCap(ctx: Ctx, site: Site, look: Look, tx: number, ty: number):
   const r = rng(hash(tx, ty, 23));
   const wallish = (dx: number, dy: number): boolean => {
     const k = site.kindAt(tx + dx, ty + dy);
-    return k === 'wall' || k === 'roof' || k === 'door' || k === 'gate';
+    return isBuilding(k) || k === 'door' || k === 'gate';
   };
   if (look.mood === 'home') {
     // Interior: the thickness of the walls, framing the room in dark timber-and-earth tones.
@@ -90,10 +91,7 @@ function paintRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): vo
   const X = tx * TILE;
   const Y = ty * TILE;
   const r = rng(hash(tx, ty, 29));
-  const roofAt = (dx: number, dy: number): boolean => {
-    const k = site.kindAt(tx + dx, ty + dy);
-    return k === 'roof' || k === 'wall';
-  };
+  const roofAt = (dx: number, dy: number): boolean => isBuilding(site.kindAt(tx + dx, ty + dy));
   const reed = look.building.material === 'mudbrick';
   const base = reed ? '#b8955a' : shade(look.building.top, -0.02);
   ctx.fillStyle = base;
@@ -216,6 +214,119 @@ function paintRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): vo
       ctx.stroke();
     }
   }
+}
+
+/**
+ * A pitched roof of fired terracotta tiles, as on Greek and Roman houses in
+ * Asia Minor: rows of flat pan tiles with rounded cover tiles over the joints,
+ * a ridge along the top, weathering toward the eaves.
+ */
+function paintTileRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 47));
+  const roofAt = (dx: number, dy: number): boolean => site.kindAt(tx + dx, ty + dy) === 'tile-roof';
+  const clay = '#b4613b';
+  const base = shade(clay, (r() - 0.5) * 0.06);
+  // Slope shading: the upper (north) half catches the sun, the lower half turns away.
+  const g = ctx.createLinearGradient(0, Y, 0, Y + TILE);
+  g.addColorStop(0, shade(base, roofAt(0, -1) ? 0.02 : 0.14));
+  g.addColorStop(1, shade(base, roofAt(0, 1) ? -0.04 : -0.18));
+  ctx.fillStyle = g;
+  ctx.fillRect(X, Y, TILE, TILE);
+  // Cover tiles run down the slope; each course overlaps the one below it.
+  for (let col = 0; col < 5; col++) {
+    const cx = X + 3.2 + col * 6.4;
+    for (let row = 0; row < 4; row++) {
+      const cy = Y + row * 8;
+      const tone = shade(clay, (hash(tx * 5 + col, ty * 4 + row, 3) % 9) / 60 - 0.04);
+      ctx.fillStyle = tone;
+      ctx.beginPath();
+      ctx.moveTo(cx - 2.2, cy + 8);
+      ctx.quadraticCurveTo(cx - 2.4, cy + 1, cx, cy + 0.6);
+      ctx.quadraticCurveTo(cx + 2.4, cy + 1, cx + 2.2, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = rgba('#ffe2c4', 0.3);
+      ctx.fillRect(cx - 1.5, cy + 1.4, 0.9, 5.5);
+      ctx.fillStyle = rgba('#3a150a', 0.35);
+      ctx.fillRect(cx - 2.2, cy + 7.2, 4.4, 0.9);
+    }
+    // The pan tiles' joints between the covers.
+    ctx.fillStyle = rgba('#4a1c0e', 0.3);
+    ctx.fillRect(cx + 2.6, Y, 0.9, TILE);
+  }
+  // Lichen and a few darker, older tiles.
+  if (r() < 0.35) ellipse(ctx, X + 4 + r() * 24, Y + 6 + r() * 20, 2.2, 1.4, rgba('#c9c08a', 0.5));
+  // Ridge along the top of a roof, eaves along the bottom, verges at the sides.
+  if (!roofAt(0, -1)) {
+    ctx.fillStyle = shade(clay, -0.12);
+    ctx.fillRect(X, Y, TILE, 3.4);
+    ctx.fillStyle = rgba('#ffe2c4', 0.45);
+    ctx.fillRect(X, Y, TILE, 1);
+    for (let i = 0; i < 4; i++) ellipse(ctx, X + 4 + i * 8, Y + 1.8, 3.6, 1.8, shade(clay, 0.05));
+  }
+  if (!roofAt(0, 1)) {
+    ctx.fillStyle = rgba('#2a0f06', 0.35);
+    ctx.fillRect(X, Y + TILE - 2.2, TILE, 2.2);
+  }
+  if (!roofAt(-1, 0)) {
+    ctx.fillStyle = rgba('#ffe2c4', 0.3);
+    ctx.fillRect(X, Y, 1.6, TILE);
+  }
+  if (!roofAt(1, 0)) {
+    ctx.fillStyle = rgba(look.shadow.color, 0.3);
+    ctx.fillRect(X + TILE - 2.4, Y, 2.4, TILE);
+  }
+}
+
+/** Columns this far apart (in tiles) or closer still carry one beam between them. */
+const COLONNADE_SPAN = 3;
+
+/**
+ * The next column along a row (dx = 1) or down a column (dy = 1) within a
+ * colonnade's span, with nothing built in between; null if there is none.
+ */
+export function nextColumn(site: Site, x: number, y: number, dx: 0 | 1, dy: 0 | 1): number | null {
+  for (let step = 1; step <= COLONNADE_SPAN; step++) {
+    const k = site.kindAt(x + dx * step, y + dy * step);
+    if (k === 'column') return step;
+    if (isBuilding(k) || k === 'void') return null;
+  }
+  return null;
+}
+
+/**
+ * The beam (architrave) carried from column to column along a colonnade,
+ * drawn over the tops of the columns so a row reads as one portico.
+ */
+export function paintColonnadeBeams(ctx: Ctx, site: Site, look: Look): void {
+  const stone = shade(look.building.face, 0.06);
+  site.forEach((x, y) => {
+    if (site.kindAt(x, y) !== 'column') return;
+    const top = y * TILE - 30;
+    const X = x * TILE + 16;
+    const across = nextColumn(site, x, y, 1, 0);
+    if (across !== null) {
+      const w = across * TILE;
+      ctx.fillStyle = rgba(look.shadow.color, 0.3);
+      ctx.fillRect(X, top + 6, w, 2);
+      ctx.fillStyle = stone;
+      ctx.fillRect(X, top, w, 6);
+      ctx.fillStyle = rgba('#ffffff', 0.35);
+      ctx.fillRect(X, top, w, 1.2);
+      ctx.fillStyle = rgba(shade(look.building.face, -0.5), 0.35);
+      ctx.fillRect(X, top + 3.4, w, 0.6);
+    }
+    const down = nextColumn(site, x, y, 0, 1);
+    if (down !== null) {
+      // A colonnade running north–south: its beam is seen end-on, along the side.
+      ctx.fillStyle = stone;
+      ctx.fillRect(X - 3, top + 4, 6, down * TILE);
+      ctx.fillStyle = rgba('#ffffff', 0.3);
+      ctx.fillRect(X - 3, top + 4, 1.2, down * TILE);
+    }
+  });
 }
 
 function lumpyBundle(ctx: Ctx, x: number, y: number, look: Look): void {

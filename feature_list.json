@@ -349,5 +349,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "chapter-letter-from-paul",
+    "category": "functional",
+    "description": "Chapter 4, A Letter from Paul (Philemon and Colossians 4:7-18): four scenes in Colossae and the Lycus valley, all four puzzle types, an optional side quest, story-driven rain, choices visible in the world, silent biblical figures, open disputed questions, and headless playthroughs of every major branch to the summary.",
+    "verification": "npx vitest run --project unit tests/content/letter-from-paul.test.ts tests/integration/letter-from-paul-playthrough.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
   }
 ]

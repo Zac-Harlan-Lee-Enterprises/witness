@@ -4,8 +4,9 @@ import { ellipse, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } 
 import type { Site } from './site';
 
 /**
- * The land itself — wilderness hills and red cliffs, water — and growing
- * things: rocks, scrub, reeds, crops and the three trees of the chapter
+ * The land itself — wilderness hills and red cliffs, white travertine,
+ * water — and growing things: rocks, scrub, reeds, crops, garden beds and
+ * the three trees of the chapter
  * (olive, date palm, sycamore-fig). Trees are split into a trunk (painted
  * on the ground layer) and a canopy (drawn above characters).
  */
@@ -234,6 +235,47 @@ export function paintCliffs(ctx: Ctx, site: Site): void {
   });
 }
 
+// ── Travertine (the white terraces of Hierapolis, seen across the valley) ──
+export function paintTravertine(ctx: Ctx, site: Site): void {
+  const white = '#efe9dc';
+  site.forEach((x, y) => {
+    if (site.kindAt(x, y) !== 'travertine') return;
+    const X = x * TILE;
+    const Y = y * TILE;
+    const r = rng(hash(x, y, 71));
+    ctx.fillStyle = white;
+    ctx.fillRect(X, Y, TILE, TILE);
+    // Stepped pools: each rim a bright scalloped lip over a shaded drop,
+    // holding a little pale-blue water behind it.
+    for (let i = 0; i < 3; i++) {
+      const ry = Y + 6 + i * 9 + r() * 2;
+      ctx.fillStyle = rgba('#a9d6dc', 0.75);
+      ctx.beginPath();
+      ctx.moveTo(X, ry - 4);
+      for (let sx = 0; sx <= TILE; sx += 4)
+        ctx.quadraticCurveTo(X + sx + 2, ry - 5.5 - r(), X + sx + 4, ry - 4);
+      ctx.lineTo(X + TILE, ry);
+      ctx.lineTo(X, ry);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = rgba('#b8ab90', 0.55);
+      ctx.fillRect(X, ry, TILE, 2.4);
+      ctx.strokeStyle = '#fbf8f0';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(X, ry);
+      for (let sx = 0; sx <= TILE; sx += 4)
+        ctx.quadraticCurveTo(X + sx + 2, ry + 1.6, X + sx + 4, ry);
+      ctx.stroke();
+    }
+    speckle(ctx, X, Y, TILE, TILE, r, ['#ddd3c0', '#fffdf6'], 10, 1);
+    if (site.kindAt(x, y - 1) !== 'travertine') {
+      ctx.fillStyle = rgba('#ffffff', 0.6);
+      ctx.fillRect(X, Y, TILE, 1.6);
+    }
+  });
+}
+
 // ── Water ────────────────────────────────────────────────────────────────
 export function paintWater(ctx: Ctx, site: Site, look: Look): void {
   const deep = look.mood === 'oasis' ? '#1f6f86' : '#2f7690';
@@ -407,6 +449,29 @@ export function paintNatureProp(c: Ctx, kind: TileKind, look: Look, seed: number
       sheep(13, 13, 0.9, pickFace(), r() < 0.5 ? -1 : 1);
       sheep(19, 22, 1, pickFace(), r() < 0.5 ? -1 : 1);
       if (r() < 0.5) sheep(8, 24, 0.75, pickFace(), 1);
+      return true;
+    }
+    case 'garden': {
+      // A planted bed with a low stone edging: clipped shrubs, herbs, roses.
+      c.fillStyle = shade(look.ground.soil, -0.05);
+      c.fillRect(1, 5, 30, 24);
+      c.fillStyle = '#c9bea2';
+      c.fillRect(1, 27, 30, 2.5);
+      c.fillRect(1, 5, 30, 2);
+      for (let i = 0; i < 3; i++)
+        lumpy(c, 7 + i * 9 + r() * 2, 15 + r() * 4, 5 + r() * 1.5, r, look.foliage.dark, 7);
+      for (let i = 0; i < 4; i++)
+        lumpy(c, 5 + i * 7.5 + r() * 2, 13 + r() * 5, 3 + r(), r, look.foliage.mid, 6);
+      const blooms = ['#c8372d', '#f2efe4', '#e0b53a', '#b98ad6'];
+      for (let i = 0; i < 7; i++)
+        ellipse(
+          c,
+          4 + r() * 24,
+          10 + r() * 14,
+          1.2,
+          1.2,
+          blooms[Math.floor(r() * blooms.length)] ?? '#c8372d',
+        );
       return true;
     }
     case 'crops': {

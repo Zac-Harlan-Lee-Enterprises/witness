@@ -36,6 +36,14 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'sheep',
   'hay',
   'campfire',
+  'column',
+  'vat',
+  'amphorae',
+  'couch',
+  'milestone',
+  'garden',
+  'lampstand',
+  'fountain',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -51,6 +59,8 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'fence',
   'sheepfold',
   'terrace',
+  'tile-roof',
+  'travertine',
 ]);
 
 /** Low dry-stone walls: drawn over the ground they stand on, like a fence. */
@@ -99,6 +109,16 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   sheep: 9,
   hay: 14,
   campfire: 5,
+  'tile-roof': 46,
+  column: 56,
+  vat: 8,
+  amphorae: 20,
+  couch: 10,
+  milestone: 26,
+  travertine: 14,
+  garden: 12,
+  lampstand: 36,
+  fountain: 16,
 };
 
 export function isPropTile(kind: TileKind): boolean {
@@ -117,7 +137,9 @@ export function heightOf(kind: TileKind): number {
   return HEIGHTS[kind] ?? 0;
 }
 
-const isBuilding = (k: TileKind): boolean => k === 'wall' || k === 'roof';
+/** Walls and the roofs over them (flat plaster or pitched terracotta). */
+export const isBuilding = (k: TileKind): boolean =>
+  k === 'wall' || k === 'roof' || k === 'tile-roof';
 
 /** The ground a prop stands on: the most common ground-like neighbour (hills count as ground). */
 export function groundUnder(grid: TileGrid, tx: number, ty: number, fallback: TileKind): TileKind {
@@ -222,7 +244,7 @@ export interface LightSpot {
   radius: number;
 }
 
-/** Hearth glows at ovens and campfires; indoors, lamp niches and windows along the back wall. */
+/** Hearth glows at ovens and campfires, lamps on lampstands; indoors, lamp niches and windows along the back wall. */
 export function findLights(site: Site, indoor: boolean): LightSpot[] {
   const lights: LightSpot[] = [];
   site.forEach((x, y) => {
@@ -230,6 +252,8 @@ export function findLights(site: Site, indoor: boolean): LightSpot[] {
       lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 12, radius: indoor ? 70 : 40 });
     if (site.kindAt(x, y) === 'campfire')
       lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 18, radius: 56 });
+    if (site.kindAt(x, y) === 'lampstand')
+      lights.push({ kind: 'lamp', x: x * 32 + 16, y: y * 32 - 2, radius: indoor ? 48 : 36 });
   });
   if (indoor) {
     backWallSlots(site).forEach(({ x, y, use }) => {

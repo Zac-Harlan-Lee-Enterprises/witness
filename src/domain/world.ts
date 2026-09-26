@@ -30,6 +30,12 @@ export const TILE_KINDS = {
   platform: { solid: false },
   /** A threshing floor: flat beaten ground at the village edge, scattered with chaff. */
   threshing: { solid: false },
+  /** A floor of small stone tesserae laid in patterns (Roman-era houses). */
+  mosaic: { solid: false },
+  /** A paved Roman highway: big fitted paving stones between kerbstones. */
+  'roman-road': { solid: false },
+  /** The stone deck of a bridge over a river. */
+  bridge: { solid: false },
   wall: { solid: true },
   roof: { solid: true },
   water: { solid: true },
@@ -69,6 +75,26 @@ export const TILE_KINDS = {
   hay: { solid: true },
   /** A small open fire ringed with stones, where shepherds keep warm. */
   campfire: { solid: true },
+  /** A pitched roof of fired terracotta tiles (Greek and Roman towns of Asia Minor). */
+  'tile-roof': { solid: true },
+  /** A stone column: a colonnade (stoa) or the portico of a peristyle garden. */
+  column: { solid: true },
+  /** A dyer's or fuller's vat, sunk in a stone or plastered surround. */
+  vat: { solid: true },
+  /** Tall two-handled transport jars, stacked or leaning together. */
+  amphorae: { solid: true },
+  /** A dining couch (triclinium) with cushions. */
+  couch: { solid: true },
+  /** A Roman milestone: a stone column cut with a distance. */
+  milestone: { solid: true },
+  /** White travertine terraces left by hot springs (Hierapolis, across the valley). */
+  travertine: { solid: true },
+  /** A planted garden bed (a peristyle garden): shrubs, herbs and flowers. */
+  garden: { solid: true },
+  /** A tall bronze lampstand with oil lamps. */
+  lampstand: { solid: true },
+  /** A public fountain: a stone basin fed by a spout. */
+  fountain: { solid: true },
   void: { solid: true },
 } as const;
 export type TileKind = keyof typeof TILE_KINDS;
@@ -113,6 +139,8 @@ export const LOOK_MARKS = [
   'torn-hem',
   /** A lamb carried home across the shoulders. */
   'carrying-lamb',
+  /** A leather letter case slung at the hip. */
+  'letter-case',
 ] as const;
 export const LookMarkSchema = z.enum(LOOK_MARKS);
 export type LookMark = (typeof LOOK_MARKS)[number];
