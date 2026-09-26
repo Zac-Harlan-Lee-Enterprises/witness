@@ -1,7 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import { shadowOffset, type Look } from './direction';
 import { ellipse, makeCanvas, rgba, TILE, type Ctx } from './paint';
-import { backWallSlots, heightOf, isPropTile, type Site } from './site';
+import { backWallSlots, heightOf, isLowWall, isPropTile, type Site } from './site';
 
 /**
  * Light and shade baked into the ground: one sun from the upper left.
@@ -52,7 +52,7 @@ export function paintShadows(
     const Y = y * TILE;
     const tallAt = (dx: number, dy: number): boolean => {
       const n = site.kindAt(x + dx, y + dy);
-      return n === 'wall' || n === 'roof' || n === 'cliff' || n === 'fence';
+      return n === 'wall' || n === 'roof' || n === 'cliff' || isLowWall(n);
     };
     const c = look.shadow.color;
     if (tallAt(0, -1)) band(ctx, [X, Y], [X, Y + 10], [X, Y, TILE, 10], c, ao * 0.9);
@@ -93,7 +93,17 @@ function castShape(m: Ctx, kind: TileKind, x: number, y: number, h: number): voi
       m.fillRect(x, y, TILE, TILE);
       return;
     case 'fence':
+    case 'sheepfold':
       m.fillRect(x, y + 10, TILE, 12);
+      return;
+    case 'terrace':
+      // A terrace drops toward the viewer: its shadow lies along its foot.
+      m.fillRect(x, y + 18, TILE, 10);
+      return;
+    case 'sheep':
+      m.beginPath();
+      m.ellipse(x + 16, y + 20, 13, 6, 0.1, 0, Math.PI * 2);
+      m.fill();
       return;
     case 'olive':
     case 'fig': {

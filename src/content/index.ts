@@ -39,10 +39,11 @@ const REGISTRY: RegistryEntry[] = [
       id: 'journey-to-bethlehem',
       number: 3,
       title: 'A Journey to Bethlehem',
-      subtitle: 'Coming later',
-      available: false,
-      estimatedMinutes: null,
+      subtitle: 'A crowded night in David’s town',
+      available: true,
+      estimatedMinutes: { min: 20, max: 30 },
     },
+    load: () => import('./chapters/journey-to-bethlehem').then((m) => m.JOURNEY_TO_BETHLEHEM),
   },
   {
     meta: {

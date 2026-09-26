@@ -341,9 +341,233 @@ const PAINTERS: Record<string, Painter> = {
   marker: (ctx) => {
     ellipse(ctx, 16, 16, 7, 7, '#f2b441');
   },
+  // ── Bethlehem: house, village and fields ───────────────────────────────
+  lamb: (ctx) => {
+    softShadow(ctx, 16, 27, 10, 2.5, 0.35);
+    ctx.strokeStyle = '#3b2e26';
+    ctx.lineWidth = 1.3;
+    for (const x of [10, 13, 19, 22]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x + 0.3, 27);
+      ctx.stroke();
+    }
+    ellipse(ctx, 16, 17, 9, 6, '#ece4d2');
+    for (let i = 0; i < 6; i++)
+      ellipse(ctx, 9 + i * 2.8, 15 + (i % 2) * 2, 2.4, 2, i % 2 ? '#f6f1e6' : '#d9cfb8');
+    // A speckled lamb: a few dark spots, a dark face and one black ear.
+    ellipse(ctx, 13, 18, 1.2, 1, '#6a5444');
+    ellipse(ctx, 18, 15, 1, 0.8, '#6a5444');
+    ellipse(ctx, 25, 13, 3.4, 2.8, '#3b2e26');
+    ellipse(ctx, 23.5, 10.8, 1.8, 0.9, '#1c1410', -0.6);
+    ellipse(ctx, 27.4, 11, 1.8, 0.9, '#ece4d2', 0.6);
+    ellipse(ctx, 26.2, 12.6, 0.5, 0.5, '#f2e6c8');
+  },
+  ewe: (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    ctx.strokeStyle = '#3b2e26';
+    ctx.lineWidth = 1.6;
+    for (const x of [8, 11, 20, 23]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x, 28);
+      ctx.stroke();
+    }
+    ellipse(ctx, 15, 16, 11, 7, '#e6ddc8');
+    for (let i = 0; i < 7; i++)
+      ellipse(ctx, 6 + i * 3, 13 + (i % 2) * 3, 2.8, 2.3, i % 2 ? '#f2ecde' : '#d6ccb4');
+    ellipse(ctx, 12, 12, 4, 2, rgba('#ffffff', 0.4));
+    // Head raised, calling.
+    ellipse(ctx, 26.5, 9, 3.4, 3, '#3b2e26');
+    ellipse(ctx, 24.5, 6.8, 1.8, 0.9, '#3b2e26', -0.6);
+    ellipse(ctx, 28.8, 8, 1, 1.4, '#6a5444');
+    ellipse(ctx, 27.2, 8.4, 0.5, 0.5, '#f2e6c8');
+  },
+  goat: (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    ctx.fillStyle = '#2e2620';
+    for (const x of [9, 12, 19, 22]) ctx.fillRect(x, 19, 2, 8);
+    ellipse(ctx, 15, 16, 9.5, 5.5, '#3a302a');
+    ellipse(ctx, 13, 13.5, 5, 2, rgba('#ffffff', 0.12));
+    ellipse(ctx, 25, 11, 3.2, 4, '#3a302a');
+    ctx.strokeStyle = '#8a7a64';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(24, 8);
+    ctx.quadraticCurveTo(22, 4, 20, 5);
+    ctx.moveTo(26, 8);
+    ctx.quadraticCurveTo(26, 3, 24, 3);
+    ctx.stroke();
+    ellipse(ctx, 27, 14, 1.4, 2.2, '#2a221c');
+    ellipse(ctx, 26, 10, 0.6, 0.6, '#d8c070');
+  },
+  loom: (ctx) => {
+    softShadow(ctx, 17, 29, 12, 3, 0.35);
+    ctx.fillStyle = PALETTE.woodDark;
+    ctx.fillRect(6, 2, 2.4, 27);
+    ctx.fillRect(23.6, 2, 2.4, 27);
+    ctx.fillRect(4, 2, 24, 2.6);
+    ctx.strokeStyle = rgba('#efe6d2', 0.9);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath();
+      ctx.moveTo(9.5 + i * 1.7, 5);
+      ctx.lineTo(9.5 + i * 1.7, 24);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#8f3f2f';
+    ctx.fillRect(9, 5, 14.6, 9);
+    ctx.fillStyle = '#e0b453';
+    ctx.fillRect(9, 9, 14.6, 1.4);
+    for (let i = 0; i < 5; i++) ellipse(ctx, 10.5 + i * 2.8, 25.5, 1.3, 1.6, '#9c8a6c');
+  },
+  'grain-jars': (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    const jar = (x: number, y: number, s: number): void => {
+      ellipse(ctx, x, y, 6 * s, 9 * s, PALETTE.clay);
+      ellipse(ctx, x - 2 * s, y - 2 * s, 1.8 * s, 4 * s, rgba('#ffffff', 0.22));
+      ellipse(ctx, x, y - 9 * s, 3.2 * s, 1.4 * s, PALETTE.clayDark);
+      ellipse(ctx, x, y - 9.4 * s, 2.6 * s, 1 * s, '#e0c77a');
+    };
+    jar(11, 18, 1);
+    jar(22, 20, 0.85);
+  },
+  'tool-bag': (ctx) => {
+    softShadow(ctx, 16, 27, 11, 3, 0.35);
+    ctx.fillStyle = '#6e4a2c';
+    ctx.beginPath();
+    ctx.roundRect(6, 14, 20, 12, 3);
+    ctx.fill();
+    ctx.fillStyle = rgba('#ffffff', 0.12);
+    ctx.fillRect(7, 15, 18, 2);
+    // A mason's hammer and chisels poking out.
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(10, 5, 2, 11);
+    ctx.fillStyle = '#6f757a';
+    ctx.fillRect(7, 4, 8, 3.2);
+    ctx.fillRect(17, 7, 1.6, 9);
+    ctx.fillRect(20.5, 8.5, 1.4, 7.5);
+  },
+  ladder: (ctx) => {
+    softShadow(ctx, 18, 29, 9, 2.5, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(9, 0, 2.4, 29);
+    ctx.fillRect(21, 0, 2.4, 29);
+    ctx.fillStyle = PALETTE.woodDark;
+    for (let i = 0; i < 5; i++) ctx.fillRect(10, 3 + i * 5.5, 12, 1.8);
+  },
+  wool: (ctx) => {
+    // A thornbush with a tuft of speckled wool snagged on it.
+    ctx.strokeStyle = '#573b22';
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 7; i++) {
+      ctx.beginPath();
+      ctx.moveTo(16, 27);
+      ctx.lineTo(5 + i * 3.5, 10 + (i % 3) * 4);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) ellipse(ctx, 7 + i * 3.6, 14 + (i % 2) * 5, 3, 2.4, '#5d6036');
+    ellipse(ctx, 20, 15, 3.4, 2.4, '#ece4d2');
+    ellipse(ctx, 21.5, 14, 1.1, 0.8, '#6a5444');
+    ellipse(ctx, 19, 16, 1.4, 1, '#f6f1e6');
+  },
+  hoofprints: (ctx) => {
+    // Small split hoofprints pressed into damp ground, heading one way.
+    ellipse(ctx, 16, 18, 13, 9, 'rgba(90,64,40,0.18)');
+    const hoof = (x: number, y: number): void => {
+      ellipse(ctx, x - 0.8, y, 0.8, 1.4, 'rgba(70,48,28,0.6)', 0.15);
+      ellipse(ctx, x + 0.8, y, 0.8, 1.4, 'rgba(70,48,28,0.6)', -0.15);
+    };
+    for (let i = 0; i < 5; i++) {
+      hoof(8 + i * 4.5, 24 - i * 2.5);
+      hoof(10 + i * 4.5, 20 - i * 2.5);
+    }
+  },
+  'straw-bed': (ctx) => {
+    softShadow(ctx, 16, 25, 14, 3, 0.3);
+    ellipse(ctx, 16, 21, 14, 6, '#b99a52');
+    ellipse(ctx, 16, 19.5, 12.5, 4.6, '#d9bd72');
+    ctx.strokeStyle = rgba('#8a6e3c', 0.7);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 12; i++) {
+      ctx.beginPath();
+      ctx.moveTo(5 + i * 2, 17 + (i % 3));
+      ctx.lineTo(7 + i * 2, 22 - (i % 2));
+      ctx.stroke();
+    }
+    // A folded blanket at one end.
+    ctx.fillStyle = '#7a4a34';
+    ctx.fillRect(20, 16, 8, 6);
+    ctx.fillStyle = rgba('#ffffff', 0.15);
+    ctx.fillRect(20, 16, 8, 1.2);
+  },
+  'thorn-branch': (ctx) => {
+    // A cut thorn branch dragged across a gap to close it.
+    softShadow(ctx, 16, 27, 13, 3, 0.3);
+    ctx.strokeStyle = '#4a3620';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(2, 24);
+    ctx.lineTo(30, 18);
+    ctx.stroke();
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 9; i++) {
+      const x = 4 + i * 3;
+      const y = 24 - i * 0.65;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 2, y - 5 - (i % 3) * 2);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 1, y + 3);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 5; i++) ellipse(ctx, 6 + i * 5.5, 16 + (i % 2) * 3, 2.4, 1.8, '#5d6036');
+  },
+  'kneading-trough': (ctx) => {
+    // A wooden kneading trough, a flour jar, and two measures.
+    softShadow(ctx, 16, 28, 14, 3, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.beginPath();
+    ctx.moveTo(3, 17);
+    ctx.lineTo(24, 17);
+    ctx.lineTo(22, 26);
+    ctx.lineTo(5, 26);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 13.5, 18, 10, 2.6, '#efe6d2');
+    ellipse(ctx, 26, 15, 4.6, 7, PALETTE.clay);
+    ellipse(ctx, 26, 8.4, 2.6, 1.1, '#f4efe2');
+    ellipse(ctx, 8, 12, 3.4, 2.2, '#c49a5a');
+  },
+  tablet: (ctx) => {
+    softShadow(ctx, 16, 24, 10, 2.5, 0.3);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(6, 13, 20, 12);
+    ctx.fillStyle = '#3b2a1a';
+    ctx.fillRect(8, 15, 16, 8);
+    ctx.strokeStyle = rgba('#d9c28c', 0.85);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(9.5, 16.8 + i * 1.8);
+      ctx.lineTo(22 - (i % 2) * 4, 16.8 + i * 1.8);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#c9b48a';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(24, 11);
+    ctx.lineTo(29, 22);
+    ctx.stroke();
+  },
   /** Invisible: for interactive spots on tiles that already draw themselves (wells, cairns). */
   none: () => undefined,
 };
+
+/** Whether a sprite name has a painter (content tests use this to catch typos). */
+export function isKnownProp(name: string): boolean {
+  return Object.hasOwn(PAINTERS, name);
+}
 
 export function paintProp(
   name: string,

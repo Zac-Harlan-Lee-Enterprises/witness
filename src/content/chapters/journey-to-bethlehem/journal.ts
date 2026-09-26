@@ -1,0 +1,292 @@
+import type { Condition } from '@/domain/conditions';
+import type { ChapterInput } from '@/domain/chapter';
+
+const flag = (name: string): Condition => ({ type: 'flag', flag: name });
+const visited = (scene: string): Condition => ({ type: 'visited', scene });
+const seenConnection = flag('seen:scripture-connection');
+
+type Entry = ChapterInput['journal'][number];
+
+const person = (
+  id: string,
+  characterId: string,
+  title: string,
+  summary: string,
+  recordIds: string[],
+  order: number,
+): Entry => ({ id, category: 'people', title, summary, recordIds, characterId, order });
+
+/**
+ * The journal. Every entry is a list of labelled records, so the player can
+ * always tell Scripture, paraphrase, history, reconstruction, interpretation
+ * and story apart.
+ */
+export const JOURNAL: ChapterInput['journal'] = [
+  // People (unlocked on meeting via character.journalEntry)
+  person('jp-tamar', 'tamar', 'Tamar', 'Your mother', ['rec-p-tamar'], 1),
+  person('jp-amram', 'amram', 'Saba Amram', 'Your grandfather', ['rec-p-amram'], 2),
+  person('jp-asa', 'asa', 'Uncle Asa', 'A stonemason from Jerusalem', ['rec-p-asa'], 3),
+  person('jp-peninah', 'peninah', 'Aunt Peninah', 'Uncle Asa’s wife', ['rec-p-peninah'], 4),
+  person('jp-dodi', 'dodi', 'Dodi', 'Your little cousin', ['rec-p-dodi'], 5),
+  person(
+    'jp-kallias',
+    'kallias',
+    'Kallias',
+    'Registration clerk',
+    ['rec-p-kallias', 'rec-recon-declaration'],
+    6,
+  ),
+  person('jp-hagit', 'hagit', 'Hagit', 'Your neighbor', ['rec-p-hagit'], 7),
+  person(
+    'jp-yonatan',
+    'yonatan',
+    'Cousin Yonatan',
+    'A young shepherd',
+    ['rec-p-yonatan', 'rec-hist-shepherds'],
+    8,
+  ),
+  person(
+    'jp-yoram',
+    'yoram',
+    'Old Yoram',
+    'Shepherd of the village flock',
+    ['rec-p-yoram', 'rec-hist-shepherd-status'],
+    9,
+  ),
+  person('jp-zerah', 'zerah', 'Zerah', 'A basket-maker from Tekoa', ['rec-p-zerah'], 10),
+
+  // Places
+  {
+    id: 'jpl-house',
+    category: 'places',
+    title: 'Tamar’s house',
+    summary: 'A house with room for the animals',
+    recordIds: ['rec-pl-house', 'rec-recon-house'],
+    unlockWhen: visited('tamar-house'),
+    order: 1,
+  },
+  {
+    id: 'jpl-bethlehem',
+    category: 'places',
+    title: 'Bethlehem',
+    summary: 'David’s town',
+    recordIds: ['rec-pl-lanes', 'rec-hist-bethlehem', 'rec-1sam-16-17'],
+    unlockWhen: visited('bethlehem-lanes'),
+    order: 2,
+  },
+  {
+    id: 'jpl-well',
+    category: 'places',
+    title: 'The well by the gate',
+    summary: 'David’s longing',
+    recordIds: ['rec-hist-well', 'rec-para-well', 'rec-2sam-23-15'],
+    unlockWhen: { type: 'any', of: [flag('saw-well'), flag('heard-well')] },
+    order: 3,
+  },
+  {
+    id: 'jpl-threshing',
+    category: 'places',
+    title: 'The threshing floor',
+    summary: 'Where the chaff blows away',
+    recordIds: ['rec-hist-threshing', 'rec-ruth-bethlehem'],
+    unlockWhen: flag('saw-threshing'),
+    order: 4,
+  },
+  {
+    id: 'jpl-fields',
+    category: 'places',
+    title: 'The fold on the terraces',
+    summary: 'Where the village flock sleeps',
+    recordIds: ['rec-pl-fields', 'rec-hist-terraces', 'rec-hist-nights'],
+    unlockWhen: visited('shepherds-fields'),
+    order: 5,
+  },
+
+  // Events
+  {
+    id: 'je-mission',
+    category: 'events',
+    title: 'A house full of guests',
+    summary: 'Your mother’s requests',
+    recordIds: ['rec-e-mission'],
+    order: 1,
+  },
+  {
+    id: 'je-registration',
+    category: 'events',
+    title: 'The long line',
+    summary: 'Uncle Asa waits to be registered',
+    recordIds: ['rec-e-registration'],
+    order: 2,
+  },
+  {
+    id: 'je-lamb',
+    category: 'events',
+    title: 'The lost lamb',
+    summary: 'One missing at the gate',
+    recordIds: ['rec-e-lamb'],
+    unlockWhen: flag('lamb-missing'),
+    order: 3,
+  },
+  {
+    id: 'je-stranger',
+    category: 'events',
+    title: 'A knock at the door',
+    summary: 'Zerah from Tekoa',
+    recordIds: ['rec-e-stranger'],
+    unlockWhen: flag('zerah-arrived'),
+    order: 4,
+  },
+  {
+    id: 'je-news',
+    category: 'events',
+    title: 'News in the night',
+    summary: 'What the shepherds said',
+    recordIds: ['rec-e-news', 'rec-para-report', 'rec-luke-2-8-20'],
+    order: 5,
+  },
+
+  // History & culture
+  {
+    id: 'jh-census',
+    category: 'history',
+    title: 'A decree from Caesar',
+    summary: 'What a census was for',
+    recordIds: [
+      'rec-luke-2-1-5',
+      'rec-hist-census',
+      'rec-hist-quirinius',
+      'rec-hist-own-city',
+      'rec-acts-5-37',
+    ],
+    unlockWhen: { type: 'met', character: 'kallias' },
+    order: 1,
+  },
+  {
+    id: 'jh-declaration',
+    category: 'history',
+    title: 'A household declaration',
+    summary: 'What a registration might have looked like',
+    recordIds: ['rec-recon-declaration'],
+    unlockWhen: { type: 'clueFound', clue: 'clue-model-order' },
+    order: 2,
+  },
+  {
+    id: 'jh-hospitality',
+    category: 'history',
+    title: 'Welcoming guests',
+    summary: 'Three measures of flour',
+    recordIds: ['rec-hist-hospitality', 'rec-para-abraham', 'rec-gen-18-1-8', 'rec-lev-19-34'],
+    unlockWhen: { type: 'puzzleSolved', puzzle: 'p-bread' },
+    order: 3,
+  },
+  {
+    id: 'jh-house',
+    category: 'history',
+    title: 'Animals in the house',
+    summary: 'The raised floor and the mangers',
+    recordIds: ['rec-recon-house', 'rec-hist-manger'],
+    unlockWhen: flag('saw-manger'),
+    order: 4,
+  },
+  {
+    id: 'jh-shepherds',
+    category: 'history',
+    title: 'Sheep, folds and counting',
+    summary: 'Shepherds at night',
+    recordIds: [
+      'rec-hist-shepherds',
+      'rec-john-10-1-4',
+      'rec-jer-33-13',
+      'rec-para-david',
+      'rec-hist-shepherd-status',
+    ],
+    unlockWhen: flag('lamb-missing'),
+    order: 5,
+  },
+  {
+    id: 'jh-swaddling',
+    category: 'history',
+    title: 'Bands of cloth',
+    summary: 'Caring for a newborn',
+    recordIds: ['rec-hist-swaddling', 'rec-ezek-16-4'],
+    unlockWhen: flag('heard-report'),
+    order: 6,
+  },
+  {
+    id: 'jh-traditions',
+    category: 'history',
+    title: 'Places people remember',
+    summary: 'A cave, and a field',
+    recordIds: ['rec-hist-cave', 'rec-hist-fields'],
+    unlockWhen: seenConnection,
+    order: 7,
+  },
+
+  // Scripture
+  {
+    id: 'js-luke-2',
+    category: 'scripture',
+    title: 'Luke 2:1–20',
+    summary: 'The birth of Jesus and the shepherds',
+    recordIds: ['rec-luke-2-1-20', 'rec-para-luke-2'],
+    unlockWhen: flag('heard-report'),
+    order: 1,
+  },
+  {
+    id: 'js-well',
+    category: 'scripture',
+    title: '2 Samuel 23:15–16',
+    summary: 'David and the well of Bethlehem',
+    recordIds: ['rec-2sam-23-15', 'rec-para-well'],
+    unlockWhen: flag('heard-well'),
+    order: 2,
+  },
+
+  // Themes and interpretation
+  {
+    id: 'jt-katalyma',
+    category: 'themes',
+    title: 'An inn, or a guest room?',
+    summary: 'One Greek word, several translations',
+    recordIds: ['rec-interp-katalyma', 'rec-luke-22-11'],
+    unlockWhen: seenConnection,
+    order: 1,
+  },
+  {
+    id: 'jt-good-news',
+    category: 'themes',
+    title: 'Good news for all the people',
+    summary: 'What the angel said, in Luke',
+    recordIds: ['rec-interp-good-news'],
+    unlockWhen: seenConnection,
+    order: 2,
+  },
+  {
+    id: 'jt-wonder',
+    category: 'themes',
+    title: 'Wondering and pondering',
+    summary: 'How people responded',
+    recordIds: ['rec-interp-wonder'],
+    unlockWhen: seenConnection,
+    order: 3,
+  },
+  {
+    id: 'jt-accounts',
+    category: 'themes',
+    title: 'Luke’s account and Matthew’s',
+    summary: 'Shepherds, and wise men',
+    recordIds: ['rec-interp-two-accounts', 'rec-matt-2-1-11', 'rec-mic-5-2'],
+    unlockWhen: seenConnection,
+    order: 4,
+  },
+  {
+    id: 'jt-date',
+    category: 'themes',
+    title: 'When was Jesus born?',
+    summary: 'What we do and don’t know',
+    recordIds: ['rec-interp-date'],
+    unlockWhen: seenConnection,
+    order: 5,
+  },
+];

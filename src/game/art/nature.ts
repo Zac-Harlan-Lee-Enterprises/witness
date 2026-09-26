@@ -382,6 +382,33 @@ export function paintNatureProp(c: Ctx, kind: TileKind, look: Look, seed: number
       }
       return true;
     }
+    case 'sheep': {
+      // Two or three sheep lying close together, fleece against fleece.
+      const sheep = (sx: number, sy: number, s: number, face: string, flip: number): void => {
+        ellipse(c, sx + 1, sy + 3 * s, 8 * s, 3 * s, 'rgba(50,34,20,0.3)');
+        ellipse(c, sx, sy, 8 * s, 5 * s, '#e6ddc8');
+        for (let i = 0; i < 6; i++)
+          ellipse(
+            c,
+            sx - 5 * s + i * 2 * s,
+            sy - 2 * s + (i % 2) * 1.5 * s,
+            2.2 * s,
+            1.8 * s,
+            i % 2 ? '#f2ecde' : '#d6ccb4',
+          );
+        ellipse(c, sx - 2 * s, sy - 2.2 * s, 3 * s, 1.6 * s, rgba('#ffffff', 0.45));
+        // Head resting forward, ears out.
+        ellipse(c, sx + flip * 7.5 * s, sy + 0.5 * s, 2.3 * s, 1.8 * s, face);
+        ellipse(c, sx + flip * 6.2 * s, sy - 1 * s, 1.3 * s, 0.6 * s, face, flip * 0.6);
+        ellipse(c, sx + flip * 8.4 * s, sy - 0.4 * s, 0.35 * s, 0.35 * s, '#1c1410');
+      };
+      const faces = ['#3b2e26', '#e0d4bc', '#6a5444'];
+      const pickFace = (): string => faces[Math.floor(r() * faces.length)] ?? '#3b2e26';
+      sheep(13, 13, 0.9, pickFace(), r() < 0.5 ? -1 : 1);
+      sheep(19, 22, 1, pickFace(), r() < 0.5 ? -1 : 1);
+      if (r() < 0.5) sheep(8, 24, 0.75, pickFace(), 1);
+      return true;
+    }
     case 'crops': {
       // Rows of vegetables or young barley in dark soil.
       c.fillStyle = look.ground.soil;
