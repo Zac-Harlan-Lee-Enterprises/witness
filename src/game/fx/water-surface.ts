@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { TileGrid } from '@/domain/world';
-import { waterRegions, waterSky, type WaterLook, type WaterRgb } from '../systems/water';
+import { glintsFor, waterRegions, waterSky, type WaterLook, type WaterRgb } from '../systems/water';
 
 /**
  * Live water (WebGL only): a shader drawn over each body of water tiles and
@@ -155,6 +155,8 @@ void main () {
 interface Surface {
   shader: Phaser.GameObjects.Shader;
   maskKey: string;
+  /** How strongly this body glints (glintsFor). */
+  glints: number;
 }
 
 export interface WaterSurfaceDeps {
@@ -208,7 +210,14 @@ export class WaterSurface {
         if (region.mask[i + 1] && region.mask[i + region.w] && region.mask[i + region.w + 1])
           c.fillRect(x * MASK_PPT + MASK_PPT - 1, y * MASK_PPT + MASK_PPT - 1, 2, 2);
       });
-      this.add(canvas, region.x * TILE, region.y * TILE, region.w * TILE, region.h * TILE);
+      this.add(
+        canvas,
+        region.x * TILE,
+        region.y * TILE,
+        region.w * TILE,
+        region.h * TILE,
+        glintsFor(region),
+      );
     }
     if (d.painted) this.addFurnishings();
   }
@@ -244,7 +253,14 @@ export class WaterSurface {
     }
   }
 
-  private add(canvas: HTMLCanvasElement, x: number, y: number, w: number, h: number): void {
+  private add(
+    canvas: HTMLCanvasElement,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    glints = 1,
+  ): void {
     const s = this.d.scene;
     const maskKey = `water-mask-${this.base.key}-${this.surfaces.length}`;
     const mask = s.textures.addCanvas(maskKey, canvas);
@@ -254,7 +270,7 @@ export class WaterSurface {
     mask?.refresh();
     shader.setUniform('uOrigin.value', { x, y });
     shader.setUniform('uMaskTexel.value', { x: 1 / canvas.width, y: 1 / canvas.height });
-    this.surfaces.push({ shader, maskKey });
+    this.surfaces.push({ shader, maskKey, glints });
   }
 
   get count(): number {
@@ -278,14 +294,14 @@ export class WaterSurface {
     const sx = sun.x * c;
     const sy = sun.y * c;
     const sz = Math.sin(elevation);
-    for (const { shader } of this.surfaces) {
+    for (const { shader, glints } of this.surfaces) {
       shader.setUniform('uSun.value', { x: sx, y: sy, z: sz });
       shader.setUniform(
         'uSunColor.value',
         warm ? { x: 1, y: 0.78, z: 0.52 } : { x: 1, y: 0.96, z: 0.86 },
       );
       shader.setUniform('uWaves.value', look.waves);
-      shader.setUniform('uGlints.value', look.glints);
+      shader.setUniform('uGlints.value', look.glints * glints);
       shader.setUniform('uRain.value', look.rain);
       shader.setUniform('uFoam.value', look.foam);
       shader.setUniform('uGloom.value', look.gloom);

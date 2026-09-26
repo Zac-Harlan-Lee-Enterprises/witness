@@ -16,10 +16,23 @@ export interface WaterRegion {
   /** Which tiles of the box are water (row-major, w × h). */
   mask: boolean[];
   tiles: number;
+  /** A lake's open water (it has lake or shallows tiles), not a pool or a stream. */
+  open: boolean;
 }
 
 /** Tiles of open water: a spring's pool, a lake and the shallows at its edge. */
 const WATER_KINDS: ReadonlySet<TileKind> = new Set<TileKind>(['water', 'lake', 'shallows']);
+const LAKE_KINDS: ReadonlySet<TileKind> = new Set<TileKind>(['lake', 'shallows']);
+
+/**
+ * How strongly a body of water glints (a factor on the look's glints). On a
+ * pool the sparkles are a few bright points; spread over a whole lake at
+ * the same density they read as static, so open water glitters more sparsely
+ * (its pre-rendered art already carries the water's colour and light).
+ */
+export function glintsFor(region: Pick<WaterRegion, 'open'>): number {
+  return region.open ? 0.3 : 1;
+}
 
 /** Connected bodies of water tiles (4-neighbour), largest first. */
 export function waterRegions(grid: TileGrid): WaterRegion[] {
@@ -63,7 +76,11 @@ export function waterRegions(grid: TileGrid): WaterRegion[] {
       const h = Math.max(...ys) - ry + 1;
       const mask = new Array<boolean>(w * h).fill(false);
       for (const [cx, cy] of cells) mask[(cy - ry) * w + (cx - rx)] = true;
-      regions.push({ x: rx, y: ry, w, h, mask, tiles: cells.length });
+      const open = cells.some(([cx, cy]) => {
+        const kind = grid.tiles[cy]?.[cx];
+        return kind !== undefined && LAKE_KINDS.has(kind);
+      });
+      regions.push({ x: rx, y: ry, w, h, mask, tiles: cells.length, open });
     }
   }
   return regions.sort((a, b) => b.tiles - a.tiles);
