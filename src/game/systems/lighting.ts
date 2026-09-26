@@ -37,18 +37,29 @@ export function lightingFor(hour: number | null, indoor: boolean): Lighting {
 
 export type Rgb = readonly [number, number, number];
 
+/** A second multiply tint over the time of day's: cloud, rain, a storm's gloom. */
+export interface SkyTint {
+  tint: number;
+  alpha: number;
+  vignette: number;
+}
+
 /**
  * The two colours of the single multiply layer. Multiplying by `center` is
- * the same as a `tint` overlay at `alpha`; `edge` additionally darkens by the
- * vignette strength. One full-screen pass instead of two keeps the frame rate
- * up on weak or software-rendered GPUs.
+ * the same as a `tint` overlay at `alpha` (times the sky's own tint, if
+ * any); `edge` additionally darkens by the vignette strength. One
+ * full-screen pass instead of two keeps the frame rate up on weak or
+ * software-rendered GPUs.
  */
-export function gradeColors(l: Lighting): { center: Rgb; edge: Rgb } {
-  const channel = (shift: number): number => (l.tint >> shift) & 255;
+export function gradeColors(l: Lighting, sky?: SkyTint): { center: Rgb; edge: Rgb } {
+  const overlay = (tint: number, alpha: number, shift: number): number =>
+    1 - alpha + (((tint >> shift) & 255) / 255) * alpha;
   const graded = (shift: number): number =>
-    Math.round(255 * (1 - l.alpha) + channel(shift) * l.alpha);
+    Math.round(
+      255 * overlay(l.tint, l.alpha, shift) * (sky ? overlay(sky.tint, sky.alpha, shift) : 1),
+    );
   const center: Rgb = [graded(16), graded(8), graded(0)];
-  const keep = 1 - 0.85 * l.vignette;
+  const keep = 1 - 0.85 * Math.min(1, l.vignette + (sky?.vignette ?? 0));
   const edge: Rgb = [
     Math.round(center[0] * keep),
     Math.round(center[1] * keep),

@@ -18,13 +18,24 @@ import {
 } from '@/domain/navigation';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
-import type { LookMark } from '@/domain/world';
+import type { LookMark, Weather } from '@/domain/world';
 import { inRect } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
 import { lookFor, shadowOffset } from '../art/direction';
 import { ART_SCALE, TILE } from '../art/paint';
 import { headTop, isFootfall, walkColumn, WALK_CYCLE_TILES } from '../art/people/rig';
 import { frameName } from '../art/people/sheet';
+import { FX, makeFxTextures } from '../fx/fx-textures';
+import { POST_FX_KEY, WorldPostFX } from '../fx/post-fx';
+import { WaterSurface } from '../fx/water-surface';
+import { WeatherLayer } from '../fx/weather-layer';
+import {
+  releaseUnusedTargets,
+  registerPostFx,
+  rendererInfo,
+  type RendererInfo,
+} from '../phaser/renderer';
+import type { Viewport } from '../phaser/viewport';
 import { loadPeople, loadPerson, loadPlace, type PlaceTextures } from '../prerendered/loader';
 import type { ArtSprite, LightingVariant, PeopleArt, PersonSheet } from '../prerendered/manifest';
 import {
@@ -48,15 +59,21 @@ import {
 } from '../systems/camera';
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
+import { gradeFor } from '../systems/grade';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
 import { departed } from '../systems/life';
 import {
+  effectsFor,
+  effectsLabel,
   INITIAL_QUALITY,
   lightMatters,
   restartWarmup,
   stepQuality,
+  type EffectsLevel,
   type QualityState,
 } from '../systems/quality';
+import { overcast, WEATHER_MIX, type WeatherMix } from '../systems/weather';
+import { sunForWater, waterLook } from '../systems/water';
 import {
   Actors,
   addCastShadow,
@@ -73,17 +90,19 @@ import {
 } from './actors';
 import { AmbientLife } from './ambient';
 import { Feedback } from './feedback';
-import { makeSharedTextures, TEX } from './textures';
+import { makeSharedTextures } from './textures';
 
 /**
  * The single Phaser scene that renders whichever place the application asks
  * for. It owns ONLY presentation state (sprites, camera, animation, light,
- * ambient life, the current walking path). It never evaluates story
+ * weather, ambient life, the current walking path). It never evaluates story
  * conditions and never touches React: it receives a WorldSceneModel and
  * reports WorldEvents.
  *
  * Helpers: Actors (people's behaviour), AmbientLife (crowds, birds, light
- * flicker…), Feedback (focus ring, exits, discovery flourishes).
+ * flicker, swaying trees…), Feedback (focus ring, exits, discovery
+ * flourishes), WeatherLayer (rain, wind, storms), WaterSurface (live water)
+ * and the camera's post-processing (WorldPostFX).
  */
 export interface WorldSceneOptions {
   input: VirtualInput;
@@ -93,11 +112,17 @@ export interface WorldSceneOptions {
   framing: Framing;
   /** Force a lighting variant for pre-rendered places ('auto': follow the story clock). */
   artLighting: 'auto' | 'day' | 'late';
+  /** Force the weather everywhere (review builds); null follows the story. */
+  forceWeather: Weather | null;
+  highContrast: boolean;
+  /** The canvas's size and render resolution (device pixels per CSS pixel). */
+  viewport: Viewport;
 }
 
 const INV = 1 / ART_SCALE;
 const DEPTH = {
   ground: 0,
+  water: 0.5,
   shadows: 5,
   actors: 10,
   canopy: 100_000,
@@ -108,6 +133,8 @@ const DEPTH = {
 const depthFor = (y: number): number => DEPTH.actors + y * 100;
 /** Gap above a head for the symbol over a person (its pointer hangs 2.5 units below the anchor's top). */
 const MARK_CLEARANCE = 4;
+/** Pre-rendered sprites that sway in the wind (by id prefix). */
+const TREE_SPRITE = /^(olive|palm|fig)-/;
 
 export class WorldScene extends Phaser.Scene {
   private model: WorldSceneModel | null = null;
@@ -115,6 +142,7 @@ export class WorldScene extends Phaser.Scene {
   private layers: Phaser.GameObjects.GameObject[] = [];
   private sceneTextures: string[] = [];
   private canopies: Array<{ image: Phaser.GameObjects.Image; piece: CanopyPiece }> = [];
+  private trees: Phaser.GameObjects.Image[] = [];
   private lightSpots: LightSpot[] = [];
   private readonly props = new Map<
     string,
@@ -123,6 +151,9 @@ export class WorldScene extends Phaser.Scene {
   private actors: Actors | null = null;
   private ambient: AmbientLife | null = null;
   private feedback: Feedback | null = null;
+  private weather: WeatherLayer | null = null;
+  private water: WaterSurface | null = null;
+  private weatherNow: Weather = 'clear';
   private player: {
     x: number;
     y: number;
@@ -156,30 +187,51 @@ export class WorldScene extends Phaser.Scene {
   private focusId: string | null = null;
   /** Colour grade + vignette in one multiply layer (texture redrawn only when the light changes). */
   private light: Phaser.GameObjects.Image | null = null;
+  private lightKey = '';
   private lampGlow: Phaser.GameObjects.Image | null = null;
   private lighting: WorldLighting = { hour: null, lamp: false };
+  /** Lightning without post-processing: a brief additive wash over the view. */
+  private flashOverlay: Phaser.GameObjects.Image | null = null;
   private conversation: WorldConversation | null = null;
   private path: Tile[] | null = null;
   private pathTarget: { id: string; kind: 'entity' | 'exit' | 'tile' } | null = null;
   private controlsEnabled = true;
   private reducedMotion = false;
+  private highContrast: boolean;
   private tilesPerSecond = 4.5;
   private lastTile = { x: -1, y: -1 };
   private insideExit: string | null = null;
   private generation = 0;
   private lookAhead: Vec = { x: 0, y: 0 };
   private cameraCentre: Vec | null = null;
-  /** Automatic quality: decorative effects are dropped if frames stay slow. */
+  /** Automatic quality: effects are simplified step by step if frames stay slow. */
   private quality: QualityState = INITIAL_QUALITY;
+  private gpu: RendererInfo = { webgl: false, software: true };
+  private postFx: WorldPostFX | null = null;
+  /** Seconds of animated time (stands still with reduced motion). */
+  private clock = 0;
+  private statsAt = 0;
+  private viewKey = '';
 
   constructor(private readonly opts: WorldSceneOptions) {
     super('world');
+    this.highContrast = opts.highContrast;
   }
 
   create(): void {
     this.scale.on('resize', () => this.fitCamera());
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.onPointer(pointer));
+    this.gpu = rendererInfo(this.game);
+    registerPostFx(this.game);
+    releaseUnusedTargets(this.game);
     makeSharedTextures(this.textures);
+    makeFxTextures(this.textures);
+    this.game.canvas.dataset.effects = effectsLabel(this.quality.level);
+    this.game.canvas.dataset.renderer = this.gpu.webgl
+      ? this.gpu.software
+        ? 'webgl-software'
+        : 'webgl'
+      : 'canvas';
     this.opts.onReady();
   }
 
@@ -194,7 +246,9 @@ export class WorldScene extends Phaser.Scene {
     this.figures = new Map();
     const path = artPathFor(model.sceneId);
     if (!path) return;
-    const zoom = zoomFor(this.scale.width, this.scale.height, framingFor(this.opts.framing, 3));
+    const vp = this.opts.viewport;
+    // The art's resolution is chosen for the canvas pixels it will cover.
+    const zoom = zoomFor(vp.cssWidth, vp.cssHeight, framingFor(this.opts.framing, 3)) * vp.ratio;
     const forced = this.opts.artLighting;
     const hour = forced === 'late' ? 24 : forced === 'day' ? 8 : model.lighting.hour;
     const place = await loadPlace(
@@ -250,7 +304,6 @@ export class WorldScene extends Phaser.Scene {
     this.generation++;
     this.model = model;
     this.lighting = model.lighting;
-    this.setWeather(model.weather);
     const still = this.reducedMotion;
 
     const place = this.place?.art.scene === model.sceneId ? this.place : null;
@@ -259,6 +312,7 @@ export class WorldScene extends Phaser.Scene {
     else this.paintPlace(model);
     // Visible to diagnostics and tests: how this place is being drawn.
     this.game.canvas.dataset.art = place ? `prerendered:${place.variant}` : 'painted';
+    this.game.canvas.dataset.artPpu = String(place ? place.groundPpu : ART_SCALE);
 
     this.cast = castFor(model);
     this.actors = new Actors(
@@ -302,8 +356,11 @@ export class WorldScene extends Phaser.Scene {
     this.quality = restartWarmup(this.quality);
 
     this.feedback.build(model);
+    this.buildWater(model, place !== null);
+    this.buildWeather(model);
     this.buildLight();
     this.buildAmbient();
+    this.applyPostFx();
     this.fitCamera();
     this.updateCamera(1);
     const cam = this.cameras.main;
@@ -314,6 +371,7 @@ export class WorldScene extends Phaser.Scene {
       cam.setZoom(zoom * 1.06);
       this.tweens.add({ targets: cam, zoom, duration: 900, ease: 'Sine.easeOut' });
     }
+    this.releaseUnusedTextures();
     this.game.canvas.dataset.textureMb = textureMegabytes(this.textures).toFixed(1);
     this.opts.onEvent({ type: 'sceneReady', sceneId: model.sceneId });
   }
@@ -343,11 +401,23 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * The weather the story asks for. Recorded on the canvas (`data-weather`)
-   * for tests and diagnostics. Not drawn yet.
+   * The weather the story asks for (or the review build forces). Recorded on
+   * the canvas (`data-weather`) for tests and diagnostics; the world eases
+   * into it — a storm rises over a few seconds and calms more slowly.
    */
-  setWeather(weather: WorldSceneModel['weather']): void {
-    if (this.game?.canvas) this.game.canvas.dataset.weather = weather;
+  setWeather(weather: Weather): void {
+    const w = this.opts.forceWeather ?? weather;
+    this.weatherNow = w;
+    if (this.game?.canvas) this.game.canvas.dataset.weather = w;
+    this.weather?.setWeather(w);
+  }
+
+  /** Display settings from the player (high contrast keeps the world bright and clear). */
+  setDisplay(options: { highContrast: boolean }): void {
+    if (options.highContrast === this.highContrast) return;
+    this.highContrast = options.highContrast;
+    this.lightKey = '';
+    this.applyLighting();
   }
 
   setPlayerMarks(marks: WorldSceneModel['player']['marks']): void {
@@ -441,7 +511,10 @@ export class WorldScene extends Phaser.Scene {
     const changed = this.reducedMotion !== options.reducedMotion;
     this.reducedMotion = options.reducedMotion;
     this.tilesPerSecond = options.tilesPerSecond;
-    if (changed && this.model) this.buildAmbient();
+    if (changed && this.model) {
+      this.buildAmbient();
+      this.weather?.setMotion(this.reducedMotion);
+    }
   }
 
   setLighting(lighting: WorldLighting): void {
@@ -464,10 +537,16 @@ export class WorldScene extends Phaser.Scene {
   override update(time: number, deltaMs: number): void {
     if (!this.model || !this.player.sprite) return;
     if (!this.quality.lowPower) {
-      this.quality = stepQuality(this.quality, this.game.loop.rawDelta);
-      if (this.quality.lowPower) this.enterLowPower();
+      const level = this.quality.level;
+      this.quality = stepQuality(
+        this.quality,
+        this.game.loop.rawDelta,
+        this.opts.viewport.ratio > 1,
+      );
+      if (this.quality.level !== level) this.onQualityLevel(this.quality.level);
     }
     const dt = Math.min(deltaMs, 50) / 1000;
+    if (!this.reducedMotion) this.clock += dt;
     let moving = false;
     let dir: Vec = { x: 0, y: 0 };
 
@@ -529,10 +608,127 @@ export class WorldScene extends Phaser.Scene {
     this.feedback?.update(dt, this.player);
     if (!this.reducedMotion) this.lookAhead = stepLookAhead(this.lookAhead, dir, dt);
     this.updateCamera(dt);
+    // Weather eases in wall-clock time (a storm takes as long on a slow device).
+    this.updateWeather(Math.min(this.game.loop.rawDelta, 250) / 1000, time);
     if (this.lampGlow?.visible && !this.reducedMotion) {
       const t = time / 1000;
-      this.lampGlow.setScale(INV * (1 + Math.sin(t * 7) * 0.03 + Math.sin(t * 13) * 0.02));
+      const flicker = 1 + Math.sin(t * 7) * 0.03 + Math.sin(t * 13) * 0.02;
+      this.lampGlow.setScale(this.lampScale * flicker);
     }
+  }
+
+  // ── Weather, water and post-processing ──────────────────────────────────
+  private buildWeather(model: WorldSceneModel): void {
+    this.weatherNow = this.opts.forceWeather ?? model.weather;
+    this.game.canvas.dataset.weather = this.weatherNow;
+    this.weather = new WeatherLayer({
+      scene: this,
+      grid: model.grid,
+      mood: model.mood,
+      indoor: model.kind === 'indoor',
+      depths: { ground: DEPTH.ground, shadows: DEPTH.shadows, fx: DEPTH.fx, light: DEPTH.light },
+      initial: this.weatherNow,
+      reducedMotion: this.reducedMotion,
+      share: effectsFor(this.quality.level).weather,
+    });
+  }
+
+  private buildWater(model: WorldSceneModel, prerendered: boolean): void {
+    if (!this.gpu.webgl) return;
+    this.water = new WaterSurface({
+      scene: this,
+      grid: model.grid,
+      depth: DEPTH.water,
+      painted: !prerendered,
+    });
+  }
+
+  private updateWeather(dt: number, time: number): void {
+    const weather = this.weather;
+    if (!weather) return;
+    const cam = this.cameras.main;
+    weather.update(dt, time, cam.worldView);
+    const mix = weather.mix;
+    if (time - this.statsAt > 1000) {
+      // Diagnostics and tests: how much weather is on screen.
+      this.statsAt = time;
+      const s = weather.stats();
+      const c = this.game.canvas.dataset;
+      c.weatherDrops = String(s.drops);
+      c.weatherDust = String(s.dust + s.leaves);
+      c.weatherWet = String(s.wet);
+    }
+    this.ambient?.setWind(weather.wind);
+    const flash = weather.flash;
+    // Light layer: repainted only when the weather has visibly moved on.
+    this.refreshSky();
+    if (this.postFx) {
+      const model = this.model;
+      if (model) {
+        this.postFx.setLook(
+          gradeFor({
+            mood: model.mood,
+            hour: this.lighting.hour,
+            indoor: model.kind === 'indoor',
+            weather: mix,
+            highContrast: this.highContrast,
+            reducedMotion: this.reducedMotion,
+          }),
+          flash,
+          this.opts.viewport.ratio,
+        );
+      }
+      this.flashOverlay?.setVisible(false);
+    } else if (this.flashOverlay) {
+      this.flashOverlay.setVisible(flash > 0.001).setAlpha(flash);
+    }
+    if (this.water && this.water.count > 0) {
+      const place = this.place?.art.scene === this.model?.sceneId ? this.place : null;
+      const variant = place ? place.variant : 'painted';
+      const sun = sunForWater(this.lighting.hour, variant);
+      const decor = effectsFor(this.quality.level).decor;
+      this.water.setLook(
+        waterLook(mix, sun.height, { reducedMotion: this.reducedMotion, still: !decor }),
+        sun,
+        variant === 'late' || (this.lighting.hour ?? 12) >= 16,
+        decor ? 1 : 0.6,
+        this.clock,
+      );
+    }
+  }
+
+  /** Post-processing on or off for the current quality level and renderer. */
+  private applyPostFx(): void {
+    const want = this.gpu.webgl && !this.gpu.software && effectsFor(this.quality.level).postFx;
+    const cam = this.cameras.main;
+    if (want && !this.postFx) {
+      cam.setPostPipeline(POST_FX_KEY);
+      const p = cam.getPostPipeline(POST_FX_KEY);
+      this.postFx = p instanceof WorldPostFX ? p : null;
+    } else if (!want && this.postFx) {
+      cam.removePostPipeline(POST_FX_KEY);
+      this.postFx = null;
+    }
+    this.game.canvas.dataset.postFx = this.postFx ? 'on' : 'off';
+  }
+
+  /** The automatic quality moved down a level: shed what that level drops. */
+  private onQualityLevel(level: EffectsLevel): void {
+    const fx = effectsFor(level);
+    this.game.canvas.dataset.effects = effectsLabel(level);
+    if (level === 'low') {
+      this.enterLowPower();
+    } else {
+      // Recorded in "Copy diagnostics".
+      this.opts.logger.warn(
+        level === 'lite'
+          ? 'Frame rate is low: dropping post-processing and some weather'
+          : 'Frame rate is low: rendering at 1× resolution',
+      );
+    }
+    this.applyPostFx();
+    this.weather?.setShare(fx.weather);
+    this.opts.viewport.setCap(fx.maxResolution);
   }
 
   // ── Camera ──────────────────────────────────────────────────────────────
@@ -546,7 +742,7 @@ export class WorldScene extends Phaser.Scene {
     if (c) {
       const partner = c.with ? this.anchorFor(c.with) : null;
       // The dialogue box covers roughly the bottom third (more on small screens).
-      const box = this.scale.height < 700 ? 0.42 : 0.34;
+      const box = this.opts.viewport.cssHeight < 700 ? 0.42 : 0.34;
       target = conversationCentre(
         { x: px, y: py - 20 },
         partner ? { x: partner.x, y: partner.y - 20 } : null,
@@ -564,15 +760,24 @@ export class WorldScene extends Phaser.Scene {
       y: from.y + (target.y - from.y) * k,
     };
     cam.centerOn(this.cameraCentre.x, this.cameraCentre.y);
+    // Diagnostics and tests: the part of the world in view (world units, last frame).
+    const v = cam.worldView;
+    const view = `${v.x.toFixed(1)},${v.y.toFixed(1)},${v.width.toFixed(1)},${v.height.toFixed(1)}`;
+    if (view !== this.viewKey) {
+      this.viewKey = view;
+      this.game.canvas.dataset.view = view;
+    }
   }
 
   private fitCamera(): void {
     const model = this.model;
     const cam = this.cameras.main;
     if (!model || !cam) return;
+    const vp = this.opts.viewport;
     const w = this.scale.width;
     const h = this.scale.height;
-    cam.setZoom(zoomFor(w, h, this.framing()));
+    // Framing is chosen for the CSS size; the zoom maps world units to canvas pixels.
+    cam.setZoom(zoomFor(vp.cssWidth, vp.cssHeight, this.framing()) * vp.ratio);
     const mapW = model.grid.width * TILE;
     const mapH = model.grid.height * TILE;
     const viewW = w / cam.zoom;
@@ -581,8 +786,10 @@ export class WorldScene extends Phaser.Scene {
     const bx = mapW < viewW ? (mapW - viewW) / 2 : 0;
     const by = mapH < viewH ? (mapH - viewH) / 2 : 0;
     cam.setBounds(bx, by, Math.max(mapW, viewW), Math.max(mapH, viewH));
-    // The light layer is screen-space, sized in world units to cover the view at this zoom.
+    // Screen-space layers are sized in world units to cover the view at this zoom.
     this.light?.setPosition(w / 2, h / 2).setDisplaySize(viewW * 1.1 + 4, viewH * 1.1 + 4);
+    this.flashOverlay?.setPosition(w / 2, h / 2).setDisplaySize(viewW * 1.1 + 4, viewH * 1.1 + 4);
+    if (this.cameraCentre) cam.centerOn(this.cameraCentre.x, this.cameraCentre.y);
   }
 
   // ── Movement internals ──────────────────────────────────────────────────
@@ -780,7 +987,8 @@ export class WorldScene extends Phaser.Scene {
   /**
    * Composite a place from its pre-rendered layers: the ground (with every
    * shadow baked in), then each standing thing as a sprite sorted against
-   * people by the line it stands on.
+   * people by the line it stands on. Trees pivot at their foot so they can
+   * sway in the wind.
    */
   private buildFromArt(place: PlaceTextures): void {
     const v = place.art.variants[place.variant] ?? place.art.variants.day;
@@ -797,7 +1005,15 @@ export class WorldScene extends Phaser.Scene {
         this.entitySprites.set(sprite.id.slice('entity:'.length), sprite);
         continue;
       }
-      this.layers.push(this.artImage(place, sprite));
+      const image = this.artImage(place, sprite);
+      this.layers.push(image);
+      if (TREE_SPRITE.test(sprite.id)) {
+        const w = sprite.w / place.art.ppu;
+        const h = sprite.h / place.art.ppu;
+        const foot = Math.min(sprite.y + h, Math.max(sprite.y, sprite.base));
+        image.setOrigin(0.5, (foot - sprite.y) / h).setPosition(sprite.x + w / 2, foot);
+        this.trees.push(image);
+      }
     }
   }
 
@@ -823,17 +1039,28 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ── Light and ambient life ──────────────────────────────────────────────
+  /** The carried lamp's pool of light: about three strides across. */
+  private readonly lampScale = 104 / 256;
+
   private buildLight(): void {
     this.light?.destroy();
     this.lampGlow?.destroy();
+    this.flashOverlay?.destroy();
+    this.lightKey = '';
     this.light = this.add.image(0, 0, this.lightTexture()).setScrollFactor(0).setDepth(DEPTH.light);
     this.light.setBlendMode(Phaser.BlendModes.MULTIPLY);
     this.lampGlow = this.add
-      .image(0, 0, TEX.glow)
-      .setScale(INV)
+      .image(0, 0, FX.pool)
       .setDepth(DEPTH.light + 1)
       .setVisible(false)
       .setBlendMode(Phaser.BlendModes.ADD);
+    this.flashOverlay = this.add
+      .image(0, 0, '__WHITE')
+      .setScrollFactor(0)
+      .setDepth(DEPTH.light + 2)
+      .setTint(0xdfe8ff)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
     this.applyLighting();
   }
 
@@ -857,7 +1084,10 @@ export class WorldScene extends Phaser.Scene {
         .filter(([id]) => id.startsWith('crowd-'))
         .map(([, f]) => f),
       prerendered: this.place?.art.scene === model.sceneId,
+      trees: this.trees,
+      liveWater: (this.water?.count ?? 0) > 0,
     });
+    this.ambient.setNight(this.isNight());
   }
 
   private enterLowPower(): void {
@@ -865,18 +1095,51 @@ export class WorldScene extends Phaser.Scene {
     this.opts.logger.warn('Frame rate is low: switching to simpler effects');
     this.game.canvas.dataset.effects = 'reduced';
     this.ambient?.reduce();
+    this.lightKey = '';
     this.applyLighting();
+  }
+
+  private isNight(): boolean {
+    const model = this.model;
+    return model ? lightingFor(this.lighting.hour, model.kind === 'indoor').night : false;
   }
 
   private applyLighting(): void {
     if (!this.model || !this.light) return;
-    const base = lightingFor(this.lighting.hour, this.model.kind === 'indoor');
-    const l = this.withMood(base);
-    // In low-power mode only light that means something (dusk, night) is drawn.
-    const show = !this.quality.lowPower || lightMatters(l.alpha);
+    const l = this.withMood(lightingFor(this.lighting.hour, this.model.kind === 'indoor'));
+    const lamp = l.night && this.lighting.lamp;
+    // A carried lamp at night: a warm pool about three strides across.
+    this.lampGlow?.setVisible(lamp).setScale(this.lampScale).setAlpha(0.8);
+    this.ambient?.setNight(l.night);
+    this.refreshSky();
+  }
+
+  /** The multiply layer: time of day, the place's mood and the sky (repainted when they change). */
+  private refreshSky(): void {
+    if (!this.model || !this.light) return;
+    const indoor = this.model.kind === 'indoor';
+    const l = this.withMood(lightingFor(this.lighting.hour, indoor));
+    const mix: WeatherMix = this.weather?.mix ?? WEATHER_MIX[this.weatherNow];
+    const o = overcast(mix, indoor);
+    // High contrast: keep the world bright and clear (only a trace of the weather).
+    const sky = this.highContrast ? { ...o, alpha: o.alpha * 0.35, vignette: 0 } : o;
+    // In low-power mode only light that means something (dusk, night, a storm) is drawn.
+    const show = !this.quality.lowPower || lightMatters(l.alpha + sky.alpha);
     this.light.setVisible(show);
-    if (show) this.paintLight(l);
-    this.lampGlow?.setVisible(l.night && this.lighting.lamp);
+    if (show) {
+      const key = [
+        l.tint,
+        l.alpha.toFixed(3),
+        l.vignette.toFixed(3),
+        sky.tint,
+        sky.alpha.toFixed(2),
+        sky.vignette.toFixed(2),
+      ].join('|');
+      if (key !== this.lightKey) {
+        this.lightKey = key;
+        this.paintLight(l, sky);
+      }
+    }
   }
 
   /** The place's own light: warmer at home and in Jericho, harsher on the open road. */
@@ -907,12 +1170,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Redraw the grade texture: `center` colour in the middle, `edge` at the rim. */
-  private paintLight(l: Lighting): void {
+  private paintLight(l: Lighting, sky: { tint: number; alpha: number; vignette: number }): void {
     const texture = this.textures.get(WorldScene.LIGHT_KEY) as Phaser.Textures.CanvasTexture;
     const ctx = texture.getContext?.();
     if (!ctx) return;
     const size = WorldScene.LIGHT_SIZE;
-    const { center, edge } = gradeColors(l);
+    const { center, edge } = gradeColors(l, sky);
     const g = ctx.createRadialGradient(
       size / 2,
       size / 2,
@@ -967,11 +1230,42 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Free textures the new place doesn't use: art and people from the last
+   * place, and painted figures nobody wears any more. (They reload or
+   * repaint if needed again.) Keeps GPU memory to what is on screen.
+   */
+  private releaseUnusedTextures(): void {
+    const keep = new Set<string>();
+    for (const o of this.children.list) {
+      const t = (o as { texture?: Phaser.Textures.Texture }).texture;
+      if (t) keep.add(t.key);
+    }
+    for (const f of this.figures.values()) {
+      keep.add(f.key);
+      keep.add(f.shadowKey);
+    }
+    const place = this.place?.art.scene === this.model?.sceneId ? this.place : null;
+    if (place) {
+      keep.add(place.ground);
+      place.pages.forEach((p) => keep.add(p));
+    }
+    for (const key of this.textures.getTextureKeys()) {
+      if (keep.has(key)) continue;
+      if (key.startsWith('art:') || key.startsWith('person:') || key.startsWith('fig1-'))
+        this.textures.remove(key);
+    }
+  }
+
   private clear(): void {
     this.ambient?.destroy();
     this.ambient = null;
     this.feedback?.destroy();
     this.feedback = null;
+    this.weather?.destroy();
+    this.weather = null;
+    this.water?.destroy();
+    this.water = null;
     this.actors?.clear();
     this.actors = null;
     this.props.forEach((p) => p.image.destroy());
@@ -979,6 +1273,7 @@ export class WorldScene extends Phaser.Scene {
     this.layers.forEach((l) => l.destroy());
     this.layers = [];
     this.canopies = [];
+    this.trees = [];
     this.player.sprite?.destroy();
     this.player.sprite = null;
     this.player.shadow?.destroy();
@@ -987,6 +1282,8 @@ export class WorldScene extends Phaser.Scene {
     this.light = null;
     this.lampGlow?.destroy();
     this.lampGlow = null;
+    this.flashOverlay?.destroy();
+    this.flashOverlay = null;
     this.conversation = null;
     this.sceneTextures.forEach((k) => {
       if (this.textures.exists(k)) this.textures.remove(k);

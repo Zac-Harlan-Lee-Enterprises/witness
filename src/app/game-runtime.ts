@@ -111,6 +111,7 @@ export class GameRuntime {
     const isStale = (): boolean => this.disposed || generation !== this.mountGeneration;
     const mount = await loadWorld();
     if (isStale()) return;
+    const settings = this.services.settings;
     const port = await mount({
       parent,
       input: this.services.input,
@@ -118,14 +119,21 @@ export class GameRuntime {
       logger: this.services.logger,
       framing: this.services.config.cameraFraming,
       artLighting: this.services.config.artLighting,
+      forceWeather: this.services.config.forceWeather,
+      highContrast: settings.current.highContrast,
     });
     if (isStale()) {
       port.destroy();
       return;
     }
+    // High contrast keeps the world bright and clear (less gloom, no shimmer).
+    const stopDisplay = settings.store.subscribe(() =>
+      port.setDisplay?.({ highContrast: settings.current.highContrast }),
+    );
     const unmount = (): void => {
       if (this.unmountWorld !== unmount) return;
       this.unmountWorld = null;
+      stopDisplay();
       this.controller.detachWorld();
       port.destroy();
     };
