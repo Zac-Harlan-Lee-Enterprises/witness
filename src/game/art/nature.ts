@@ -1,6 +1,6 @@
 import type { TileKind } from '@/domain/world';
 import type { Look } from './direction';
-import { LAKE_DEEP, LAKE_SHALLOW, paintMastTop } from './boats';
+import { paintMastTop } from './boats';
 import { ellipse, fbm, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } from './paint';
 import type { Site } from './site';
 
@@ -297,6 +297,8 @@ export function paintWater(ctx: Ctx, site: Site, look: Look): void {
 }
 
 // ── The lake (the Sea of Galilee) ────────────────────────────────────────
+const LAKE_DEEP = '#2d5e71';
+const LAKE_SHALLOW = '#5f978f';
 const FOAM = '#e6f0ec';
 
 const isLakeWater = (k: TileKind): boolean => k === 'lake' || k === 'shallows';
@@ -320,39 +322,65 @@ export function paintLake(ctx: Ctx, site: Site, _look: Look): void {
     const k = site.kindAt(x, y);
     return !isLakeWater(k) && !isVessel(k) && k !== 'water' && k !== 'deck' && k !== 'mast';
   };
-  // 1. Colour, drifting across tiles.
-  site.forEach((x, y) => {
-    const w = waterAt(x, y);
-    if (!w) return;
-    const base = w === 'lake' ? LAKE_DEEP : LAKE_SHALLOW;
-    ctx.fillStyle = shade(base, (fbm(x / 6, y / 6, 41) - 0.5) * 0.3);
-    ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
-  });
-  // 2. Where deep water meets the shallows, a soft band instead of a hard edge.
-  site.forEach((x, y) => {
-    if (waterAt(x, y) !== 'shallows') return;
+  // A boat floats on this water (the one you're aboard always does; a boat
+  // drawn up at the water's edge doesn't), so the water runs on under it.
+  const afloat = (x: number, y: number): boolean => {
+    const k = site.kindAt(x, y);
+    if (k === 'hull') return true;
+    if (k !== 'boat') return false;
+    let wet = 0;
+    let dry = 0;
     for (const [dx, dy] of [
       [0, -1],
       [1, 0],
       [0, 1],
       [-1, 0],
     ] as const) {
-      if (waterAt(x + dx, y + dy) !== 'lake') continue;
-      const x0 = dx === 1 ? (x + 1) * TILE : x * TILE;
-      const y0 = dy === 1 ? (y + 1) * TILE : y * TILE;
-      const grad = ctx.createLinearGradient(x0, y0, x0 - dx * 14, y0 - dy * 14);
-      grad.addColorStop(0, rgba(LAKE_DEEP, 0.75));
-      grad.addColorStop(1, rgba(LAKE_DEEP, 0));
-      ctx.fillStyle = grad;
-      ctx.fillRect(
-        dx === 1 ? (x + 1) * TILE - 14 : x * TILE,
-        dy === 1 ? (y + 1) * TILE - 14 : y * TILE,
-        dx === 0 ? TILE : 14,
-        dy === 0 ? TILE : 14,
-      );
+      const n = site.kindAt(x + dx, y + dy);
+      if (n === 'boat' || !inside(x + dx, y + dy)) continue;
+      if (isLakeWater(n)) wet++;
+      else dry++;
     }
+    return wet > 0 && wet >= dry;
+  };
+  // 1. Colour: one sample per tile, smoothly scaled up, so the shallows fade
+  //    into deep water over a tile or two instead of stepping at the grid.
+  const { width, height } = site.grid;
+  const colourAt = (x: number, y: number): string => {
+    let w = waterAt(x, y);
+    // Off the water (boats, the shore), take the colour of the nearest open water.
+    for (let d = 1; !w && d <= 2; d++)
+      for (let dy = -d; dy <= d && w !== 'lake'; dy++)
+        for (let dx = -d; dx <= d && w !== 'lake'; dx++) w = waterAt(x + dx, y + dy) ?? w;
+    return shade(
+      (w ?? 'shallows') === 'lake' ? LAKE_DEEP : LAKE_SHALLOW,
+      (fbm(x / 6, y / 6, 41) - 0.5) * 0.3,
+    );
+  };
+  const field = ctx.canvas.ownerDocument.createElement('canvas');
+  field.width = width;
+  field.height = height;
+  const f = field.getContext('2d');
+  if (f)
+    site.forEach((x, y) => {
+      f.fillStyle = colourAt(x, y);
+      f.fillRect(x, y, 1, 1);
+    });
+  ctx.save();
+  ctx.beginPath();
+  site.forEach((x, y) => {
+    if (waterAt(x, y) || afloat(x, y)) ctx.rect(x * TILE, y * TILE, TILE, TILE);
   });
-  // 3. Detail: pebbles under the shallows, darker swells out deep, ripples everywhere.
+  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  if (f) ctx.drawImage(field, 0, 0, width * TILE, height * TILE);
+  else
+    site.forEach((x, y) => {
+      ctx.fillStyle = colourAt(x, y);
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+    });
+  ctx.restore();
+  // 2. Detail: pebbles under the shallows, darker swells out deep, ripples everywhere.
   site.forEach((x, y) => {
     const w = waterAt(x, y);
     if (!w) return;
@@ -400,7 +428,7 @@ export function paintLake(ctx: Ctx, site: Site, _look: Look): void {
       ctx.quadraticCurveTo(wx + len / 2, wy - 2, wx + len, wy);
       ctx.stroke();
     }
-    // 4. The shore: wet dark stones and a line of foam.
+    // 3. The shore: wet dark stones and a line of foam.
     for (const [dx, dy] of [
       [0, -1],
       [1, 0],

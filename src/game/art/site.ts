@@ -172,7 +172,10 @@ export function readSite(
     x >= 0 && y >= 0 && x < grid.width && y < grid.height;
   const groundAt = (x: number, y: number): TileKind => {
     const k = kindAt(x, y);
-    return PROP_TILES.has(k) || k === 'fence' ? groundUnder(grid, x, y, baseTile) : k;
+    // A boat sits on whatever is around it: the beach it's drawn up on (boats afloat get water from boats.ts).
+    return PROP_TILES.has(k) || k === 'fence' || k === 'boat'
+      ? groundUnder(grid, x, y, baseTile)
+      : k;
   };
   const opensSouth = (x: number, y: number): boolean => {
     if (!inside(x, y + 1)) return false;

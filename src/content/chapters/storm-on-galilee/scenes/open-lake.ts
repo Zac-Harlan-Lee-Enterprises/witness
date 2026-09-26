@@ -292,7 +292,7 @@ export const OPEN_LAKE: ChapterInput['scenes'][number] = {
     {
       id: 'bow',
       kind: 'feature',
-      label: 'Look ahead from the bow',
+      label: 'The view from the bow',
       sprite: 'none',
       x: 30,
       y: 11,

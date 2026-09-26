@@ -218,6 +218,9 @@ describe('A Storm on Galilee — content', () => {
     const lake = scene('open-lake');
     const site = readSite(parseLayout(lake), lake.baseTile);
     expect(site.groundAt(19, 11)).toBe('deck');
+    // A boat drawn up on the beach sits on the beach.
+    const shore = scene('capernaum-shore');
+    expect(readSite(parseLayout(shore), shore.baseTile).groundAt(38, 15)).toBe('shingle');
   });
 
   it('dresses fishing folk with their gear: a net over the shoulder, an oar in hand', () => {

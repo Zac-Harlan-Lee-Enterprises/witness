@@ -104,7 +104,7 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-sail' },
-      text: 'When the squall hit, you got the sail in in the right order.',
+      text: 'When the squall hit, you shortened sail in the right order.',
     },
     {
       when: { type: 'choiceMade', choice: 'choice-storm' },

@@ -1,8 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import type { Look } from './direction';
-import { ellipse, fbm, hash, lumpy, rgba, rng, shade, type Ctx, TILE } from './paint';
-import { groundUnder, type Site } from './site';
-import { groundColor } from './terrain';
+import { ellipse, hash, lumpy, rgba, rng, shade, type Ctx, TILE } from './paint';
+import type { Site } from './site';
 
 /**
  * Boats of the lake, loosely after the first-century boat recovered at
@@ -26,20 +25,13 @@ const ROPE = '#c9b184';
 const WOOD_DARK = '#4f3520';
 const FOAM = '#e6f0ec';
 
-/** Open water and shallows (nature.ts paints them; boats float on the same colours). */
-export const LAKE_DEEP = '#2d5e71';
-export const LAKE_SHALLOW = '#5f978f';
-
 interface Footprint {
   x: number;
   y: number;
   w: number;
   h: number;
-  tiles: Array<[number, number]>;
   /** Mostly surrounded by water (a boat pulled up at the water's edge is not). */
   afloat: boolean;
-  /** Deep water alongside (else the shallows). */
-  deep: boolean;
   /** Bow direction along the long axis: +1 east/south, -1 west/north. */
   bow: 1 | -1;
 }
@@ -59,14 +51,11 @@ function footprints(site: Site, member: (k: TileKind) => boolean, needs?: TileKi
     let y1 = sy;
     let wet = 0;
     let dry = 0;
-    let deep = false;
     let hasNeeded = needs === undefined;
-    const tiles: Array<[number, number]> = [];
     const stack: Array<[number, number]> = [[sx, sy]];
     seen.add(sy * width + sx);
     while (stack.length > 0) {
       const [x, y] = stack.pop() as [number, number];
-      tiles.push([x, y]);
       x0 = Math.min(x0, x);
       x1 = Math.max(x1, x);
       y0 = Math.min(y0, y);
@@ -86,7 +75,6 @@ function footprints(site: Site, member: (k: TileKind) => boolean, needs?: TileKi
         if (!member(k)) {
           if (WET.has(k)) wet++;
           else dry++;
-          if (k === 'lake') deep = true;
           continue;
         }
         seen.add(ny * width + nx);
@@ -106,7 +94,7 @@ function footprints(site: Site, member: (k: TileKind) => boolean, needs?: TileKi
       ? WET.has(site.kindAt(x1 + 1, y0 + Math.floor(h / 2)))
       : WET.has(site.kindAt(x0 + Math.floor(w / 2), y1 + 1));
     const bow: 1 | -1 = !afloat && wetBefore && !wetAfter ? -1 : 1;
-    out.push({ x: x0, y: y0, w, h, tiles, afloat, deep, bow });
+    out.push({ x: x0, y: y0, w, h, afloat, bow });
   });
   return out;
 }
@@ -366,32 +354,12 @@ function paintBoardedBoat(c: Ctx, fp: Footprint): void {
  * Paint every boat in the place: the one you are aboard (hull + deck) and
  * any others, afloat or drawn up. Runs after the water and before objects.
  */
-export function paintBoats(c: Ctx, site: Site, look: Look): void {
-  for (const fp of footprints(site, (k) => k === 'hull' || k === 'deck' || k === 'mast', 'hull')) {
-    underlay(c, site, look, fp, (x, y) => site.kindAt(x, y) === 'hull');
+export function paintBoats(c: Ctx, site: Site, _look: Look): void {
+  // What shows round a boat's curved ends is already there: the water it
+  // floats on (nature.ts paintLake) or the beach it's drawn up on (site.groundAt).
+  for (const fp of footprints(site, (k) => k === 'hull' || k === 'deck' || k === 'mast', 'hull'))
     paintBoardedBoat(c, fp);
-  }
-  for (const fp of footprints(site, (k) => k === 'boat')) {
-    underlay(c, site, look, fp, () => true);
-    paintFreeBoat(c, fp);
-  }
-}
-
-/** What shows round a boat's curved ends: the water it floats on, or the beach it's drawn up on. */
-function underlay(
-  c: Ctx,
-  site: Site,
-  look: Look,
-  fp: Footprint,
-  paintHere: (x: number, y: number) => boolean,
-): void {
-  for (const [x, y] of fp.tiles) {
-    if (!paintHere(x, y)) continue;
-    c.fillStyle = fp.afloat
-      ? shade(fp.deep ? LAKE_DEEP : LAKE_SHALLOW, (fbm(x / 6, y / 6, 41) - 0.5) * 0.3)
-      : groundColor(look, groundUnder(site.grid, x, y, 'shingle'));
-    c.fillRect(x * TILE, y * TILE, TILE, TILE);
-  }
+  for (const fp of footprints(site, (k) => k === 'boat')) paintFreeBoat(c, fp);
 }
 
 // ── The mast of the boat you're aboard ───────────────────────────────────

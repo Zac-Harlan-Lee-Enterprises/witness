@@ -375,6 +375,7 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
       c.fillRect(1.5, -6, 2.4, 34);
       c.fillRect(28.1, -6, 2.4, 34);
       const top = (x: number): number => -3 + Math.sin((x / 32) * Math.PI) * 3;
+      c.save();
       c.fillStyle = rgba('#d8ccad', 0.35);
       c.beginPath();
       c.moveTo(3, top(3));
@@ -383,6 +384,8 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
       c.quadraticCurveTo(16, 26, 3, 22);
       c.closePath();
       c.fill();
+      // The mesh, kept inside the hanging net.
+      c.clip();
       c.strokeStyle = rgba('#e6dcc0', 0.85);
       c.lineWidth = 0.45;
       for (let i = -8; i < 14; i++) {
@@ -393,6 +396,7 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
         c.lineTo(3 + i * 3, 22);
         c.stroke();
       }
+      c.restore();
       c.strokeStyle = ROPE_COLOR;
       c.lineWidth = 0.9;
       c.beginPath();

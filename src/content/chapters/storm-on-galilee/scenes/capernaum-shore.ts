@@ -183,7 +183,7 @@ export const CAPERNAUM_SHORE: ChapterInput['scenes'][number] = {
     {
       id: 'lake-view',
       kind: 'sign',
-      label: 'Read the sky over the lake',
+      label: 'The end of the jetty — read the sky',
       sprite: 'none',
       x: 20,
       y: 25,
@@ -197,7 +197,7 @@ export const CAPERNAUM_SHORE: ChapterInput['scenes'][number] = {
     },
     look(
       'western-hills',
-      'Look west, over the hills',
+      'The western hills',
       'clue-clear-west',
       'Over the hills to the west, behind the town, the sky is clear and golden. No rain clouds are coming in from the sea.',
       1,
@@ -206,7 +206,7 @@ export const CAPERNAUM_SHORE: ChapterInput['scenes'][number] = {
     ),
     look(
       'far-shore',
-      'Look across to the far shore',
+      'The far shore, across the lake',
       'clue-cold-breath',
       'Across the lake the eastern hills are already in shadow. Now and then a cold breath comes over the water from them, against the afternoon wind, and the lake under them darkens and shivers.',
       41,
