@@ -68,10 +68,12 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          // Pre-rendered art (art/**: WebP layers and sheets with JSON manifests)
-          // is precached with everything else, so every place works offline —
-          // except the later-day variants, which the story never shows in the
-          // morning market: they are cached the first time they are used.
+          // Pre-rendered art (art/**: WebP layers and sheets with JSON manifests):
+          // the morning set of every place and person is precached, so the
+          // whole chapter can be played offline after one visit. Later-day
+          // sets (*-late*) are cached the first time they are shown; offline
+          // before that, the game draws the morning set in their place
+          // (src/game/prerendered/loader.ts). See docs/art/technical-art-guide.md §6.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
           globIgnores: ['**/art/**/*-late*.webp'],
           runtimeCaching: [
@@ -81,7 +83,7 @@ export default defineConfig(({ mode }) => {
               options: { cacheName: 'witness-art', expiration: { maxEntries: 200 } },
             },
           ],
-          // The Phaser chunk is ~1.2 MB and the largest art layer is under 2 MB.
+          // The Phaser chunk is ~1.2 MB; no art file reaches 1 MB (big grounds are tiled).
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           navigateFallback: `${base}index.html`,
           cleanupOutdatedCaches: true,
