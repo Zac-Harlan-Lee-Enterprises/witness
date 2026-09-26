@@ -49,10 +49,11 @@ const REGISTRY: RegistryEntry[] = [
       id: 'letter-from-paul',
       number: 4,
       title: 'A Letter from Paul',
-      subtitle: 'Coming later',
-      available: false,
-      estimatedMinutes: null,
+      subtitle: 'Carried by hand, read aloud in Colossae',
+      available: true,
+      estimatedMinutes: { min: 20, max: 30 },
     },
+    load: () => import('./chapters/letter-from-paul').then((m) => m.LETTER_FROM_PAUL),
   },
 ];
 
