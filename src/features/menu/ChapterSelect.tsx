@@ -64,9 +64,10 @@ export function ChapterSelect({
             <li
               key={meta.id}
               className={`chapter-card ${meta.available ? '' : 'chapter-card--locked'}`}
+              aria-labelledby={`chapter-title-${meta.id}`}
             >
               {meta.available && <JourneyArt className="chapter-card__art" />}
-              <h2 className="chapter-card__title">
+              <h2 className="chapter-card__title" id={`chapter-title-${meta.id}`}>
                 <span className="chapter-card__number">Chapter {meta.number}</span> {meta.title}
               </h2>
               <p className="chapter-card__subtitle">{meta.subtitle}</p>

@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { applySettingsToDocument } from '@/app/App';
+import { chapterSource } from '@/content';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { ChapterSelect } from '@/features/menu/ChapterSelect';
 import { TitleScreen } from '@/features/menu/TitleScreen';
@@ -93,16 +94,23 @@ describe('Profiles', () => {
 });
 
 describe('Chapter select', () => {
-  it('shows Chapter 1 as playable and future chapters as locked', async () => {
+  it('lists every chapter: playable ones can be started, the rest say they are not available yet', async () => {
     const onStart = vi.fn();
     const user = userEvent.setup();
     const { container } = await renderWithServices(
       <ChapterSelect profile={TEST_PROFILE} onStart={onStart} onBack={vi.fn()} />,
     );
     expect(await screen.findByRole('heading', { name: /The Road to Jericho/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /A Storm on Galilee/ })).toBeInTheDocument();
-    expect(screen.getAllByText('Not available yet').length).toBeGreaterThanOrEqual(3);
-    await user.click(screen.getByRole('button', { name: 'New game' }));
+    for (const meta of chapterSource.list()) {
+      const card = screen.getByRole('listitem', { name: new RegExp(meta.title) });
+      if (meta.available) {
+        expect(within(card).getByRole('button', { name: 'New game' })).toBeInTheDocument();
+      } else {
+        expect(within(card).getByText('Not available yet')).toBeInTheDocument();
+      }
+    }
+    const jericho = screen.getByRole('listitem', { name: /The Road to Jericho/ });
+    await user.click(within(jericho).getByRole('button', { name: 'New game' }));
     expect(onStart).toHaveBeenCalledWith('road-to-jericho', null);
     await expectNoAxeViolations(container);
   });

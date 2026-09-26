@@ -6,6 +6,7 @@ import {
   endDialogue,
   expectScene,
   goTo,
+  newGame,
   openApp,
   waitForWorld,
 } from './support';
@@ -72,7 +73,7 @@ for (const variant of VARIANTS) {
       await configure(page, variant);
       await createProfile(page, 'Ari');
       await shot('chapters');
-      await page.getByRole('button', { name: 'New game' }).click();
+      await newGame(page);
       await waitForWorld(page);
       await shot('house-opening-dialogue', 1500);
       await choose(page, 'Of course. What do I need to know?');

@@ -4,6 +4,7 @@ import {
   createProfile,
   expectScene,
   goTo,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -51,7 +52,7 @@ for (const vp of VIEWPORTS) {
       await openApp(page);
       await setFastSettings(page);
       await createProfile(page, 'Ari');
-      await page.getByRole('button', { name: 'New game' }).click();
+      await newGame(page);
       await waitForWorld(page);
       await choose(page, 'Of course. What do I need to know?');
       await choose(page, 'I’ll head to the market.');

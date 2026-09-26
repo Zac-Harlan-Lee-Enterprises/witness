@@ -3,6 +3,7 @@ import {
   choose,
   createProfile,
   endDialogue,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -17,7 +18,7 @@ test('starts cleanly with no console errors, on every viewport', async ({ page }
   await openApp(page);
   await expect(page).toHaveTitle('Witness: A Journey Through Scripture');
   await createProfile(page, 'Smoke');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await expect(page.locator('section.dialogue')).toBeVisible();
   // HUD must not overflow horizontally on small screens.
@@ -48,7 +49,7 @@ test('keyboard-only play: move with keys and talk with E', async ({ page, isMobi
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Keys');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await choose(page, 'Of course. What do I need to know?');
   await choose(page, 'I’ll head to the market.');

@@ -5,6 +5,7 @@ import {
   endDialogue,
   expectScene,
   goTo,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -25,7 +26,7 @@ test('keeps a smooth frame rate while walking in the market', async ({ page, isM
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Perf');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await choose(page, 'Of course. What do I need to know?');
   await choose(page, 'I’ll head to the market.');
@@ -67,7 +68,7 @@ test('switches to simpler effects when the frame rate stays low', async ({ page,
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Slow');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await choose(page, 'Of course. What do I need to know?');
   await choose(page, 'I’ll head to the market.');

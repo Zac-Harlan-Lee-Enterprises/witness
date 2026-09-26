@@ -4,6 +4,7 @@ import {
   createProfile,
   expectScene,
   goTo,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -29,7 +30,7 @@ test('installs a service worker and keeps working offline after the first visit'
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
   await setFastSettings(page);
   await createProfile(page, 'Offline');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page); // Phaser + chapter content come from the precache
   await expect(page.locator('.hud__scene')).toHaveText('Aunt Miriam’s house');
   // The market's pre-rendered art is precached too: it is drawn from it, not painted.

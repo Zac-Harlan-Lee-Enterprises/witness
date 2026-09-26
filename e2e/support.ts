@@ -76,3 +76,17 @@ export async function snap(page: Page, name: string): Promise<void> {
   await page.waitForTimeout(300);
   await page.screenshot({ path: `test-results/shots/${name}.png` });
 }
+
+/**
+ * Start a new game of one chapter from chapter select. Each chapter card is
+ * labelled by its title, so tests stay unambiguous as chapters are added.
+ */
+export async function newGame(
+  page: Page,
+  title: string | RegExp = 'The Road to Jericho',
+): Promise<void> {
+  await page
+    .getByRole('listitem', { name: title })
+    .getByRole('button', { name: 'New game' })
+    .click();
+}

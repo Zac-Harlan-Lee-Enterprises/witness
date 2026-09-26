@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { choose, createProfile, endDialogue, goTo, openApp } from './support';
+import { choose, createProfile, endDialogue, goTo, newGame, openApp } from './support';
 
 /**
  * "The world responds": exactly one canvas, keyboard walking changes what's on
@@ -15,7 +15,7 @@ async function canvasPixels(page: Page): Promise<string> {
 test('one canvas; walking and changing place visibly update the world', async ({ page }) => {
   await openApp(page);
   await createProfile(page, 'Walker');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await expect(page.locator('.viewport canvas')).toHaveCount(1, { timeout: 30_000 });
   await choose(page, 'Of course. What do I need to know?');
   await choose(page, 'I’ll head to the market.');
