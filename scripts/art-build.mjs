@@ -33,6 +33,10 @@ const PLACES = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 2: A Storm on Galilee
+  'shelomit-house',
+  'capernaum-shore',
+  'open-lake',
   // Chapter 3: A Journey to Bethlehem
   'tamar-house',
   'bethlehem-lanes',
@@ -54,6 +58,7 @@ const SAMPLES = {
   'miriam-house': '512',
   'tamar-house': '512',
   'shepherds-fields': '160',
+  'shelomit-house': '512',
   'ammia-workshop': '512',
   'philemon-house': '640',
 };

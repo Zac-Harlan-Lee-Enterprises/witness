@@ -131,6 +131,102 @@
       "rebuild": "node scripts/art-build.mjs place jericho"
     },
     {
+      "path": "public/art/shelomit-house/ground-*.webp",
+      "what": "Ground layer of Grandmother Shelomit's house in Capernaum, a room in cutaway: an earth floor set with basalt cobbles, a plaited rush mat with a bound border, a mud-plastered back wall with niches and a lamp, a string of drying fish, nets and oars, the cut basalt walls; the 'late' set in later-day light through a west window and the door, the 'night' set by lamplight ('lamplight': the lamps and the oven's embers, the moon faint at the door); full and half resolution.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's shelomit-house scene data (tile map, legend, mood, entities). Geometry and materials are procedural (tools/art/lib/*.py, the lake's in kit_lake.py, lake_boats.py, lake_houses.py and lake_materials.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place shelomit-house"
+    },
+    {
+      "path": "public/art/shelomit-house/shade-*.webp",
+      "what": "Light mask of the floor (white = in the sunbeam by day, in a lamp's pool at night), used to dim people who stand away from the light.",
+      "origin": "Rendered by tools/art/build_place.py (white material override).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place shelomit-house"
+    },
+    {
+      "path": "public/art/shelomit-house/sprites-*.webp",
+      "what": "Atlas pages of every standing thing in the room (the tannur, jars, baskets of dried fish, sacks, the table and its lamp, nets on pegs, a crate, bedding, the net being mended), each rendered on its own with the rest of the room still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
+      "origin": "Rendered by tools/art/build_place.py; procedural geometry and materials.",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place shelomit-house"
+    },
+    {
+      "path": "public/art/shelomit-house/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place shelomit-house"
+    },
+    {
+      "path": "public/art/capernaum-shore/ground-*.webp",
+      "what": "Ground layer of the shore at Capernaum: a lane of basalt flags, dry lakeside grass on dark soil, trodden paths, a shingle beach of basalt and limestone pebbles falling to the waterline (wet band, foam), the lake and its shallows (refracting water over a shelving bed), the jetty of dressed basalt blocks, with every standing thing's shadow and occlusion baked in; the 'late' set in later-day light (also shown as the boats put out at sunset) and the 'night' set by moonlight with the lamps lit; full and half resolution; cut into tiles of at most 2048 px.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's capernaum-shore scene data (tile map, legend, mood, entities). Geometry and materials are procedural (tools/art/lib/*.py, the lake's in kit_lake.py, lake_boats.py, lake_houses.py and lake_materials.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place capernaum-shore"
+    },
+    {
+      "path": "public/art/capernaum-shore/shade-*.webp",
+      "what": "Light-visibility mask of the ground (white = lit by the sun, or at night by the moon), used to dim and cool people who stand in shade.",
+      "origin": "Rendered by tools/art/build_place.py (white material override).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place capernaum-shore"
+    },
+    {
+      "path": "public/art/capernaum-shore/sprites-*.webp",
+      "what": "Atlas pages of every standing thing on the shore (basalt houses, boats drawn up and moored, masts and furled sails, the teacher's boat under its shade, nets and fish racks, the salter's jars and tubs, story props such as Grandmother's lamp, the towline and the jars left on the rack), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
+      "origin": "Rendered by tools/art/build_place.py; procedural geometry and materials.",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place capernaum-shore"
+    },
+    {
+      "path": "public/art/capernaum-shore/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place capernaum-shore"
+    },
+    {
+      "path": "public/art/open-lake/ground-*.webp",
+      "what": "Ground layer of the open lake: deep water over a silty bed, the planked deck of the family boat and its stern platform, the underwater hulls of the boats around, with their shadows; the 'night' set by moonlight (shown from sunset on), full and half resolution; cut into tiles of at most 2048 px.",
+      "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's open-lake scene data (tile map, legend, mood, entities). Geometry and materials are procedural (tools/art/lib/*.py, the lake's in kit_lake.py, lake_boats.py, lake_houses.py and lake_materials.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
+      "tools": ["Blender 5.2.2 LTS (GPL; used as an authoring tool only, not distributed)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place open-lake"
+    },
+    {
+      "path": "public/art/open-lake/shade-*.webp",
+      "what": "Light-visibility mask of the ground (white = lit by the moon), used to dim and cool people who stand in shade.",
+      "origin": "Rendered by tools/art/build_place.py (white material override).",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place open-lake"
+    },
+    {
+      "path": "public/art/open-lake/sprites-*.webp",
+      "what": "Atlas pages of every standing thing on the lake (the family boat's bulwarks, oars, steering oar, stern lamp, mast, yard and sail, the boats around under way with their stern lamps, the teacher's boat under its shade, story props such as the floating jars, the towline and Shifra's family's boat), each rendered on its own with the rest of the place still casting shadows and bouncing light onto it. Half-resolution pages end in -low.",
+      "origin": "Rendered by tools/art/build_place.py; procedural geometry and materials.",
+      "tools": ["Blender 5.2.2 LTS"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place open-lake"
+    },
+    {
+      "path": "public/art/open-lake/manifest.json",
+      "what": "Placement, sorting and atlas coordinates of the place's layers.",
+      "origin": "Written by tools/art/build_place.py.",
+      "tools": [],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs place open-lake"
+    },
+    {
       "path": "public/art/tamar-house/ground-*.webp",
       "what": "Ground layer of Tamar's house in Bethlehem, a village house seen in cutaway (the animals' end a step down, deep in straw, with stone mangers along the family floor and steps up; the plastered back wall with niches, lamps, a shelf, strings of onions and garlic, a sickle, a pack saddle, bare rubble behind the animals; the cut-down walls and the partition to the guest room; sunlight through the east window, the door and the roof hatch; by lamplight at night, the door shut), with the shadows and occlusion of every standing thing baked in; a day set in the morning light ('day') and a night set ('night': lamplight), full and half resolution; cut into tiles of at most 2048 px where larger (ground-<set>-x<i>y<j>.webp).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_place.py from the game's tamar-house scene data (tile map, legend, mood, entities), with the village kit (tools/art/lib/kit_village.py). Geometry and materials are procedural (tools/art/lib/*.py): no image textures, scanned or downloaded models, HDRIs or photographs, and no image-generation models.",
@@ -356,7 +452,7 @@
     },
     {
       "path": "public/art/people/*.webp",
-      "what": "Character sprite sheets (idle, breathing, blink, talking, walking, turning; four directions), sheets of people at rest (sitting, lying), sheets with a torn hem, and overlay sheets of story marks (bandages, the spare cloak, a water skin, a lamp, a rolled cloak, a letter case, a lamb carried across the shoulders), with their cast-shadow sheets, for morning, later-day and indoor light, overcast light (under rain cloud), lamp-light (at lamp-lighting, and a house lit by its lamps at night) and moonlight (Chapter 3 adds a newborn lamb held in the arms or the lap, a lamp held up with its flame lit after dark, and a wax tablet).",
+      "what": "Character sprite sheets (idle, breathing, blink, talking, walking, turning; four directions), sheets of people at rest (sitting, lying), sheets with a torn hem, and overlay sheets of story marks (bandages, the spare cloak, a water skin, a lamp, a rolled cloak, a letter case, a lamb carried across the shoulders), with their cast-shadow sheets, for morning, later-day and indoor light, overcast light (under rain cloud), lamp-light (at lamp-lighting, and a house lit by its lamps at night) and moonlight (Chapter 3 adds a newborn lamb held in the arms or the lap, a lamp held up with its flame lit after dark, and a wax tablet; Chapter 2's fishing folk carry an oar or a folded net).",
       "origin": "Rendered offline with Blender 5.2 (Cycles) by tools/art/build_people.py. Each person is built procedurally from the game's character appearance data (tools/art/lib/people.py): a body grown along a joint skeleton, lofted garments, head and face parts, carried things and story marks, and our own forward kinematics and skinning for every pose. Overlays are rendered with the body as a holdout.",
       "tools": ["Blender 5.2.2 LTS"],
       "license": "Project licence (original work)",

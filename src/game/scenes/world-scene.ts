@@ -42,7 +42,14 @@ import { CanopyFader } from '../prerendered/canopy';
 import { prepareArt, type FigureBook } from '../prerendered/figures';
 import type { PlaceTextures } from '../prerendered/loader';
 import { LIGHTING_VARIANTS, type ArtSprite } from '../prerendered/manifest';
-import { depthRow, relightTo, sampleShade, shadeTint, turnPath } from '../prerendered/select';
+import {
+  depthRow,
+  firstVariant,
+  relightTo,
+  sampleShade,
+  shadeTint,
+  turnPath,
+} from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
@@ -72,7 +79,7 @@ import {
 } from '../systems/quality';
 import { wantsCompactGround } from '../systems/resolution';
 import { overcast, WEATHER_MIX, type WeatherMix } from '../systems/weather';
-import { sunForWater, waterLook } from '../systems/water';
+import { sunForWater, waterLook, waterSky } from '../systems/water';
 import {
   Actors,
   addCastShadow,
@@ -783,6 +790,7 @@ export class WorldScene extends Phaser.Scene {
         variant === 'late' || (this.lighting.hour ?? 12) >= 16,
         decor ? 1 : 0.6,
         this.clock,
+        waterSky(variant),
       );
     }
   }
@@ -1050,7 +1058,10 @@ export class WorldScene extends Phaser.Scene {
     }
     const art = this.entitySprites.get(e.id);
     if (art && this.place) {
-      this.props.set(e.id, { view: e, image: this.artImage(this.place, art) });
+      const image = this.artImage(this.place, art);
+      // A story prop that stands high over people (a boat's sail) fades like a canopy.
+      this.canopyFader?.track(image, art);
+      this.props.set(e.id, { view: e, image });
       return;
     }
     const key = this.ensurePropTexture(e.sprite ?? (e.kind === 'clue' ? 'marker' : 'sign'));
@@ -1093,10 +1104,9 @@ export class WorldScene extends Phaser.Scene {
    * sway in the wind.
    */
   private buildFromArt(place: PlaceTextures): void {
-    const v = place.art.variants[place.variant];
-    if (!v) return;
+    const v = place.art.variants[place.variant] ?? firstVariant(place.art);
     // The fires and lamps baked into this light flicker (their glow is in the art).
-    this.lightSpots = v.lights.map((l) => ({
+    this.lightSpots = (v?.lights ?? []).map((l) => ({
       kind: l.kind,
       x: l.x,
       y: l.y,
@@ -1104,6 +1114,7 @@ export class WorldScene extends Phaser.Scene {
       strength: l.strength,
     }));
     this.canopyFader = new CanopyFader(place.art.ppu, () => this.reducedMotion);
+    if (!v) return;
     for (const tile of place.ground)
       this.layers.push(
         this.add

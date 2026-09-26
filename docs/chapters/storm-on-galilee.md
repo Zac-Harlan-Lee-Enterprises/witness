@@ -142,6 +142,16 @@ Comparisons respond to what you did (made room, towed or lent an oar, held cours
 
 **Look marks used:** `wrapped-in-cloak` (Ami), and on the player `lamp`, `cloak-roll`, `water-skin`.
 
+**As built (pre-rendered).** Every place is pre-rendered by the offline Blender pipeline ([technical-art-guide.md](../art/technical-art-guide.md), the `lake` kit in [`tools/art/lib/kit_lake.py`](../../tools/art/lib/kit_lake.py)), in the lights the story shows it in (its light plan: `PLACE_LIGHTS` in [`lighting.py`](../../tools/art/lib/lighting.py); the game picks the `night` set from 18:00 to 05:00, the `late` set from 15:00):
+
+| Place | Lights | What is modelled |
+|---|---|---|
+| `shelomit-house` | the afternoon sun through a west window and the door (the `late` set); lamplight at night (the `night` set, rendered in `lamplight`; people lit by `lamp`) | A room in cutaway with basalt walls, a mud-plastered back wall with niches and a lamp, a basalt-cobbled earth floor, nets on pegs, a string of small fish drying on a cord, two oars against the wall, baskets of dried fish, the tannur; at night a lamp burns on the table. |
+| `capernaum-shore` | afternoon (`late`), and from sunset, as the boats put out, the moonlit night you come home to (`night`; the game changes set as the clock reaches 18:00) | Three houses of undressed basalt fieldstones laid dry, with basalt doorframes and lintels, small grilled windows, beam-and-mud roofs with a low parapet and fish drying on them, water jars and basalt quern stones at the doors; a lane of basalt flags; drying nets (floats and sinkers), fish-drying racks, the salter's jars, salt and brine tubs; a shingle beach of basalt and limestone pebbles, the waterline with foam; the jetty of dressed basalt blocks with pierced mooring stones; boats drawn up (masts lowered) and moored (yards lowered, sails furled); the boat offshore that the crowd faces has a goat-hair shade rigged over it, so no one aboard is ever seen. At night Grandmother's lamp lights the jetty and a lamp burns inside one house. |
+| `open-lake` | the moonlit night (`night`, from sunset on) | The family boat as a larger-than-life hull: planked bulwarks with frames, a rounded gunwale, oars out through thole pins, the steering oar on the starboard quarter, the stem and sternpost, the helmsman's raised deck, a lamp hung at the stern after dark, the mast with its yard braced round and the sail half brailed; the boats around (under way, yards braced, stern lamps after dark); the teacher's boat ahead under its shade. |
+
+The storm itself is not baked: the lake is rendered calm, and the engine draws the wind, waves, rain and lightning over it (the live water surface covers `lake` and `shallows` and reflects a sky that matches the light).
+
 ## 11. Where this is verified
 
 - **Content rules** ([`tests/content/storm-on-galilee.test.ts`](../../tests/content/storm-on-galilee.test.ts)): integrity, reachability, all four puzzle types, an optional side quest, Scripture as references with labelled paraphrase, no Jesus character or voice, no retelling of his boat in the story, no scoring or faith-reward language, nothing self-approved, every source retrieved and used, a real decision with visible constraints, story-driven weather, and that the painter knows every tile kind.
@@ -150,8 +160,9 @@ Comparisons respond to what you did (made room, towed or lent an oar, held cours
 
 ## 12. Known gaps
 
-- **Weather isn't drawn yet** (another workstream); the storm is carried by narration, ambience and `data-weather`.
-- **One map for day and night** on the shore: the teacher's boat and other painted boats stay where they are at night; only the hotspot labelling the teacher's boat is removed.
+- **The storm is drawn over calm art:** the pre-rendered lake is baked calm, and the game's weather (wind, rain, lightning, the swell on the live water surface) carries the storm.
+- **One map for day and night** on the shore: the teacher's boat and the other boats stay where they are at night; only the hotspot labelling the teacher's boat is removed.
+- **Pre-rendered art:** there is no dusk set: from 18:00 the shore and the lake are shown in their moonlit night sets (the game tints them for sunset at first), so the boats put out under a moonlit sky just as the sun goes down.
 - **The summary's banner art** is the game's shared journey picture (Jerusalem-like hills), not a lake.
 - **Mood:** no dedicated lakeside mood (see §10); adding one would touch `direction.ts`, the HUD emblem and tests owned by others.
 - **The season** isn't stated. Afternoon westerlies are a summer pattern and the fiercest easterlies are Oct–May; the game says only that winds off the eastern heights "can come at night".

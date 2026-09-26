@@ -99,12 +99,17 @@ export const PlaceArtSchema = z.object({
    * ('overcast'), a house at lamp-lighting ('lamp').
    */
   peopleLight: z.enum(['indoor', 'overcast', 'lamp']).optional(),
-  variants: z.object({
-    day: VariantSchema,
-    late: VariantSchema.optional(),
-    /** Shown from dusk until before dawn (select.ts isNightHour). */
-    night: VariantSchema.optional(),
-  }),
+  variants: z
+    .object({
+      day: VariantSchema.optional(),
+      late: VariantSchema.optional(),
+      /** Shown from dusk until before dawn (select.ts isNightHour). */
+      night: VariantSchema.optional(),
+    })
+    // A place has the sets its story shows: the open lake only a night set.
+    .refine((v) => LIGHTING_VARIANTS.some((k) => v[k] !== undefined), {
+      message: 'a place needs at least one set',
+    }),
 });
 export type PlaceArt = z.infer<typeof PlaceArtSchema>;
 

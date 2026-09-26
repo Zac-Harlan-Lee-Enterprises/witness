@@ -30,6 +30,10 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 2: A Storm on Galilee
+  'shelomit-house',
+  'capernaum-shore',
+  'open-lake',
   // Chapter 3: A Journey to Bethlehem
   'tamar-house',
   'bethlehem-lanes',
@@ -54,7 +58,10 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
-/** A place's night set, where it has one, from dusk until before dawn. */
+/**
+ * A place's night set, where it has one, from dusk until before dawn (the
+ * story clock runs past midnight: 26 is 2 a.m.).
+ */
 export const NIGHT_FROM_HOUR = 18;
 export const NIGHT_UNTIL_HOUR = 5;
 
@@ -64,13 +71,25 @@ export function isNightHour(hour: number | null): boolean {
   return h >= NIGHT_FROM_HOUR || h < NIGHT_UNTIL_HOUR;
 }
 
+/**
+ * The set of a place's art for an hour: its night set after dark, its
+ * later-day set from mid-afternoon, else its morning set; a place without
+ * the set an hour asks for shows the nearest it has (the later day for the
+ * night, the morning for the later day, else whichever it has).
+ */
 export function variantFor(
   hour: number | null,
   available: readonly LightingVariant[],
 ): LightingVariant {
   if (isNightHour(hour) && available.includes('night')) return 'night';
   if (hour !== null && hour >= LATE_FROM_HOUR && available.includes('late')) return 'late';
-  return 'day';
+  if (available.includes('day')) return 'day';
+  return available.includes('late') ? 'late' : (available[0] ?? 'day');
+}
+
+/** A place's first set in the order of the day (the stand-in when another fails to load). */
+export function firstVariant(art: Pick<PlaceArt, 'variants'>): ArtVariant | undefined {
+  return art.variants.day ?? art.variants.late ?? art.variants.night;
 }
 
 /**

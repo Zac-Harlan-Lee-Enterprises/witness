@@ -273,3 +273,25 @@ NEXT   : If the campfire's ring should not go near-white at night, give tile_cam
          night ground (the first full render once came out unlit on a shared GPU).
 BLOCKED: none. Merge points: src/game/prerendered/{manifest,select,loader}.ts, world-scene.ts,
          ambient.ts, systems/lighting.ts, e2e/support.ts, docs/art/*, public/art/people/people.json.
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-storm-on-galilee) — Chapter 2 pre-rendered ---
+DONE   : Every Chapter 2 place pre-rendered with the lake kit (tools/art/lib/kit_lake.py + lake_{boats,
+         houses,materials}.py): shelomit-house (later day + lamplight), capernaum-shore (later day +
+         moonlit night), open-lake (moonlit night only). Merged feat/realism-and-chapters twice (Chapter
+         4's light plans, then Chapter 3's night) and put Chapter 2 on them: PLACE_LIGHTS entries, the
+         shared `night` light (Chapter 3's moon) for places and people, a `lamplight` light for a room by
+         its lamps, per-set peopleLight (the house at night: `lamp`), night-only things tagged
+         (obj["variants"]) and lamps in Place.flicker. Engine: a place needs some set, not a day one
+         (the night-only lake): manifest refine, firstVariant, variantFor's fallback. Kept engine tweaks:
+         lake/shallows are live water (waterRegions), waterSky per set, open water glints at 0.3
+         (glintsFor), puddles on deck and jetty, no splashes on lake water, the sail fades like a
+         canopy. Art fixes: the planks material had its seam mask inverted (every deck read as dark
+         tiles), plaited rush mat, a cobbled earth floor surface, sun-greyed sails, hull rows split in
+         stern/bow halves.
+TESTS  : Vitest 598 passed (new: open water and glintsFor; a night-only lake manifest, empty variants rejected,
+         the shore's and the lake's sets by hour). e2e storm-on-galilee (waits for the lake's narration
+         while its art loads) and smoke on 4421/5421. Captures: e2e/storm-art.spec.ts (desktop, tablet,
+         phone), and with VITE_FORCE_WEATHER=storm.
+NEXT   : Judge the shore's afternoon light in game (a basalt town under a low sun reads dim: if it
+         should read brighter, add `self.exposure += 0.3` for the lake style in kit_lake.py
+         regional_materials and re-render capernaum-shore --variants late, ~10 min on the GPU).
+BLOCKED: none. Already merged with Chapters 3 and 4 (feat/realism-and-chapters at dbf14cf).

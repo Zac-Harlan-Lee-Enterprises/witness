@@ -19,6 +19,8 @@ below; see build_place.py):
     zenith, with stars that show only in water). The place's own fires and
     lamps, lit only at night, are what the eye goes to. Exposed brighter
     (`ev`), as the eye adapts; the game grades it gently on top.
+  - `lamplight`: a room at night (Chapter 2), lit by its own lamps and
+    embers; the moon through the door is faint beside them.
 And one more light for people: `lamp` (people at lamp-lighting, lit by
 lampstands, with the last blue of the sky above; also people in a house
 lit by its lamps at night).
@@ -90,6 +92,21 @@ LIGHTS = {
         "room_shade_floor": 0.4,
         "ev": 2.2,
     },
+    "lamplight": {
+        "azimuth": math.radians(-66.0),  # the same moon as `night`, faint beside the lamps
+        "elevation": math.radians(46.0),
+        "strength": 0.1,
+        "color": "#98aeea",
+        "angle": math.radians(0.6),
+        "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
+        "sky_strength": 1.0,
+        # The shade mask records the lamps' light on the floor.
+        "shade": "lamps",
+        "shade_floor": 0.4,
+        # Over a room's own step (kit_interior): exposed for its lamps, and
+        # brighter than it will look (the game darkens a room at night).
+        "ev": 0.8,
+    },
 }
 
 
@@ -108,9 +125,9 @@ def ev(name):
 # A place the story shows in other light is listed here: scene id ->
 # (plan, people light).
 #   plan: each set of its manifest -> the light (a key of LIGHTS) it is
-#         rendered in. Sets are keyed "day" and "late", by when in the story
-#         they are shown; a place seen in one light only has a "day" set
-#         rendered in that light.
+#         rendered in. Sets are keyed "day", "late" (from 15:00) and "night"
+#         (19:00 to 05:00), by when in the story they are shown; a place
+#         seen in one light only has one set rendered in that light.
 #   people light: how people are lit there (the manifest's peopleLight, a
 #         PEOPLE_LIGHTS value in src/game/prerendered/manifest.ts): "indoor",
 #         "overcast", "lamp" or a light added beside them; None lights them
@@ -124,6 +141,15 @@ PLACE_LIGHTS = {
     "lycus-road": ({"day": "overcast"}, "overcast"),
     # The gathering at Philemon's house is at lamp-lighting (hour 18), and only then.
     "philemon-house": ({"day": "dusk"}, "lamp"),
+    # Chapter 2. The story begins at hour 16 and runs past midnight. The
+    # shore: loading the boat in the afternoon (the later-day set), the
+    # boats putting out at sunset and the homecoming at 2 a.m. (hour 26)
+    # under the moon (the night set, from 18:00).
+    "capernaum-shore": ({"late": "late", "night": "night"}, None),
+    # The lake is crossed from sunset into the night: one moonlit set.
+    "open-lake": ({"night": "night"}, None),
+    # Shelomit's house in the afternoon, and by its lamps at night.
+    "shelomit-house": ({"late": "late", "night": "lamplight"}, {"late": "indoor", "night": "lamp"}),
     # Chapter 3. Bethlehem is seen from mid-afternoon into the night; a place's
     # "night" set is shown from 18:00 until 05:00 (select.ts isNightHour).
     # Its people light may be given per set: {set: people light}.

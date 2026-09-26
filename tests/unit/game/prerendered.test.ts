@@ -6,6 +6,7 @@ import {
   artPathFor,
   behindCanopy,
   depthRow,
+  firstVariant,
   isNightHour,
   LATE_FROM_HOUR,
   NIGHT_FROM_HOUR,
@@ -76,6 +77,24 @@ describe('pre-rendered place art', () => {
     expect(ok.art?.variants.day?.sprites[1]?.fade).toBe(true);
     // Fires and lamps to flicker are optional (none, by default).
     expect(ok.art?.variants.day?.lights).toEqual([]);
+    // A place seen only after dark needs no morning set, but it needs some set.
+    const lake = parsePlaceArt({
+      version: 1,
+      scene: 'open-lake',
+      tiles: { w: 40, h: 24 },
+      ppu: 3,
+      variants: { night: variant },
+    });
+    expect(lake.error).toBeNull();
+    expect(lake.art && firstVariant(lake.art)?.shade).toBe('shade-day.webp');
+    const none = parsePlaceArt({
+      version: 1,
+      scene: 'x',
+      tiles: { w: 1, h: 1 },
+      ppu: 3,
+      variants: {},
+    });
+    expect(none.art).toBeNull();
     const bad = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -159,7 +178,8 @@ describe('pre-rendered place art', () => {
     // Its glow is baked in, so its flickering pool is gentler than a painted one's.
     expect(art.art?.variants.night?.lights[0]?.strength).toBe(0.5);
     expect(art.art?.variants.night?.peopleLight).toBe('night');
-    // Every place has a day set: the one the game falls back to.
+    // A place needs some set, not a day one (the open lake is only ever
+    // seen at night); the game falls back to the first it has.
     const nightOnly = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -167,7 +187,8 @@ describe('pre-rendered place art', () => {
       ppu: 3,
       variants: { night: variant },
     });
-    expect(nightOnly.art).toBeNull();
+    expect(nightOnly.error).toBeNull();
+    expect(nightOnly.art && firstVariant(nightOnly.art)).toBeDefined();
   });
 
   it('changes a place’s set as the story clock crosses into one its art has', () => {
@@ -178,6 +199,21 @@ describe('pre-rendered place art', () => {
     expect(relightTo('late', 20, ['day', 'late'])).toBeNull();
     // Morning comes.
     expect(relightTo('night', 6, ['day', 'night'])).toBe('day');
+  });
+
+  it('draws the shore in its afternoon and night sets, the lake only in its night set', () => {
+    // The story clock runs past midnight: 26 is two in the morning.
+    expect(isNightHour(26)).toBe(true);
+    expect(isNightHour(30)).toBe(false);
+    const shore = ['late', 'night'] as const;
+    expect(variantFor(16, shore)).toBe('late');
+    expect(variantFor(NIGHT_FROM_HOUR, shore)).toBe('night');
+    expect(variantFor(26, shore)).toBe('night');
+    // Without a morning set, the earliest it has.
+    expect(variantFor(9, shore)).toBe('late');
+    // Seen only at night: that set at any hour.
+    expect(variantFor(12, ['night'])).toBe('night');
+    expect(relightTo('late', NIGHT_FROM_HOUR, shore)).toBe('night');
   });
 
   it('lights people for the room indoors, and by the place’s sun outdoors', () => {
@@ -209,7 +245,7 @@ describe('pre-rendered place art', () => {
     });
     expect(house.error).toBeNull();
     const v = house.art?.variants;
-    expect(peopleLightFor('day', house.art?.peopleLight, v?.day.peopleLight)).toBe('indoor');
+    expect(peopleLightFor('day', house.art?.peopleLight, v?.day?.peopleLight)).toBe('indoor');
     expect(peopleLightFor('night', house.art?.peopleLight, v?.night?.peopleLight)).toBe('lamp');
     // A set's own light wins over the place's; outdoors at night, the moon.
     expect(peopleLightFor('night', 'indoor', 'lamp')).toBe('lamp');

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { TileGrid } from '@/domain/world';
-import { waterRegions, type WaterLook } from '../systems/water';
+import { glintsFor, waterRegions, waterSky, type WaterLook, type WaterRgb } from '../systems/water';
 
 /**
  * Live water (WebGL only): a shader drawn over each body of water tiles and
@@ -35,6 +35,8 @@ uniform float uRain;
 uniform float uFoam;
 uniform float uGloom;
 uniform float uOpacity;
+uniform vec3 uSky;
+uniform vec3 uDeep;
 uniform vec2 uMaskTexel;
 varying vec2 fragCoord;
 
@@ -124,8 +126,8 @@ void main () {
   // The viewer looks north and down at 45 degrees.
   vec3 v = normalize(vec3(0.0, 1.0, 1.0));
   float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-  vec3 sky = mix(vec3(0.78, 0.88, 0.95), vec3(0.42, 0.47, 0.54), uGloom);
-  vec3 deep = mix(vec3(0.05, 0.16, 0.22), vec3(0.04, 0.08, 0.11), uGloom);
+  vec3 sky = mix(uSky, uSky * vec3(0.54, 0.53, 0.57), uGloom);
+  vec3 deep = mix(uDeep, uDeep * vec3(0.8, 0.5, 0.5), uGloom);
   float facing = dot(n.xy, vec2(-0.45, -0.7));
   vec3 over = mix(deep, sky, clamp(fres * 1.6 + facing * 0.9 + 0.18, 0.0, 1.0));
   float overA = uOpacity * (0.3 + 0.25 * clamp(fres * 2.0, 0.0, 1.0));
@@ -153,6 +155,8 @@ void main () {
 interface Surface {
   shader: Phaser.GameObjects.Shader;
   maskKey: string;
+  /** How strongly this body glints (glintsFor). */
+  glints: number;
 }
 
 export interface WaterSurfaceDeps {
@@ -182,6 +186,8 @@ export class WaterSurface {
       uFoam: { type: '1f', value: 0 },
       uGloom: { type: '1f', value: 0 },
       uOpacity: { type: '1f', value: 1 },
+      uSky: { type: '3f', value: { x: 0.78, y: 0.88, z: 0.95 } },
+      uDeep: { type: '3f', value: { x: 0.05, y: 0.16, z: 0.22 } },
       uTime: { type: '1f', value: 0 },
     });
     for (const region of waterRegions(d.grid)) {
@@ -204,7 +210,14 @@ export class WaterSurface {
         if (region.mask[i + 1] && region.mask[i + region.w] && region.mask[i + region.w + 1])
           c.fillRect(x * MASK_PPT + MASK_PPT - 1, y * MASK_PPT + MASK_PPT - 1, 2, 2);
       });
-      this.add(canvas, region.x * TILE, region.y * TILE, region.w * TILE, region.h * TILE);
+      this.add(
+        canvas,
+        region.x * TILE,
+        region.y * TILE,
+        region.w * TILE,
+        region.h * TILE,
+        glintsFor(region),
+      );
     }
     if (d.painted) this.addFurnishings();
   }
@@ -240,7 +253,14 @@ export class WaterSurface {
     }
   }
 
-  private add(canvas: HTMLCanvasElement, x: number, y: number, w: number, h: number): void {
+  private add(
+    canvas: HTMLCanvasElement,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    glints = 1,
+  ): void {
     const s = this.d.scene;
     const maskKey = `water-mask-${this.base.key}-${this.surfaces.length}`;
     const mask = s.textures.addCanvas(maskKey, canvas);
@@ -250,7 +270,7 @@ export class WaterSurface {
     mask?.refresh();
     shader.setUniform('uOrigin.value', { x, y });
     shader.setUniform('uMaskTexel.value', { x: 1 / canvas.width, y: 1 / canvas.height });
-    this.surfaces.push({ shader, maskKey });
+    this.surfaces.push({ shader, maskKey, glints });
   }
 
   get count(): number {
@@ -267,24 +287,27 @@ export class WaterSurface {
     warm: boolean,
     opacity: number,
     time: number,
+    light: { sky: WaterRgb; deep: WaterRgb } = waterSky('day'),
   ): void {
     const elevation = 0.15 + sun.height * 1.1;
     const c = Math.cos(elevation);
     const sx = sun.x * c;
     const sy = sun.y * c;
     const sz = Math.sin(elevation);
-    for (const { shader } of this.surfaces) {
+    for (const { shader, glints } of this.surfaces) {
       shader.setUniform('uSun.value', { x: sx, y: sy, z: sz });
       shader.setUniform(
         'uSunColor.value',
         warm ? { x: 1, y: 0.78, z: 0.52 } : { x: 1, y: 0.96, z: 0.86 },
       );
       shader.setUniform('uWaves.value', look.waves);
-      shader.setUniform('uGlints.value', look.glints);
+      shader.setUniform('uGlints.value', look.glints * glints);
       shader.setUniform('uRain.value', look.rain);
       shader.setUniform('uFoam.value', look.foam);
       shader.setUniform('uGloom.value', look.gloom);
       shader.setUniform('uOpacity.value', opacity);
+      shader.setUniform('uSky.value', { x: light.sky[0], y: light.sky[1], z: light.sky[2] });
+      shader.setUniform('uDeep.value', { x: light.deep[0], y: light.deep[1], z: light.deep[2] });
       shader.setUniform('uTime.value', time);
     }
   }

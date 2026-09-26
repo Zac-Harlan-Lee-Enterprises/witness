@@ -11,6 +11,7 @@ import {
   type PlaceArt,
 } from './manifest';
 import {
+  firstVariant,
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
@@ -164,9 +165,12 @@ export async function loadPlace(
   const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
   const groundPpu = low ? art.ppu / 2 : art.ppu;
   // The later-day set is cached the first time it is used; offline before
-  // then, the morning set stands in for it rather than painting the place.
-  for (const variant of wanted === 'day' ? (['day'] as const) : ([wanted, 'day'] as const)) {
-    const v = art.variants[variant] ?? art.variants.day;
+  // then, the morning set stands in for it rather than painting the place
+  // (a place without a morning set: its first set).
+  const standIn = available[0] ?? 'day';
+  for (const variant of wanted === standIn ? [wanted] : [wanted, standIn]) {
+    const v = art.variants[variant] ?? firstVariant(art);
+    if (!v) continue;
     const prefix = `art:${sceneId}:${variant}`;
     const tiles = low ? v.groundLow : v.ground;
     const ground = tiles.map((tile, i) => ({

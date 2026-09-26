@@ -42,6 +42,7 @@ import scatter
 import terrain
 from kit_ground import GroundKit
 from kit_interior import InteriorKit
+from kit_lake import LAKE_GROUND, LAKE_LOOKS, LAKE_SOLID, LakeKit, is_lake
 from kit_masonry import MasonryKit
 from kit_mudbrick import MudbrickKit
 from kit_plants import PlantsKit
@@ -59,7 +60,7 @@ SOLID = {
     # Chapter 4 (kit_roman.py)
     "tile-roof", "column", "vat", "amphorae", "couch", "milestone", "travertine", "garden", "lampstand",
     "fountain",
-}
+} | LAKE_SOLID  # Chapter 2 (kit_lake.py)
 STRUCTURE = {"wall", "roof", "door"}
 
 # Which ground layer each walkable kind is painted with, per style. Solid
@@ -127,6 +128,9 @@ LAYER_LOOKS = {
     "setts": {"color": "#6e675a", "grit": 0.55, "scale": "mid", "dark": 0.1, "light": 0.04, "rough": 0.5},
     "sinter": {"color": "#e2ded2", "grit": 0.08, "scale": "mid", "dark": 0.06, "light": 0.03, "mottle": 0.25, "mottle_color": "#d2cbb8", "rough": 0.55},
 }
+# The lakeside and the open lake (kit_lake.py).
+GROUND.update(LAKE_GROUND)
+LAYER_LOOKS.update(LAKE_LOOKS)
 
 
 def B(x, y, z=0.0):
@@ -220,6 +224,8 @@ def value_noise(w, h, cell, seed):
 
 
 def style_for(scene):
+    if is_lake(scene):
+        return "lake"
     mood = scene.get("mood")
     if mood in GROUND:
         return mood
@@ -233,11 +239,11 @@ def tile_builder(kind):
     return "tile_" + kind.replace("-", "_")
 
 
-class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
+class Place(LakeKit, VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
     """Builds a whole place. Kits supply the tile builders; this class reads
-    the map, shapes the terrain and dispatches. (VillageKit comes first: it
-    builds the Judean hill village of Chapter 3 and hands everything else on
-    to the kits after it.)"""
+    the map, shapes the terrain and dispatches. (LakeKit comes first, for
+    Galilee's places, then VillageKit, for the Judean hill village of
+    Chapter 3; each hands everything else on to the kits after it.)"""
 
     def __init__(self, scene_data, seed=11):
         self.data = scene_data
@@ -298,6 +304,8 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
             self.paving = M.limestone("#c6b08a", "threshold", worn=0.5)
             self.roof = M.plaster("#d4c19c", "roof-plaster")
             self.plaster = M.lime_plaster("#dccdb0", "room-plaster", soot=0.55)
+        # A region's own stone and ground (Galilee: basalt), and per-light changes.
+        self.regional_materials()
 
     def light_spots(self, variant):
         """The fires and lamps burning in a lighting variant, for the game to
@@ -449,6 +457,8 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
         m = self.map
         if self.style == "city" and self.heights is None and not self.village:
             return self._ground_city()
+        if self.style == "lake":
+            return self.lake_ground()
         names, images = self._masks()
         layers = [dict(self.layer_look(n)) for n in names]
         self._extra_masks(names, images)
@@ -541,6 +551,8 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
             self.oasis_structures()
         elif self.style == "home":
             self.room_shell()
+        elif self.style == "lake":
+            self.lake_structures()
         elif self.map.tiles("wall") or self.map.tiles("roof"):
             self._buildings()
 
@@ -610,6 +622,8 @@ class Place(VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mu
             self.dress_oasis()
         elif self.style == "home":
             self.dress_home()
+        elif self.style == "lake":
+            self.dress_lake()
 
     # ── shared helpers ──────────────────────────────────────────────────────
     def _rand_attr(self, obj, value=None):
