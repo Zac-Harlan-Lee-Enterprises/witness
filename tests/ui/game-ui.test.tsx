@@ -1,3 +1,4 @@
+import { ContentBlock } from '@/features/common/ContentBlock';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -154,6 +155,29 @@ describe('HUD and navigation', () => {
   });
 });
 
+describe('Editorial review label', () => {
+  it('still labels educational content that no editor has approved (preview mode)', async () => {
+    const record = {
+      id: 'rec-unapproved',
+      kind: 'historical' as const,
+      title: 'An unreviewed note',
+      body: 'Draft text.',
+      sources: [],
+      governance: {
+        status: 'sources-attached' as const,
+        provenance: 'ai-assisted' as const,
+        ageLevel: 'all' as const,
+        denominationalSensitivity: 'none' as const,
+        historicalConfidence: 'probable' as const,
+        version: 1,
+        history: [{ version: 1, date: '2026-09-26', author: 'AI draft', summary: 'Drafted' }],
+      },
+    };
+    await renderWithServices(<ContentBlock record={record} sources={[]} />);
+    expect(screen.getByText('Awaiting editorial review')).toBeInTheDocument();
+  });
+});
+
 describe('Journal, quests and satchel', () => {
   it('journal uses tabs and labels every block by content kind', async () => {
     const user = userEvent.setup();
@@ -174,7 +198,8 @@ describe('Journal, quests and satchel', () => {
     expect(
       screen.getByRole('article', { name: /Historical background: Jews and Samaritans/ }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('Awaiting editorial review').length).toBeGreaterThan(0);
+    // Approved by a named editor (src/content/shared/approvals.ts): no review label.
+    expect(screen.queryAllByText('Awaiting editorial review')).toHaveLength(0);
     await user.click(people);
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: /Places/ })).toHaveAttribute('aria-selected', 'true');
@@ -266,8 +291,9 @@ describe('Chapter ending', () => {
     harness.dialogue.end();
     await flush();
     const { container } = await renderWithServices(<ScriptureConnection runtime={runtime} />);
+    // The approved World English Bible text itself, not the placeholder.
     expect(
-      screen.getByText('[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Luke 10:25-37]'),
+      screen.getByText(/Behold, a certain lawyer stood up and tested him/),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Scripture').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Scripture paraphrase').length).toBeGreaterThan(0);

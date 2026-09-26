@@ -1,9 +1,9 @@
+import { APPROVALS } from '@/content/shared/approvals';
 import { describe, expect, it } from 'vitest';
 import { chapterSource, parseChapter } from '@/content';
 import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
-import { EDUCATIONAL_KINDS } from '@/domain/content-records';
 import { isSolidTile, parseLayout, TILE_KINDS, type TileKind } from '@/domain/world';
 import { findLights, heightOf, isLowWall, isPropTile, readSite } from '@/game/art/site';
 import { isKnownProp } from '@/game/art/props';
@@ -145,18 +145,18 @@ describe('A Journey to Bethlehem content', () => {
     expect(text).not.toMatch(/\b(score|points)\b/i);
   });
 
-  it('marks every record as an AI-assisted draft awaiting review — nothing self-approved', () => {
+  it('is approved by a named human in the approvals log (never self-approved by an agent)', () => {
     const report = contentReport(chapter);
-    expect(report.approved).toBe(0);
-    expect(report.awaitingReview).toBe(report.educational);
+    expect(report.awaitingReview).toBe(0);
+    expect(report.approved).toBe(report.educational);
+    const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
     for (const r of chapter.records) {
+      expect(r.governance.status, r.id).toBe('approved');
+      expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
+      expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');
+      // Approval doesn't rewrite where the content came from.
       expect(r.governance.provenance, r.id).toBe('ai-assisted');
-      expect(r.governance.reviewer, r.id).toBeUndefined();
-      expect(['ai-draft', 'sources-attached'], r.id).toContain(r.governance.status);
     }
-    chapter.records
-      .filter((r) => EDUCATIONAL_KINDS.includes(r.kind))
-      .forEach((r) => expect(r.governance.status, r.id).toBe('sources-attached'));
   });
 
   it('cites only sources that were actually retrieved, with a URL', () => {

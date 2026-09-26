@@ -1,9 +1,9 @@
+import { APPROVALS } from '@/content/shared/approvals';
 import { describe, expect, it } from 'vitest';
 import { chapterSource, parseChapter } from '@/content';
 import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
-import { EDUCATIONAL_KINDS } from '@/domain/content-records';
 
 const chapter = parseChapter(ROAD_TO_JERICHO);
 const allText = (): string[] => [
@@ -80,13 +80,18 @@ describe('Road to Jericho content', () => {
     );
   });
 
-  it('marks all educational content as awaiting human review (none self-approved)', () => {
+  it('is approved by a named human in the approvals log (never self-approved by an agent)', () => {
     const report = contentReport(chapter);
-    expect(report.approved).toBe(0);
-    expect(report.awaitingReview).toBe(report.educational);
-    chapter.records
-      .filter((r) => EDUCATIONAL_KINDS.includes(r.kind))
-      .forEach((r) => expect(['ai-draft', 'sources-attached']).toContain(r.governance.status));
+    expect(report.awaitingReview).toBe(0);
+    expect(report.approved).toBe(report.educational);
+    const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
+    for (const r of chapter.records) {
+      expect(r.governance.status, r.id).toBe('approved');
+      expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
+      expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');
+      // Approval doesn't rewrite where the content came from.
+      expect(r.governance.provenance, r.id).toBe('ai-assisted');
+    }
   });
 
   it('cites only sources that were actually retrieved', () => {

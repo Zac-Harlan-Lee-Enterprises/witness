@@ -16,6 +16,7 @@ import { CAPERNAUM_SHORE } from './scenes/capernaum-shore';
 import { OPEN_LAKE } from './scenes/open-lake';
 import { SHELOMIT_HOUSE } from './scenes/shelomit-house';
 import { STORM_SOURCES } from './sources';
+import { withApprovals } from '../../shared/approvals';
 
 const flagIs = (flag: string) => ({ type: 'flag' as const, flag });
 const carries = (item: string) => ({ type: 'hasItem' as const, item });
@@ -65,7 +66,7 @@ export const STORM_ON_GALILEE: ChapterInput = {
   clues: CLUES,
   puzzles: PUZZLES,
   journal: JOURNAL,
-  records: RECORDS,
+  records: withApprovals('storm-on-galilee', RECORDS),
   sources: STORM_SOURCES,
   choices: CHOICES,
   themes: THEMES,
