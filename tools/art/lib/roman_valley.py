@@ -57,7 +57,7 @@ class RomanValley:
             wx += 2.6
         objs = self._front(name, x0, x1, y_face, h, mat, openings + windows, back=n, cornice=False)
         for a, b, c, d in windows:
-            objs += self._window(f"{name}-win{a:.1f}", a, b, y_face, c, d, "grille" if wide else "shutters")
+            objs += self._roman_window(f"{name}-win{a:.1f}", a, b, y_face, c, d, "grille" if wide else "shutters")
         for dx in doors:
             objs += self._door(f"{name}-door{dx}", dx + 0.14, dx + 0.86, y_face, 1.95, open_=0.8)
         # Quoins of dressed stone at the corners.

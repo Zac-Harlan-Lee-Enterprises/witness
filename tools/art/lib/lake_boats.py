@@ -213,9 +213,9 @@ class BoatsMixin:
             hb, sheer, _ = self.hull_shape(u, L, B)
             sheer *= freeboard / 0.55
             pts.append(xf @ Vector((-L / 2 + u * L, side * (hb + 0.01), sheer + 0.01)))
-        return self._tube(name, pts, r, mat)
+        return self._lake_tube(name, pts, r, mat)
 
-    def _tube(self, name, pts, r, mat, seg=8, taper=None):
+    def _lake_tube(self, name, pts, r, mat, seg=8, taper=None):
         bm = bmesh.new()
         rings = []
         for i, p in enumerate(pts):
@@ -259,7 +259,7 @@ class BoatsMixin:
                 t = k / 8
                 x = (-L / 2 if end == 0 else L / 2) + (-1 if end == 0 else 1) * 0.12 * math.sin(t * math.pi / 2)
                 pts.append(xf @ Vector((x, 0.0, keel + (sheer + rise - keel) * t)))
-            above.append(self._tube(f"{name}-post{end}", pts, 0.05, timber))
+            above.append(self._lake_tube(f"{name}-post{end}", pts, 0.05, timber))
         # Frames (ribs) inside, thwarts across, the floorboards, the stern deck.
         fl = bmesh.new()
         for k in range(1, int(L / 0.42)):
@@ -274,7 +274,7 @@ class BoatsMixin:
                 y = -math.copysign(1.0, t) * (hb - 0.05) * math.sin(th) ** 0.72 if t else 0.0
                 z = keel + 0.05 + (sheer - 0.03 - keel - 0.05) * (1 - math.cos(th) ** 1.35)
                 pts.append(xf @ Vector((-L / 2 + u * L, y, z)))
-            above.append(self._tube(f"{name}-frame{k}", pts, 0.028, pale, seg=5))
+            above.append(self._lake_tube(f"{name}-frame{k}", pts, 0.028, pale, seg=5))
         _ = fl
         floor = bmesh.new()
         fu = floor.loops.layers.uv.new("UVMap")
@@ -523,7 +523,7 @@ class BoatsMixin:
             a = i / 24 * math.tau
             rr = r * (0.55 + 0.45 * (i / (turns * 24)))
             pts.append(at + Vector((math.cos(a) * rr, math.sin(a) * rr, 0.015 + 0.012 * math.sin(a * 0.5 + i * 0.01))))
-        return self._tube(name, pts, 0.014, mat, seg=5)
+        return self._lake_tube(name, pts, 0.014, mat, seg=5)
 
     def _net_heap(self, name, at, w, ln, rng):
         """A heap of wet net: a lumpy mound of folds, darker than dry net,
@@ -787,7 +787,7 @@ class BoatsMixin:
             for k in range(10):
                 t = k / 9
                 pts.append(self._at0(x + lean * math.sin(t * math.pi / 2) ** 2, cy, zw - 0.3 + (rail_z + rise - zw + 0.3) * t))
-            put(int(cy), self._tube(name, pts, 0.09, timber, seg=8, taper=lambda t: 1.0 - 0.35 * t))
+            put(int(cy), self._lake_tube(name, pts, 0.09, timber, seg=8, taper=lambda t: 1.0 - 0.35 * t))
         # A lamp hung from the sternpost, lit after dark.
         lx, ly = o["xa"] + 0.35, cy + 0.25
         lamp = self._ellipsoid("stern-lamp", self._at0(lx, ly, 1.45), (0.08, 0.06, 0.035), M.terracotta("#b2714a", 0.1), 14, 8)
@@ -849,7 +849,7 @@ class BoatsMixin:
         obj.data.materials.append(inside)
         obj["wl_z"] = zw
         pts = [self._at0(x, y - side * t_in / 2, rail_z + 0.02) for x, y in seg]
-        rail = self._tube(f"{name}-rail", pts, 0.07, timber, seg=8)
+        rail = self._lake_tube(f"{name}-rail", pts, 0.07, timber, seg=8)
         return [obj, rail]
 
     def _stern_platform(self, o, rail_z, put):

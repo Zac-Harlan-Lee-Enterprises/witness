@@ -135,6 +135,46 @@ describe('art asset provenance', () => {
   });
 });
 
+describe('the art pipeline', () => {
+  it('kits never shadow each other’s helpers: a shared helper is an override that calls super()', () => {
+    // Place mixes every kit into one class, so a private helper defined in two
+    // kits resolves to the first in the MRO for all of them: the lake kit's
+    // _tube once broke every Roman place, and the Roman _window every
+    // Chapter 1 house. A deliberate override keeps the signature and hands
+    // other places on (super()).
+    const lib = join(ROOT, 'tools', 'art', 'lib');
+    const kits = readdirSync(lib).filter(
+      (f) => /^(kit_|lake_|roman_)\w+\.py$/.test(f) || f === 'place.py',
+    );
+    const defs = new Map<string, Array<{ file: string; params: string; overrides: boolean }>>();
+    for (const file of kits) {
+      const source = readFileSync(join(lib, file), 'utf8');
+      const methods = [...source.matchAll(/^ {4}def (_[a-z0-9_]+)\(self([^)]*)\)/gm)];
+      methods.forEach((m, i) => {
+        const [, name = '', params = ''] = m;
+        if (name.startsWith('__')) return;
+        const body = source.slice(m.index, methods[i + 1]?.index ?? source.length);
+        const list = defs.get(name) ?? [];
+        list.push({
+          file,
+          params: params.replace(/\s+/g, ' ').trim(),
+          overrides: body.includes('super()'),
+        });
+        defs.set(name, list);
+      });
+    }
+    const clashes = [...defs.entries()]
+      .filter(([, list]) => list.length > 1)
+      .filter(
+        ([, list]) =>
+          new Set(list.map((d) => d.params)).size > 1 ||
+          list.filter((d) => !d.overrides).length > 1,
+      )
+      .map(([name, list]) => `${name} in ${list.map((d) => d.file).join(', ')}`);
+    expect(clashes, 'Rename the helper, or make it an override that calls super()').toEqual([]);
+  });
+});
+
 describe('pre-rendered places', () => {
   it('lists exactly the places that have art (public/art/<scene>/manifest.json)', () => {
     const dirs = readdirSync(ART).filter((d) => existsSync(join(ART, d, 'manifest.json')));
