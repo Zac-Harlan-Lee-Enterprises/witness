@@ -54,7 +54,7 @@ The Phaser engine is the largest single item. Fonts are about a quarter of the s
 
 **Automatic quality.** If the world runs below 34 fps for two 2-second samples in a row (after a 3-second warm-up), it switches to simpler effects for the rest of the session: no drifting dust, birds or water glints, and the light layer only when the light means something (sunset, dusk, night). It logs a warning (shown in *Copy diagnostics*) and marks the canvas `data-effects="reduced"`. The second test in [`e2e/perf.spec.ts`](../e2e/perf.spec.ts) slows the CPU 8× through the DevTools Protocol and checks that the switch happens. The decision is a pure function, [`src/game/systems/quality.ts`](../src/game/systems/quality.ts), with unit tests.
 
-The frame-rate assertion is only a floor (`fps > 20`), because CI runs without a GPU.
+The frame-rate assertion is only a floor: `fps > 20` locally, and `fps > 6` on CI. GitHub's hosted runners render in software on a few vCPUs and measured **10.4–10.8 fps** in the market for both the painted build (main, f2018ef) and the pre-rendered one (2026-09-26, CI runs 36205809697 and 36207544477), so on CI the check only catches the world stalling.
 
 A headless, software-rendered frame rate says little about real devices. It is useful only as a regression signal.
 

@@ -11,10 +11,15 @@ import {
 } from './support';
 
 /**
- * Measures frame rate in the busiest scene while walking. Headless CI uses
- * software rendering, so the assertion is a conservative floor; the measured
- * number is printed and recorded in docs/performance.md.
+ * Measures frame rate in the busiest scene while walking. Headless browsers
+ * render in software, so the assertion is a floor, not a target; the measured
+ * number is printed and recorded in docs/performance.md. A developer machine
+ * holds 30–40 fps. GitHub's hosted runners (a few vCPUs, no GPU) measured
+ * 10.4–10.8 fps for both the painted and the pre-rendered market (2026-09-26),
+ * so on CI the floor only catches the world stalling.
  */
+const FPS_FLOOR = process.env.CI ? 6 : 20;
+
 test('keeps a smooth frame rate while walking in the market', async ({ page, isMobile }) => {
   test.skip(isMobile);
   await openApp(page);
@@ -54,7 +59,7 @@ test('keeps a smooth frame rate while walking in the market', async ({ page, isM
   console.info(
     `[perf] rAF frame rate over 3s: ${fps.toFixed(1)} fps (${effects} effects); DOMContentLoaded: ${nav} ms`,
   );
-  expect(fps).toBeGreaterThan(20);
+  expect(fps).toBeGreaterThan(FPS_FLOOR);
 });
 
 test('switches to simpler effects when the frame rate stays low', async ({ page, isMobile }) => {
