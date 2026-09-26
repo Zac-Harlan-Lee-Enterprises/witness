@@ -557,18 +557,21 @@ class LakeKit(BoatsMixin, HousesMixin):
         small white snail shells and bits of reed washed up in a line at the
         water's edge; the pebbles run on under the water into the shallows."""
         m = self.map
-        cells = m.tiles("shingle") + [(x, y) for x, y in m.tiles("shallows")] + [(x, y) for x, y in m.tiles("boat") if (x, y) not in set(self._afloat_boat_tiles())]
+        afloat = set(self._afloat_boat_tiles())
+        beach = m.tiles("shingle") + [(x, y) for x, y in m.tiles("boat") if (x, y) not in afloat]
+        cells = beach + m.tiles("shallows")
         if not cells:
             return
         lib = self._lake_library()
         zw = self.z_water()
-        # Dense small pebbles over the whole beach and the shallows' bed.
-        em = self.emitter("pebbles-fine", cells, sub=2, z=0.004)
+        # Dense small pebbles over the beach (a pebble 1-3 cm is a few
+        # pixels: low-poly), fewer under the water where they are dimmed.
+        em = self.emitter("pebbles-fine", beach, sub=2, z=0.004)
         em["wet_z"] = zw
-        scatter.scatter(em, lib["pebbles"], 520.0, (0.012, 0.03), seed=201, rotate_z_only=True, pick=True)
+        scatter.scatter(em, lib["pebbles"], 300.0, (0.014, 0.032), seed=201, rotate_z_only=True, pick=True)
         em2 = self.emitter("pebbles-mid", cells, sub=2, z=0.006)
         em2["wet_z"] = zw
-        scatter.scatter(em2, lib["pebbles"], 70.0, (0.03, 0.06), seed=203, rotate_z_only=True, pick=True)
+        scatter.scatter(em2, lib["pebbles"], 60.0, (0.03, 0.06), seed=203, rotate_z_only=True, pick=True)
         # Cobbles, fewer and sunk into the rest.
         em3 = self.emitter("cobbles", cells, sub=1, z=-0.004)
         em3["wet_z"] = zw
@@ -601,7 +604,7 @@ class LakeKit(BoatsMixin, HousesMixin):
         mat = L.pebbles()
         for t in range(10):
             bm = bmesh.new()
-            bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1.0)
+            bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0)
             sx = 1.0
             sy = 0.55 + rng.random() * 0.4
             sz = 0.3 + rng.random() * 0.3
