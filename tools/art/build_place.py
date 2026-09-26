@@ -111,9 +111,22 @@ def pack(items):
     return places
 
 
-def default_variants(p):
-    """Interiors are seen only in the morning; outdoor places in both lights."""
-    return ["day"] if p.style == "home" else ["day", "late"]
+def light_plan(p):
+    """Each variant the manifest will have and the light it is rendered in.
+    Interiors are seen only in the morning, outdoor places in both lights,
+    unless the place asks for its own (a road under rain cloud, a house at
+    lamp-lighting: `Place.light_plan`, e.g. {"day": "overcast"})."""
+    own = getattr(p, "light_plan", None)
+    if own:
+        return dict(own)
+    return {"day": "day"} if p.style == "home" else {"day": "day", "late": "late"}
+
+
+def people_light(p):
+    """How people are lit there (the manifest's peopleLight): by the room's
+    own light indoors, or as the place asks (overcast, lamp); else by the
+    sun of each variant (None)."""
+    return getattr(p, "people_light", None) or ("indoor" if p.style == "home" else None)
 
 
 def catcher_for(p, sp):
@@ -148,9 +161,14 @@ def main():
         raise SystemExit(f"No scene {a.scene} in tools/art/data/chapter.json (run npm run art:data)")
     tmp = tempfile.mkdtemp(prefix=f"witness-{a.scene}-")
     scene = common.reset(a.samples)
+    # Small bright lights (lamps, embers) reflected in glossy things make
+    # fireflies that the denoiser smears into blotches: clamp the indirect light.
+    scene.cycles.sample_clamp_indirect = 10.0
+    scene.cycles.filter_glossy = 0.5
     p = place.Place(scene_data).build()
     scene.view_settings.exposure = -1.4 + p.exposure
-    variants = a.variants or default_variants(p)
+    plan = light_plan(p)
+    variants = a.variants or list(plan)
     sprite_objs = [o for sp in p.sprites for o in sp.objects]
     for o in sprite_objs:
         if not o.users_collection:
@@ -180,9 +198,16 @@ def main():
             seen = o in camera or o in holdout
             o.visible_camera = seen and (o not in occluders or bool(os.environ.get("SHOW_OCCLUDERS")))
 
+    def light_up(variant):
+        """Set the light a variant is rendered in, and its exposure."""
+        light = plan.get(variant, variant)
+        lighting.setup(scene, light)
+        scene.view_settings.exposure = -1.4 + p.exposure + lighting.ev(light)
+        return light
+
     if a.probe:
         x0, y0, x1, y1 = a.probe
-        lighting.setup(scene, variants[0])
+        light_up(variants[0])
         w = (x1 - x0) * TILE
         h = (y1 - y0) * TILE
         view.setup_camera(scene, (x0 + x1) / 2 * TILE, (y0 + y1) / 2 * TILE, int(w * a.ppu), int(h * a.ppu), a.ppu)
@@ -197,8 +222,8 @@ def main():
     wpx, hpx = int(W * a.ppu), int(H * a.ppu)
     view.setup_camera(scene, W / 2, H / 2, wpx, hpx, a.ppu)
     manifest = {"version": 1, "scene": p.map.id, "tiles": {"w": p.map.w, "h": p.map.h}, "ppu": a.ppu, "variants": {}}
-    if p.style == "home":
-        manifest["peopleLight"] = "indoor"
+    if people_light(p):
+        manifest["peopleLight"] = people_light(p)
     previous = None
     if a.only:
         previous = json.load(open(os.path.join(a.out, "manifest.json")))
@@ -246,12 +271,19 @@ def main():
         for f in before - now:
             if os.path.exists(os.path.join(a.out, f)):
                 os.remove(os.path.join(a.out, f))
-        # 2. Sun visibility on the ground (white diffuse, sun only, no dust, no lamps).
+        # 2. Light on the ground (white diffuse, no dust): by default the sun
+        #    alone; under cloud, the sky; at lamp-lighting, the lamps.
+        spec = lighting.LIGHTS.get(plan.get(variant, variant), {})
+        source = spec.get("shade", "sun")
+        suns = [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Sun")]
         layer = scene.view_layers[0]
         layer.material_override = white
-        world_strength.default_value = 0.0
+        if source != "sky":
+            world_strength.default_value = 0.0
         for light in p.lights:
-            light.hide_render = True
+            light.hide_render = source != "lamps"
+        for sun in suns:
+            sun.hide_render = source != "sun"
         show(set(scene.objects) - set(sprite_objs), hidden=conditional | flats | volumes)
         scene.render.resolution_percentage = 25
         probe = render_to(scene, os.path.join(tmp, f"shade-{variant}.png"))
@@ -260,12 +292,16 @@ def main():
         world_strength.default_value = base_strength
         for light in p.lights:
             light.hide_render = False
+        for sun in suns:
+            sun.hide_render = False
         lum = probe[:, :, :3].mean(axis=2)
         lit = np.percentile(lum, 97)
         vis = np.clip(lum / max(1e-4, lit), 0, 1)
-        if p.style == "home":
-            # Indoors people are lit for the room; only the sunbeam brightens them.
-            vis = 0.85 + 0.15 * vis
+        floor = spec.get("shade_floor", 0.85 if p.style == "home" else None)
+        if floor is not None:
+            # Indoors people are lit for the room (only the sunbeam, or a
+            # lamp's pool, brightens them); under cloud the shade is soft.
+            vis = floor + (1 - floor) * vis
         shade = np.dstack([vis, vis, vis, np.ones_like(vis)])
         imageio.save(shade, os.path.join(a.out, f"shade-{variant}.webp"), "WEBP", 90)
 
@@ -323,7 +359,7 @@ def main():
         return img[by0:by1, bx0:bx1], int(round(x0 * a.ppu)) + bx0, int(round(y0 * a.ppu)) + by0
 
     for variant in variants:
-        lighting.setup(scene, variant)
+        light_up(variant)
         if a.only not in ("conditional", "sprites"):
             ground_and_shade(variant)
         if a.only == "ground":
