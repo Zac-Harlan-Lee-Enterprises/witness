@@ -15,6 +15,10 @@ const kallias = (option: string): Condition => ({
  *
  * Philemon, Tychicus and Onesimus stand here as silent figures: they have no
  * dialogue and cannot be talked to (see characters.ts).
+ *
+ * Nobody at the gathering stands just behind a column of the garden's far
+ * row (one or two rows north of it, in line with it): the pre-rendered
+ * column would hide their legs, as it truly would from where the camera is.
  */
 export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
   id: 'philemon-house',
@@ -83,7 +87,7 @@ export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
       kind: 'npc',
       label: 'Kallias',
       characterId: 'kallias',
-      x: 9,
+      x: 8,
       y: 6,
       facing: 'right',
       visibleWhen: kallias('come-now'),
@@ -106,7 +110,7 @@ export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
       kind: 'npc',
       label: 'Zenon',
       characterId: 'zenon',
-      x: 12,
+      x: 13,
       y: 6,
       facing: 'down',
       interaction: { verb: 'talk', dialogue: 'd-zenon-gathering' },
@@ -154,7 +158,7 @@ export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
       kind: 'npc',
       label: 'Tychicus',
       characterId: 'tychicus',
-      x: 15,
+      x: 14,
       y: 5,
       facing: 'down',
     },
