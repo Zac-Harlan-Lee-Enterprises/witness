@@ -84,7 +84,9 @@ class RomanKit(RomanGeometry, RomanArchitecture, RomanProps, RomanTown, RomanVal
         at the gathering is lost behind a beam. One sprite per column, sorted
         true: the content keeps people off the line just north of a column
         (tests/content/letter-from-paul.test.ts), where it would hide their
-        legs as it truly would."""
+        legs as it truly would; and in a house the columns fade like a
+        canopy while the player stands behind one (the player can stand
+        anywhere, and would be cut in half by the shaft)."""
         if self.style == "city":
             self._stoas()
             return
@@ -92,7 +94,7 @@ class RomanKit(RomanGeometry, RomanArchitecture, RomanProps, RomanTown, RomanVal
         for x, y in self.map.tiles("column"):
             name = f"column-{x}-{y}"
             objs, _top = self._ionic_column(name, x + 0.5, y + 0.5, 2.2, r=0.15, painted=painted, cut_top=True)
-            self.sprite(name, y + 0.72, objs, [(x, y)])
+            self.sprite(name, y + 0.72, objs, [(x, y)], fade=self.style == "home")
 
     def _stoas(self):
         m = self.map

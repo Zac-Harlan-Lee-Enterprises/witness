@@ -19,6 +19,7 @@ import {
 } from '@/game/prerendered/manifest';
 import {
   appearanceKey,
+  behindCanopy,
   peopleLightFor,
   PLACE_ART,
   PLACES_WITH_ART,
@@ -132,6 +133,32 @@ describe('art asset provenance', () => {
       expect(a.origin.length, `origin of ${a.path}`).toBeGreaterThan(10);
       expect(a.license.length, `licence of ${a.path}`).toBeGreaterThan(5);
     }
+  });
+});
+
+describe('Philemon’s house', () => {
+  it('fades a column while the player stands behind it, rather than cutting them in half', () => {
+    // The colonnade sorts true (no cheat): someone just north of a column in
+    // line with it is behind its shaft. The player can stand there (talking
+    // to Ammia at the gathering), so the house's columns fade like canopies.
+    const { art } = parsePlaceArt(
+      JSON.parse(readFileSync(join(ART, 'philemon-house', 'manifest.json'), 'utf8')),
+    );
+    const v = art?.variants.day;
+    if (!art || !v) throw new Error('no art for philemon-house');
+    const columns = v.sprites.filter((s) => s.id.startsWith('column-'));
+    expect(columns.length).toBeGreaterThan(0);
+    for (const c of columns) {
+      expect(c.fade, c.id).toBe(true);
+      // Each sorts by its own base (the old cheat drew the far row 1.3 rows north of it).
+      const row = Number(c.id.split('-')[2]);
+      expect(c.base, c.id).toBeCloseTo((row + 0.72) * 32, 1);
+    }
+    // The player at (9,5), beside Ammia and in line with column (9,7): feet at
+    // the tile centre plus FEET_BELOW_CENTRE (src/game/scenes/actors.ts).
+    const far = columns.find((c) => c.id === 'column-9-7');
+    if (!far) throw new Error('no column-9-7');
+    expect(behindCanopy(far, art.ppu, 9.5 * 32, 5.5 * 32 + 10)).toBe(true);
   });
 });
 
