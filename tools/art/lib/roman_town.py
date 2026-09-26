@@ -561,8 +561,7 @@ class RomanTown:
             if not m.near(x, y, ("paving",), 1):
                 continue
             pb, pl = self._rbm()
-            for a, b, c, d in ((x + 0.05, y + 0.05, x + 0.95, y + 0.17), (x + 0.05, y + 0.83, x + 0.95, y + 0.95), (x + 0.05, y + 0.05, x + 0.17, y + 0.95), (x + 0.83, y + 0.05, x + 0.95, y + 0.95)):
-                self._cbox(pb, pl, a, b, c, d, 0.0, 0.1, chamfer=0.02)
+            self._frame(pb, pl, x + 0.05, y + 0.05, x + 0.95, y + 0.95, 0.12, 0.0, 0.1, chamfer=0.02)
             self.to_ground(self._obj(f"treepit-{x}-{y}", pb, self._mat("marble-grey")))
             self.to_ground(common.box(f"treepit-soil-{x}-{y}", (0.66, 0.66, 0.02), self.P(x + 0.5, y + 0.5, 0.03), self._mat("soil"), None))
             for k in range(14):
