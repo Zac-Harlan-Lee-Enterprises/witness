@@ -263,8 +263,15 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | later day | 1.59 MB | 0.61 MB | 58.4 MB | 17.0 MB | 6 / 2 | 1 |
 | Jericho | morning | 2.20 MB | 0.76 MB | 49.7 MB | 13.6 MB | 4 / 1 | 2 |
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
+| Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
+| A street in Colossae (Ch. 4) | morning | 1.07 MB | 0.38 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
+| | later day | 0.98 MB | 0.37 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
+| The Laodicea road (Ch. 4) | rain cloud (its only set) | 4.02 MB | 1.32 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
+| Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.16 MB | 23.1 MB | 6.5 MB | 2 / 1 | 1 |
 | People (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
+
+The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
 **Phones** load about 28% of the texture memory desktops do (a place's low set is 12–17 MB against 44–58 MB). People sheets are the same on every device.
 
