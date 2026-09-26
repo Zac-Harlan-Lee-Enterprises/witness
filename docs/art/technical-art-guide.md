@@ -84,6 +84,8 @@ To give a place its own light:
 3. **People**: if the people light is new, add a `setup_<name>` for it in `lighting.py` (as `setup_indoor` and `setup_lamp`: lights set around a person at the origin), a shadow box for it in `SHADOW_BOX` and `REST_SHADOW_BOX` ([`build_people.py`](../../tools/art/build_people.py)), and its name to `PEOPLE_LIGHTS` and to `peopleLight`, `sheets` and `shadows` in [`manifest.ts`](../../src/game/prerendered/manifest.ts) (the loader falls back from `lamp` to `indoor`, then to the morning's sheets: `pick` in [`loader.ts`](../../src/game/prerendered/loader.ts)).
 4. Render the place, then its people: the people job reads each place's `manifest.json` and renders exactly the lights it names for everyone seen there.
 
+**Porting dusk, night or lamp light from another branch** (Chapters 2 and 3): name the light in `LIGHTS`, the place in `PLACE_LIGHTS`, and let the kits read `self.light_plan` / `self.people_light` rather than a chapter or scene id. A place has at most two sets, `day` and `late` (drawn from 15:00): a place seen by day and at night is `{"day": "day", "late": "night"}`, one seen only at night `{"day": "night"}`. A third time of day would need a third key in `LIGHTING_VARIANTS` and in `variantFor`'s rule.
+
 A place whose story light changes within one set (a storm rising while you stand there) keeps one plan; the game's own weather, grade and lamp glow ([`weather.ts`](../../src/game/systems/weather.ts), [`grade.ts`](../../src/game/systems/grade.ts), [`lighting.ts`](../../src/game/systems/lighting.ts)) do the rest. The engine also darkens and cools any place in rain and after dark, so a place baked in rain cloud or lamplight should be baked a little brighter than it will look.
 
 **Tests and the engine.** [`art-assets.test.ts`](../../tests/content/art-assets.test.ts) reads each place's manifest and checks that everyone seen there has sheets in its people light (or in each set's sun), and that a room's people light is its own (`indoor` or `lamp`) while an outdoor place's is none or `overcast`: a new people light for a room or a place outdoors (night, say) belongs in that rule too. [`prerendered.test.ts`](../../tests/unit/game/prerendered.test.ts) covers `peopleLightFor` and the manifest schema.
@@ -267,8 +269,8 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | Jericho | morning | 2.20 MB | 0.76 MB | 49.7 MB | 13.6 MB | 4 / 1 | 2 |
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
 | Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
-| A street in Colossae (Ch. 4) | morning | 1.08 MB | 0.39 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
-| | later day | 0.98 MB | 0.37 MB | 53.5 MB | 14.7 MB | 4 / 1 | 2 |
+| A street in Colossae (Ch. 4) | morning | 1.02 MB | 0.37 MB | 51.6 MB | 14.3 MB | 4 / 1 | 2 |
+| | later day | 0.93 MB | 0.36 MB | 52.9 MB | 14.6 MB | 4 / 1 | 2 |
 | The Laodicea road (Ch. 4) | rain cloud (its only set) | 3.98 MB | 1.31 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
 | Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.15 MB | 22.9 MB | 6.5 MB | 2 / 1 | 1 |
 | People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
@@ -291,6 +293,13 @@ The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds 
 | Road down to Jericho | 89 MB | 47 MB |
 | Jericho, morning | 104 MB | 68 MB |
 | Jericho, later day | 122 MB | 87 MB |
+| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17–22 MB |
+| A street in Colossae, morning (Ch. 4) | 85–86 MB | 85–86 MB |
+| A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
+| The Laodicea road (Ch. 4) | 105 MB | 105 MB |
+| Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
+
+In the Chapter 4 captures (`letter-art.spec.ts`, September 2026) the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
 
 People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
 

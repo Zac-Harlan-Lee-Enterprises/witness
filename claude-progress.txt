@@ -200,3 +200,24 @@ NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of ever
          market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
 BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
          docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-letter-from-paul) — Chapter 4 pre-rendered ---
+DONE   : Every Chapter 4 place pre-rendered with the offline Blender pipeline: ammia-workshop (day),
+         colossae-street (morning + later day), lycus-road (rain cloud: overcast sky, wet stone,
+         travertine terraces, milestones, bridge, dye works) and philemon-house (lamp-lighting:
+         dusk through the open peristyle roof, lampstands). New Roman kit tools/art/lib/kit_roman.py
+         + roman_{geom,materials,arch,props,town,valley,rooms}.py (tile roofs, Ionic order, stoa,
+         mosaics, opus signinum, fresco, dye vats, fullers' tubs, amphorae, milestones, travertine).
+         Per-place light plans (lighting.PLACE_LIGHTS -> manifest peopleLight -> select/loader):
+         the canonical mechanism for Chapters 2-3's dusk/night/lamp light (guide §3). People: rain
+         cloud and lamp lights, tablets, scroll case, letter-case overlay; chapter-named sheet ids
+         when a character id is shared across chapters. Review fixes: decals as irregular ellipses
+         left out of sprite renders (no pale boxes), paving flush to walls/stoa/pots, milestone
+         lines face the road, Philemon's far colonnade sorts behind the gathering (documented cheat).
+TESTS  : Vitest 542 passed (art-assets per chapter, peopleLightFor/manifest schema, portraits scoped
+         to Chapter 1). Captures: e2e/letter-art.spec.ts, 6/6 (desktop/tablet/phone x home/reply).
+NEXT   : Content owner: move kallias-gathering (9,6) and zenon-reader (12,6) off the columns'
+         line in src/content/chapters/letter-from-paul (e.g. to (8,6) and (13,6)), then drop the
+         far-row sort cheat in tools/art/lib/kit_roman.py tile_column and re-render philemon-house.
+         Then merge the road's young grain into its ground layer to halve its 4 MB download.
+BLOCKED: none. Merge points: tools/art/lib/{place,lighting,people}.py, tools/art/build_{place,people}.py,
+         src/game/prerendered/{manifest,select,loader}.ts, scripts/art-build.mjs, docs/art/*.
