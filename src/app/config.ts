@@ -18,7 +18,7 @@ export interface AppConfig {
    */
   cameraFraming: 'standard' | 'close';
   /** Pre-rendered places: pick the lighting from the story clock, or force one (for review builds). */
-  artLighting: 'auto' | 'day' | 'late' | 'dusk' | 'night';
+  artLighting: 'auto' | 'day' | 'late';
   /**
    * Review builds only: show this weather everywhere, whatever the story says
    * (VITE_FORCE_WEATHER=clear|wind|rain|storm). null follows the story.
@@ -43,13 +43,12 @@ export function readConfig(env: ImportMetaEnv = import.meta.env): AppConfig {
         : env.VITE_CAMERA_FRAMING === 'close'
           ? 'close'
           : DEFAULT_FRAMING,
-    artLighting: forcedLighting(env.VITE_ART_LIGHTING),
+    artLighting:
+      env.VITE_ART_LIGHTING === 'day' || env.VITE_ART_LIGHTING === 'late'
+        ? env.VITE_ART_LIGHTING
+        : 'auto',
     forceWeather: forcedWeather(env.VITE_FORCE_WEATHER),
   };
-}
-
-function forcedLighting(raw: string | undefined): AppConfig['artLighting'] {
-  return raw === 'day' || raw === 'late' || raw === 'dusk' || raw === 'night' ? raw : 'auto';
 }
 
 function forcedWeather(raw: string | undefined): Weather | null {

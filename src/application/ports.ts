@@ -169,7 +169,8 @@ export type SfxId =
   'interact' | 'item' | 'journal' | 'discover' | 'quest' | 'solved' | 'error' | 'page' | 'door';
 
 /** What a footstep sounds like: the surface underfoot. */
-export type FootstepSurface = 'stone' | 'gravel' | 'sand' | 'earth' | 'grass' | 'mud' | 'mat';
+export type FootstepSurface =
+  'stone' | 'gravel' | 'sand' | 'earth' | 'grass' | 'mud' | 'mat' | 'wood';
 
 export interface AudioPort {
   /** Must be called from a user gesture to satisfy autoplay policies. */

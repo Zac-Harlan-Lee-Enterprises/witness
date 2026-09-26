@@ -5,6 +5,22 @@ stands in the east-south-east, so the stone fronts facing the viewer catch
 warm, raking light from the right and shadows reach up and to the left.
 Later in the day it has crossed to the west-south-west and dropped low:
 fronts lit from the left, longer, warmer shadows reaching right.
+
+Two more lights for places whose story needs them (listed in PLACE_LIGHTS
+below; see build_place.py):
+  - `overcast`: a road under rain cloud. The sun is only a faint, very soft
+    brightening of the cloud to the south-east; an even grey sky, brighter
+    overhead than at the horizon, lights everything from above, so shadows
+    are soft pools under things rather than shapes.
+  - `dusk`: lamp-lighting. The sun has set; a deep blue sky still glows
+    faintly, and the place's own lamps light the room.
+  - `night`: moonlight. A weak, cool moon in the south-east (so the fronts
+    the camera sees are lit and shadows reach up and to the left), a deep
+    blue sky, and whatever lamps and fires the place lights after dark.
+  - `lamplight`: a room at night, lit by its own lamps and embers; the
+    moon through the door is faint beside them.
+And one more light for people: `lamp` (people at lamp-lighting, lit by
+lampstands, with the last blue of the sky above).
 """
 import math
 
@@ -31,39 +47,112 @@ LIGHTS = {
         "angle": math.radians(2.4),
         "sky_strength": 0.3,
     },
-    # The sun has gone down behind the western hills: no direct light, only
-    # the sky, glowing orange and rose low in the west and deepening to
-    # blue overhead and in the east. Shadows are soft contact shadows.
-    "dusk": {
-        "azimuth": math.radians(180.0),  # due west (below the horizon)
-        "elevation": math.radians(-3.0),
-        "strength": 0.0,
-        "color": "#ff9a5a",
-        "angle": math.radians(2.4),
-        "sky_strength": 1.0,
-        "exposure": 2.8,
-        "glow": "#ff8f52",
-        "glow_strength": 4.0,
+    "overcast": {
+        "azimuth": math.radians(-58.0),
+        "elevation": math.radians(55.0),
+        "strength": 0.5,
+        "color": "#e8ecf0",
+        # A sun as wide as a patch of bright cloud: shadows melt into soft pools.
+        "angle": math.radians(50.0),
+        "sky": {"zenith": "#d4d8dc", "horizon": "#a9aeb2", "ground": "#6e6a60"},
+        "sky_strength": 1.05,
+        # The shade mask records how much of the sky a point sees.
+        "shade": "sky",
+        "shade_floor": 0.7,
+        "ev": 1.3,
     },
-    # Night: moonlight from the south-east (so the fronts the camera sees
-    # are lit), a deep blue sky, and whatever lamps and fires a place has.
+    "dusk": {
+        "azimuth": math.radians(200.0),
+        "elevation": math.radians(-6.0),
+        "strength": 0.0,
+        "color": "#ffb070",
+        "angle": math.radians(2.0),
+        "sky": {"zenith": "#22345c", "horizon": "#6a5a78", "ground": "#1a1614"},
+        "sky_strength": 1.6,
+        # The shade mask records the lamps' light on the floor.
+        "shade": "lamps",
+        "shade_floor": 0.42,
+        "ev": 0.0,
+    },
     "night": {
         "azimuth": math.radians(-48.0),  # south-east
         "elevation": math.radians(38.0),
         "strength": 0.34,
         "color": "#a9bddf",
         "angle": math.radians(0.6),
-        "sky_strength": 0.05,
-        "exposure": 3.5,
-        "zenith": "#0c1834",
-        "horizon": "#233553",
+        "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
+        "sky_strength": 1.0,
+        # Baked brighter than it will look: the game darkens and cools a
+        # place after dark (src/game/systems/grade.ts).
+        "ev": 3.5,
+    },
+    "lamplight": {
+        "azimuth": math.radians(-48.0),
+        "elevation": math.radians(38.0),
+        "strength": 0.1,
+        "color": "#a9bddf",
+        "angle": math.radians(0.6),
+        "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
+        "sky_strength": 1.0,
+        # The shade mask records the lamps' light on the floor.
+        "shade": "lamps",
+        "shade_floor": 0.4,
+        # Over a room's own step (kit_interior): exposed for its lamps.
+        "ev": 0.3,
     },
 }
 
 
-def exposure(name):
-    """Exposure (EV) a light adds to the base, as an eye or camera adapts to dusk and night."""
-    return LIGHTS.get(name, {}).get("exposure", 0.0)
+def ev(name):
+    """Exposure (EV) a light adds to the pipeline's base exposure."""
+    return LIGHTS.get(name, {}).get("ev", 0.0)
+
+
+# ── The story's light, place by place ───────────────────────────────────────
+# Most places are lit by the sun of the hour: a room has one set rendered in
+# the morning ({"day": "day"}, people lit "indoor"); an outdoor place a
+# morning and a later-day set ({"day": "day", "late": "late"}, people lit by
+# each set's sun). The game picks the set by the story hour ("late" from
+# 15:00, src/game/prerendered/select.ts variantFor).
+#
+# A place the story shows in other light is listed here: scene id ->
+# (plan, people light).
+#   plan: each set of its manifest -> the light (a key of LIGHTS) it is
+#         rendered in. Sets are keyed "day", "late" (from 15:00) and "night"
+#         (19:00 to 05:00), by when in the story they are shown; a place
+#         seen in one light only has one set rendered in that light.
+#   people light: how people are lit there (the manifest's peopleLight, a
+#         PEOPLE_LIGHTS value in src/game/prerendered/manifest.ts): "indoor",
+#         "overcast", "lamp" or a light added beside them; None lights them
+#         by the sun of each set.
+# The people job renders exactly those lights for everyone seen there
+# (build_people.py reads each place's manifest: render places first).
+PLACE_LIGHTS = {
+    # Chapter 4. The Laodicea road is walked from mid-morning as the rain
+    # sweeps down the valley (hours 11-14, always the morning set): rain
+    # cloud and wet stone. The game draws the rain itself.
+    "lycus-road": ({"day": "overcast"}, "overcast"),
+    # The gathering at Philemon's house is at lamp-lighting (hour 18), and only then.
+    "philemon-house": ({"day": "dusk"}, "lamp"),
+    # Chapter 2. The story begins at hour 16 and runs past midnight. The
+    # shore: loading the boat in the afternoon, putting out at 18 (the
+    # later-day set, which the game tints for sunset), coming back to it at
+    # 2 a.m. (hour 26) under the moon.
+    "capernaum-shore": ({"late": "late", "night": "night"}, None),
+    # The lake is crossed from sunset (18) into the night: one moonlit set.
+    "open-lake": ({"night": "night"}, None),
+    # Shelomit's house in the afternoon, and by lamplight at night; people
+    # there are lit for the room either way.
+    "shelomit-house": ({"late": "late", "night": "lamplight"}, "indoor"),
+}
+
+
+def plan_for(scene_id, room):
+    """({set: light}, people light) for a place (see PLACE_LIGHTS)."""
+    if scene_id in PLACE_LIGHTS:
+        plan, people = PLACE_LIGHTS[scene_id]
+        return dict(plan), people
+    return ({"day": "day"}, "indoor") if room else ({"day": "day", "late": "late"}, None)
 
 
 def sun_vector(name):
@@ -118,37 +207,102 @@ def setup_indoor(scene):
     return None
 
 
+def setup_lamp(scene):
+    """People at lamp-lighting (the 'lamp' variant of their sheets): a warm
+    key from a lampstand high to the front left, a second, dimmer lamp
+    behind to the right (a warm rim), the last blue of the evening sky from
+    above, and a dark room around them."""
+    for obj in [o for o in scene.objects if o.type == "LIGHT" and (o.name.startswith("Sun") or o.name.startswith("Indoor"))]:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    def light(name, kind, loc, energy, color, size, target=(0.0, 0.0, 0.9)):
+        data = bpy.data.lights.new(name, kind)
+        data.energy = energy
+        data.color = hex_rgb(color)[:3]
+        if kind == "AREA":
+            data.size = size
+        else:
+            data.shadow_soft_size = size
+        obj = bpy.data.objects.new(name, data)
+        scene.collection.objects.link(obj)
+        obj.location = loc
+        d = Vector(target) - Vector(loc)
+        obj.rotation_euler = (-d).to_track_quat("Z", "Y").to_euler()
+        return obj
+
+    # Small and warm, but set higher than a lampstand's flame, so shadows on
+    # the floor stay short (the lamps of the room itself are baked in it).
+    light("IndoorLampKey", "AREA", (-1.3, -1.6, 2.5), 140.0, "#ffb46e", 0.45)
+    light("IndoorLampRim", "AREA", (1.5, 1.2, 2.3), 60.0, "#ffc48a", 0.45)
+    light("IndoorSky", "AREA", (0.3, 0.2, 4.0), 38.0, "#8a9cc8", 3.0)
+    world = bpy.data.worlds.get("Evening") or bpy.data.worlds.new("Evening")
+    scene.world = world
+    world.use_nodes = True
+    nt = world.node_tree
+    nt.nodes.clear()
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs["Color"].default_value = hex_rgb("#3a2e2a")
+    bg.inputs["Strength"].default_value = 0.25
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+    return None
+
+
+def _gradient_sky(nt, colors, strength):
+    """An even sky (no sun disc): `ground` below the horizon, `horizon`, and
+    `zenith` overhead, blended by the height of the direction looked in."""
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Generated"], sep.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    # Generated z runs -1 (down) .. 1 (up): map to 0..1.
+    mr = nt.nodes.new("ShaderNodeMapRange")
+    mr.inputs["From Min"].default_value = -1.0
+    mr.inputs["From Max"].default_value = 1.0
+    nt.links.new(sep.outputs["Z"], mr.inputs["Value"])
+    nt.links.new(mr.outputs["Result"], ramp.inputs["Fac"])
+    els = ramp.color_ramp.elements
+    els[0].position = 0.46
+    els[0].color = hex_rgb(colors["ground"])
+    els[1].position = 1.0
+    els[1].color = hex_rgb(colors["zenith"])
+    h = els.new(0.515)
+    h.color = hex_rgb(colors["horizon"])
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs["Strength"].default_value = strength
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+
+
 def setup(scene, name):
     if name == "indoor":
         return setup_indoor(scene)
+    if name == "lamp":
+        return setup_lamp(scene)
     for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Indoor")]:
         bpy.data.objects.remove(obj, do_unlink=True)
     s = LIGHTS[name]
     # Only the sun is replaced: lights a place brings (a lamp, embers) stay.
     for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("Sun")]:
         bpy.data.objects.remove(obj, do_unlink=True)
+    data = bpy.data.lights.new("Sun", "SUN")
+    data.energy = s["strength"]
+    data.color = hex_rgb(s["color"])[:3]
+    data.angle = s["angle"]
+    sun = bpy.data.objects.new("Sun", data)
+    scene.collection.objects.link(sun)
     to_sun = sun_vector(name)
-    sun = None
-    if s["strength"] > 0:
-        data = bpy.data.lights.new("Sun", "SUN")
-        data.energy = s["strength"]
-        data.color = hex_rgb(s["color"])[:3]
-        data.angle = s["angle"]
-        sun = bpy.data.objects.new("Sun", data)
-        scene.collection.objects.link(sun)
-        sun.rotation_euler = to_sun.to_track_quat("Z", "Y").to_euler()
-    if name == "dusk":
-        _dusk_world(scene, s, to_sun)
-        return sun
-    if name == "night":
-        _night_world(scene, s)
-        return sun
+    sun.rotation_euler = to_sun.to_track_quat("Z", "Y").to_euler()
 
     world = bpy.data.worlds.get("Sky") or bpy.data.worlds.new("Sky")
     scene.world = world
     world.use_nodes = True
     nt = world.node_tree
     nt.nodes.clear()
+    if "sky" in s:
+        _gradient_sky(nt, s["sky"], s["sky_strength"])
+        return sun
     sky = nt.nodes.new("ShaderNodeTexSky")
     sky.sky_type = "MULTIPLE_SCATTERING"
     sky.sun_disc = False
@@ -164,112 +318,3 @@ def setup(scene, name):
     nt.links.new(sky.outputs["Color"], bg.inputs["Color"])
     nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
     return sun
-
-
-def _world(scene, name):
-    world = bpy.data.worlds.get(name) or bpy.data.worlds.new(name)
-    scene.world = world
-    world.use_nodes = True
-    nt = world.node_tree
-    nt.nodes.clear()
-    return nt
-
-
-def _dusk_world(scene, s, to_sun):
-    """The sky just after sunset: the physical sky with the sun a little below
-    the horizon (blue overhead), plus the afterglow: a warm band low in the
-    west, fading up the sky and round toward the north and south."""
-    nt = _world(scene, "Dusk")
-    sky = nt.nodes.new("ShaderNodeTexSky")
-    sky.sky_type = "MULTIPLE_SCATTERING"
-    sky.sun_disc = False
-    sky.sun_elevation = s["elevation"]
-    sky.sun_rotation = math.atan2(to_sun.x, to_sun.y)
-    sky.altitude = 700.0
-    sky.air_density = 1.0
-    sky.aerosol_density = 2.2
-    tc = nt.nodes.new("ShaderNodeTexCoord")
-    dot = nt.nodes.new("ShaderNodeVectorMath")
-    dot.operation = "DOT_PRODUCT"
-    west = Vector((to_sun.x, to_sun.y, 0.0)).normalized()
-    nt.links.new(tc.outputs["Generated"], dot.inputs[0])
-    dot.inputs[1].default_value = (west.x, west.y, 0.0)
-    toward = nt.nodes.new("ShaderNodeMath")
-    toward.operation = "MAXIMUM"
-    nt.links.new(dot.outputs["Value"], toward.inputs[0])
-    toward.inputs[1].default_value = 0.0
-    lobe = nt.nodes.new("ShaderNodeMath")
-    lobe.operation = "POWER"
-    nt.links.new(toward.outputs["Value"], lobe.inputs[0])
-    lobe.inputs[1].default_value = 2.2
-    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
-    nt.links.new(tc.outputs["Generated"], sep.inputs[0])
-    up = nt.nodes.new("ShaderNodeMath")
-    up.operation = "MAXIMUM"
-    nt.links.new(sep.outputs["Z"], up.inputs[0])
-    up.inputs[1].default_value = 0.0
-    fall = nt.nodes.new("ShaderNodeMath")
-    fall.operation = "MULTIPLY"
-    nt.links.new(up.outputs["Value"], fall.inputs[0])
-    fall.inputs[1].default_value = -5.0
-    low = nt.nodes.new("ShaderNodeMath")
-    low.operation = "EXPONENT"
-    nt.links.new(fall.outputs["Value"], low.inputs[0])
-    band = nt.nodes.new("ShaderNodeMath")
-    band.operation = "MULTIPLY"
-    nt.links.new(lobe.outputs["Value"], band.inputs[0])
-    nt.links.new(low.outputs["Value"], band.inputs[1])
-    # A soft rose wash over the whole western half, under the orange band.
-    wash = nt.nodes.new("ShaderNodeMath")
-    wash.operation = "MULTIPLY_ADD"
-    nt.links.new(toward.outputs["Value"], wash.inputs[0])
-    wash.inputs[1].default_value = 0.18
-    nt.links.new(band.outputs["Value"], wash.inputs[2])
-    glow = nt.nodes.new("ShaderNodeMix")
-    glow.data_type = "RGBA"
-    glow.blend_type = "MIX"
-    nt.links.new(band.outputs["Value"], glow.inputs[0])
-    glow.inputs[6].default_value = hex_rgb("#e0906e")
-    glow.inputs[7].default_value = hex_rgb(s["glow"])
-    scale = nt.nodes.new("ShaderNodeVectorMath")
-    scale.operation = "SCALE"
-    nt.links.new(glow.outputs[2], scale.inputs[0])
-    gs = nt.nodes.new("ShaderNodeMath")
-    gs.operation = "MULTIPLY"
-    nt.links.new(wash.outputs["Value"], gs.inputs[0])
-    gs.inputs[1].default_value = s["glow_strength"]
-    nt.links.new(gs.outputs["Value"], scale.inputs["Scale"])
-    add = nt.nodes.new("ShaderNodeVectorMath")
-    add.operation = "ADD"
-    nt.links.new(sky.outputs["Color"], add.inputs[0])
-    nt.links.new(scale.outputs["Vector"], add.inputs[1])
-    bg = nt.nodes.new("ShaderNodeBackground")
-    bg.inputs["Strength"].default_value = s["sky_strength"]
-    nt.links.new(add.outputs["Vector"], bg.inputs["Color"])
-    out = nt.nodes.new("ShaderNodeOutputWorld")
-    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
-
-
-def _night_world(scene, s):
-    """A clear night sky: deep blue overhead, a little paler toward the horizon."""
-    nt = _world(scene, "Night")
-    tc = nt.nodes.new("ShaderNodeTexCoord")
-    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
-    nt.links.new(tc.outputs["Generated"], sep.inputs[0])
-    up = nt.nodes.new("ShaderNodeMath")
-    up.operation = "MAXIMUM"
-    nt.links.new(sep.outputs["Z"], up.inputs[0])
-    up.inputs[1].default_value = 0.0
-    root = nt.nodes.new("ShaderNodeMath")
-    root.operation = "SQRT"
-    nt.links.new(up.outputs["Value"], root.inputs[0])
-    mix = nt.nodes.new("ShaderNodeMix")
-    mix.data_type = "RGBA"
-    nt.links.new(root.outputs["Value"], mix.inputs[0])
-    mix.inputs[6].default_value = hex_rgb(s["horizon"])
-    mix.inputs[7].default_value = hex_rgb(s["zenith"])
-    bg = nt.nodes.new("ShaderNodeBackground")
-    bg.inputs["Strength"].default_value = s["sky_strength"] * 20.0
-    nt.links.new(mix.outputs[2], bg.inputs["Color"])
-    out = nt.nodes.new("ShaderNodeOutputWorld")
-    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])

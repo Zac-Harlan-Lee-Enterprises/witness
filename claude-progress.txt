@@ -200,3 +200,58 @@ NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of ever
          market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
 BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
          docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).
+
+--- 2026-09-26  Claude Opus 5.5 (lead) — realism pass + Chapters 2–4, handoff checkpoint ---
+DONE   : Integration branch feat/realism-and-chapters (pushed): Chapters 2–4 as content (playable,
+         tested, researched, all records awaiting review); story-driven weather; engine graphics
+         (high-DPI, weather, water, post-FX, night interiors, −59–71% texture memory); first-pass
+         rendered portraits; Chapter 1 fully pre-rendered + general place builder; integration fixes
+         (chapter-card labels, e2e choose() race, footsteps for new ground, one appearanceKey).
+         WIP branches pushed: feat/art-{storm-on-galilee,journey-to-bethlehem,letter-from-paul},
+         feat/portraits-v2 (agents stopped by an expired sign-in; work committed as-is).
+TESTS  : Vitest 341 → 520 on the integration branch; e2e suite green after 76c342b.
+NEXT   : Follow docs/handoff/2026-09-26-realism-and-chapters.md: finish the three chapters' place
+         renders and the portrait re-render, merge art branches in the order given there (Chapter 4's
+         light plan first), set Chapters 2–4 art to cache-on-first-use in vite.config.ts, run the
+         code-review skill, then PR feat/realism-and-chapters → main, merge, verify the Pages deploy.
+BLOCKED: none. (Owner decisions pending: editorial review of Chapters 2–4 records; whether to use
+         any CC0 base mesh for portraits.)
+--- 2026-09-26  Claude Opus 5.5 — portraits, second pass (branch feat/portraits-v2) ---
+DONE   : Second pass on the rendered portraits, for all four chapters. New portrait data
+         (src/content/portrait-cast.ts, scripts/export-portrait-data.ts → tools/art/data/
+         portrait-people.json, npm run art:portrait-data): every speaking character in every
+         chapter (39) + 4 player looks; biblical figures never; later namesakes get
+         <id>.<chapter id>. Casting (age, sex, sun, mood, scars) for everyone. Pipeline:
+         face/nose/eye/lip types + small asymmetry, expressions in the relief, nose bridge as
+         relief, lips with a Cupid's bow and a lower-border apex, hooding, child proportions
+         and baby hair, skin maps (oil, pores, lines, freckles, moles, scars, stubble, lid rims,
+         lips) and a richer skin shader, darker warmer eyes with soft catchlights, wound wraps
+         with a tail, veils with deep folds, men's head cloths with a cord, hemmed necklines,
+         collarbones, cooler fill light; render at 1024 → 512, WebP q93. Review sheets
+         (npm run art:portrait-sheets) per chapter + v1/v2. docs/art/portraits.md §9.
+TESTS  : Vitest 489 (portraits content test rewritten for all chapters; new
+         tests/unit/content/portrait-cast.test.ts). e2e portraits spec: + Chapter 3 namesake.
+NEXT   : Judge in-game at 60–104 px on a real phone; if faces still read CG at 256 px,
+         the next lever is a displacement pass for skin detail (currently bump only).
+BLOCKED: none.
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-letter-from-paul) — Chapter 4 pre-rendered ---
+DONE   : Every Chapter 4 place pre-rendered with the offline Blender pipeline: ammia-workshop (day),
+         colossae-street (morning + later day), lycus-road (rain cloud: overcast sky, wet stone,
+         travertine terraces, milestones, bridge, dye works) and philemon-house (lamp-lighting:
+         dusk through the open peristyle roof, lampstands). New Roman kit tools/art/lib/kit_roman.py
+         + roman_{geom,materials,arch,props,town,valley,rooms}.py (tile roofs, Ionic order, stoa,
+         mosaics, opus signinum, fresco, dye vats, fullers' tubs, amphorae, milestones, travertine).
+         Per-place light plans (lighting.PLACE_LIGHTS -> manifest peopleLight -> select/loader):
+         the canonical mechanism for Chapters 2-3's dusk/night/lamp light (guide §3). People: rain
+         cloud and lamp lights, tablets, scroll case, letter-case overlay; chapter-named sheet ids
+         when a character id is shared across chapters. Review fixes: decals as irregular ellipses
+         left out of sprite renders (no pale boxes), paving flush to walls/stoa/pots, milestone
+         lines face the road, Philemon's far colonnade sorts behind the gathering (documented cheat).
+TESTS  : Vitest 542 passed (art-assets per chapter, peopleLightFor/manifest schema, portraits scoped
+         to Chapter 1). Captures: e2e/letter-art.spec.ts, 6/6 (desktop/tablet/phone x home/reply).
+NEXT   : Content owner: move kallias-gathering (9,6) and zenon-reader (12,6) off the columns'
+         line in src/content/chapters/letter-from-paul (e.g. to (8,6) and (13,6)), then drop the
+         far-row sort cheat in tools/art/lib/kit_roman.py tile_column and re-render philemon-house.
+         Then merge the road's young grain into its ground layer to halve its 4 MB download.
+BLOCKED: none. Merge points: tools/art/lib/{place,lighting,people}.py, tools/art/build_{place,people}.py,
+         src/game/prerendered/{manifest,select,loader}.ts, scripts/art-build.mjs, docs/art/*.

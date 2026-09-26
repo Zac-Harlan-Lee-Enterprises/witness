@@ -223,6 +223,10 @@ def _distance(mask, K):
     return d / K
 
 
+# Lights (lighting.LIGHTS) in which the lamps and fires a place has are lit.
+NIGHT_LIGHTS = ("night", "lamplight")
+
+
 class LakeKit(BoatsMixin, HousesMixin):
     # ── hooks called by place.py ────────────────────────────────────────────
     def regional_materials(self):
@@ -257,25 +261,22 @@ class LakeKit(BoatsMixin, HousesMixin):
             self.wall_stone = L.basalt("#3e3b37", "wall-basalt", dust=0.15, lichen=0.0)
             self.wall_cut = L.basalt("#34322f", "wall-basalt-cut", dust=0.0, lichen=0.0)
 
-    def set_variant(self, variant):
-        """Change what a lighting variant changes: lamps and fires that burn
-        only after dark, daylight that comes in through a door only by day,
-        and the exposure (a room at night is lit by its lamps alone)."""
-        night = variant == "night"
-        if not hasattr(self, "base_exposure"):
-            # A room sets its own exposure when its shell is built.
-            self.base_exposure = self.exposure
-        for light, energy in getattr(self, "night_lights", []):
-            light.data.energy = energy if night else 0.0
-        for light, energy in getattr(self, "day_lights", []):
-            light.data.energy = 0.0 if night else energy
+    def set_light(self, light):
+        """Change what a light (a key of lighting.LIGHTS, from the place's
+        light plan) changes here: lamps and fires that burn only after dark,
+        and daylight that comes in through a door only by day."""
+        night = light in NIGHT_LIGHTS
+        for light_obj, energy in getattr(self, "night_lights", []):
+            light_obj.data.energy = energy if night else 0.0
+        for light_obj, energy in getattr(self, "day_lights", []):
+            light_obj.data.energy = 0.0 if night else energy
         for obj, mats in getattr(self, "variant_materials", []):
             mat = mats.get("night" if night else "day")
             if mat is not None:
                 obj.data.materials.clear()
                 obj.data.materials.append(mat)
         if self.style == "home":
-            self._room_variant(variant)
+            self._room_light(night)
 
     # ── heights ─────────────────────────────────────────────────────────────
     def lake_heights(self):
@@ -1415,11 +1416,11 @@ class LakeKit(BoatsMixin, HousesMixin):
             self.night_lights.append((light, 16.0))
             self.sprite("table-lamp", y + 0.92, objs, [(x0, y)])
 
-    def _room_variant(self, variant):
+    def _room_light(self, night):
         """A room at night: no daylight in at the door, only a little
-        moonlight; the lamps and the oven's embers light it, and the dust in
-        the sunbeams is gone."""
-        night = variant == "night"
+        moonlight; the lamps and the oven's embers light it, and the bounce
+        of daylight off the floor and walls becomes a dim, warm lamp-bounce.
+        (The moon's strength and the exposure are the `lamplight` light's.)"""
         for light in self.lights:
             if "base_energy" not in light:
                 light["base_energy"] = light.data.energy
@@ -1431,15 +1432,3 @@ class LakeKit(BoatsMixin, HousesMixin):
             elif light.name in ("room-fill", "front-bounce"):
                 light.data.energy = base * (0.1 if night else 1.0)
                 light.data.color = (1.0, 0.72, 0.45) if night else tuple(light["base_color"])
-        # The room is exposed for its own lamps, not for the moonlit night
-        # outside (build_place adds the night's exposure; take it back), and
-        # the moon through the door is faint beside them.
-        import lighting
-
-        import bpy as _bpy
-
-        sun = _bpy.data.objects.get("Sun")
-        if night and sun is not None:
-            sun.data.energy = lighting.LIGHTS["night"]["strength"] * 0.3
-
-        self.exposure = self.base_exposure + (0.3 - lighting.exposure("night") if night else 0.0)

@@ -86,9 +86,10 @@ class Studio:
         # Short lighting, as in painted portraits: a big soft key from the side
         # the face turns toward, about 45 degrees round and above, so the
         # near cheek falls into soft shadow with a triangle of light.
-        _area("Key", at(42, 34, 1.15), head, 0.95, 60.0, "#ffecd8")
-        # Fill: broad and dim from the camera's side.
-        _area("Fill", at(-80, 8, 1.4), head, 1.8, 9.0, "#e6e2dc")
+        _area("Key", at(42, 30, 1.15), head, 0.85, 62.0, "#ffe6cc")
+        # Fill: broad and dim from the camera's side, cooler, like light from
+        # the open sky (warm key, cool fill: the colour of shadow in daylight).
+        _area("Fill", at(-80, 8, 1.4), head, 1.8, 9.0, "#d4dcea")
         # Rim: behind, on the shadow side, to separate hair and shoulder from the wall.
         _area("Rim", at(-150, 32, 1.1), head + Vector((0, 0.05, 0)), 0.35, 30.0, "#ffe2bc", size_y=1.1)
         # A soft pool of light on the wall behind, brighter on the lit side.
@@ -107,6 +108,18 @@ class Studio:
         world = bpy.data.worlds.new("Studio")
         scene.world = world
         world.use_nodes = True
-        bg = world.node_tree.nodes["Background"]
-        bg.inputs["Color"].default_value = hex_rgb("#5f5a52")
+        # The surroundings: a cool sky above, warm earth and walls below and
+        # around, so shadows are not one flat colour.
+        nt = world.node_tree
+        bg = nt.nodes["Background"]
+        coord = nt.nodes.new("ShaderNodeTexCoord")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(coord.outputs["Generated"], sep.inputs["Vector"])
+        ramp = nt.nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.elements[0].position = 0.35
+        ramp.color_ramp.elements[0].color = hex_rgb("#6a5a48")
+        ramp.color_ramp.elements[1].position = 0.75
+        ramp.color_ramp.elements[1].color = hex_rgb("#5a6272")
+        nt.links.new(sep.outputs["Z"], ramp.inputs["Fac"])
+        nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
         bg.inputs["Strength"].default_value = 0.35

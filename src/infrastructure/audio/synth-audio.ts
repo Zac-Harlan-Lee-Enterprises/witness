@@ -29,7 +29,7 @@ const AMBIENCE_CAPTIONS: Record<AmbienceId, string | null> = {
   market: '[Market sounds: voices, footsteps, clinking pottery]',
   wind: '[Wind gusting over dry hills]',
   indoor: '[A quiet room; a fire crackles]',
-  oasis: '[Birdsong, rustling palms, trickling water]',
+  oasis: '[Birdsong, rustling leaves, trickling water]',
   none: null,
 };
 const MUSIC_CAPTIONS: Record<MusicId, string | null> = {

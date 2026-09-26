@@ -77,11 +77,11 @@ export function waterRegions(grid: TileGrid): WaterRegion[] {
  */
 export function sunForWater(
   hour: number | null,
-  variant: 'painted' | 'day' | 'late' | 'dusk' | 'night',
+  variant: 'painted' | 'day' | 'late' | 'night',
 ): { x: number; y: number; height: number } {
   const h = hour === null ? 12 : ((hour % 24) + 24) % 24;
-  // Art rendered at dusk or by night has no sun in it to glint.
-  const night = h < 5 || h >= 19 || variant === 'dusk' || variant === 'night';
+  // Art rendered by night has no sun in it to glint.
+  const night = h < 5 || h >= 19 || variant === 'night';
   let x: number;
   let y: number;
   if (variant === 'day') [x, y] = [0.92, 0.38];
@@ -101,22 +101,17 @@ export type WaterRgb = readonly [number, number, number];
 
 /**
  * The sky the moving surface reflects and the colour of the water under it,
- * for the light the place is shown in: a pale day sky, a violet dusk, a
- * dark blue night (the art underneath is already that dark, and a day sky
+ * for the set of art the place is shown in: a pale day sky, or by night a
+ * dark blue one (the art underneath is already that dark, and a day sky
  * over it would light the lake up).
  */
-export function waterSky(light: 'painted' | 'day' | 'late' | 'dusk' | 'night'): {
+export function waterSky(set: 'painted' | 'day' | 'late' | 'night'): {
   sky: WaterRgb;
   deep: WaterRgb;
 } {
-  switch (light) {
-    case 'dusk':
-      return { sky: [0.5, 0.46, 0.58], deep: [0.05, 0.1, 0.15] };
-    case 'night':
-      return { sky: [0.14, 0.18, 0.27], deep: [0.015, 0.03, 0.05] };
-    default:
-      return { sky: [0.78, 0.88, 0.95], deep: [0.05, 0.16, 0.22] };
-  }
+  return set === 'night'
+    ? { sky: [0.14, 0.18, 0.27], deep: [0.015, 0.03, 0.05] }
+    : { sky: [0.78, 0.88, 0.95], deep: [0.05, 0.16, 0.22] };
 }
 
 /** The surface's state for the shader: waves, glints, rain rings, darkness. */

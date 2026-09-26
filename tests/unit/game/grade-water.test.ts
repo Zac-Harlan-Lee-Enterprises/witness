@@ -132,17 +132,16 @@ describe('water', () => {
     expect(regions[0]?.tiles).toBe(9);
   });
 
-  it('reflects a sky that matches the light: pale by day, violet at dusk, dark at night', () => {
+  it('reflects a sky that matches the art: pale by day, dark over a night set', () => {
     const day = waterSky('late');
-    const dusk = waterSky('dusk');
     const night = waterSky('night');
     const lum = (c: readonly number[]) => c.reduce((a, b) => a + b, 0);
-    expect(lum(night.sky)).toBeLessThan(lum(dusk.sky));
-    expect(lum(dusk.sky)).toBeLessThan(lum(day.sky));
+    expect(lum(night.sky)).toBeLessThan(lum(day.sky) / 3);
     expect(lum(night.deep)).toBeLessThan(lum(day.deep));
-    // Art rendered at dusk or by night has no sun in it to glint.
-    expect(sunForWater(18, 'dusk').height).toBe(0);
-    expect(sunForWater(16, 'night').height).toBe(0);
+    expect(waterSky('painted')).toEqual(waterSky('day'));
+    // Art rendered by night has no sun in it to glint, even at an evening hour.
+    expect(sunForWater(18, 'night').height).toBe(0);
+    expect(sunForWater(18, 'late').height).toBeGreaterThan(0);
   });
 
   it('has no water where there is none', () => {

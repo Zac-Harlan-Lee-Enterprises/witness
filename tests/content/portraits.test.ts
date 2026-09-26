@@ -1,38 +1,46 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { parseChapter } from '@/content';
-import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { chapterSource } from '@/content';
+import { portraitCast } from '@/content/portrait-cast';
 import { appearanceKey } from '@/domain/appearance-key';
+import type { Chapter } from '@/domain/chapter';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
-import { PORTRAIT_DIR, PORTRAIT_SIZES } from '@/features/portraits/portrait-art';
+import { PORTRAIT_DIR, PORTRAIT_SIZES, portraitImage } from '@/features/portraits/portrait-art';
 import manifest from '@/features/portraits/portrait-manifest.json';
 
 /**
  * Portraits (tools/art/build_portraits.py, `npm run art:portraits`): everyone
- * the art build knows about has one, rendered from how they look now, with
- * every size on disk and recorded provenance.
+ * who speaks in any chapter, and every player look, has one, rendered from
+ * how they look now, with every size on disk and recorded provenance.
+ *
+ * Two steps can fall behind the content, and each has a check here:
+ * the portrait data (`npm run art:portrait-data`) and the renders.
  */
 const ROOT = join(__dirname, '..', '..');
 const DIR = join(ROOT, 'public', PORTRAIT_DIR);
 const entries: Record<string, { appearance: string; kind: string }> = manifest;
 
 const data = JSON.parse(
-  readFileSync(join(ROOT, 'tools', 'art', 'data', 'chapter.json'), 'utf8'),
+  readFileSync(join(ROOT, 'tools', 'art', 'data', 'portrait-people.json'), 'utf8'),
 ) as {
-  characters: Array<{ id: string; chapter: string; key: string }>;
+  characters: Array<{ id: string; character: string; chapter: string; key: string }>;
   players: Array<{ id: string; key: string }>;
 };
-// Portraits are rendered a chapter at a time: every character of a chapter
-// that has any (the art data holds every available chapter; the menus draw
-// anyone without one), and every player look.
-const portrayed = new Set(data.characters.filter((c) => entries[c.id]).map((c) => c.chapter));
 const people = [
-  ...data.characters
-    .filter((c) => portrayed.has(c.chapter))
-    .map((c) => ({ id: c.id, key: c.key, kind: 'character' })),
+  ...data.characters.map((c) => ({ id: c.id, key: c.key, kind: 'character' })),
   ...data.players.map((p) => ({ id: `player-${p.id}`, key: p.key, kind: 'player' })),
 ];
+
+let chapters: Chapter[] = [];
+beforeAll(async () => {
+  chapters = await Promise.all(
+    chapterSource
+      .list()
+      .filter((m) => m.available)
+      .map((m) => chapterSource.load(m.id)),
+  );
+});
 
 function glob(pattern: string, path: string): boolean {
   const re = new RegExp(
@@ -42,24 +50,58 @@ function glob(pattern: string, path: string): boolean {
 }
 
 describe('portraits', () => {
-  it('everyone of a portrayed chapter, and every player look, has a portrait of how they look', () => {
-    expect(people.length).toBeGreaterThan(0);
+  it('the portrait data covers every chapter as it is now (else: npm run art:portrait-data)', () => {
+    expect(chapters.length).toBeGreaterThanOrEqual(4);
+    const { sitters } = portraitCast(chapters);
+    expect(
+      data.characters.map((c) => [c.id, c.chapter, c.character, c.key]),
+      'tools/art/data/portrait-people.json is stale: run npm run art:portrait-data',
+    ).toEqual(
+      sitters.map((s) => [
+        s.portraitId,
+        s.chapterId,
+        s.characterId,
+        appearanceKey(s.character.appearance),
+      ]),
+    );
+    expect(data.players.map((p) => [p.id, p.key])).toEqual(
+      Object.entries(PLAYER_APPEARANCES).map(([id, a]) => [id, appearanceKey(a)]),
+    );
+  });
+
+  it('everyone in the portrait data has a portrait of how they look now, in every size', () => {
+    expect(people.length).toBeGreaterThan(40);
+    const missing = people.filter((p) => !entries[p.id]).map((p) => p.id);
+    expect(missing, `no portrait for ${missing.join(', ')}: run npm run art:portraits`).toEqual([]);
     for (const p of people) {
       const entry = entries[p.id];
-      expect(entry, `${p.id}: run npm run art:portraits`).toBeDefined();
-      expect(entry?.appearance, `${p.id} was rendered from a different appearance`).toBe(p.key);
+      expect(entry?.appearance, `${p.id} was rendered from a different appearance (stale)`).toBe(
+        p.key,
+      );
       expect(entry?.kind).toBe(p.kind);
       for (const size of PORTRAIT_SIZES)
         expect(existsSync(join(DIR, `${p.id}-${size}.webp`)), `${p.id}-${size}.webp`).toBe(true);
     }
   });
 
-  it('matches the chapter content and player looks as the game sees them (not stale)', () => {
-    const chapter = parseChapter(ROAD_TO_JERICHO);
-    for (const c of chapter.characters)
-      expect(entries[c.id]?.appearance, c.id).toBe(appearanceKey(c.appearance));
+  it('every character who speaks, in every chapter, is shown their own portrait', () => {
+    const { sitters } = portraitCast(chapters);
+    expect(sitters.length).toBeGreaterThan(35);
+    for (const s of sitters) {
+      const art = portraitImage(s.character.appearance, s.characterId, entries, '/');
+      expect(art?.id, `${s.chapterId}: ${s.characterId}`).toBe(s.portraitId);
+    }
     for (const [look, a] of Object.entries(PLAYER_APPEARANCES))
-      expect(entries[`player-${look}`]?.appearance, look).toBe(appearanceKey(a));
+      expect(portraitImage(a, null, entries, '/')?.id, look).toBe(`player-${look}`);
+  });
+
+  it('never shows a biblical figure in close-up', () => {
+    const figures = chapters.flatMap((c) => c.characters.filter((x) => x.biblicalFigure));
+    expect(figures.length).toBeGreaterThan(0);
+    for (const f of figures) {
+      expect(portraitImage(f.appearance, f.id, entries, '/'), f.id).toBeNull();
+      expect(data.characters.some((c) => c.character === f.id)).toBe(false);
+    }
   });
 
   it('ships no stray files, and every file has recorded provenance', () => {
@@ -70,6 +112,11 @@ describe('portraits', () => {
     ).assets;
     const files = readdirSync(DIR);
     expect(files.length).toBe(Object.keys(entries).length * PORTRAIT_SIZES.length);
+    for (const id of Object.keys(entries))
+      expect(
+        people.some((p) => p.id === id),
+        `${id} is in the manifest but nobody needs it`,
+      ).toBe(true);
     for (const f of files) {
       const m = /^(.+)-(\d+)\.webp$/.exec(f);
       expect(m, f).not.toBeNull();
@@ -90,9 +137,9 @@ describe('portraits', () => {
       const size = statSync(join(DIR, f)).size;
       total += size;
       if (f.endsWith('-128.webp')) expect(size, f).toBeLessThan(12_000);
-      if (f.endsWith('-256.webp')) expect(size, f).toBeLessThan(30_000);
-      if (f.endsWith('-512.webp')) expect(size, f).toBeLessThan(64_000);
+      if (f.endsWith('-256.webp')) expect(size, f).toBeLessThan(32_000);
+      if (f.endsWith('-512.webp')) expect(size, f).toBeLessThan(80_000);
     }
-    expect(total).toBeLessThan(2_000_000);
+    expect(total).toBeLessThan(3_500_000);
   });
 });

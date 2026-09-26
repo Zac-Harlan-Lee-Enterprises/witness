@@ -1,15 +1,15 @@
+import { appearanceKey } from '@/domain/appearance-key';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
 import type { LookMark, Pose } from '@/domain/world';
 import { naturalColor } from '@/shared/color';
-import {
-  LIGHTING_VARIANTS,
-  type ArtSprite,
-  type ArtVariant,
-  type LightingVariant,
-  type PeopleArt,
-  type PeopleLight,
-  type PlaceArt,
+import type {
+  ArtSprite,
+  ArtVariant,
+  LightingVariant,
+  PeopleArt,
+  PeopleLight,
+  PlaceArt,
 } from './manifest';
 
 /**
@@ -30,6 +30,11 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  // Chapter 4: A Letter from Paul
+  'ammia-workshop',
+  'colossae-street',
+  'lycus-road',
+  'philemon-house',
 ] as const;
 
 /** Where each place's art is served (relative to the site base). */
@@ -45,88 +50,46 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
-/** Dusk from six: the sun has gone behind the hills. */
-export const DUSK_FROM_HOUR = 18;
-/** Night from seven in the evening until five in the morning. */
+/** The night set from seven in the evening until five in the morning (the clock runs past midnight: 26 is 2 a.m.). */
 export const NIGHT_FROM_HOUR = 19;
-export const MORNING_FROM_HOUR = 5;
+export const NIGHT_UNTIL_HOUR = 5;
 
-/** The light of an hour of the story clock (hours past midnight wrap: 26 is 2 a.m.). */
-export function lightOfHour(hour: number | null): LightingVariant {
-  if (hour === null) return 'day';
+export function isNightHour(hour: number | null): boolean {
+  if (hour === null) return false;
   const h = ((hour % 24) + 24) % 24;
-  if (h < MORNING_FROM_HOUR || h >= NIGHT_FROM_HOUR) return 'night';
-  if (h >= DUSK_FROM_HOUR) return 'dusk';
-  if (h >= LATE_FROM_HOUR) return 'late';
-  return 'day';
+  return h >= NIGHT_FROM_HOUR || h < NIGHT_UNTIL_HOUR;
 }
 
 /**
- * The variants a place has, best first for this hour: its own light if the
- * place has it, then the nearest in the order of the day (a tie goes to the
- * brighter one, which the time-of-day layer can darken but never lighten).
+ * The set of a place's art for an hour: its night set after dark, its
+ * later-day set from mid-afternoon, else its morning set; a place without
+ * the set an hour asks for shows the nearest it has (the later day for the
+ * night, the morning for the later day, else whichever it has).
  */
-export function variantsByPreference(
-  hour: number | null,
-  available: readonly LightingVariant[],
-): LightingVariant[] {
-  const order = LIGHTING_VARIANTS as readonly LightingVariant[];
-  const want = order.indexOf(lightOfHour(hour));
-  return [...available].sort(
-    (a, b) =>
-      Math.abs(order.indexOf(a) - want) - Math.abs(order.indexOf(b) - want) ||
-      order.indexOf(a) - order.indexOf(b),
-  );
-}
-
 export function variantFor(
   hour: number | null,
   available: readonly LightingVariant[],
 ): LightingVariant {
-  return variantsByPreference(hour, available)[0] ?? 'day';
+  if (isNightHour(hour) && available.includes('night')) return 'night';
+  if (hour !== null && hour >= LATE_FROM_HOUR && available.includes('late')) return 'late';
+  if (available.includes('day')) return 'day';
+  return available.includes('late') ? 'late' : (available[0] ?? 'day');
 }
 
-/** The variants a place's manifest has, in the order of the day. */
-export function variantsOf(art: Pick<PlaceArt, 'variants'>): LightingVariant[] {
-  return LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
-}
-
-/** An hour in each light (for review builds that force one: VITE_ART_LIGHTING). */
-export function hourForLight(light: LightingVariant): number {
-  return { day: 8, late: 16, dusk: 18, night: 22 }[light];
-}
-
-/**
- * Whether art rendered in `variant` already carries the light of `hour`
- * (so the world's time-of-day layer should add only a trace on top).
- */
-export function bakedFor(variant: LightingVariant, hour: number | null): boolean {
-  return variant === lightOfHour(hour);
-}
-
-/** How people are lit in a place: indoors by the room's own light, else by the place's sun. */
-export function peopleLightFor(variant: LightingVariant, room: 'indoor' | undefined): PeopleLight {
-  return room ?? variant;
+/** A place's first set in the order of the day (the stand-in when another fails to load). */
+export function firstVariant(art: Pick<PlaceArt, 'variants'>): ArtVariant | undefined {
+  return art.variants.day ?? art.variants.late ?? art.variants.night;
 }
 
 /**
- * The nearest light a person has a sheet in: the one asked for, else the
- * nearest in the order of the day, else any (indoor sheets last outdoors,
- * first indoors).
+ * How people are lit in a place: as the place says (a room's own light, rain
+ * cloud, lamp-lighting), else by the place's sun.
  */
-export function nearestLight<T>(
-  byLight: Partial<Record<PeopleLight, T>>,
-  light: PeopleLight,
-): T | undefined {
-  const own = byLight[light];
-  if (own !== undefined) return own;
-  const outdoor = LIGHTING_VARIANTS as readonly LightingVariant[];
-  const at = light === 'indoor' ? 0 : outdoor.indexOf(light);
-  const nearest = [...outdoor]
-    .sort((a, b) => Math.abs(outdoor.indexOf(a) - at) - Math.abs(outdoor.indexOf(b) - at))
-    .map((l) => byLight[l])
-    .find((s) => s !== undefined);
-  return nearest ?? byLight.indoor;
+export function peopleLightFor(
+  variant: LightingVariant,
+  place: PlaceArt['peopleLight'],
+): PeopleLight {
+  return place ?? variant;
 }
 
 /**
@@ -164,22 +127,8 @@ export function depthRow(base: number): number {
   return base / 32;
 }
 
-/** A stable key for an authored appearance (matches the offline art build). */
-export function appearanceKey(a: Appearance): string {
-  return [
-    a.skin,
-    a.hair,
-    a.robe,
-    a.accent,
-    a.headwear,
-    a.headwearColor,
-    a.beard ? 'beard' : 'clean',
-    a.build,
-    a.carry,
-  ]
-    .join('|')
-    .toLowerCase();
-}
+/** A stable key for an authored appearance (one definition, in the domain; matches the offline art build). */
+export { appearanceKey };
 
 /** Marks that change the body itself (so they have sheets of their own, not overlays). */
 export const BODY_MARKS: readonly LookMark[] = ['torn-hem'];
@@ -189,6 +138,7 @@ const OVERLAY_ORDER: readonly LookMark[] = [
   'wrapped-in-cloak',
   'cloak-roll',
   'water-skin',
+  'letter-case',
   'lamp',
   'bandaged',
   'rag-bandaged',

@@ -1,6 +1,6 @@
 # Technical art guide: pre-rendered 3D-to-2D places and people
 
-This guide is for anyone adding art to the game with the offline Blender pipeline in [`tools/art/`](../../tools/art/). Every place in Chapter 1 is pre-rendered: Aunt Miriam's house (`miriam-house`), the lower market (`jerusalem-market`), the road down to Jericho (`jericho-road`) and Jericho (`jericho`). So is every place in Chapter 2: Grandmother Shelomit's house (`shelomit-house`), the shore at Capernaum (`capernaum-shore`) and the open lake (`open-lake`), in the afternoon, at dusk and by night (§3). Places without art are still painted at runtime by [`src/game/art/`](../../src/game/art/), and so is anyone the art can't draw.
+This guide is for anyone adding art to the game with the offline Blender pipeline in [`tools/art/`](../../tools/art/). Every place in Chapter 1 is pre-rendered: Aunt Miriam's house (`miriam-house`), the lower market (`jerusalem-market`), the road down to Jericho (`jericho-road`) and Jericho (`jericho`). So is every place in Chapter 2, built with the lake kit (§7): Grandmother Shelomit's house (`shelomit-house`), the shore at Capernaum (`capernaum-shore`) and the open lake (`open-lake`), in the afternoon and by night (§3). So is every place in Chapter 4, built with the Roman kit (§7): Ammia's dye workshop (`ammia-workshop`), a street in Colossae (`colossae-street`), the Laodicea road in the Lycus valley (`lycus-road`) and Philemon's house (`philemon-house`). Places without art are still painted at runtime by [`src/game/art/`](../../src/game/art/), and so is anyone the art can't draw.
 
 - **What players download:** static WebP images and JSON manifests under [`public/art/`](../../public/art/), cached by the service worker (§6), so they work offline.
 - **What Phaser does:** composites the layers and sorts sprites against people. Nothing is generated at runtime.
@@ -53,15 +53,14 @@ The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pi
 |---|---|---|
 | `day` | East-south-east, 40° up, warm white. South-facing fronts catch raking light from the right; shadows reach up and to the left. | Places and people when the story hour is before 15:00 |
 | `late` | West-south-west, 21° up, amber. Fronts are lit from the left; long shadows reach right. | Places and people from 15:00 |
-| `dusk` | No sun: it has gone down behind the western hills. The multiple-scattering sky with the sun 3° below the horizon (blue overhead) plus the afterglow, an orange band low in the west over a peach wash, so west-facing things are warm and everything else cool. +2.8 EV (the eye adapts). | Places and people from 18:00 |
-| `night` | Moonlight from the south-east, 38° up, cool and weak (so the fronts the camera sees are lit and shadows reach up-left); a deep blue sky; the place's own lamps and fires, which burn only in this light. +3.5 EV. | Places and people from 19:00 until 05:00 |
-| `indoor` | No sun: a warm key from a lamp high to the front left, cool soft daylight from a window on the right, warm light bounced off the plaster behind, a dim warm room for the sky | People in rooms (the place's manifest says `peopleLight: "indoor"`), by day and by lamplight |
+| `indoor` | No sun: a warm key from a lamp high to the front left, cool soft daylight from a window on the right, warm light bounced off the plaster behind, a dim warm room for the sky | People in rooms (the place's manifest says `peopleLight: "indoor"`) |
+| `overcast` | Rain cloud: an even grey sky, brighter overhead than at the horizon, and only a faint, very soft brightening where the sun is behind the cloud (a sun 50° wide). Shadows are soft pools under things. +1.3 EV. | The Laodicea road (walked as the rain comes; the game draws the rain) and the people there |
+| `dusk` | Lamp-lighting: no sun, a deep blue evening sky (seen in a room only through its openings: Philemon's house is open to it over its garden), and the place's own lamps | Philemon's house |
+| `lamp` | People at lamp-lighting: a warm key from a lampstand high to the front left, a dimmer warm lamp behind to the right, the last blue of the sky from above, a dark room | People at the gathering (`peopleLight: "lamp"`) |
+| `night` | Moonlight from the south-east, 38° up, cool and weak (so the fronts the camera sees are lit and shadows reach up and to the left), a deep blue sky, and the place's own lamps and fires, which burn only in this light. +3.5 EV. | The shore at Capernaum and the open lake after dark, and the people there |
+| `lamplight` | A room at night: its lamps and the oven's embers; the moon through the door faint beside them, the daylight stand-ins dimmed to a warm lamp-bounce. +0.3 EV over the room's step. | Shelomit's house at night (people there keep `indoor`) |
 
-The sky is Blender's multiple-scattering sky, set for the same sun. It gives the cool fill in shade. Colour management is AgX at −1.4 EV, plus what a light adds (`lighting.exposure`), plus what a room adds (+3.1 EV).
-
-**Which light a place is shown in** is the story hour's (`lightOfHour` in [`select.ts`](../../src/game/prerendered/select.ts): day before 15:00, late until 18:00, dusk until 19:00, night until 05:00; the clock runs past midnight, so 26 is 2 a.m.). A place has only the lights its story shows (`VARIANTS` in [`art-build.mjs`](../../scripts/art-build.mjs); by default the morning and later-day sun, and the morning for a room); for an hour it has no art for, the nearest light it has is used (a tie goes to the brighter one, which the time-of-day layer can darken but not lighten). When the story clock moves a place into another light it has (the sun sets while you load the boat; night falls as you row out), the world loads that light and swaps it in, dipping briefly to dark (`relight` in [`world-scene.ts`](../../src/game/scenes/world-scene.ts)). Art rendered for the hour's own light carries it: the time-of-day layer then adds only a trace of its tint and a night's darker edges.
-
-**Rooms by night** (the `night` variant of a room) are exposed for their lamps, not the moonlit night outside: the daylight stand-ins at the door go to a faint moonlit blue, the bounce lights to a dim warm lamp-bounce, the moon through the door is weak beside the lamps, and lamps that burn only at night are lit (`set_variant` on the place: lights with a night-only energy, and materials swapped per light, such as a flame that is a dark wick by day).
+The sky is Blender's multiple-scattering sky, set for the same sun. It gives the cool fill in shade. Colour management is AgX at −1.4 EV.
 
 **Rooms** are lit as if closed: their side and front walls and their roof are *occluders*, invisible to the camera but blocking light (§4). Light comes in only through the openings: the sun through a window in the east wall and through the door, plus the room's own lights (an oil lamp in a niche, the oven's embers). A room renders at +3.1 EV over the outdoor exposure, as a camera adapts, and at 512 samples (its light is mostly bounced). Two lights stand in for what the closed shell would bounce: a soft warm panel low in the doorway (daylight off the sunlit ground outside) and a broad, dim warm panel under the roof (light off the floor and walls), without which the corners go black. The cut tops of the walls sit directly under the invisible walls, so no light reaches them: they glow faintly (`limestone(glow=)`) and read as a dark section through the wall, as in an architect's cutaway. The walls that block light are thinner than their tiles (0.45 m): at 40° a sunbeam drops a whole tile crossing a tile-thick wall, which would shut the morning sun out of any window. Dust shows in the sunbeams as a thin scattering volume confined to each beam: lit straight by the sun, it settles quickly (a volume filling the room did not, and the denoiser turned its noise into blotches).
 
@@ -69,14 +68,42 @@ The sky is Blender's multiple-scattering sky, set for the same sun. It gives the
 
 For review builds only, `VITE_ART_LIGHTING=day|late` forces a variant.
 
+### The story's light, place by place (light plans)
+
+Every place's art is a set of **lighting sets** in its manifest, keyed `day`, `late` and `night` by *when in the story* they are shown: the game draws `night` from 19:00 until 05:00 when the place has one (the story clock runs past midnight: 26 is 2 a.m.), else `late` from 15:00 when it has one, else `day`, else the earliest set it has (`variantFor` in [`select.ts`](../../src/game/prerendered/select.ts)). A place needs at least one set, not every one: the open lake has only `night`. Which **light** each set is rendered in, and how **people** are lit there, is the place's **light plan**:
+
+| Place | Plan (set → light) | People (`peopleLight`) | Why |
+|---|---|---|---|
+| any room (default) | `{day: day}` | `indoor` | Rooms are seen by day; people are lit by the room's lamp and window |
+| any outdoor place (default) | `{day: day, late: late}` | *(none: each set's sun)* | Morning and later-day sun |
+| `lycus-road` | `{day: overcast}` | `overcast` | Walked only from hour 11 to 14, as the rain comes down the valley |
+| `philemon-house` | `{day: dusk}` | `lamp` | Only ever seen at lamp-lighting (hour 18) |
+| `capernaum-shore` | `{late: late, night: night}` | *(none: each set's light)* | Loading the boat from hour 16, putting out at 18 (the later-day set; the game tints it for sunset), back at 2 a.m. (hour 26) |
+| `open-lake` | `{night: night}` | *(none)* | Crossed from sunset into the night |
+| `shelomit-house` | `{late: late, night: lamplight}` | `indoor` | The afternoon the story begins, and the night; its window faces the later-day sun (west) |
+
+To give a place its own light:
+
+1. **The light** (if it is new): add it to `LIGHTS` in [`lighting.py`](../../tools/art/lib/lighting.py): a sun (`azimuth`, `elevation`, `strength` — 0 for none —, `color`, `angle`: a wide angle is a soft, cloudy sun), a sky (`sky`: a gradient of `zenith`, `horizon` and `ground` colours, or none for the physical clear sky; `sky_strength`), an exposure step `ev`, and where the **shade mask** comes from: `shade` = `sun` (default), `sky` (how much sky a point sees) or `lamps` (the place's own lights), and `shade_floor`, the least light the mask gives (people standing in the darkest spot are tinted to it).
+2. **The plan**: add the place to `PLACE_LIGHTS` in the same file: `"<scene id>": ({"day": "<light>"[, "late": "<light>"]}, "<people light>" or None)`. `Place.light_plan` and `Place.people_light` read it, so every kit sees it (the Roman kit lays wet stone under `overcast` and opens a room's roof to the evening sky under `dusk`).
+3. **People**: if the people light is new, add a `setup_<name>` for it in `lighting.py` (as `setup_indoor` and `setup_lamp`: lights set around a person at the origin), a shadow box for it in `SHADOW_BOX` and `REST_SHADOW_BOX` ([`build_people.py`](../../tools/art/build_people.py)), and its name to `PEOPLE_LIGHTS` and to `peopleLight`, `sheets` and `shadows` in [`manifest.ts`](../../src/game/prerendered/manifest.ts) (the loader falls back from `lamp` to `indoor`, then to the morning's sheets: `pick` in [`loader.ts`](../../src/game/prerendered/loader.ts)).
+4. Render the place, then its people: the people job reads each place's `manifest.json` and renders exactly the lights it names for everyone seen there.
+
+**Porting dusk, night or lamp light from another branch** (Chapter 3): name the light in `LIGHTS`, the place in `PLACE_LIGHTS`, and let the kits read `self.light_plan` / `self.people_light` rather than a chapter or scene id. Chapter 2 added the third time of day, `night` (19:00 to 05:00, in `LIGHTING_VARIANTS` and `variantFor`), because its shore is seen both in the afternoon and at 2 a.m.; a place seen by day and at night is `{"day": "day", "night": "night"}`, one seen only at night `{"night": "night"}`. A kit that changes things with the light (lamps lit only after dark, a flame that is a dark wick by day) does it in `set_light(light)`, which [`build_place.py`](../../tools/art/build_place.py) calls on the place for each set before rendering it (the lake kit's `NIGHT_LIGHTS`).
+
+A place whose story light changes within one set (a storm rising while you stand there) keeps one plan; the game's own weather, grade and lamp glow ([`weather.ts`](../../src/game/systems/weather.ts), [`grade.ts`](../../src/game/systems/grade.ts), [`lighting.ts`](../../src/game/systems/lighting.ts)) do the rest. The engine also darkens and cools any place in rain and after dark, so a place baked in rain cloud or lamplight should be baked a little brighter than it will look.
+
+**Tests and the engine.** [`art-assets.test.ts`](../../tests/content/art-assets.test.ts) reads each place's manifest and checks that everyone seen there has sheets in its people light (or in each set's sun), and that a room's people light is its own (`indoor` or `lamp`) while an outdoor place's is none or `overcast`: a new people light for a room or a place outdoors (night, say) belongs in that rule too. [`prerendered.test.ts`](../../tests/unit/game/prerendered.test.ts) covers `peopleLightFor` and the manifest schema.
+
+
 ## 4. Render passes
 
-**Places** ([`build_place.py`](../../tools/art/build_place.py)), for each lighting variant (rooms: `day` only; the story never shows the house after noon):
+**Places** ([`build_place.py`](../../tools/art/build_place.py)), for each set of the place's light plan (§3; rooms: `day` only, the story never shows Miriam's house after noon):
 
 | Pass | What | How |
 |---|---|---|
 | Ground | Terrain, paving, earth, grass, floors, rugs, wall tops, the back wall of a room | Every standing thing is hidden from the camera but still casts shadows and bounces light, so all shadows and contact occlusion are baked in. Things shown only while a story condition holds (a donkey that leaves, a broom, bread left for the traveler) are left out entirely, so they leave no ghost shadow. |
-| Shade mask | Sun visibility on the ground | White material override, sun only, ¼ resolution. The game dims and cools people who stand in shade. In rooms it only brightens people a little in the sunbeam (people there are lit by the indoor sheets). At night the moon is the sun; at dusk, with no sun, it is sky visibility (open ground lit, ground under eaves and beside walls less so). |
+| Shade mask | Light on the ground | White material override, ¼ resolution: the sun only (for `night`, the moon), or for `overcast` the sky only (sky visibility, compressed to 70–100%), or for `dusk` and `lamplight` the lamps only (their pools on the floor, 42–100% and 40–100%). The game dims and cools people who stand out of the light. In daylight rooms it only brightens people a little in the sunbeam (people there are lit by the indoor sheets). |
 | Sprites | Each standing thing (house, wall, stall, tree, prop, animal, story prop) | Rendered alone with a render border around it. Everything else is invisible to the camera but still lights and shadows it, except the ground layer, which is a **holdout**: whatever of the thing is sunk into the terrain, a floor or the dust (a boulder's buried side, a jar's foot) is cut away rather than showing black where no light reaches. Cropped to its alpha and packed into 2048-pixel atlas pages. |
 
 Three kinds of sprite need care:
@@ -120,7 +147,8 @@ Not produced, because they wouldn't improve anything in this view: normal maps (
 | `player-look-N`, `<character>`, `crowd-N` | Standing (and walking, for the player and passers-by) |
 | `<id>+torn-hem` | Standing with a mark that changes the body itself (a strip torn from the hem): a sheet of its own |
 | `<id>~sit`, `<id>~lie` | At rest: rows down, left, right, up (lying: where the head is); columns idle, breath, talk |
-| `<sheet>@<mark>` | An overlay for `<sheet>`: `@water-skin`, `@lamp`, `@cloak-roll`, `@bandaged`, `@wrapped-in-cloak` |
+| `<sheet>@<mark>` | An overlay for `<sheet>`: `@water-skin`, `@lamp`, `@cloak-roll`, `@bandaged`, `@wrapped-in-cloak`, `@letter-case` |
+| `<id>.<chapter>` | Someone whose name another chapter also uses for a different person (`kallias.letter-from-paul`): sheet ids name the chapter too |
 | `<sheet>@rag-bandaged-<rrggbb>` | Bandages torn from the player's tunic: one per tunic colour |
 
 Files are `<sheet id>-<light>.webp` and `<sheet id>-shadow-<light>.webp`. Each entry carries its **appearance key** (`appearanceKey` in [`select.ts`](../../src/game/prerendered/select.ts)), its `pose`, its body `marks`, and for overlays `overlay: { mark, of, rag? }`. The game matches people by key, pose and marks (`pickSheets`), not by name.
@@ -202,10 +230,20 @@ A change to anything that casts shadows onto the ground (a building, a tree) nee
 | [`kit_props.py`](../../tools/art/lib/kit_props.py) | `stall`, `jars`, `sacks`, `basket`, `crate`, `well`, `oven`, `tent`, `trough`, `cloth`, `cart`, `table`, `loom`, `rock`, `cairn` (and the story entities, `entity_<sprite>`) |
 | [`kit_plants.py`](../../tools/art/lib/kit_plants.py) | `olive`, `palm`, `fig`, `bush`, `reeds`, `crops` |
 | [`place.py`](../../tools/art/lib/place.py) | `wall`, `roof`, `door`, `void` (built with their region by the style's structure builder) |
-| [`kit_mudbrick.py`](../../tools/art/lib/kit_mudbrick.py), [`kit_interior.py`](../../tools/art/lib/kit_interior.py) | The oasis's houses, porticos and courtyard walls; a room in cutaway (its window faces the room's daylight: east for the morning, west for the later-day sun) |
-| [`kit_lake.py`](../../tools/art/lib/kit_lake.py) (with [`lake_boats.py`](../../tools/art/lib/lake_boats.py), [`lake_houses.py`](../../tools/art/lib/lake_houses.py), [`lake_materials.py`](../../tools/art/lib/lake_materials.py)) | The Sea of Galilee (the `lake` style: any scene with lake water or a boat's deck): `shingle`, `deck`, `jetty`, `lake`, `shallows`, `boat`, `hull`, `mast`, `nets`, `rack`; the story props `fish-jars`, `bailer`, `rope`, `oar`, `net-pile`, `floating-jars`, `towline`, `fish-basket` (and lakeside versions of `lamp` and `vessels`); Capernaum's basalt houses, basalt lanes, rocks, salt sacks and brine tubs; basalt walls and a cobbled floor for a Galilee room |
+| [`kit_mudbrick.py`](../../tools/art/lib/kit_mudbrick.py), [`kit_interior.py`](../../tools/art/lib/kit_interior.py) | The oasis's houses, porticos and courtyard walls; a room in cutaway (its window faces the room's daylight in its light plan: east for the morning, west for the later-day sun) |
+| [`kit_lake.py`](../../tools/art/lib/kit_lake.py) (with [`lake_boats.py`](../../tools/art/lib/lake_boats.py), [`lake_houses.py`](../../tools/art/lib/lake_houses.py), [`lake_materials.py`](../../tools/art/lib/lake_materials.py)) | The Sea of Galilee (Chapter 2; the `lake` style: any scene with lake water or a boat's deck): `shingle`, `deck`, `jetty`, `lake`, `shallows`, `boat`, `hull`, `mast`, `nets`, `rack`; the story props `fish-jars`, `bailer`, `rope`, `oar`, `net-pile`, `floating-jars`, `towline`, `fish-basket` (and lakeside versions of `lamp` and `vessels`); Capernaum's basalt houses, basalt lanes, rocks, salt sacks and brine tubs; basalt walls and a cobbled floor for a Galilee room |
+| [`kit_roman.py`](../../tools/art/lib/kit_roman.py) (with `roman_*.py`) | Greco-Roman towns of Asia (Chapter 4, `ROMAN_CHAPTERS`): `tile-roof`, `column`, `vat`, `amphorae`, `couch`, `milestone`, `travertine`, `garden`, `lampstand`, `fountain`, `mosaic`, `roman-road`, `bridge`; Roman versions of `table`, `oven`, `cloth`, `bush`, `hill`, `grass`, `crops`, `water`, `fence`, `gate`, `sand`, `scrub`, `floor`, `rug`, paving, the structures of each style (a town frontage and stoa, farm buildings under tile roofs, rooms with Roman walls and floors) and the story props `wool`, `tablets`, `letter-sheets`, `letter-bundle`, `vessels` (the alum jars) and `pack-donkey` (a mule) |
 
-**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into one sprite per map row.
+**The lake.** Every surface people stand on is the terrain, so `P` always finds it: the beach slopes to a waterline that wanders a little across the tiles (a warped, blurred reading of the map), the jetty's blocks stand on a raised strip (the terrain is the bottom of their joints: `floor_z` lifts things set on it), a boat's deck is a plateau inside its bulwarks, and under the water the bed shelves away (going south it never falls more than a tile per tile, so no mesh folds). The water is one flat, refracting surface (not casting shadows) over a principled volume that absorbs red first and scatters a little blue-green, far larger than the map so no ray finds its sides; a lacy band of foam and a wet dark band of pebbles follow the waterline (a contour of the heights). Standing things are sheared by the height of what they stand on (`_at(x, y, z, base)`), never by their own height. Floating hulls are cut at the waterline: the part above is the boat's sprite, the part below goes into the ground, seen dimly through the water. Neighbouring `boat` tiles make one boat after the Ginosar boat, growing toward its proportions only over water (never over ground anyone walks on); drawn up on the beach it rests on its keel, mast lowered. The boat offshore that a crowd on the beach faces has a goat-hair shade rigged over it, so no one aboard can be seen; the boat you are aboard is cut into one sprite per map row. The lake is baked calm: the game draws the wind, the rain and the storm's swell over it (its water shader covers `lake` and `shallows` tiles, with a darker sky and deep colour in a `night` set: `waterSky` in [`water.ts`](../../src/game/systems/water.ts)).
+
+**The Roman kit.** A place is Roman when its chapter is in `ROMAN_CHAPTERS`. It keeps the style its mood gives it (the street is `city`, the road `oasis`, the rooms `home`), so every shared builder still works; the kit, mixed in ahead of the others, overrides only what differs and calls the shared builder for any other place. It is split by subject: [`roman_geom.py`](../../tools/art/lib/roman_geom.py) (helpers, shared materials), [`roman_materials.py`](../../tools/art/lib/roman_materials.py) (stucco, roof tile, marble, bronze, dyes, river water, paving, opus signinum, mosaic, fresco, travertine, wool, papyrus, and the pattern images drawn by code: a mosaic's design, a painted wall, a milestone's worn lines), [`roman_arch.py`](../../tools/art/lib/roman_arch.py) (tile roofs of tegulae and imbrices with antefixes, the Ionic order, house fronts, doors, windows), [`roman_props.py`](../../tools/art/lib/roman_props.py), [`roman_town.py`](../../tools/art/lib/roman_town.py), [`roman_valley.py`](../../tools/art/lib/roman_valley.py) and [`roman_rooms.py`](../../tools/art/lib/roman_rooms.py). Kinds with a dash are built by `tile_` plus the kind with underscores (`tile-roof`: `tile_tile_roof`).
+
+Some choices worth knowing:
+
+- **Raised floors register like terrain.** A floor that people stand on above the ground (the stoa's stylobate, the bridge's deck) is sheared as the terrain is (`Q`, `QT`: a point at height h is placed h tiles south), so it shows over its own tiles and people walking on it look right; anything standing on it stands at the sheared point.
+- **The travertine** is shaped by the terrain (`terrain.RISE['travertine']`) and skinned with its own mesh, stepped into level pools behind scalloped rims (quantized upward, so the skin always lies over the terrain), with `wet` and `depth` attributes the material turns into water.
+- **Philemon's house in cutaway**: like its walls, the peristyle's roof and the beams that carried it are cut away, so the columns stand to their capitals and nobody at the gathering is hidden behind a beam; the tops of the abaci are cut sections and glow faintly, like the walls' cut tops (`_ionic_column(cut_top=True)`). The invisible roof is open over the garden, so the evening sky lights it. The colonnade's far (north) row stands between the camera and the room where the gathering is, so its sprites sort 1.3 rows north of their base: people up to two rows beyond it are drawn in front of the shafts instead of cut in half by them. This is a deliberate cheat, limited to that row; anyone south of it still sorts true.
+- **Decals** (spilt clay, dye splashes, wet floor) are seen by the camera only: bounce, shadow and occlusion rays pass them by, so their see-through margins leave no dark square in the floor's grime. Each is an irregular ellipse (`_decal`), not a rectangle, faded out before its rim: the denoiser's albedo guide sees a decal's whole outline, and a square one printed a faint square on the ground. Decals are tagged (`obj["decal"]`) and left out of every sprite render ([`build_place.py`](../../tools/art/build_place.py)): as a see-through holdout, a decal still left a faint ghost of itself in the alpha of any sprite whose box reached it, which showed as a pale rectangle round the thing in the game.
 
 A builder reads `self.map` (tiles, runs, neighbours), builds geometry with the shared helpers (`self.P` for points on the terrain, `_lathe`, `_ellipsoid`, `_branch`, `boulder`, `rocks.stone`, materials in [`materials.py`](../../tools/art/lib/materials.py)), and either adds sprites with `self.sprite(id, base_row, objects, tiles, fade=?, flat=?)` or puts ground dressing in the ground layer with `self.to_ground(obj)` or a scatter emitter (`self.emitter` plus [`scatter.py`](../../tools/art/lib/scatter.py)). Walkable kinds also need a ground layer in `GROUND`. Give the method a docstring saying what it builds, and add the kind to the table above.
 
@@ -238,8 +276,19 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | later day | 1.59 MB | 0.61 MB | 58.4 MB | 17.0 MB | 6 / 2 | 1 |
 | Jericho | morning | 2.20 MB | 0.76 MB | 49.7 MB | 13.6 MB | 4 / 1 | 2 |
 | | later day | 1.95 MB | 0.70 MB | 48.7 MB | 13.4 MB | 4 / 1 | 2 |
-| People (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
+| Ammia's dye workshop (Ch. 4) | morning | 0.19 MB | 0.06 MB | 12.7 MB | 3.6 MB | 2 / 1 | 1 |
+| A street in Colossae (Ch. 4) | morning | 1.02 MB | 0.37 MB | 51.6 MB | 14.3 MB | 4 / 1 | 2 |
+| | later day | 0.93 MB | 0.36 MB | 52.9 MB | 14.6 MB | 4 / 1 | 2 |
+| The Laodicea road (Ch. 4) | rain cloud (its only set) | 3.98 MB | 1.31 MB | 79.0 MB | 21.9 MB | 6 / 2 | 3 |
+| Philemon's house (Ch. 4) | lamp-lighting (its only set) | 0.43 MB | 0.15 MB | 22.9 MB | 6.5 MB | 2 / 1 | 1 |
+| People for Chapter 1 (every sheet, shadow and overlay) | morning and indoor | 3.83 MB (107 files) | | | | | |
 | | later day | 2.36 MB (76 files) | | | | | |
+| People added for Chapter 4 | morning and indoor | 0.39 MB (18 files) | | | | | |
+| | later day | 0.30 MB (12 files) | | | | | |
+| | rain cloud | 1.18 MB (32 files) | | | | | |
+| | lamp-lighting | 1.08 MB (35 files) | | | | | |
+
+The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
 **Phones** load about 28% of the texture memory desktops do (a place's low set is 12–17 MB against 44–58 MB). People sheets are the same on every device.
 
@@ -252,6 +301,13 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | Road down to Jericho | 89 MB | 47 MB |
 | Jericho, morning | 104 MB | 68 MB |
 | Jericho, later day | 122 MB | 87 MB |
+| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17–22 MB |
+| A street in Colossae, morning (Ch. 4) | 83–84 MB | 83–84 MB |
+| A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
+| The Laodicea road (Ch. 4) | 105 MB | 105 MB |
+| Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
+
+In the Chapter 4 captures (`letter-art.spec.ts`, September 2026) the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
 
 People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
 
@@ -275,6 +331,11 @@ E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/place-art.spec.ts --project=
 
 # The market at fixed positions (the capture set the prototype report compares):
 E2E_SHOTS=1 ART_SHOTS=after-close npx playwright test e2e/market-art.spec.ts --project=desktop-chromium
+
+# Chapter 4's places (the workshop, the street, the Laodicea road in rain, Philemon's house at lamp-lighting)
+# on two routes (home: Kallias in his old cloak; reply: the tablets beside Ammia), at the same three sizes:
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/letter-art.spec.ts --project=desktop-chromium
+#   → test-results/letter-art/<set>/<viewport>-<route>-<nn>-<name>.png and <viewport>-<route>-art.txt
 
 # The whole chapter in every presentation variant
 E2E_SHOTS=1 npx playwright test e2e/visual-tour.spec.ts --project=desktop-chromium   # → test-results/tour/

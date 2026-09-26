@@ -56,16 +56,19 @@ const VariantSchema = z.object({
 export type ArtVariant = z.infer<typeof VariantSchema>;
 
 /**
- * The lights a place can be rendered in, in the order of the day: the
- * morning sun, the later-day sun, dusk (the sun gone behind the hills, the
- * sky still glowing) and night (moonlight, lamps and fire). A place has
- * only the ones its story shows.
+ * Sets of a place's art, keyed by when in the story they are shown: the
+ * morning, the later day (from 15:00) and the night (19:00 to 05:00). A
+ * place has the sets its story shows (at least one).
  */
-export const LIGHTING_VARIANTS = ['day', 'late', 'dusk', 'night'] as const;
+export const LIGHTING_VARIANTS = ['day', 'late', 'night'] as const;
 export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
 
-/** How people are lit: by the light of the place's variant, or indoors (a lamp and a window). */
-export const PEOPLE_LIGHTS = ['day', 'late', 'dusk', 'night', 'indoor'] as const;
+/**
+ * How people are lit: by the sun of the place's variant, indoors (a lamp and
+ * a window), under rain cloud (soft light from the whole sky), or at
+ * lamp-lighting (lampstands, the last blue of the evening).
+ */
+export const PEOPLE_LIGHTS = ['day', 'late', 'night', 'indoor', 'overcast', 'lamp'] as const;
 export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
 
 export const PlaceArtSchema = z.object({
@@ -73,17 +76,20 @@ export const PlaceArtSchema = z.object({
   scene: z.string().min(1),
   tiles: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   ppu: z.number().positive(),
-  /** Rooms light people with their own lamp and window (people sheets' 'indoor' variant). */
-  peopleLight: z.enum(['indoor']).optional(),
+  /**
+   * How people are lit here when not by the sun of the variant: rooms by
+   * their own lamp and window ('indoor'), a road under rain cloud
+   * ('overcast'), a house at lamp-lighting ('lamp').
+   */
+  peopleLight: z.enum(['indoor', 'overcast', 'lamp']).optional(),
   variants: z
     .object({
       day: VariantSchema.optional(),
       late: VariantSchema.optional(),
-      dusk: VariantSchema.optional(),
       night: VariantSchema.optional(),
     })
     .refine((v) => LIGHTING_VARIANTS.some((k) => v[k] !== undefined), {
-      message: 'a place needs at least one lighting variant',
+      message: 'a place needs at least one set',
     }),
 });
 export type PlaceArt = z.infer<typeof PlaceArtSchema>;
@@ -121,9 +127,10 @@ const PersonSheetSchema = z.object({
   sheets: z.object({
     day: z.string().min(1).optional(),
     late: z.string().min(1).optional(),
-    dusk: z.string().min(1).optional(),
     night: z.string().min(1).optional(),
     indoor: z.string().min(1).optional(),
+    overcast: z.string().min(1).optional(),
+    lamp: z.string().min(1).optional(),
   }),
   frameWidth: z.number().int().positive(),
   frameHeight: z.number().int().positive(),
@@ -138,9 +145,10 @@ const PersonSheetSchema = z.object({
     .object({
       day: ShadowSheetSchema.optional(),
       late: ShadowSheetSchema.optional(),
-      dusk: ShadowSheetSchema.optional(),
       night: ShadowSheetSchema.optional(),
       indoor: ShadowSheetSchema.optional(),
+      overcast: ShadowSheetSchema.optional(),
+      lamp: ShadowSheetSchema.optional(),
     })
     .default({}),
   /**

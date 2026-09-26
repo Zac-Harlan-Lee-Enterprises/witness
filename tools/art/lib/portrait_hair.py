@@ -51,7 +51,7 @@ def hairline(masc, child):
     """Lowest elevation of the hair at each azimuth."""
     rec = 4.0 * masc * (1 - child)  # men's temples recede a little
     return [
-        (0, 25.0),
+        (0, 23.0 - 1.5 * masc * (1 - child)),
         (25, 26.0 + rec),
         (42, 25.0 + rec * 0.5),
         (58, 14.0),
@@ -69,7 +69,7 @@ def covered(kind):
     """Elevation above which a head covering hides the scalp (None = nothing hidden)."""
     if kind == "wrap":
         return [(0, 27.0), (45, 24.0), (80, 16.0), (110, 12.0), (180, 0.0)]
-    if kind in ("veil", "scarf", "hood"):
+    if kind in ("veil", "scarf", "hood", "headcloth"):
         return [(0, 31.0), (30, 29.0), (55, 20.0), (70, -60.0), (180, -80.0)]
     return None
 
@@ -92,24 +92,38 @@ def scalp_mask(head, V, headwear):
 
 
 def brow_mask(head, V):
-    """The eyebrows: an arched band over each eye, thick at the inner end."""
+    """The eyebrows: an arched band over each eye, thick at the inner end,
+    thinning and sparser at the tail, with ragged edges (portrait_head.brow_z
+    gives the line, with the expression). Some men's brows nearly meet."""
+    P = head.P
     s = head.s
     E = head.eye_half
-    ez = head.eye_z
     x, y, z = V[:, 0], V[:, 1], V[:, 2]
     m = np.zeros(len(V), F)
-    thick = (0.3 + 0.35 * head.P.brow_thickness) * (0.7 + 0.3 * head.P.masc)
-    # Women's brows arch higher and taper more.
-    arch = 0.55 + 0.3 * (1 - head.P.masc)
-    taper = 0.6 + 0.2 * (1 - head.P.masc)
+    thick = (0.3 + 0.35 * P.brow_thickness) * (0.48 + 0.52 * P.masc) * (1 - 0.15 * P.child)
+    # Women's brows taper more.
+    taper = 0.55 + 0.25 * (1 - P.masc)
+    rng = np.random.default_rng(P.seed + 41)
+    ph = rng.uniform(0, 6.28, 4)
     for sx in (-1, 1):
-        t = (sx * x - 0.85 * s) / (E + 2.3 * s - 0.85 * s)  # 0 at the inner end, 1 at the tail
-        centre = ez + (1.45 + arch * np.sin(np.clip(t, 0, 1) * math.pi * 0.8) - 0.25 * np.clip(t - 0.7, 0, 1) * 3) * s
+        u = sx * x
+        t = (u - 0.85 * s) / (E + 2.3 * s - 0.85 * s)  # 0 at the inner end, 1 at the tail
+        centre = head.brow_z(sx, np.maximum(u, 0.0))
         half = thick * (1.0 - taper * np.clip(t, 0, 1)) * s
-        band = np.clip(1 - np.abs(z - centre) / half, 0, 1) ** 0.6
-        along = np.clip(t / 0.08, 0, 1) * np.clip((1 - t) / 0.12, 0, 1)
+        ragged = 1.0 + 0.18 * np.sin(u * 7.0 + ph[0] + sx) * np.sin(u * 3.1 + ph[1])
+        band = np.clip(1 - np.abs(z - centre) / (half * ragged), 0, 1) ** 0.6
+        start = -0.05 - 0.9 * P.brow_join  # joined brows begin nearer the middle
+        along = np.clip((t - start) / 0.1, 0, 1) * np.clip((1 - t) / 0.14, 0, 1)
+        # Sparser toward the tail.
+        along *= 1.0 - 0.45 * np.clip((t - 0.55) / 0.45, 0, 1)
         front = (y < -5.5).astype(F)
         m = np.maximum(m, band * along * front)
+    if P.brow_join > 0.05:
+        mid = np.clip(1 - np.abs(x) / 1.1, 0, 1) * np.clip(1 - np.abs(z - head.brow_z(1, np.array([0.9], F))[0] + 0.15) / 0.3, 0, 1)
+        m = np.maximum(m, 0.35 * P.brow_join * mid * (y < -5.5))
+    # Not across a scar.
+    if P.scars:
+        m *= 1 - portrait_skin._segments(V, [(a, b, w * 1.6) for a, b, w in P.scars])
     return m
 
 
@@ -267,7 +281,7 @@ class Hair:
         self.rng = np.random.default_rng(params.seed + 101)
         self.objects = []
         a = params.appearance
-        self._scalp(a["headwear"])
+        self._scalp(params.head_style)
         if a["beard"]:
             self._beard()
         self._brows()
@@ -277,7 +291,8 @@ class Hair:
         """Positive in front of the face below the brows: hair never falls over the eyes."""
         head = self.head
         x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
-        top = head.eye_z + 1.7 * head.s
+        # Long hair under a covering stays at the hairline, off the forehead.
+        top = head.eye_z + (6.0 if self.P.hair_style == "long" else 1.7) * head.s
         return np.minimum(np.minimum(top - z, 6.3 * head.s - np.abs(x)), -4.5 - y)
 
     def _clip(self, strands, guard=False):
@@ -337,19 +352,48 @@ class Hair:
         away = _norm(roots - crown)
         down = np.array([0, 0, -1], F)
         dirs = away + down * (0.8 if style != "short" else 0.4)
-        if style == "long":
-            # Parted in the middle, swept back toward the ears.
-            side = np.sign(roots[:, 0])[:, None] * np.array([1, 0, 0], F)
-            dirs = side * 0.55 + np.array([0, 1.0, 0.3], F)
-        # At the hairline over the face, hair is swept back and to the side
-        # (it ends naturally rather than being cut off above the eyes).
         az, el = angles(roots, s)
         front = (np.abs(az) < 55)[:, None]
+        if style == "long":
+            # Parted in the middle, swept back toward the ears; at the front
+            # it lies along the temples, so a little shows under the cloth.
+            side = np.sign(roots[:, 0] + 0.01)[:, None] * np.array([1, 0, 0], F)
+            dirs = np.where(front, side * 1.0 + np.array([0, 0.75, 0.2], F), side * 0.55 + np.array([0, 1.0, 0.3], F))
+        # At the hairline over the face, hair is swept back and to the side
+        # (it ends naturally rather than being cut off above the eyes).
         if style in ("child", "short"):
-            side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.7
-            swept = np.stack([side, np.full(len(roots), 0.8, F), np.full(len(roots), 0.3, F)], 1)
+            # At the front, hair falls a little forward and to the side over
+            # the top of the forehead (not swept straight back, which reads as
+            # a helmet with a hard edge).
+            side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.8
+            forward = np.clip((el - 22.0) / 25.0, 0, 1)  # the hairline edge falls forward, the crown sweeps back
+            if headwear in ("veil", "scarf", "hood", "headcloth"):
+                forward = np.ones_like(forward)  # under a covering, swept back
+            swept = np.stack([side, 0.8 - 1.3 * (1 - forward), 0.3 - 0.9 * (1 - forward)], 1).astype(F)
             dirs = np.where(front, swept, dirs)
         self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003), flat=0.25 if style == "long" else 0.0, guard=True)
+        if P.child > 0.3:
+            self._baby_hair(w)
+
+    def _baby_hair(self, w):
+        """A child's fine, short, wispy hairs along the hairline."""
+        P = self.P
+        head = self.head
+        s = head.s
+        edge = np.clip(w * (1 - w) * 4.0, 0, 1) * (w > 0.05)
+        count = int(900 * P.child * self.q)
+        roots, nrm, _ = sample_surface(self.V, self.Q, self.N, edge, count, self.rng)
+        if len(roots) == 0:
+            return
+        crown = np.array([0.0, 3.0 * s, 12.8 * s], F)
+        dirs = _norm(roots - crown) + np.array([0, 0, -0.5], F)
+        n = len(roots)
+        L = (0.45 + 0.8 * self.rng.random(n)).astype(F)
+        curl_r = np.full(n, 0.07, F)
+        curl_p = np.full(n, 0.55, F) * self.rng.uniform(0.8, 1.3, n).astype(F)
+        phase = self.rng.uniform(0, 2 * math.pi, n).astype(F)
+        strands = grow(self.field, roots, nrm, _norm(dirs + self.rng.normal(0, 0.35, dirs.shape).astype(F)), L, (0.03, 0.15), 0.3, 7, curl_r, curl_p, phase)
+        self.objects.append(to_curves("baby-hair", self._clip(strands, guard=True), 0.0035, 0.0012, self.mats["hair"], self.col))
 
     def _groom(self, name, roots, nrm, dirs, length, curl, lift, gravity, clump, mat, radius, flat=0.0, guides_every=28, guard=False):
         rng = self.rng
@@ -425,20 +469,23 @@ class Hair:
         P = self.P
         head = self.head
         w = brow_mask(head, self.V)
-        count = int((250 + 250 * P.masc + 1800 * P.brow_thickness * (0.3 + 0.7 * P.masc)) * self.q)
+        count = int((180 + 180 * P.masc + 1150 * P.brow_thickness * (0.3 + 0.7 * P.masc)) * (1 + 0.3 * P.age_t) * (1 - 0.3 * P.child) * self.q)
         roots, nrm, _ = sample_surface(self.V, self.Q, self.N, w, count, self.rng)
         if len(roots) == 0:
             return
+        rng = self.rng
         E = head.eye_half
         s = head.s
         t = np.clip((np.abs(roots[:, 0]) - 0.85 * s) / (E + 2.3 * s - 0.85 * s), 0, 1)
         sx = np.sign(roots[:, 0])
-        # Inner hairs point up, the body outward, the tail outward and down.
+        # Inner hairs point up, the body outward, the tail outward and down;
+        # each hair a little off, and an old man's brows unruly.
         up = np.clip(1 - t / 0.25, 0, 1)
         dirs = np.stack([sx * (0.3 + 0.9 * (1 - up)), np.zeros_like(t), up * 1.2 + 0.25 - 0.5 * np.clip(t - 0.65, 0, 1)], 1).astype(F)
-        L = (0.75 + 0.3 * self.rng.random(len(roots)) - 0.3 * t).astype(F)
-        strands = grow(self.field, roots, nrm, dirs, L, (0.015, 0.06), 0.0, 6, np.zeros(len(roots), F), np.ones(len(roots), F), np.zeros(len(roots), F), flat=0.03)
-        self.objects.append(to_curves("brows", strands, 0.0065, 0.002, self.mats["brow"], self.col))
+        dirs += rng.normal(0, 0.22 + 0.25 * P.age_t, dirs.shape).astype(F)
+        L = (0.62 + 0.35 * rng.random(len(roots)) - 0.25 * t) * (1 + 0.5 * P.age_t * rng.random(len(roots)) ** 3)
+        strands = grow(self.field, roots, nrm, dirs, L.astype(F), (0.015, 0.05 + 0.05 * P.age_t), 0.0, 6, np.zeros(len(roots), F), np.ones(len(roots), F), np.zeros(len(roots), F), flat=0.03)
+        self.objects.append(to_curves("brows", strands, 0.0055, 0.0015, self.mats["brow"], self.col))
 
     # ── Eyelashes ──────────────────────────────────────────────────────────
     def _lashes(self):
@@ -447,7 +494,8 @@ class Hair:
         lashes = []
         for sx in (-1, 1):
             E = head.eye_centre(sx)
-            for upper, count, length, curl in ((True, 120, 0.8, 0.8), (False, 45, 0.42, 0.35)):
+            c = self.P.child
+            for upper, count, length, curl in ((True, int(170 - 50 * c), 0.82, 0.8), (False, int(60 - 20 * c), 0.42, 0.35)):
                 u = np.sort(rng.uniform(-0.86, 0.94, count))
                 for ui in u:
                     vert = np.array([0, 0, 1 if upper else -1], F)
@@ -461,4 +509,4 @@ class Hair:
                     pts = root + (out * 0.85 + side) * L * ts + vert * (curl * L * 0.45) * ts**2
                     lashes.append(pts)
         strands = np.stack(lashes).astype(F)
-        self.objects.append(to_curves("lashes", strands, 0.008, 0.0015, self.mats["lash"], self.col))
+        self.objects.append(to_curves("lashes", strands, 0.0095 * (1 - 0.3 * self.P.child), 0.0018, self.mats["lash"], self.col))

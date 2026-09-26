@@ -2,11 +2,10 @@
 node trees (no image textures). Colours come from the person's appearance
 data (sRGB hex) and are converted to linear.
 
-Skin reads per-vertex attributes written by portrait_skin.py:
-  albedo (colour)  regional colour: warmer cheeks, nose and ears, darker
-                   around the eyes, the lips, a shaved beard's shadow
-  rough            regional roughness (oilier forehead and nose, moist lips)
-  pores            how strongly pores and fine lines show
+Skin reads the per-vertex maps written by portrait_skin.py (albedo, rough,
+oil, pores, lines, freckle, stubble, lip, scar) and adds what is too fine
+for vertices: mottling, freckles and age spots, the dots of a shaved
+beard, pores and the fine criss-cross grain of skin, lines on the lips.
 """
 import math
 import random
@@ -41,75 +40,163 @@ def _principled(n, method, **inputs):
     return b
 
 
+def _range(n, value, a, b, c, d, clamp=True):
+    m = n.new("ShaderNodeMapRange", Value=value, **{"From Min": a, "From Max": b, "To Min": c, "To Max": d})
+    m.clamp = clamp
+    return (m, "Result")
+
+
+def _attr(n, name):
+    return n.new("ShaderNodeAttribute", _attribute_name=name, _attribute_type="GEOMETRY")
+
+
+def _scale(n, vec, fac):
+    return (n.new("ShaderNodeVectorMath", _operation="SCALE", Vector=vec, Scale=fac), "Vector")
+
+
 # ── Skin ───────────────────────────────────────────────────────────────────
-def skin(key, weathered=0.0, child=0.0, sss=1.0):
+def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
+    """Skin for one person. `detail` scales the fine relief (1 adult)."""
+
     def build():
         n = Nodes(f"skin-{key}")
         obj = n.coords("Object")
-        alb = n.new("ShaderNodeAttribute", _attribute_name="albedo", _attribute_type="GEOMETRY")
-        rough = n.new("ShaderNodeAttribute", _attribute_name="rough", _attribute_type="GEOMETRY")
-        pores = n.new("ShaderNodeAttribute", _attribute_name="pores", _attribute_type="GEOMETRY")
-        # Mottling at three scales: broad blotches, freckle-sized marks, and a
-        # fine unevenness (stronger with sun and age).
-        blotch = n.noise(28.0, 4.0, 0.6, obj)
-        speck = n.noise(160.0, 3.0, 0.7, obj)
+        alb = _attr(n, "albedo")
+        rough = _attr(n, "rough")
+        oil = _attr(n, "oil")
+        pores = _attr(n, "pores")
+        lines = _attr(n, "lines")
+        freckle = _attr(n, "freckle")
+        stubble = _attr(n, "stubble")
+        lip = _attr(n, "lip")
+        scar = _attr(n, "scar")
+
+        # ── Colour: the regional map, mottled at three scales ──────────────
+        blotch = n.noise(26.0, 4.0, 0.6, obj)
+        mottle = n.noise(110.0, 3.0, 0.6, obj)
         grain = n.noise(420.0, 3.0, 0.6, obj)
-        b_amt = n.new("ShaderNodeMapRange", Value=(blotch, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.9 - 0.05 * weathered, "To Max": 1.07})
-        col = n.new("ShaderNodeVectorMath", _operation="SCALE", Vector=(alb, "Color"), Scale=(b_amt, "Result"))
-        spots = n.new("ShaderNodeMapRange", Value=(speck, "Fac"), **{"From Min": 0.6 - 0.06 * weathered, "From Max": 0.76, "To Min": 1.0, "To Max": 0.84 - 0.1 * weathered})
-        col2 = n.new("ShaderNodeVectorMath", _operation="SCALE", Vector=(col, "Vector"), Scale=(spots, "Result"))
-        g_amt = n.new("ShaderNodeMapRange", Value=(grain, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.95, "To Max": 1.04})
-        col3 = n.new("ShaderNodeVectorMath", _operation="SCALE", Vector=(col2, "Vector"), Scale=(g_amt, "Result"))
-        # Pores at two scales, soft unevenness, and fine criss-cross lines.
+        col = _scale(n, (alb, "Color"), _range(n, (blotch, "Fac"), 0.3, 0.7, 0.93, 1.06))
+        col = _scale(n, col, _range(n, (mottle, "Fac"), 0.3, 0.7, 0.955, 1.035))
+        col = _scale(n, col, _range(n, (grain, "Fac"), 0.3, 0.7, 0.97, 1.03))
+        # Hue, not only brightness: patches a little redder, others a little
+        # more olive, at a centimetre or two.
+        rb = n.noise(48.0, 3.0, 0.55, obj)
+        redder = _range(n, (rb, "Fac"), 0.4, 0.7, 0.0, 0.4)
+        cred = n.mix(redder, col, (0.95, 0.66, 0.62, 1.0), "MULTIPLY")
+        ob = n.noise(17.0, 2.0, 0.5, obj)
+        olive = _range(n, (ob, "Fac"), 0.45, 0.7, 0.0, 0.3)
+        col = (n.mix(olive, (cred, 2), (0.9, 0.93, 0.8, 1.0), "MULTIPLY"), 2)
+        # Freckles and age spots: round marks of different sizes and depths,
+        # only where the freckle map allows.
+        fv = n.new("ShaderNodeTexVoronoi", Scale=330.0 * M, Vector=obj, _feature="F1", Randomness=1.0)
+        fr = n.new("ShaderNodeSeparateColor", Color=(fv, "Color"))
+        dens = n.math("MULTIPLY", (freckle, "Fac"), 0.55)
+        has = n.math("LESS_THAN", (fr, "Red"), (dens, "Value"))
+        size = _range(n, (fr, "Green"), 0.0, 1.0, 0.22, 0.42)
+        dot = n.new("ShaderNodeMapRange", Value=(fv, "Distance"), **{"From Min": 0.12, "To Min": 1.0, "To Max": 0.0})
+        n.link(size[0], size[1], dot, "From Max")
+        spot = n.math("MULTIPLY", (has, "Value"), (dot, "Result"))
+        spot = n.math("MULTIPLY", (spot, "Value"), _range(n, (fr, "Blue"), 0.0, 1.0, 0.18, 0.4))
+        fcol = n.mix((spot, "Value"), (col[0], col[1]), (0.3, 0.19, 0.12, 1.0), "MULTIPLY")
+        col = (fcol, 2)
+        # A shaved beard: dense dark dots (the cut hairs under the skin).
+        sv = n.new("ShaderNodeTexVoronoi", Scale=2300.0 * M, Vector=obj, _feature="F1", Randomness=0.9)
+        sdot = n.new("ShaderNodeMapRange", Value=(sv, "Distance"), **{"From Min": 0.18, "From Max": 0.42, "To Min": 1.0, "To Max": 0.0})
+        sd = n.math("MULTIPLY", (sdot, "Result"), (stubble, "Fac"))
+        sd2 = n.math("MULTIPLY", (sd, "Value"), 0.7)
+        scol = n.mix((sd2, "Value"), col, (0.02, 0.018, 0.018, 1.0))
+        col = (scol, 2)
+
+        # ── Relief: pores, skin grain, fine lines, lip lines, stubble ──────
         vor = n.new("ShaderNodeTexVoronoi", Scale=1500.0 * M, Vector=obj, _feature="F1")
-        pit = n.new("ShaderNodeMapRange", Value=(vor, "Distance"), **{"From Min": 0.0, "From Max": 0.6, "To Min": -1.0, "To Max": 0.0})
-        vor2 = n.new("ShaderNodeTexVoronoi", Scale=3200.0 * M, Vector=obj, _feature="F1")
-        pit2 = n.new("ShaderNodeMapRange", Value=(vor2, "Distance"), **{"From Min": 0.0, "From Max": 0.5, "To Min": -0.5, "To Max": 0.0})
-        lines = n.new("ShaderNodeTexWave", Scale=420.0, Distortion=18.0, Detail=4.0, Vector=obj, _wave_type="BANDS", _bands_direction="DIAGONAL")
-        uneven = n.noise(260.0, 4.0, 0.6, obj)
-        p12 = n.math("ADD", (pit, "Result"), (pit2, "Result"))
-        h1 = n.math("MULTIPLY", (p12, "Value"), (pores, "Fac"))
-        h2 = n.math("MULTIPLY", (lines, "Fac"), 0.3 + 0.5 * weathered)
-        h3 = n.math("ADD", (h1, "Value"), (h2, "Value"))
-        h4 = n.math("MULTIPLY_ADD", (uneven, "Fac"), 1.5)
-        h4.inputs[2].default_value = 0.0
-        h5 = n.math("ADD", (h3, "Value"), (h4, "Value"))
-        bump = n.bump((h5, "Value"), strength=0.3 + 0.12 * weathered - 0.12 * child, distance=0.00025)
-        # Roughness: the regional map, broken up, pores a little rougher.
-        rn = n.noise(60.0, 3.0, 0.5, obj)
-        rv = n.new("ShaderNodeMapRange", Value=(rn, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": -0.07, "To Max": 0.07})
-        rr0 = n.math("ADD", (rough, "Fac"), (rv, "Result"))
-        rp = n.math("MULTIPLY", (pit, "Result"), -0.08)
-        rr = n.math("ADD", (rr0, "Value"), (rp, "Value"))
-        col2 = col3
+        pit = _range(n, (vor, "Distance"), 0.0, 0.55, -1.0, 0.0)
+        vor2 = n.new("ShaderNodeTexVoronoi", Scale=3300.0 * M, Vector=obj, _feature="F1")
+        pit2 = _range(n, (vor2, "Distance"), 0.0, 0.5, -0.5, 0.0)
+        p12 = n.math("ADD", pit, pit2)
+        h_pores = n.math("MULTIPLY", (p12, "Value"), (pores, "Fac"))
+        # The criss-cross grain of skin: a network of fine grooves.
+        net = n.new("ShaderNodeTexVoronoi", Scale=700.0 * M, Vector=obj, _feature="DISTANCE_TO_EDGE", Randomness=0.85)
+        groove = _range(n, (net, "Distance"), 0.0, 0.07, -1.0, 0.0)
+        h_net = n.math("MULTIPLY", groove, (lines, "Fac"))
+        h_net = n.math("MULTIPLY", (h_net, "Value"), 0.7)
+        wav = n.new("ShaderNodeTexWave", Scale=380.0, Distortion=16.0, Detail=4.0, Vector=obj, _wave_type="BANDS", _bands_direction="DIAGONAL")
+        h_wav = n.math("MULTIPLY", (wav, "Fac"), (lines, "Fac"))
+        h_wav = n.math("MULTIPLY", (h_wav, "Value"), 0.35)
+        # Lips: fine vertical lines.
+        lw = n.new("ShaderNodeTexWave", Scale=900.0, Distortion=3.0, Detail=2.0, Vector=obj, _wave_type="BANDS", _bands_direction="X")
+        h_lip = n.math("MULTIPLY", (lw, "Fac"), (lip, "Fac"))
+        h_lip = n.math("MULTIPLY", (h_lip, "Value"), 1.5)
+        uneven = n.noise(240.0, 4.0, 0.6, obj)
+        h_un = n.math("MULTIPLY", (uneven, "Fac"), 1.2)
+        h_st = n.math("MULTIPLY", (sd, "Value"), 0.6)
+        h_sc = n.math("MULTIPLY", (scar, "Fac"), 1.5)
+        h = h_pores
+        for part in (h_net, h_wav, h_lip, h_un, h_st, h_sc):
+            h = n.math("ADD", (h, "Value"), (part, "Value"))
+        bump = n.bump((h, "Value"), strength=(0.44 - 0.18 * child) * detail, distance=0.00025)
+        # Broader unevenness of the surface (millimetre bumps), for the coat.
+        cn = n.noise(90.0, 3.0, 0.5, obj)
+        cbump = n.bump((cn, "Fac"), strength=0.12 * detail, distance=0.0004, normal=(bump, "Normal"))
+
+        # ── Finish: regional roughness broken up; oily sheen; moist lips ───
+        rn = n.noise(55.0, 3.0, 0.5, obj)
+        rv = _range(n, (rn, "Fac"), 0.3, 0.7, -0.13, 0.13)
+        rr = n.math("ADD", (rough, "Fac"), rv)
+        rn2 = n.noise(190.0, 3.0, 0.6, obj)
+        rv2 = _range(n, (rn2, "Fac"), 0.3, 0.7, -0.06, 0.06)
+        rr = n.math("ADD", (rr, "Value"), rv2)
+        rp = n.math("MULTIPLY", (pit[0], pit[1]), -0.1)
+        rr = n.math("ADD", (rr, "Value"), (rp, "Value"))
+        on = n.noise(35.0, 3.0, 0.6, obj)
+        ov = _range(n, (on, "Fac"), 0.35, 0.65, 0.55, 1.15)
+        coat = n.math("MULTIPLY", (oil, "Fac"), (ov[0], ov[1]))
+        coat = n.math("MULTIPLY", (coat, "Value"), 0.34)
+        coat_r = _range(n, (lip, "Fac"), 0.0, 1.0, 0.3, 0.12)
         _principled(
             n,
             "RANDOM_WALK_SKIN",
             **{
-                "Base Color": (col2, "Vector"),
+                "Base Color": col,
                 "Roughness": (rr, "Value"),
                 "Subsurface Weight": sss,
                 "Subsurface Radius": (1.0, 0.45, 0.25),
-                "Subsurface Scale": 0.0022,
+                "Subsurface Scale": 0.0022 * (1 - 0.35 * dark),
                 "Subsurface IOR": 1.4,
                 "Subsurface Anisotropy": 0.8,
                 "Specular IOR Level": 0.5,
                 "IOR": 1.4,
-                "Coat Weight": 0.12,
-                "Coat Roughness": 0.24,
+                "Coat Weight": (coat, "Value"),
+                "Coat Roughness": coat_r,
+                "Coat IOR": 1.45,
+                "Sheen Weight": 0.22 + 0.06 * child,
+                "Sheen Roughness": 0.35,
+                "Sheen Tint": (1.0, 0.94, 0.88, 1.0),
                 "Normal": (bump, "Normal"),
-                "Coat Normal": (bump, "Normal"),
+                "Coat Normal": (cbump, "Normal"),
             },
         )
         return n.mat
 
-    return cached(("pskin", key, weathered, child, sss), build)
+    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2)), build)
+
+
+def clay():
+    """Grey clay: to judge shape without colour."""
+
+    def build():
+        n = Nodes("clay")
+        n.bsdf(**{"Base Color": (0.36, 0.34, 0.32, 1.0), "Roughness": 0.6, "Specular IOR Level": 0.3})
+        return n.mat
+
+    return cached(("clay",), build)
 
 
 # ── Eyes ───────────────────────────────────────────────────────────────────
-def eye_inner(iris_hex, seed):
-    """Sclera (warm white, faint veins, pinker toward the corners) and iris
-    (radial fibres, a lighter ring round the pupil, a dark ring at the edge)."""
+def eye_inner(iris_hex, seed, kind="brown", age=0.0):
+    """Sclera (warm, not white: a little yellow, pinker and greyer toward the
+    corners, with faint vessels) and iris (radial fibres and crypts, a ring
+    round the pupil, a dark ring at the edge). Hazel eyes are greener at the
+    edge and golden inside; amber ones lighter and warmer."""
 
     def build():
         r = random.Random(seed)
@@ -127,36 +214,50 @@ def eye_inner(iris_hex, seed):
         front = n.new("ShaderNodeMapRange", Value=(y, "Value"), **{"From Min": 0.95, "From Max": 1.0, "To Min": 0.0, "To Max": 1.0})
         iris_r = 0.6
         rn = n.math("DIVIDE", (rho, "Value"), iris_r)
-        # Fibres: noise stretched along the radius.
+        # Fibres: noise stretched along the radius; crypts: darker pits.
         pol = n.new("ShaderNodeCombineXYZ", X=(ang, "Value"), Y=(rn, "Value"))
         stretch = n.new("ShaderNodeVectorMath", _operation="MULTIPLY", Vector=(pol, "Vector"))
         stretch.inputs[1].default_value = (9.0, 1.2, 1.0)
         fib = n.new("ShaderNodeTexNoise", Scale=4.0, Detail=8.0, Roughness=0.65, Vector=(stretch, "Vector"))
         fib2 = n.new("ShaderNodeTexNoise", Scale=14.0, Detail=4.0, Roughness=0.5, Vector=(stretch, "Vector"))
+        crypt = n.new("ShaderNodeTexVoronoi", Scale=5.0, Vector=(stretch, "Vector"), _feature="F1")
         base = _lin(iris_hex)
-        dark = tuple(c * 0.35 for c in base[:3]) + (1.0,)
-        light = tuple(min(1.0, c * 2.0 + 0.012) for c in base[:3]) + (1.0,)
-        amber = (min(1.0, base[0] * 1.8 + 0.02), min(1.0, base[1] * 1.6 + 0.01), base[2] * 1.1, 1.0)
+        dark = tuple(c * 0.45 for c in base[:3]) + (1.0,)
+        light = tuple(min(1.0, c * 1.35 + 0.002) for c in base[:3]) + (1.0,)
         c1 = n.mix((fib, "Fac"), dark, light)
         c2 = n.mix((fib2, "Fac"), (c1, 2), dark, "MULTIPLY")
-        c2.inputs[0].default_value = 0.35
-        # A lighter, warmer ring round the pupil (the collarette).
-        coll = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.28, "From Max": 0.5, "To Min": 0.55 + 0.2 * r.random(), "To Max": 0.0})
-        c3 = n.mix((coll, "Result"), (c2, 2), amber)
+        c2.inputs[0].default_value = 0.3
+        cr = _range(n, (crypt, "Distance"), 0.0, 0.35, 0.45, 0.0)
+        c2b = n.mix(cr, (c2, 2), tuple(c * 0.35 for c in base[:3]) + (1.0,))
+        # The ring round the pupil (collarette): warmer, and golden in hazel and amber eyes.
+        if kind == "hazel":
+            ring_col = (0.16, 0.085, 0.025, 1.0)
+            edge_col = (0.06, 0.07, 0.035, 1.0)
+        elif kind == "amber":
+            ring_col = (0.2, 0.1, 0.03, 1.0)
+            edge_col = (0.07, 0.04, 0.018, 1.0)
+        else:
+            ring_col = tuple(min(1.0, c * 1.5 + 0.006) for c in base[:3]) + (1.0,)
+            edge_col = tuple(c * 0.8 for c in base[:3]) + (1.0,)
+        coll = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.28, "From Max": 0.52, "To Min": 0.4 + 0.2 * r.random(), "To Max": 0.0})
+        c3 = n.mix((coll, "Result"), (c2b, 2), ring_col)
+        outer = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.55, "From Max": 0.9, "To Min": 0.0, "To Max": 0.5})
+        c3b = n.mix((outer, "Result"), (c3, 2), edge_col)
         # The dark limbal ring at the edge.
-        limb = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.8, "From Max": 1.0, "To Min": 0.0, "To Max": 0.85})
-        c4 = n.mix((limb, "Result"), (c3, 2), (0.01, 0.006, 0.004, 1.0))
+        limb = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.82, "From Max": 1.0, "To Min": 0.0, "To Max": 0.8})
+        c4 = n.mix((limb, "Result"), (c3b, 2), (0.008, 0.005, 0.004, 1.0))
         # Pupil.
-        pupil_r = 0.24 + 0.04 * r.random()
+        pupil_r = 0.23 + 0.05 * r.random()
         pup = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": pupil_r - 0.02, "From Max": pupil_r + 0.02, "To Min": 1.0, "To Max": 0.0})
-        iris_col = n.mix((pup, "Result"), (c4, 2), (0.003, 0.002, 0.002, 1.0))
-        # Sclera: warm off-white, faint veins, pinker and greyer away from the iris.
+        iris_col = n.mix((pup, "Result"), (c4, 2), (0.002, 0.0015, 0.0015, 1.0))
+        # Sclera: warm off-white, faint vessels, pinker and greyer away from the iris.
         veins = n.new("ShaderNodeTexNoise", Scale=22.0, Detail=10.0, Roughness=0.7, Vector=obj, _noise_type="RIDGED_MULTIFRACTAL")
-        vmask = n.new("ShaderNodeMapRange", Value=(veins, "Fac"), **{"From Min": 0.72, "From Max": 1.0, "To Min": 0.0, "To Max": 0.55})
+        vmask = n.new("ShaderNodeMapRange", Value=(veins, "Fac"), **{"From Min": 0.72, "From Max": 1.0, "To Min": 0.0, "To Max": 0.5})
         edge = n.new("ShaderNodeMapRange", Value=(y, "Value"), **{"From Min": 0.2, "From Max": 1.0, "To Min": 1.0, "To Max": 0.0})
         vm = n.math("MULTIPLY", (vmask, "Result"), (edge, "Result"))
-        white = n.mix((edge, "Result"), _lin("#c9bcae"), _lin("#a88c7f"))
-        scl = n.mix((vm, "Value"), (white, 2), _lin("#a8453c"))
+        white_hex = "#b1a08c" if age < 0.4 else "#a99476"
+        white = n.mix((edge, "Result"), _lin(white_hex), _lin("#8c7063"))
+        scl = n.mix((vm, "Value"), (white, 2), _lin("#9c4038"))
         # Iris region: inside the limbus, on the front.
         inside = n.new("ShaderNodeMapRange", Value=(rn, "Value"), **{"From Min": 0.97, "From Max": 1.03, "To Min": 1.0, "To Max": 0.0})
         mask = n.math("MULTIPLY", (inside, "Result"), (front, "Result"))
@@ -165,7 +266,7 @@ def eye_inner(iris_hex, seed):
         n.bsdf(
             **{
                 "Base Color": (col, 2),
-                "Roughness": 0.35,
+                "Roughness": 0.4,
                 "Subsurface Weight": 0.25,
                 "Subsurface Radius": (1.0, 0.5, 0.35),
                 "Subsurface Scale": 0.001,
@@ -175,13 +276,16 @@ def eye_inner(iris_hex, seed):
         )
         return n.mat
 
-    return cached(("eye", iris_hex, seed), build)
+    return cached(("eye", iris_hex, seed, kind, round(age, 1)), build)
 
 
 def cornea():
+    """The clear, wet outer layer of the eye. A trace of roughness keeps the
+    catchlight soft."""
+
     def build():
         n = Nodes("cornea")
-        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.0)
+        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.1)
         glass.inputs["Color"].default_value = (1, 1, 1, 1)
         n.link(glass, "BSDF", n.out, "Surface")
         return n.mat
@@ -202,8 +306,8 @@ def caruncle(skin_hex):
     def build():
         n = Nodes(f"caruncle-{skin_hex}")
         base = _lin(skin_hex)
-        pink = (min(1.0, base[0] * 1.6 + 0.12), base[1] * 0.9 + 0.03, base[2] * 0.9 + 0.03, 1.0)
-        n.bsdf(**{"Base Color": pink, "Roughness": 0.15, "Subsurface Weight": 0.6, "Subsurface Radius": (1.0, 0.3, 0.2), "Subsurface Scale": 0.002})
+        pink = (min(1.0, base[0] * 1.5 + 0.1), base[1] * 0.75 + 0.02, base[2] * 0.75 + 0.02, 1.0)
+        n.bsdf(**{"Base Color": pink, "Roughness": 0.12, "Subsurface Weight": 0.6, "Subsurface Radius": (1.0, 0.3, 0.2), "Subsurface Scale": 0.002, "Coat Weight": 0.6, "Coat Roughness": 0.05})
         return n.mat
 
     return cached(("caruncle", skin_hex), build)
@@ -277,14 +381,24 @@ def _shade(hexcol, amount):
     return _lin("#" + "".join(f"{max(0, min(255, int(round(c)))):02x}" for c in rgb))
 
 
-def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cloth"):
+def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cloth", uv=None):
     """Hand-woven wool or linen dyed with natural dyes. The sheen takes the dye's
     own colour: an untinted sheen reflects the light's colour and greys the dye.
-    Optional woven stripes (clavi) along the object's X at +/- stripe_at (m)."""
+    Optional woven stripes (clavi) along the object's X at +/- stripe_at (m).
+    `uv` names a per-vertex (along, across) attribute in cm: the weave then
+    follows the cloth (the turns of a wrap) instead of the object's axes."""
 
     def build():
-        n = Nodes(f"{name}-{kind}-{color}-{stripe}")
+        n = Nodes(f"{name}-{kind}-{color}-{stripe}-{uv}")
         obj = n.coords("Object")
+        weave_at = obj
+        if uv:
+            a = n.new("ShaderNodeAttribute", _attribute_name=uv, _attribute_type="GEOMETRY")
+            sep_uv = n.new("ShaderNodeSeparateXYZ", Vector=(a, "Vector"))
+            ax = n.math("MULTIPLY", (sep_uv, "X"), 0.01)
+            az = n.math("MULTIPLY", (sep_uv, "Y"), 0.01)
+            comb = n.new("ShaderNodeCombineXYZ", X=(ax, "Value"), Y=0.0, Z=(az, "Value"))
+            weave_at = (comb, "Vector")
         dyed = _toward(color, "#8c8070", 0.1 if kind == "wool" else 0.05)
         blotch = n.noise(9.0, 3.0, 0.55, obj)
         slub = n.new("ShaderNodeTexWave", Scale=70.0, Distortion=4.0, Detail=2.0, Vector=obj, _bands_direction="X")
@@ -303,8 +417,8 @@ def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cl
             col = n.mix((band, "Result"), col_out, _lin(_toward(stripe, color, 0.2)))
             col_out = (col, 2)
         # Weave: warp and weft threads about a millimetre apart.
-        w1 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=obj, _bands_direction="X")
-        w2 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=obj, _bands_direction="Z")
+        w1 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=weave_at, _bands_direction="X")
+        w2 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=weave_at, _bands_direction="Z")
         ws = n.math("ADD", (w1, "Fac"), (w2, "Fac"))
         fz = n.noise(350.0, 4.0, 0.7, obj)
         hh = n.math("ADD", (ws, "Value"), (fz, "Fac"))
@@ -322,7 +436,7 @@ def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cl
         )
         return n.mat
 
-    return cached(("pcloth", color, kind, stripe, stripe_at, stripe_w, name), build)
+    return cached(("pcloth", color, kind, stripe, stripe_at, stripe_w, name, uv), build)
 
 
 # ── The backdrop ───────────────────────────────────────────────────────────

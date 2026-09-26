@@ -7,7 +7,7 @@ import type { RenderedFigure } from '../scenes/actors';
 import { crowdSize } from '../systems/life';
 import { beginPlace, loadPeople, loadPersons, loadPlace, type PersonTextures } from './loader';
 import type { PeopleArt, PersonSheet } from './manifest';
-import { artPathFor, nearestLight, pickSheets, sheetsToLoad } from './select';
+import { artPathFor, pickSheets, sheetsToLoad } from './select';
 import type { PlaceTextures } from './loader';
 
 /**
@@ -82,7 +82,7 @@ export class FigureBook {
 }
 
 function figureOf(sheet: PersonSheet, tex: PersonTextures): RenderedFigure | null {
-  const shadow = nearestLight(sheet.shadows, tex.light);
+  const shadow = sheet.shadows[tex.light] ?? sheet.shadows.day ?? sheet.shadows.late;
   if (!shadow || !tex.shadow) return null;
   return {
     key: tex.key,

@@ -53,7 +53,7 @@ class InteriorKit:
         # the morning sun, west for the later-day sun.
         import lighting
 
-        self.room_sun = next((v for v in getattr(self, "variants", ["day"]) if v in ("day", "late")), "day")
+        self.room_sun = next((v for v in self.light_plan.values() if v in ("day", "late")), "day")
         window_x0 = 0 if lighting.sun_vector(self.room_sun).x < 0 else east
         # The back wall: plastered face at y = back, rising off the top of the view.
         face = common.box("back-wall", (m.w, 0.5, ROOM_H + 0.6), B(m.w / 2, back - 0.25, (ROOM_H + 0.6) / 2), plaster, None)

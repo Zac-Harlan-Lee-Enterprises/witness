@@ -45,6 +45,8 @@ export async function continueDialogue(page: Page): Promise<void> {
 }
 
 export async function choose(page: Page, text: string | RegExp): Promise<void> {
+  // The conversation may still be opening, e.g. while a pre-rendered place loads.
+  await dialogueBox(page).waitFor({ state: 'visible', timeout: 60_000 });
   await continueDialogue(page);
   await dialogueBox(page).locator('.choice').filter({ hasText: text }).first().click();
 }
