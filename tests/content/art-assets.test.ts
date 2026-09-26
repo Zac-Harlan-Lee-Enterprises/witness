@@ -15,6 +15,7 @@ import {
   type LightingVariant,
   type PeopleArt,
   type PeopleLight,
+  type PersonSheet,
   type PlaceArt,
 } from '@/game/prerendered/manifest';
 import {
@@ -307,6 +308,21 @@ describe('pre-rendered people', () => {
     if (!people) return;
     const dir = join(ART, 'people');
     const problems: string[] = [];
+    /** A low atlas: it exists, fits any GPU, and packs every frame of its full sheet. */
+    const packed = (sheet: PersonSheet, full: string, half: string): void => {
+      if (!existsSync(join(dir, half))) {
+        problems.push(`${half} is missing`);
+        return;
+      }
+      const size = webpSize(join(dir, half));
+      if (Math.max(size.w, size.h) > MAX_ART_TEXTURE) problems.push(`${half} is too big`);
+      const names = Object.keys(sheet.atlas[full] ?? {}).sort();
+      const table = sheet.atlas[half] ?? {};
+      if (Object.keys(table).sort().join() !== names.join())
+        problems.push(`${half}: frames differ from ${full}`);
+      for (const [name, [x, y, w, h]] of Object.entries(table))
+        if (x + w > size.w || y + h > size.h) problems.push(`${half}: ${name} is outside it`);
+    };
     for (const [id, sheet] of Object.entries(people)) {
       const low = sheet.low;
       if (!low) {
@@ -323,46 +339,29 @@ describe('pre-rendered people', () => {
         [low.originY, sheet.originY],
       ] as const)
         if (a !== b * k) problems.push(`${id}: low frame ${a} is not ${b} × ${k}`);
-      const pairs: Array<[string | undefined, string | undefined, string]> = [
-        ...Object.entries(sheet.sheets).map(
-          ([light, f]): [string | undefined, string | undefined, string] => [
-            f,
-            low.sheets[light as PeopleLight],
-            light,
-          ],
-        ),
-        ...Object.entries(sheet.shadows).map(
-          ([light, s]): [string | undefined, string | undefined, string] => [
-            s.sheet,
-            low.shadows[light as PeopleLight]?.sheet,
-            `${light} shadow`,
-          ],
-        ),
-      ];
-      for (const [full, half, what] of pairs) {
-        if (!full) continue;
-        if (half !== full.replace(/\.webp$/, '-low.webp')) {
-          problems.push(`${id}: ${what} has no low sheet (${String(half)})`);
-          continue;
-        }
-        if (!existsSync(join(dir, half))) {
-          problems.push(`${half} is missing`);
-          continue;
-        }
-        const size = webpSize(join(dir, half));
-        if (Math.max(size.w, size.h) > MAX_ART_TEXTURE) problems.push(`${half} is too big`);
-        // Every frame of the full sheet, packed inside the low atlas.
-        const names = Object.keys(sheet.atlas[full] ?? {}).sort();
-        const table = sheet.atlas[half] ?? {};
-        if (Object.keys(table).sort().join() !== names.join())
-          problems.push(`${half}: frames differ from ${full}`);
-        for (const [name, [x, y, w, h]] of Object.entries(table))
-          if (x + w > size.w || y + h > size.h) problems.push(`${half}: ${name} is outside it`);
+      for (const [light, full] of Object.entries(sheet.sheets)) {
+        const half = low.sheets[light as PeopleLight];
+        if (half !== full.replace(/\.webp$/, '-low.webp'))
+          problems.push(`${id}: ${light} has no low sheet (${String(half)})`);
+        else packed(sheet, full, half);
       }
+      // Cast shadows: the full sheet itself (one byte a pixel, soft already),
+      // or a smaller copy with its frame scaled to match.
+      if (Object.keys(low.shadows).sort().join() !== Object.keys(sheet.shadows).sort().join())
+        problems.push(`${id}: low shadows are not in the lights of the full ones`);
       for (const light of Object.keys(sheet.shadows) as PeopleLight[]) {
         const full = sheet.shadows[light];
         const half = low.shadows[light];
-        if (full && half && half.frameWidth !== full.frameWidth * (half.ppu / full.ppu))
+        if (!full || !half) continue;
+        if (half.sheet === full.sheet) {
+          if (JSON.stringify(half) !== JSON.stringify(full))
+            problems.push(`${id}: ${light} shadow differs from the sheet it names`);
+          continue;
+        }
+        if (half.sheet !== full.sheet.replace(/\.webp$/, '-low.webp'))
+          problems.push(`${id}: ${light} shadow sheet ${half.sheet}`);
+        else packed(sheet, full.sheet, half.sheet);
+        if (half.frameWidth !== full.frameWidth * (half.ppu / full.ppu))
           problems.push(`${id}: ${light} shadow frame is not scaled`);
       }
     }

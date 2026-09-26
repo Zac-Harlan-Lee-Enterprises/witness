@@ -3,10 +3,10 @@ packed sheets without rendering again.
 
     blender -b --factory-startup -P tools/art/downsample_people.py -- public/art/people [--ppu 1.5] [--force]
 
-For every sheet in people.json (colour sheets, overlays and cast-shadow
-sheets, in every light) it writes `<sheet>-low.webp`: each trimmed frame is
-put back in its full frame, resized (`resample`), trimmed again and packed
-into a new atlas (lib/pack.py) of the width that wastes least. Frame sizes and
+For every colour sheet in people.json (standing, at rest, overlays, in
+every light) it writes `<sheet>-low.webp`: each trimmed frame is put back in
+its full frame, resized (`resample`), trimmed again and packed into a new
+atlas (lib/pack.py) of the width that wastes least. Frame sizes and
 origins are whole pixels at both sizes (frames are whole game units, and
 origins are too), so a smaller frame lies exactly where the full one does:
 overlays still line up with their sheet.
@@ -15,13 +15,16 @@ people.json records them per person, beside the full sheets:
 
     "low": {"ppu": 1.5, "frameWidth": 66, "frameHeight": 102, "originX": 33, "originY": 93,
             "sheets": {"<light>": "<id>-<light>-low.webp"},
-            "shadows": {"<light>": {"sheet": ..., "frameWidth": ..., "ppu": 0.5, ...}}}
+            "shadows": {"<light>": {"sheet": "<id>-shadow-<light>.webp", "frameWidth": ..., "ppu": 1, ...}}}
 
 and each new file's frame table in `atlas`, as for the full sheets.
 Colour sheets go from 3 to --ppu pixels per game unit (1.5 by default: a
-quarter of the pixels); shadow sheets, soft already, from 1 to
---shadow-ppu (0.5). Idempotent: a person whose low sheets are recorded at
-these sizes, with their files present, is skipped (--force redoes them).
+quarter of the pixels). Shadow sheets stay as they are (1 ppu, one byte a
+pixel on the GPU) and `low.shadows` names them, unless --shadow-ppu asks for
+less: at 0.5 a phone magnifies a shadow texel to about nine device pixels,
+and its edges showed steps. Idempotent: a person whose low sheets are
+recorded at these sizes, with their files present, is skipped (--force
+redoes them); low files nothing refers to any more are removed.
 """
 import argparse
 import json
@@ -47,7 +50,7 @@ def args():
     p = argparse.ArgumentParser()
     p.add_argument("folder")
     p.add_argument("--ppu", type=float, default=1.5, help="pixels per game unit of the low colour sheets")
-    p.add_argument("--shadow-ppu", type=float, default=0.5, help="pixels per game unit of the low shadow sheets")
+    p.add_argument("--shadow-ppu", type=float, default=1.0, help="pixels per game unit of the low shadow sheets (1: the full ones)")
     p.add_argument("--force", action="store_true", help="redo every person's low sheets")
     return p.parse_args(argv)
 
@@ -166,56 +169,98 @@ def downsample_sheet(folder, file, table, fw, fh, scale, is_shadow):
     return name, low_table
 
 
-def up_to_date(folder, e, ppu, shadow_ppu):
-    low = e.get("low")
-    if not low or low.get("ppu") != ppu:
-        return False
-    if set(low.get("sheets", {})) != set(e["sheets"]) or set(low.get("shadows", {})) != set(e.get("shadows", {})):
-        return False
-    if any(s.get("ppu") != shadow_ppu for s in low["shadows"].values()):
-        return False
-    files = list(low["sheets"].values()) + [s["sheet"] for s in low["shadows"].values()]
+def _present(folder, e, files):
     return all(f in e.get("atlas", {}) and os.path.exists(os.path.join(folder, f)) for f in files)
 
 
-def downsample(folder, ppu=1.5, shadow_ppu=0.5, force=False):
+def colour_up_to_date(folder, e, ppu):
+    low = e.get("low")
+    if not low or low.get("ppu") != ppu or set(low.get("sheets", {})) != set(e["sheets"]):
+        return False
+    return _present(folder, e, low["sheets"].values())
+
+
+def shadows_up_to_date(folder, e, shadow_ppu):
+    low = e.get("low")
+    full = e.get("shadows", {})
+    if not low or set(low.get("shadows", {})) != set(full):
+        return False
+    for light, s in low["shadows"].items():
+        if s.get("ppu") != min(shadow_ppu, full[light]["ppu"]):
+            return False
+        if s["ppu"] == full[light]["ppu"] and s != full[light]:
+            return False
+    return _present(folder, e, [s["sheet"] for s in low["shadows"].values()])
+
+
+def low_shadow(folder, atlas, s, shadow_ppu):
+    """A low shadow entry: the full sheet itself when it is no finer than
+    shadow_ppu (shadows are 1 ppu, and one byte a pixel on the GPU: at half
+    that, magnified seven times on a phone, their edges showed texel steps),
+    else a smaller copy."""
+    if shadow_ppu >= s["ppu"]:
+        return dict(s)
+    k = shadow_ppu / s["ppu"]
+    name, table = downsample_sheet(folder, s["sheet"], atlas[s["sheet"]], s["frameWidth"], s["frameHeight"], k, True)
+    atlas[name] = table
+    return {
+        "sheet": name,
+        "frameWidth": whole(k, s["frameWidth"], "shadow frame width"),
+        "frameHeight": whole(k, s["frameHeight"], "shadow frame height"),
+        "originX": whole(k, s["originX"], "shadow origin"),
+        "originY": whole(k, s["originY"], "shadow origin"),
+        "ppu": shadow_ppu,
+    }
+
+
+def downsample(folder, ppu=1.5, shadow_ppu=1.0, force=False):
     path = os.path.join(folder, "people.json")
     manifest = json.load(open(path))
     changed = False
     for pid, e in sorted(manifest.items()):
-        if not force and up_to_date(folder, e, ppu, shadow_ppu):
+        redo_colour = force or not colour_up_to_date(folder, e, ppu)
+        redo_shadows = force or not shadows_up_to_date(folder, e, shadow_ppu)
+        if not redo_colour and not redo_shadows:
             continue
         atlas = e.setdefault("atlas", {})
         scale = ppu / e["ppu"]
         fw, fh = e["frameWidth"], e["frameHeight"]
-        low = {
-            "ppu": ppu,
-            "frameWidth": whole(scale, fw, "frame width"),
-            "frameHeight": whole(scale, fh, "frame height"),
-            "originX": whole(scale, e["originX"], "origin"),
-            "originY": whole(scale, e["originY"], "origin"),
-            "sheets": {},
-            "shadows": {},
-        }
-        for light, file in sorted(e["sheets"].items()):
-            name, table = downsample_sheet(folder, file, atlas[file], fw, fh, scale, False)
-            atlas[name] = table
-            low["sheets"][light] = name
-        for light, s in sorted(e.get("shadows", {}).items()):
-            k = shadow_ppu / s["ppu"]
-            name, table = downsample_sheet(folder, s["sheet"], atlas[s["sheet"]], s["frameWidth"], s["frameHeight"], k, True)
-            atlas[name] = table
-            low["shadows"][light] = {
-                "sheet": name,
-                "frameWidth": whole(k, s["frameWidth"], "shadow frame width"),
-                "frameHeight": whole(k, s["frameHeight"], "shadow frame height"),
-                "originX": whole(k, s["originX"], "shadow origin"),
-                "originY": whole(k, s["originY"], "shadow origin"),
-                "ppu": shadow_ppu,
+        low = e.get("low") if not redo_colour else None
+        if low is None:
+            low = {
+                "ppu": ppu,
+                "frameWidth": whole(scale, fw, "frame width"),
+                "frameHeight": whole(scale, fh, "frame height"),
+                "originX": whole(scale, e["originX"], "origin"),
+                "originY": whole(scale, e["originY"], "origin"),
+                "sheets": {},
+                "shadows": {},
             }
+            for light, file in sorted(e["sheets"].items()):
+                name, table = downsample_sheet(folder, file, atlas[file], fw, fh, scale, False)
+                atlas[name] = table
+                low["sheets"][light] = name
+        low["shadows"] = {
+            light: low_shadow(folder, atlas, s, shadow_ppu) for light, s in sorted(e.get("shadows", {}).items())
+        }
         e["low"] = low
         changed = True
-        print("LOW", pid, flush=True)
+        print("LOW", pid, "colour" if redo_colour else "", "shadows" if redo_shadows else "", flush=True)
+    # Low sheets nothing refers to any more (a light re-planned, shadows kept
+    # at full size): their frame tables and files go.
+    used = set()
+    for e in manifest.values():
+        low = e.get("low", {})
+        used.update(low.get("sheets", {}).values())
+        used.update(s["sheet"] for s in low.get("shadows", {}).values())
+    for e in manifest.values():
+        for f in [f for f in e.get("atlas", {}) if f.endswith("-low.webp") and f not in used]:
+            del e["atlas"][f]
+            changed = True
+    for f in sorted(os.listdir(folder)):
+        if f.endswith("-low.webp") and f not in used:
+            os.remove(os.path.join(folder, f))
+            print("REMOVED", f, flush=True)
     if changed:
         json.dump(manifest, open(path, "w"), indent=1, sort_keys=True)
     print("LOW PEOPLE DONE")

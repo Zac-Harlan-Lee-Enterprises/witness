@@ -452,8 +452,8 @@
     },
     {
       "path": "public/art/people/*-low.webp",
-      "what": "Half-resolution copies of every character sheet, overlay and cast-shadow sheet below (<sheet>-low.webp: colour sheets at 1.5 pixels per game unit instead of 3, shadow sheets at 0.5 instead of 1), for phones and low-memory devices; the same frames, trimmed and packed into their own atlases, recorded in people.json under each person's 'low'.",
-      "origin": "Derived from the full-resolution sheets (public/art/people/*.webp, rendered by tools/art/build_people.py) without rendering again, by tools/art/downsample_people.py: each frame restored to its full frame, resized (Lanczos in premultiplied alpha for colour, an area average for shadows), trimmed and repacked with tools/art/lib/pack.py.",
+      "what": "Half-resolution copies of every character sheet and overlay below (<sheet>-low.webp: 1.5 pixels per game unit instead of 3), for phones and low-memory devices; the same frames, trimmed and packed into their own atlases, recorded in people.json under each person's 'low' (which names the full-size cast-shadow sheets: they are kept as they are).",
+      "origin": "Derived from the full-resolution sheets (public/art/people/*.webp, rendered by tools/art/build_people.py) without rendering again, by tools/art/downsample_people.py: each frame restored to its full frame, resized (Lanczos in premultiplied alpha), trimmed and repacked with tools/art/lib/pack.py.",
       "tools": ["Blender 5.2.2 LTS (its Python and image I/O only)"],
       "license": "Project licence (original work)",
       "rebuild": "node scripts/art-build.mjs people-low (npm run art:people also makes them for new sheets)"
