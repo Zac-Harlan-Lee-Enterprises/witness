@@ -315,6 +315,9 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
       if (grid && !walkable(sp.x, sp.y))
         add(where, `spawn '${id}' is on a solid or out-of-bounds tile`);
     });
+    s.weatherChanges.forEach((change, i) =>
+      checkCondition(`${where} weather change ${i}`, change.when),
+    );
     s.entities.forEach((e) => {
       const eWhere = `${where} entity ${e.id}`;
       if (grid && (e.x >= grid.width || e.y >= grid.height)) add(eWhere, 'is outside the map');

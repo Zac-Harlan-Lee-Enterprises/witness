@@ -5,7 +5,7 @@ import type { ScriptureRef, Translation } from '@/domain/scripture';
 import type { GameSettings } from '@/domain/settings';
 import type { GuideAnswer } from '@/domain/guide-policy';
 import type { Direction } from '@/domain/state/game-state';
-import type { Entity, Exit, LookMark, Scene, TileGrid } from '@/domain/world';
+import type { Entity, Exit, LookMark, Scene, TileGrid, Weather } from '@/domain/world';
 import type { Appearance } from '@/domain/characters';
 
 /**
@@ -97,6 +97,8 @@ export interface WorldSceneModel {
   ambience: 'market' | 'wind' | 'indoor' | 'oasis' | 'none';
   mood: SceneMood;
   lighting: WorldLighting;
+  /** The weather as the story stands when the scene loads. */
+  weather: Weather;
   grid: TileGrid;
   baseTile: TileGrid['tiles'][number][number];
   entities: WorldEntityView[];
@@ -133,6 +135,8 @@ export interface WorldPort {
   setMotion(options: { reducedMotion: boolean; tilesPerSecond: number }): void;
   /** Time-of-day colour grade and lamp glow. */
   setLighting(lighting: WorldLighting): void;
+  /** Change the weather in the current scene (the story moved on). */
+  setWeather(weather: Weather): void;
   /**
    * Stage a conversation: who it is with (framed by the camera) and who is
    * speaking now (animated). `null` when no conversation is open.

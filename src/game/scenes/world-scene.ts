@@ -250,6 +250,7 @@ export class WorldScene extends Phaser.Scene {
     this.generation++;
     this.model = model;
     this.lighting = model.lighting;
+    this.setWeather(model.weather);
     const still = this.reducedMotion;
 
     const place = this.place?.art.scene === model.sceneId ? this.place : null;
@@ -339,6 +340,14 @@ export class WorldScene extends Phaser.Scene {
     if (actors) departed(actors.ids(), entities).forEach((id) => actors.remove(id));
     this.feedback?.syncClues(entities);
     this.rebuildBlocked(entities);
+  }
+
+  /**
+   * The weather the story asks for. Recorded on the canvas (`data-weather`)
+   * for tests and diagnostics. Not drawn yet.
+   */
+  setWeather(weather: WorldSceneModel['weather']): void {
+    if (this.game?.canvas) this.game.canvas.dataset.weather = weather;
   }
 
   setPlayerMarks(marks: WorldSceneModel['player']['marks']): void {

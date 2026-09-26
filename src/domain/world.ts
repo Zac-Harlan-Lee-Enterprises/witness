@@ -191,6 +191,17 @@ export const TriggerSchema = z
 /** @public Domain-model type (chapter-authoring API). */
 export type Trigger = z.infer<typeof TriggerSchema>;
 
+/** The sky over a place. Outdoor scenes render it; indoor scenes hear it. */
+export const WEATHERS = ['clear', 'wind', 'rain', 'storm'] as const;
+export const WeatherSchema = z.enum(WEATHERS);
+export type Weather = z.infer<typeof WeatherSchema>;
+
+/** Weather that sets in when a story condition holds (later entries win). */
+export const WeatherChangeSchema = z.object({
+  when: ConditionSchema,
+  weather: WeatherSchema,
+});
+
 export const SceneSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -221,6 +232,14 @@ export const SceneSchema = z.object({
    */
   mood: z.enum(['home', 'city', 'wilderness', 'oasis']).optional(),
   music: z.enum(['home', 'journey', 'tension', 'reflection', 'none']).default('none'),
+  /** The weather when nothing in `weatherChanges` applies. */
+  weather: WeatherSchema.default('clear'),
+  /**
+   * Weather driven by the story, e.g. a storm that rises once the boat has
+   * put out and calms after it has passed. Every change whose `when` holds
+   * applies in order, so the last matching entry wins.
+   */
+  weatherChanges: z.array(WeatherChangeSchema).default([]),
 });
 export type Scene = z.infer<typeof SceneSchema>;
 

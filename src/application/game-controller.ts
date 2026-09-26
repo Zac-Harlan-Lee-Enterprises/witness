@@ -1,6 +1,7 @@
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
 import { playerMarks } from '@/domain/looks';
+import { weatherOf } from '@/domain/weather';
 import type { DomainEvent } from '@/domain/events';
 import { MOVEMENT_SPEEDS, type GameSettings } from '@/domain/settings';
 import type { GameState } from '@/domain/state/game-state';
@@ -67,6 +68,7 @@ export class GameController {
   private readonly unsubscribers: Array<() => void> = [];
   private entitiesKey = '';
   private playerMarksKey = '';
+  private weatherKey = '';
   private lastStoryState: GameState | null = null;
   private disposed = false;
   private chapterStarted = false;
@@ -139,6 +141,7 @@ export class GameController {
       const model = buildSceneModel(session.chapter, session.state, this.deps.playerAppearance);
       this.entitiesKey = JSON.stringify(model.entities);
       this.playerMarksKey = model.player.marks.join(',');
+      this.weatherKey = model.weather;
       await this.world?.loadScene(model);
       audio.setAmbience(scene.ambience);
       audio.setMusic(scene.music);
@@ -535,6 +538,11 @@ export class GameController {
       this.world.setPlayerMarks(marks);
     }
     const scene = findScene(session.chapter, session.state.sceneId);
+    const weather = weatherOf(scene, session.state);
+    if (weather !== this.weatherKey) {
+      this.weatherKey = weather;
+      this.world.setWeather(weather);
+    }
     const entities = visibleEntities(session.chapter, scene, session.state);
     const key = JSON.stringify(entities);
     if (key === this.entitiesKey) return;

@@ -73,6 +73,7 @@ function createPort(scene: WorldScene, destroy: () => void): WorldPort {
     },
     updateEntities: (entities) => scene.updateEntities(entities),
     setPlayerMarks: (marks) => scene.setPlayerMarks(marks),
+    setWeather: (weather) => scene.setWeather(weather),
     travelTo: (targetId, instant) => scene.travelTo(targetId, instant),
     setControlsEnabled: (enabled) => scene.setControlsEnabled(enabled),
     setMotion: (options) => scene.setMotion(options),

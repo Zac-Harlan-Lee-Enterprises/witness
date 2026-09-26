@@ -15,20 +15,28 @@ import { PuzzleController } from '@/application/puzzle-controller';
 import { UiStore } from '@/application/ui-store';
 import { parseChapter } from '@/content';
 import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
-import type { Chapter } from '@/domain/chapter';
+import type { Chapter, ChapterInput } from '@/domain/chapter';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
 import type { DomainEvent } from '@/domain/events';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import type { GameState } from '@/domain/state/game-state';
-import type { LookMark } from '@/domain/world';
+import type { LookMark, Weather } from '@/domain/world';
 import { SilentAudio } from '@/infrastructure/audio/synth-audio';
 import { TypedEventBus } from '@/shared/event-bus';
 import { createLogger } from '@/shared/logger';
 
-let cached: Chapter | null = null;
+const parsed = new Map<string, Chapter>();
+/** Parse (once per test run) any chapter's content, e.g. `loadChapter(STORM_ON_GALILEE)`. */
+export function loadChapter(input: ChapterInput): Chapter {
+  let chapter = parsed.get(input.id);
+  if (!chapter) {
+    chapter = parseChapter(input);
+    parsed.set(input.id, chapter);
+  }
+  return chapter;
+}
 export function loadJericho(): Chapter {
-  cached ??= parseChapter(ROAD_TO_JERICHO);
-  return cached;
+  return loadChapter(ROAD_TO_JERICHO);
 }
 
 /** An AudioPort double that records footsteps (everything else is silent). */
@@ -63,6 +71,14 @@ export class FakeWorld implements WorldPort {
   playerMarks: LookMark[][] = [];
   setPlayerMarks(marks: LookMark[]): void {
     this.playerMarks.push(marks);
+  }
+  weathers: Weather[] = [];
+  setWeather(weather: Weather): void {
+    this.weathers.push(weather);
+  }
+  /** The weather now: the last change, else what the scene loaded with. */
+  get weather(): Weather | undefined {
+    return this.weathers.at(-1) ?? this.scenes.at(-1)?.weather;
   }
   travelTo(targetId: string): void {
     this.travels.push(targetId);
@@ -109,9 +125,9 @@ export interface Harness {
 }
 
 export async function createHarness(
-  options: { restore?: GameState; analyticsConsent?: boolean } = {},
+  options: { restore?: GameState; analyticsConsent?: boolean; chapter?: Chapter } = {},
 ): Promise<Harness> {
-  const chapter = loadJericho();
+  const chapter = options.chapter ?? loadJericho();
   const logger = createLogger({ level: 'error', echo: false });
   const bus = new TypedEventBus<DomainEvent>((error) => {
     throw error;
