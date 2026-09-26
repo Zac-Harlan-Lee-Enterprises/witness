@@ -12,8 +12,10 @@ The **second pass** (§9) set out to make them read as people rather than CG scu
 
 **Pictures** (in [`portraits/`](portraits/)):
 
-- [before-after.webp](portraits/before-after.webp) — the game before (left, the drawn portraits) and after (right): Aunt Miriam and Hadassah in conversation, and the look picker. [before-after-phone.webp](portraits/before-after-phone.webp) — the same conversation on a phone.
-- [contact-sheet.webp](portraits/contact-sheet.webp) — everyone, as rendered: Chapter 1's twelve characters, then the four player looks.
+- **Second pass, by chapter:** [Chapter 1](portraits/contact-sheet-road-to-jericho.webp), [Chapter 2](portraits/contact-sheet-storm-on-galilee.webp), [Chapter 3](portraits/contact-sheet-journey-to-bethlehem.webp), [Chapter 4](portraits/contact-sheet-letter-from-paul.webp), and [the player looks](portraits/contact-sheet-players.webp), each with names and parts.
+- [before-after-v1-v2.webp](portraits/before-after-v1-v2.webp) — every portrait the first pass rendered, first pass (left) against second pass (right). [before-after-v2-game.webp](portraits/before-after-v2-game.webp) — the same in the game: Hadassah's conversation and the look picker, first pass above, second below.
+- [before-after.webp](portraits/before-after.webp) — the game with the drawn portraits (left) and the first rendered pass (right). [before-after-phone.webp](portraits/before-after-phone.webp) — the same conversation on a phone.
+- [contact-sheet.webp](portraits/contact-sheet.webp) — the first pass, as rendered: Chapter 1's twelve characters, then the four player looks.
 - [finish-comparison.webp](portraits/finish-comparison.webp) and [finish-comparison-full.webp](portraits/finish-comparison-full.webp) — photographic against painterly (§5).
 
 Recreate the chapter sheets with `npm run art:portrait-sheets` (and the first-pass comparison with `-- --compare 640002b`). Recreate the in-game pair with `E2E_SHOTS=1 npx playwright test e2e/portrait-art.spec.ts --project=desktop-chromium` (the `before` set blocks the portrait images, so the game falls back to the drawings).
@@ -106,7 +108,7 @@ Without a casting entry, age and sex are inferred as the world figures do ([`peo
 
 ## 5. Photoreal or painterly
 
-**Chosen: photographic.** The brief allowed a painterly finish if photographic faces still looked uncanny or plastic. Both were judged side by side on the same renders: [finish comparison](portraits/finish-comparison.webp) (top row photographic; below, Blender's anisotropic Kuwahara filter at sizes 3 and 6).
+**Chosen: photographic** (in both passes). The brief allowed a painterly finish if photographic faces still looked uncanny or plastic. Both were judged side by side on the same renders: [finish comparison](portraits/finish-comparison.webp) (top row photographic; below, Blender's anisotropic Kuwahara filter at sizes 3 and 6).
 
 - At the sizes the game shows (104 px and smaller at 2× density), the painterly pass changes very little. What it does change is for the worse: hair strands smear into streaks, and the catchlights and lash lines that make the eyes read soften.
 - At full size it reads as airbrushed digital painting rather than oil. It hides some CG smoothness in the skin, but it also removes the pores, stubble and fibre detail that make the photographic version read as real.
@@ -114,13 +116,15 @@ Without a casting entry, age and sex are inferred as the world figures do ([`peo
 
 The painterly pass stays in the pipeline as an option (`--finish paint`) for art direction to revisit.
 
+**Second pass, judged again.** The second pass was allowed a painterly finish if it now helped. It was tried on the final renders of Miriam and Malik (Kuwahara sizes 3 and 6). Size 3 barely changes anything at the sizes the game shows; size 6 smooths the new pores, skin grain, stubble and lip lines, the very things that stopped the faces reading as plastic, and turns beard curls into streaks. The photographic finish stays.
+
 ## 6. In the game
 
 - **Lookup.** [`portraitImage`](../../src/features/portraits/portrait-art.ts) computes the appearance key (the domain copy, [`src/domain/appearance-key.ts`](../../src/domain/appearance-key.ts), with the same output as the game's `appearanceKey`). It returns the speaker's own portrait (`characterId`) if that portrait was rendered from this appearance, otherwise any portrait rendered from the same appearance (that is how players are found), otherwise nothing. A portrait is never shown for an appearance it wasn't rendered from.
 - **Loading.** The image has a fixed `width` and `height` and a warm limestone background matching the render's, so the layout never shifts and nothing flashes while it decodes. If it fails to load, the SVG drawing is shown instead.
 - **Accessibility.** Portraits are decorative (`alt=""` and `aria-hidden`); names are always text.
 - **Sizes.** `srcset` offers 128, 256 and 512 px; the browser picks by display size and pixel density. Portraits are shown at 104 px in the dialogue box (72 px at large text, 60 px on phones), 72 px in the look picker, 64 px on profile cards and 56 px in chapter select. URLs start at `import.meta.env.BASE_URL`, so a sub-path deployment (GitHub Pages `/witness/`) works.
-- **Offline.** All three sizes are precached with the rest of the art (WebP is already in the precache pattern). The whole set is small: 16 people, 48 files, 473 KB. That breaks down as 128 px about 4 KB each (65 KB in all), 256 px about 8 KB (131 KB), and 512 px about 17 KB (277 KB).
+- **Offline.** All three sizes are precached with the rest of the art (WebP is already in the precache pattern). SIZES_LINE
 - **Preloading.** When a chapter starts, the dialogue overlay loads and decodes the portraits of everyone in it, so nobody's first line waits for their picture.
 - **Why the manifest is bundled.** Code in `src/` makes no network requests (an architecture rule), and Vite does not let code import JSON from `public/`, so the manifest lives next to the code that reads it.
 
