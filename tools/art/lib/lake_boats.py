@@ -746,7 +746,7 @@ class BoatsMixin:
         frames and planking inside, a rounded gunwale on top, thole pins and
         oars out on both sides, the stem and sternpost rising at the ends,
         the helmsman's raised deck at the stern and the steering oar on the
-        starboard quarter. One sprite per map row, so people on deck sort
+        starboard quarter. Two sprites per map row (stern and bow halves), so people on deck sort
         against the side in front of them and the side behind them."""
         o = self.family_outline()
         if o is None:
@@ -806,9 +806,23 @@ class BoatsMixin:
         self._stern_platform(o, rail_z, put)
         # Oars out, two a side, and the steering oar.
         self._oars_out(o, rail_z, zw, put, rng)
+        # Each row in two sprites, the stern half and the bow half: between
+        # the ends of most rows there is only deck (in the ground), and one
+        # sprite spanning the boat would be mostly transparent texture.
+        mid = (o["xa"] + o["xb"]) / 2
+        bpy.context.view_layer.update()
+
+        def centre_x(ob):
+            return sum((ob.matrix_world @ Vector(c)).x for c in ob.bound_box) / 8
+
         for row, objs in sorted(rows.items()):
             base = row + 0.98
-            self.sprite(f"hull-r{row}", base, objs, [(x, row) for x in range(int(o["xa"]), int(o["xb"])) if self.map.kind(x, row) == "hull"] or [(int(o["xa"]), row)])
+            for half, part in (("", [ob for ob in objs if centre_x(ob) < mid]), ("-bow", [ob for ob in objs if centre_x(ob) >= mid])):
+                if not part:
+                    continue
+                span = range(int(o["xa"]), int(mid)) if not half else range(int(mid), int(o["xb"]))
+                tiles = [(x, row) for x in span if self.map.kind(x, row) == "hull"] or [(int(o["xa"] if not half else mid), row)]
+                self.sprite(f"hull-r{row}{half}", base, part, tiles)
 
     def _bulwark(self, name, seg, side, rail_z, zw, outside, inside, timber):
         """One stretch of the boat's side along `seg` (map points on the
