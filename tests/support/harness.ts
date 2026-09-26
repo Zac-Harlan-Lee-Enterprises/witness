@@ -60,6 +60,7 @@ export class FakeWorld implements WorldPort {
     if (this.holdLoads) await new Promise<void>((resolve) => this.held.push(resolve));
     this.scenes.push(model);
     this.entities = model.entities;
+    this.currentWeather = model.weather;
   }
   releaseLoads(): void {
     this.holdLoads = false;
@@ -72,13 +73,16 @@ export class FakeWorld implements WorldPort {
   setPlayerMarks(marks: LookMark[]): void {
     this.playerMarks.push(marks);
   }
+  /** Every weather change the story asked for, in order (across scenes). */
   weathers: Weather[] = [];
+  private currentWeather: Weather | undefined;
   setWeather(weather: Weather): void {
     this.weathers.push(weather);
+    this.currentWeather = weather;
   }
-  /** The weather now: the last change, else what the scene loaded with. */
+  /** The weather now: what the current scene loaded with, or its latest change. */
   get weather(): Weather | undefined {
-    return this.weathers.at(-1) ?? this.scenes.at(-1)?.weather;
+    return this.currentWeather;
   }
   travelTo(targetId: string): void {
     this.travels.push(targetId);
