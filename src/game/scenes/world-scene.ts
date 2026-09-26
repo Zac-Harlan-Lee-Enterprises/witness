@@ -18,23 +18,18 @@ import {
 } from '@/domain/navigation';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
-import type { LookMark } from '@/domain/world';
+import type { LookMark, Pose } from '@/domain/world';
 import { inRect } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
 import { lookFor, shadowOffset } from '../art/direction';
 import { ART_SCALE, TILE } from '../art/paint';
 import { headTop, isFootfall, walkColumn, WALK_CYCLE_TILES } from '../art/people/rig';
 import { frameName } from '../art/people/sheet';
-import { loadPeople, loadPerson, loadPlace, type PlaceTextures } from '../prerendered/loader';
-import type { ArtSprite, LightingVariant, PeopleArt, PersonSheet } from '../prerendered/manifest';
-import {
-  artPathFor,
-  depthRow,
-  sampleShade,
-  shadeTint,
-  sheetFor,
-  turnPath,
-} from '../prerendered/select';
+import { CanopyFader } from '../prerendered/canopy';
+import { prepareArt, type FigureBook } from '../prerendered/figures';
+import type { PlaceTextures } from '../prerendered/loader';
+import type { ArtSprite } from '../prerendered/manifest';
+import { depthRow, sampleShade, shadeTint, turnPath } from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
@@ -147,8 +142,8 @@ export class WorldScene extends Phaser.Scene {
   private cast: ShadowCast | null = null;
   /** Pre-rendered art for the place being shown (null: it is painted). */
   private place: PlaceTextures | null = null;
-  private peopleArt: PeopleArt | null = null;
-  private figures = new Map<string, RenderedFigure>();
+  private book: FigureBook | null = null;
+  private canopyFader: CanopyFader | null = null;
   private entitySprites = new Map<string, ArtSprite>();
   private playerFigure: RenderedFigure | null = null;
   private playerTurn: { frames: string[]; next: number } = { frames: [], next: 0 };
@@ -190,41 +185,17 @@ export class WorldScene extends Phaser.Scene {
    * people who will be shown. Anything missing falls back to painting.
    */
   async prepare(model: WorldSceneModel): Promise<void> {
-    this.place = null;
-    this.figures = new Map();
-    const path = artPathFor(model.sceneId);
-    if (!path) return;
     const zoom = zoomFor(this.scale.width, this.scale.height, framingFor(this.opts.framing, 3));
     const forced = this.opts.artLighting;
     const hour = forced === 'late' ? 24 : forced === 'day' ? 8 : model.lighting.hour;
-    const place = await loadPlace(
+    const art = await prepareArt(
       this,
-      model.sceneId,
-      path,
+      model,
       { hour, zoom, lowPower: this.quality.lowPower },
       this.opts.logger,
     );
-    if (!place) return;
-    const people = await loadPeople(this, this.opts.logger);
-    this.peopleArt = people;
-    if (people) {
-      const wanted = new Set<string>();
-      const want = (a: Appearance | null, marks: readonly LookMark[]): void => {
-        const id = a ? sheetFor(people, a, marks) : null;
-        if (id) wanted.add(id);
-      };
-      model.entities.forEach((e) => want(e.appearance, e.marks));
-      want(model.player.appearance, model.player.marks);
-      Object.keys(people)
-        .filter((id) => id.startsWith('crowd-'))
-        .forEach((id) => wanted.add(id));
-      for (const id of wanted) {
-        const sheet = people[id];
-        const tex = sheet ? await loadPerson(this, people, id, place.variant) : null;
-        if (sheet && tex) this.figures.set(id, figureOf(sheet, tex, place.variant));
-      }
-    }
-    this.place = place;
+    this.place = art.place;
+    this.book = art.book;
   }
 
   /** Close framing only where the place's art has the resolution for it. */
@@ -233,9 +204,13 @@ export class WorldScene extends Phaser.Scene {
     return framingFor(this.opts.framing, place ? place.art.ppu : ART_SCALE);
   }
 
-  private figureFor(appearance: Appearance, marks: readonly LookMark[]): RenderedFigure | null {
-    const id = sheetFor(this.peopleArt, appearance, marks);
-    return id ? (this.figures.get(id) ?? null) : null;
+  private figureFor(
+    appearance: Appearance,
+    marks: readonly LookMark[],
+    pose: Pose = 'stand',
+  ): RenderedFigure | null {
+    const rag = this.model?.player.appearance.robe ?? null;
+    return this.book?.figure(appearance, marks, pose, rag) ?? null;
   }
 
   private sunAt = (x: number, y: number): number => {
@@ -268,7 +243,7 @@ export class WorldScene extends Phaser.Scene {
       model.player.appearance.robe,
       this.cast,
       DEPTH.shadows,
-      (view) => (view.appearance ? this.figureFor(view.appearance, view.marks) : null),
+      (view) => (view.appearance ? this.figureFor(view.appearance, view.marks, view.pose) : null),
       place ? this.sunAt : null,
     );
     this.feedback = new Feedback(
@@ -514,6 +489,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.player.sprite.setFrame(name);
     this.player.shadow?.setFrame(name);
+    this.canopyFader?.update(this.player.sprite.x, this.player.sprite.y, dt);
     if (this.playerFigure && this.place) {
       const target = this.sunAt(this.player.sprite.x, this.player.sprite.y);
       this.playerLight += (target - this.playerLight) * 0.2;
@@ -785,6 +761,7 @@ export class WorldScene extends Phaser.Scene {
   private buildFromArt(place: PlaceTextures): void {
     const v = place.art.variants[place.variant] ?? place.art.variants.day;
     this.lightSpots = [];
+    this.canopyFader = new CanopyFader(place.art.ppu, () => this.reducedMotion);
     this.layers.push(
       this.add
         .image(0, 0, place.ground)
@@ -797,7 +774,9 @@ export class WorldScene extends Phaser.Scene {
         this.entitySprites.set(sprite.id.slice('entity:'.length), sprite);
         continue;
       }
-      this.layers.push(this.artImage(place, sprite));
+      const image = this.artImage(place, sprite);
+      this.canopyFader.track(image, sprite);
+      this.layers.push(image);
     }
   }
 
@@ -805,11 +784,22 @@ export class WorldScene extends Phaser.Scene {
     const page = place.pages[sprite.page] ?? place.pages[0] ?? '';
     const tex = this.textures.get(page);
     const frame = `sprite:${sprite.id}`;
-    if (!tex.has(frame)) tex.add(frame, 0, sprite.u, sprite.v, sprite.w, sprite.h);
+    const k = place.spriteScale;
+    if (!tex.has(frame))
+      tex.add(
+        frame,
+        0,
+        sprite.u * k,
+        sprite.v * k,
+        Math.ceil(sprite.w * k),
+        Math.ceil(sprite.h * k),
+      );
+    // Anchored at the bottom centre, like painted props, so focus marks sit on it.
+    const ppu = place.art.ppu;
     return this.add
-      .image(sprite.x, sprite.y, page, frame)
-      .setOrigin(0, 0)
-      .setScale(1 / place.art.ppu)
+      .image(sprite.x + sprite.w / (2 * ppu), sprite.y + sprite.h / ppu, page, frame)
+      .setOrigin(0.5, 1)
+      .setScale(1 / (ppu * k))
       .setDepth(depthFor(depthRow(sprite.base)));
   }
 
@@ -853,9 +843,7 @@ export class WorldScene extends Phaser.Scene {
       reducedMotion: this.reducedMotion,
       lowPower: this.quality.lowPower,
       cast: this.cast,
-      crowd: [...this.figures.entries()]
-        .filter(([id]) => id.startsWith('crowd-'))
-        .map(([, f]) => f),
+      crowd: this.book?.crowd() ?? [],
       prerendered: this.place?.art.scene === model.sceneId,
     });
   }
@@ -979,6 +967,7 @@ export class WorldScene extends Phaser.Scene {
     this.layers.forEach((l) => l.destroy());
     this.layers = [];
     this.canopies = [];
+    this.canopyFader = null;
     this.player.sprite?.destroy();
     this.player.sprite = null;
     this.player.shadow?.destroy();
@@ -1007,31 +996,6 @@ function castFor(model: WorldSceneModel): ShadowCast | null {
     height,
     alpha: look.shadow.alpha * 0.75,
     color: parseInt(look.shadow.color.slice(1), 16),
-  };
-}
-
-function figureOf(
-  sheet: PersonSheet,
-  tex: { key: string; shadow: string },
-  variant: LightingVariant,
-): RenderedFigure {
-  const shadow = sheet.shadows[variant] ?? sheet.shadows.day;
-  return {
-    key: tex.key,
-    shadowKey: tex.shadow,
-    ppu: sheet.ppu,
-    originX: sheet.originX,
-    originY: sheet.originY,
-    frameWidth: sheet.frameWidth,
-    frameHeight: sheet.frameHeight,
-    turns: sheet.turns,
-    shadow: {
-      ppu: shadow.ppu,
-      originX: shadow.originX,
-      originY: shadow.originY,
-      frameWidth: shadow.frameWidth,
-      frameHeight: shadow.frameHeight,
-    },
   };
 }
 

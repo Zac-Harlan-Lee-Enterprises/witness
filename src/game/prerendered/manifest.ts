@@ -22,6 +22,8 @@ const SpriteSchema = z.object({
   /** The ground line it stands on (game units, y): people further south draw in front. */
   base: z.number(),
   tiles: z.array(z.tuple([z.number().int(), z.number().int()])).default([]),
+  /** A canopy (a palm's crown): faded while someone walks behind it. */
+  fade: z.boolean().default(false),
 });
 export type ArtSprite = z.infer<typeof SpriteSchema>;
 
@@ -30,17 +32,26 @@ const VariantSchema = z.object({
   groundLow: z.string().min(1),
   shade: z.string().min(1),
   pages: z.array(z.string().min(1)).min(1),
+  /** The same pages at half resolution (phones, reduced effects), if built. */
+  pagesLow: z.array(z.string().min(1)).optional(),
   sprites: z.array(SpriteSchema),
 });
+export type ArtVariant = z.infer<typeof VariantSchema>;
 
 export const LIGHTING_VARIANTS = ['day', 'late'] as const;
 export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
+
+/** How people are lit: by the sun of the place's variant, or indoors (a lamp and a window). */
+export const PEOPLE_LIGHTS = ['day', 'late', 'indoor'] as const;
+export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
 
 export const PlaceArtSchema = z.object({
   version: z.literal(1),
   scene: z.string().min(1),
   tiles: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   ppu: z.number().positive(),
+  /** Rooms light people with their own lamp and window (people sheets' 'indoor' variant). */
+  peopleLight: z.enum(['indoor']).optional(),
   variants: z.object({ day: VariantSchema, late: VariantSchema.optional() }),
 });
 export type PlaceArt = z.infer<typeof PlaceArtSchema>;
@@ -54,10 +65,32 @@ const ShadowSheetSchema = z.object({
   ppu: z.number().positive(),
 });
 
+export const POSES = ['stand', 'sit', 'lie'] as const;
+
 const PersonSheetSchema = z.object({
   /** Stable key of the authored appearance (see appearanceKey). */
   appearance: z.string().min(1),
-  sheets: z.object({ day: z.string().min(1), late: z.string().min(1).optional() }),
+  /** Standing (and walking), or at rest: sitting cross-legged or lying on the back. */
+  pose: z.enum(POSES).default('stand'),
+  /** Story marks built into this sheet (ones that change the body, like a torn hem). */
+  marks: z.array(z.string().min(1)).default([]),
+  /**
+   * An overlay: only a mark (a bandage, the spare cloak, a water skin), with
+   * the same frames as the sheet `of`, drawn over it. Rag bandages are made
+   * from the player's tunic, so they carry its colour (`rag`).
+   */
+  overlay: z
+    .object({
+      mark: z.string().min(1),
+      of: z.string().min(1),
+      rag: z.string().optional(),
+    })
+    .optional(),
+  sheets: z.object({
+    day: z.string().min(1).optional(),
+    late: z.string().min(1).optional(),
+    indoor: z.string().min(1).optional(),
+  }),
   frameWidth: z.number().int().positive(),
   frameHeight: z.number().int().positive(),
   originX: z.number(),
@@ -66,7 +99,14 @@ const PersonSheetSchema = z.object({
   columns: z.array(z.string().min(1)).min(1),
   rows: z.array(z.string().min(1)).min(1),
   turns: z.array(z.string().min(1)).default([]),
-  shadows: z.object({ day: ShadowSheetSchema, late: ShadowSheetSchema.optional() }),
+  /** Cast shadows per light (overlays have none: the sheet under them casts it). */
+  shadows: z
+    .object({
+      day: ShadowSheetSchema.optional(),
+      late: ShadowSheetSchema.optional(),
+      indoor: ShadowSheetSchema.optional(),
+    })
+    .default({}),
   /**
    * Trimmed frames packed into atlases, per image file: frame name →
    * [x, y, w, h, offsetX, offsetY] (the offset places the trimmed pixels
