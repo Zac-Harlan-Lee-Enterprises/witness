@@ -234,8 +234,7 @@ export class WorldScene extends Phaser.Scene {
     registerPostFx(this.game);
     releaseUnusedTargets(this.game);
     fixCanvasBlendModes(this.game);
-    // The Canvas renderer draws on the CPU: keep it at CSS resolution.
-    this.opts.viewport.setCap(this.gpu.webgl ? effectsFor(this.quality.level).maxResolution : 1);
+    this.opts.viewport.setCap(this.maxResolution(this.quality.level));
     makeSharedTextures(this.textures);
     makeFxTextures(this.textures);
     this.game.canvas.dataset.effects = effectsLabel(this.quality.level);
@@ -758,6 +757,14 @@ export class WorldScene extends Phaser.Scene {
     this.game.canvas.dataset.postFx = this.postFx ? 'on' : 'off';
   }
 
+  /**
+   * The highest render resolution for a level. Without a GPU (the Canvas
+   * renderer, or software GL) every pixel is drawn by the CPU: stay at 1×.
+   */
+  private maxResolution(level: EffectsLevel): number {
+    return this.gpu.webgl && !this.gpu.software ? effectsFor(level).maxResolution : 1;
+  }
+
   /** The quality level changed (automatically, or by the player): apply what it allows. */
   private onQualityLevel(level: EffectsLevel, automatic = true): void {
     const fx = effectsFor(level);
@@ -778,7 +785,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.applyPostFx();
     this.weather?.setShare(fx.weather);
-    this.opts.viewport.setCap(this.gpu.webgl ? fx.maxResolution : 1);
+    this.opts.viewport.setCap(this.maxResolution(level));
   }
 
   // ── Camera ──────────────────────────────────────────────────────────────

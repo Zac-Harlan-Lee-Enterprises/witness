@@ -28,6 +28,7 @@ export const QUALITY = {
   /**
    * A single frame longer than this is a hitch (a tab coming back, a
    * garbage collection, a screenshot), not a slow device: it isn't counted.
+   * Long frames in a row are counted: that is a slow device.
    */
   hitchMs: 250,
 } as const;
@@ -45,6 +46,8 @@ export interface QualityState {
   level: EffectsLevel;
   /** The last level: simpler effects for the rest of the session. */
   lowPower: boolean;
+  /** The previous frame was longer than `hitchMs`. */
+  long: boolean;
 }
 
 export const INITIAL_QUALITY: QualityState = {
@@ -55,6 +58,7 @@ export const INITIAL_QUALITY: QualityState = {
   severe: 0,
   level: 'full',
   lowPower: false,
+  long: false,
 };
 
 function atLevel(level: EffectsLevel): QualityState {
@@ -66,6 +70,7 @@ function atLevel(level: EffectsLevel): QualityState {
     severe: 0,
     level,
     lowPower: level === 'low',
+    long: false,
   };
 }
 
@@ -80,8 +85,12 @@ export function nextLevel(level: EffectsLevel, highDpi: boolean): EffectsLevel {
  * Advance by one rendered frame of `deltaMs`. Levels only ever go down.
  * `highDpi`: the world is rendering above 1×, so there is a resolution step to take.
  */
-export function stepQuality(s: QualityState, deltaMs: number, highDpi = false): QualityState {
-  if (s.lowPower || deltaMs > QUALITY.hitchMs) return s;
+export function stepQuality(state: QualityState, deltaMs: number, highDpi = false): QualityState {
+  if (state.lowPower) return state;
+  const long = deltaMs > QUALITY.hitchMs;
+  // An isolated long frame is a hitch, not the device: skip it.
+  if (long && !state.long) return { ...state, long };
+  const s = { ...state, long };
   const elapsedMs = s.elapsedMs + deltaMs;
   if (elapsedMs < QUALITY.warmupMs) return { ...s, elapsedMs };
   const sinceSampleMs = s.sinceSampleMs + deltaMs;

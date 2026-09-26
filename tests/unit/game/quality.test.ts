@@ -80,6 +80,10 @@ describe('automatic quality', () => {
     expect(s.level).toBe('full');
   });
 
+  it('counts long frames in a row: a device drawing a few frames a second is slow, not hitching', () => {
+    expect(run(3, 20).level).toBe('low');
+  });
+
   it('keeps the level reached when a new scene restarts the warm-up', () => {
     const lite = run(30, 7.5, true);
     expect(restartWarmup(lite).level).toBe('lite');
