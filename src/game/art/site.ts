@@ -32,6 +32,9 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'cloth',
   'mat',
   'bedroll',
+  'mast',
+  'nets',
+  'rack',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -45,9 +48,15 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'door',
   'gate',
   'fence',
+  // The lake and its boats are painted in their own passes (nature.ts, boats.ts).
+  'lake',
+  'shallows',
+  'hull',
+  'boat',
 ]);
 
-const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig']);
+/** Tall things whose tops are drawn above people: trees, and a boat's mast and yard. */
+const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig', 'mast']);
 
 /**
  * Height in world units (a tile is 32) — how far a thing's shadow reaches.
@@ -80,6 +89,9 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   crops: 12,
   reeds: 22,
   cloth: 26,
+  mast: 70,
+  nets: 26,
+  rack: 22,
 };
 
 export function isPropTile(kind: TileKind): boolean {

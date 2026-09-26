@@ -14,6 +14,7 @@ const SPREAD: Partial<Record<TileKind, number>> = {
   grass: 7,
   scrub: 6,
   sand: 5,
+  shingle: 4.5,
   wadi: 4,
   mud: 3.5,
   soil: 3,
@@ -22,6 +23,11 @@ const SPREAD: Partial<Record<TileKind, number>> = {
   steps: 2,
   floor: 1,
 };
+
+/** The lake shore is dark basalt pebbles; boats and landing stages are timber and basalt. */
+const SHINGLE = '#8d857a';
+const DECK = '#a27d52';
+const JETTY = '#7a746b';
 
 export function groundColor(look: Look, kind: TileKind): string {
   switch (kind) {
@@ -43,6 +49,12 @@ export function groundColor(look: Look, kind: TileKind): string {
     case 'mat':
     case 'bedroll':
       return look.ground.floor;
+    case 'shingle':
+      return mix(look.ground.sand, SHINGLE, 0.5);
+    case 'deck':
+      return DECK;
+    case 'jetty':
+      return mix(JETTY, look.ground.paving, 0.2);
     default:
       return look.ground.sand;
   }
@@ -97,7 +109,9 @@ export function paintGround(ctx: Ctx, site: Site, look: Look, doc: Document): vo
       k === 'paving' ||
       k === 'steps' ||
       k === 'door' ||
-      k === 'gate'
+      k === 'gate' ||
+      k === 'deck' ||
+      k === 'jetty'
     )
       return;
     const r = rng(hash(x, y, 7));
@@ -473,6 +487,63 @@ function paintDetail(
     case 'rug':
       paintRug(ctx, site, look, tx, ty);
       return;
+    case 'shingle': {
+      // Rounded basalt and limestone pebbles; the odd shell.
+      const base = groundColor(look, 'shingle');
+      for (let i = 0; i < 11; i++)
+        pebble(
+          ctx,
+          X + 2 + r() * 28,
+          Y + 2 + r() * 28,
+          1 + r() * 1.8,
+          r() < 0.55 ? shade(base, -0.3 - r() * 0.15) : shade(base, 0.18),
+        );
+      if (r() < 0.2) ellipse(ctx, X + 6 + r() * 20, Y + 6 + r() * 20, 1.4, 1, '#efe6d6');
+      if (edge) paintClutter(ctx, look, X, Y, r);
+      return;
+    }
+    case 'deck': {
+      // Planks running fore and aft, pegged to the frames beneath.
+      ctx.strokeStyle = rgba(shade(DECK, -0.45), 0.55);
+      ctx.lineWidth = 0.7;
+      for (let i = 1; i < 6; i++) {
+        ctx.beginPath();
+        ctx.moveTo(X, Y + i * 5.4);
+        ctx.lineTo(X + TILE, Y + i * 5.4);
+        ctx.stroke();
+      }
+      ctx.fillStyle = rgba('#ffffff', 0.08);
+      for (let i = 0; i < 6; i++) ctx.fillRect(X, Y + i * 5.4 + 0.8, TILE, 1);
+      const joint = X + 4 + r() * 24;
+      ctx.beginPath();
+      ctx.moveTo(joint, Y + Math.floor(r() * 5) * 5.4);
+      ctx.lineTo(joint, Y + Math.floor(r() * 5) * 5.4 + 5.4);
+      ctx.stroke();
+      for (let i = 0; i < 3; i++)
+        ellipse(ctx, X + 3 + r() * 26, Y + 2.7 + Math.floor(r() * 6) * 5.4, 0.5, 0.5, '#3c2a1a');
+      return;
+    }
+    case 'jetty': {
+      // Big dressed basalt blocks, darker in the joints, pale where feet go.
+      const base = groundColor(look, 'jetty');
+      for (let row = 0; row < 2; row++) {
+        let x0 = X - (row === 1 ? 6 : 0);
+        while (x0 < X + TILE) {
+          const w = 11 + r() * 9;
+          const left = Math.max(X, x0);
+          const right = Math.min(X + TILE, x0 + w);
+          if (right - left > 1) {
+            ctx.fillStyle = shade(base, (r() - 0.5) * 0.18);
+            ctx.fillRect(left + 0.8, Y + row * 16 + 0.8, right - left - 1.6, 14.4);
+            ctx.fillStyle = rgba('#ffffff', 0.14);
+            ctx.fillRect(left + 0.8, Y + row * 16 + 0.8, right - left - 1.6, 1.2);
+          }
+          x0 += w;
+        }
+      }
+      speckle(ctx, X, Y, TILE, TILE, r, [shade(base, -0.35), shade(base, 0.2)], 10, 0.9);
+      return;
+    }
     case 'wadi': {
       for (let i = 0; i < 7; i++)
         pebble(

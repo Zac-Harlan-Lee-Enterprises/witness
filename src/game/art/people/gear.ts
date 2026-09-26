@@ -5,8 +5,9 @@ import { rightHandIndex, type Pt, type Rig } from './rig';
 
 /**
  * Things people carry and wear over their clothes: a shepherd's staff, a
- * basket, an oil jar, a baker's tray, a spindle, a traveller's bundle, and
- * the player's satchel, water skin, lamp and rolled cloak. Each is drawn in
+ * basket, an oil jar, a baker's tray, a spindle, a traveller's bundle, a
+ * fisher's folded net and an oar, and the player's satchel, water skin,
+ * lamp and rolled cloak. Each is drawn in
  * the layer where it belongs for the view:
  *   behind — hidden by the body (drawn first)
  *   body   — over the tunic, under the arms
@@ -24,7 +25,9 @@ type Item =
   | 'satchel'
   | 'water-skin'
   | 'lamp'
-  | 'cloak-roll';
+  | 'cloak-roll'
+  | 'net'
+  | 'oar';
 
 const WOOD = '#7a5634';
 const LEATHER = '#6e4a2c';
@@ -49,6 +52,7 @@ function sideIndex(item: Item, r: Rig): 0 | 1 {
     case 'spindle':
     case 'bread':
     case 'water-skin':
+    case 'oar':
       return right;
     default:
       return left;
@@ -60,6 +64,8 @@ export function layerOf(item: Item, r: Rig): CarryLayer {
   const side = r.dir === 'left' || r.dir === 'right';
   const onBack = item === 'bundle' || item === 'cloak-roll';
   if (onBack) return r.dir === 'up' ? 'front' : 'behind';
+  // A net is draped over the shoulder: it shows over the tunic from every side.
+  if (item === 'net') return 'body';
   const near = side ? sideIndex(item, r) === 1 : true;
   if (!near) return 'behind';
   if (r.dir === 'up') {
@@ -391,6 +397,72 @@ function cloakRoll(ctx: Ctx, d: Dress, r: Rig): void {
   for (const s of [-1, 1]) ctx.fillRect(t.cx + s * half * 0.55 - 0.4, y - 2.2, 0.8, 4.4);
 }
 
+function oar(ctx: Ctx, _d: Dress, r: Rig): void {
+  const h = r.hands[rightHandIndex(r.dir)];
+  const side = r.dir === 'left' || r.dir === 'right';
+  const f = r.dir === 'left' ? -1 : 1;
+  const len = r.build.height * 1.12;
+  const bottom = { x: h.x + (side ? f * 1.2 : -0.5), y: 0.4 };
+  const top = { x: h.x + (side ? -f * 1.3 : 0.5), y: bottom.y - len };
+  const g = ctx.createLinearGradient(top.x - 1, 0, top.x + 1, 0);
+  g.addColorStop(0, shade(WOOD, 0.25));
+  g.addColorStop(1, shade(WOOD, -0.3));
+  ctx.strokeStyle = g;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(bottom.x, bottom.y);
+  ctx.lineTo(top.x, top.y + 5);
+  ctx.stroke();
+  // The blade, held up.
+  const bx = top.x;
+  const by = top.y + 2.2;
+  ctx.fillStyle = shade(WOOD, 0.12);
+  ctx.beginPath();
+  ctx.ellipse(bx, by, 1.5, 4.6, side ? -f * 0.08 : 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = rgba(shade(WOOD, -0.5), 0.6);
+  ctx.lineWidth = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(bx, by - 3.8);
+  ctx.lineTo(bx, by + 3.8);
+  ctx.stroke();
+}
+
+function net(ctx: Ctx, d: Dress, r: Rig): void {
+  const t = torsoFrame(d, r);
+  const side = r.dir === 'left' || r.dir === 'right';
+  const s = r.shoulders[sideIndex('net', r)];
+  const x = side ? t.cx : s.x;
+  const top = s.y - 0.8;
+  const bottom = t.waist + 2.6;
+  const w = side ? 3.2 : 2.6;
+  const mesh = '#d9ccab';
+  ctx.save();
+  ctx.fillStyle = mesh;
+  ctx.beginPath();
+  ctx.moveTo(x - w, top);
+  ctx.quadraticCurveTo(x - w - 0.8, (top + bottom) / 2, x - w * 0.6, bottom);
+  ctx.quadraticCurveTo(x, bottom + 1.2, x + w * 0.7, bottom - 0.4);
+  ctx.quadraticCurveTo(x + w + 0.6, (top + bottom) / 2, x + w * 0.8, top);
+  ctx.closePath();
+  ctx.fill();
+  ctx.clip();
+  ctx.strokeStyle = rgba(shade(mesh, -0.45), 0.55);
+  ctx.lineWidth = 0.22;
+  for (let i = -6; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x - w + i * 1.3, top);
+    ctx.lineTo(x - w + i * 1.3 + 5, bottom + 1);
+    ctx.moveTo(x - w + i * 1.3 + 5, top);
+    ctx.lineTo(x - w + i * 1.3, bottom + 1);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // Cork floats along the head rope.
+  for (let i = 0; i < 3; i++)
+    ellipse(ctx, x + w * 0.55, top + 1.6 + i * ((bottom - top) / 3.2), 0.8, 0.55, '#a8743a');
+}
+
 const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   staff,
   basket,
@@ -402,4 +474,6 @@ const PAINT: Record<Item, (ctx: Ctx, d: Dress, r: Rig) => void> = {
   'water-skin': waterSkin,
   lamp,
   'cloak-roll': cloakRoll,
+  net,
+  oar,
 };

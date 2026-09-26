@@ -1,5 +1,6 @@
 import type { TileGrid, TileKind } from '@/domain/world';
 import { paintBuildings } from './architecture';
+import { paintBoats } from './boats';
 import { lookFor, type Mood } from './direction';
 import { paintFurnishing } from './furnishings';
 import {
@@ -7,6 +8,7 @@ import {
   paintCanopy,
   paintCliffs,
   paintHills,
+  paintLake,
   paintNatureProp,
   paintTrunk,
   paintWater,
@@ -38,8 +40,9 @@ const INK = 'rgba(38,22,10,0.82)';
 const PROP_MARGIN = 16;
 
 /**
- * Paint a whole place once, in passes: ground → raised land → water →
- * cast shadows → cliffs → buildings → indoor light → objects → tree tops.
+ * Paint a whole place once, in passes: ground → raised land → water and
+ * lake → cast shadows → cliffs → buildings → boats → indoor light →
+ * objects → tree tops (and masts).
  */
 export function paintScene(
   grid: TileGrid,
@@ -59,9 +62,11 @@ export function paintScene(
   paintShadows(g, site, look, doc, 'hills');
   paintHills(g, site, look);
   paintWater(g, site, look);
+  paintLake(g, site, look);
   paintShadows(g, site, look, doc, 'rest');
   paintCliffs(g, site);
   paintBuildings(g, site, look);
+  paintBoats(g, site, look);
   if (indoor) paintInteriorLight(g, site, look);
 
   // Objects, each with an ink outline. Flat ones (mats) first so upright things overlap them.

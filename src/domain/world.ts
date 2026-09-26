@@ -52,6 +52,27 @@ export const TILE_KINDS = {
   fig: { solid: true },
   cloth: { solid: true },
   void: { solid: true },
+  // ── The lake (Chapter 2) ──────────────────────────────────────────────
+  /** A pebbly lake beach. */
+  shingle: { solid: false },
+  /** A boat's deck planking (the boat you are aboard). */
+  deck: { solid: false },
+  /** A stone breakwater or landing stage running out into the water. */
+  jetty: { solid: false },
+  /** Open lake water. */
+  lake: { solid: true },
+  /** Shallow water along the shore. */
+  shallows: { solid: true },
+  /** The side (gunwale) of the boat you are aboard. */
+  hull: { solid: true },
+  /** A mast with its yard and sail. */
+  mast: { solid: true },
+  /** A boat afloat or drawn up on the shore (neighbouring boat tiles form one boat). */
+  boat: { solid: true },
+  /** Fishing nets hung on poles to dry. */
+  nets: { solid: true },
+  /** A wooden rack of fish drying in the sun. */
+  rack: { solid: true },
 } as const;
 export type TileKind = keyof typeof TILE_KINDS;
 export const TILE_KIND_NAMES = Object.keys(TILE_KINDS) as TileKind[];

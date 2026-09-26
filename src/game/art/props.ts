@@ -341,6 +341,165 @@ const PAINTERS: Record<string, Painter> = {
   marker: (ctx) => {
     ellipse(ctx, 16, 16, 7, 7, '#f2b441');
   },
+  // ── By the lake (Chapter 2) ────────────────────────────────────────────
+  /** Storage jars of salted fish, stoppered and roped for carrying. */
+  'fish-jars': (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3.5, 0.35);
+    const jar = (x: number, y: number, s: number, col: string): void => {
+      ellipse(ctx, x, y, 4.6 * s, 7.4 * s, col);
+      ellipse(ctx, x - 1.6 * s, y - 2 * s, 1.4 * s, 3 * s, rgba('#ffffff', 0.22));
+      ctx.fillStyle = shade(col, -0.3);
+      ctx.fillRect(x - 1.6 * s, y - 9.6 * s, 3.2 * s, 2.6 * s);
+      ellipse(ctx, x, y - 9.8 * s, 2 * s, 1 * s, '#d8c9a4');
+      ctx.strokeStyle = rgba('#c9b184', 0.9);
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x - 4.2 * s, y - 2 * s);
+      ctx.quadraticCurveTo(x, y + 0.6 * s, x + 4.2 * s, y - 2 * s);
+      ctx.stroke();
+    };
+    jar(9, 20, 1, PALETTE.clay);
+    jar(20, 21, 1, PALETTE.clayDark);
+    jar(14.5, 25, 0.8, '#c9905e');
+  },
+  /** A wooden bailing scoop. */
+  bailer: (ctx) => {
+    softShadow(ctx, 16, 25, 10, 2.5, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.beginPath();
+    ctx.moveTo(7, 15);
+    ctx.lineTo(21, 15);
+    ctx.quadraticCurveTo(21, 25, 14, 25);
+    ctx.quadraticCurveTo(7, 25, 7, 15);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 14, 15, 7, 2.2, PALETTE.woodDark);
+    ellipse(ctx, 11, 19, 1.4, 3, rgba('#ffffff', 0.18));
+    ctx.strokeStyle = PALETTE.woodDark;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, 16);
+    ctx.lineTo(28, 11);
+    ctx.stroke();
+  },
+  /** A coil of rope. */
+  rope: (ctx) => {
+    softShadow(ctx, 16, 25, 10, 3, 0.3);
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(16, 21 - i * 1.4, 9 - i * 1.6, 4 - i * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = rgba('#fff3d6', 0.4);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(16, 20, 8, 3.4, 0, Math.PI, Math.PI * 1.8);
+    ctx.stroke();
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(24, 22);
+    ctx.quadraticCurveTo(28, 25, 30, 22);
+    ctx.stroke();
+  },
+  /** An oar lying across the boards. */
+  oar: (ctx) => {
+    softShadow(ctx, 16, 24, 13, 2.2, 0.3);
+    ctx.strokeStyle = PALETTE.wood;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(3, 25);
+    ctx.lineTo(22, 16);
+    ctx.stroke();
+    ctx.fillStyle = shade(PALETTE.wood, 0.1);
+    ctx.beginPath();
+    ctx.ellipse(25.5, 14.5, 6, 2.6, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = rgba(PALETTE.woodDark, 0.6);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(20.5, 17);
+    ctx.lineTo(30.5, 12);
+    ctx.stroke();
+  },
+  /** A heap of net with cork floats and stone sinkers. */
+  'net-pile': (ctx) => {
+    softShadow(ctx, 16, 26, 13, 3.5, 0.3);
+    ellipse(ctx, 16, 21, 12, 6.5, '#cdbf9c');
+    ellipse(ctx, 13, 18, 7, 4, '#dccfae');
+    ctx.strokeStyle = rgba('#7d6e52', 0.55);
+    ctx.lineWidth = 0.4;
+    for (let i = -3; i < 6; i++) {
+      ctx.beginPath();
+      ctx.moveTo(6 + i * 3, 15);
+      ctx.lineTo(10 + i * 3, 27);
+      ctx.moveTo(10 + i * 3, 15);
+      ctx.lineTo(6 + i * 3, 27);
+      ctx.stroke();
+    }
+    for (const [x, y] of [
+      [8, 18],
+      [14, 15.5],
+      [21, 17],
+      [25, 21],
+      [11, 24],
+    ] as const)
+      ellipse(ctx, x, y, 1.7, 1.1, '#a8743a');
+    for (const [x, y] of [
+      [18, 26],
+      [6, 23],
+    ] as const)
+      ellipse(ctx, x, y, 1.5, 1.3, '#5a554c');
+  },
+  /** Jars thrown overboard, bobbing in the water. */
+  'floating-jars': (ctx) => {
+    for (const [x, y, s] of [
+      [9, 18, 1],
+      [21, 23, 0.85],
+    ] as const) {
+      ellipse(ctx, x, y + 3 * s, 7 * s, 2.2 * s, rgba('#e6f0ec', 0.45));
+      ctx.fillStyle = PALETTE.clay;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 5 * s, 3.6 * s, -0.5, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ellipse(ctx, x - 3.5 * s, y - 2 * s, 1.4 * s, 1 * s, '#d8c9a4');
+    }
+  },
+  /** A tow rope running out across the water. */
+  towline: (ctx) => {
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(2, 20);
+    ctx.bezierCurveTo(10, 26, 20, 14, 30, 22);
+    ctx.stroke();
+    ellipse(ctx, 12, 23, 3, 0.9, rgba('#e6f0ec', 0.5));
+    ellipse(ctx, 24, 19, 3, 0.9, rgba('#e6f0ec', 0.5));
+  },
+  /** A shallow basket of fresh fish. */
+  'fish-basket': (ctx) => {
+    softShadow(ctx, 16, 27, 12, 3.5, 0.35);
+    ellipse(ctx, 16, 21, 11, 7, '#b8904e');
+    ctx.strokeStyle = rgba('#7a5a2c', 0.8);
+    ctx.lineWidth = 0.6;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.ellipse(16, 21 + i * 2.2, 10.5 - Math.abs(i), 1.3, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+    ellipse(ctx, 16, 17, 9.5, 4, '#7a5a2c');
+    for (const [x, y, a] of [
+      [11, 16.5, 0.3],
+      [16, 15.5, -0.2],
+      [21, 17, 0.4],
+      [14, 18.5, -0.5],
+    ] as const) {
+      ellipse(ctx, x, y, 3.6, 1.3, '#b9b8ae', a);
+      ellipse(ctx, x - 0.6, y - 0.4, 2.2, 0.5, rgba('#ffffff', 0.5), a);
+    }
+  },
   /** Invisible: for interactive spots on tiles that already draw themselves (wells, cairns). */
   none: () => undefined,
 };
