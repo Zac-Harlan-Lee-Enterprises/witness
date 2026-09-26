@@ -294,7 +294,7 @@ The Laodicea road is the heaviest place so far: 140 sprites, most of them reeds 
 | Jericho, morning | 104 MB | 68 MB |
 | Jericho, later day | 122 MB | 87 MB |
 | Ammia's dye workshop (Ch. 4) | 17–22 MB | 17–22 MB |
-| A street in Colossae, morning (Ch. 4) | 85–86 MB | 85–86 MB |
+| A street in Colossae, morning (Ch. 4) | 83–84 MB | 83–84 MB |
 | A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
 | The Laodicea road (Ch. 4) | 105 MB | 105 MB |
 | Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
