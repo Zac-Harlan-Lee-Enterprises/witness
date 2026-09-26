@@ -48,6 +48,38 @@ export function canvasPixels(
 }
 
 /**
+ * What kind of device the game runs on, as far as texture memory goes (read
+ * from the browser by phaser/device.ts).
+ */
+export interface DeviceClass {
+  /** The primary pointer is coarse: a touch screen. */
+  coarsePointer: boolean;
+  /** navigator.deviceMemory in GB, where the browser reports it (Chromium: 0.25–8). */
+  deviceMemory: number | undefined;
+  /** The shorter side of the screen, in CSS pixels (the same in either orientation). */
+  screenShortSide: number;
+}
+
+/**
+ * A touch screen narrower than this (CSS px, on its shorter side) is a
+ * phone: Android's breakpoint for tablet layouts (smallest width 600 dp).
+ * Phones are about 320–430 CSS px on their shorter side; tablets 600 or more
+ * (an iPad mini is 744).
+ */
+export const PHONE_SHORT_SIDE = 600;
+
+/** Devices that report this much memory or less (GB) are short of it for the full art. */
+export const LOW_MEMORY_GB = 2;
+
+export function isPhone(device: DeviceClass): boolean {
+  return device.coarsePointer && device.screenShortSide < PHONE_SHORT_SIDE;
+}
+
+export function isLowMemory(device: Pick<DeviceClass, 'deviceMemory'>): boolean {
+  return device.deviceMemory !== undefined && device.deviceMemory <= LOW_MEMORY_GB;
+}
+
+/**
  * Whether to store the opaque ground at 16 bits a pixel (RGB 5-6-5, half the
  * memory) instead of 32. The saving matters on phones and tablets and on
  * low-memory devices; it costs a faint hue noise in soft shadows that only

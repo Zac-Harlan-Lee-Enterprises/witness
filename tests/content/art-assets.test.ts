@@ -302,6 +302,87 @@ describe('pre-rendered people', () => {
     }
   });
 
+  it('every sheet has a half-resolution copy for phones, with the same frames at half the size', () => {
+    expect(people).not.toBeNull();
+    if (!people) return;
+    const dir = join(ART, 'people');
+    const problems: string[] = [];
+    for (const [id, sheet] of Object.entries(people)) {
+      const low = sheet.low;
+      if (!low) {
+        problems.push(`${id}: no low sheets (node scripts/art-build.mjs people-low)`);
+        continue;
+      }
+      const k = low.ppu / sheet.ppu;
+      // Half the pixels per unit, and a frame that lies exactly where the full one does.
+      if (low.ppu !== 1.5) problems.push(`${id}: low ppu ${low.ppu}`);
+      for (const [a, b] of [
+        [low.frameWidth, sheet.frameWidth],
+        [low.frameHeight, sheet.frameHeight],
+        [low.originX, sheet.originX],
+        [low.originY, sheet.originY],
+      ] as const)
+        if (a !== b * k) problems.push(`${id}: low frame ${a} is not ${b} × ${k}`);
+      const pairs: Array<[string | undefined, string | undefined, string]> = [
+        ...Object.entries(sheet.sheets).map(
+          ([light, f]): [string | undefined, string | undefined, string] => [
+            f,
+            low.sheets[light as PeopleLight],
+            light,
+          ],
+        ),
+        ...Object.entries(sheet.shadows).map(
+          ([light, s]): [string | undefined, string | undefined, string] => [
+            s.sheet,
+            low.shadows[light as PeopleLight]?.sheet,
+            `${light} shadow`,
+          ],
+        ),
+      ];
+      for (const [full, half, what] of pairs) {
+        if (!full) continue;
+        if (half !== full.replace(/\.webp$/, '-low.webp')) {
+          problems.push(`${id}: ${what} has no low sheet (${String(half)})`);
+          continue;
+        }
+        if (!existsSync(join(dir, half))) {
+          problems.push(`${half} is missing`);
+          continue;
+        }
+        const size = webpSize(join(dir, half));
+        if (Math.max(size.w, size.h) > MAX_ART_TEXTURE) problems.push(`${half} is too big`);
+        // Every frame of the full sheet, packed inside the low atlas.
+        const names = Object.keys(sheet.atlas[full] ?? {}).sort();
+        const table = sheet.atlas[half] ?? {};
+        if (Object.keys(table).sort().join() !== names.join())
+          problems.push(`${half}: frames differ from ${full}`);
+        for (const [name, [x, y, w, h]] of Object.entries(table))
+          if (x + w > size.w || y + h > size.h) problems.push(`${half}: ${name} is outside it`);
+      }
+      for (const light of Object.keys(sheet.shadows) as PeopleLight[]) {
+        const full = sheet.shadows[light];
+        const half = low.shadows[light];
+        if (full && half && half.frameWidth !== full.frameWidth * (half.ppu / full.ppu))
+          problems.push(`${id}: ${light} shadow frame is not scaled`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('the half-resolution sheets are recorded as derived from the rendered ones', () => {
+    const manifest = JSON.parse(
+      readFileSync(join(ROOT, 'docs', 'art', 'asset-manifest.json'), 'utf8'),
+    ) as { assets: AssetEntry[] };
+    const entry = manifest.assets.find((a) => a.path === 'public/art/people/*-low.webp');
+    expect(entry?.origin).toContain('tools/art/downsample_people.py');
+    // Listed before the rendered sheets' entry, which would match them too.
+    const rendered = manifest.assets.findIndex((a) => a.path === 'public/art/people/*.webp');
+    expect(manifest.assets.indexOf(entry as AssetEntry)).toBeLessThan(rendered);
+    const low = files(join(ART, 'people')).filter((f) => f.endsWith('-low.webp'));
+    expect(low.length).toBeGreaterThan(0);
+    for (const f of low) expect(matches(entry?.path ?? '', relative(ROOT, f)), f).toBe(true);
+  });
+
   const rags = Object.values(PLAYER_APPEARANCES).map((a) => a.robe);
 
   for (const id of PLACES_WITH_ART) {

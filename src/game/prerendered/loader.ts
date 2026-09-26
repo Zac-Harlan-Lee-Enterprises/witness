@@ -11,10 +11,12 @@ import {
   type PersonSheet,
   type PlaceArt,
 } from './manifest';
+import type { DeviceClass } from '../systems/resolution';
 import {
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
+  sheetSet,
   tileOrigin,
   variantFor,
   wantsLowResolution,
@@ -44,6 +46,17 @@ export interface PlaceTextures {
   /** Scale of the loaded pages' pixels against the manifest's (0.5: half-resolution pages). */
   spriteScale: number;
   shade: ShadeMask | null;
+  /** The device and view wanted the half-resolution art (people's sheets follow it). */
+  low: boolean;
+}
+
+/** What decides a place's art: the story hour, and what the view and device can show. */
+export interface ArtOptions {
+  hour: number | null;
+  /** Canvas pixels per game unit at the place's framing. */
+  zoom: number;
+  lowPower: boolean;
+  device: DeviceClass;
 }
 
 const BASE = import.meta.env.BASE_URL;
@@ -189,7 +202,7 @@ export async function loadPlace(
   scene: Phaser.Scene,
   sceneId: string,
   path: string,
-  options: { hour: number | null; zoom: number; lowPower: boolean },
+  options: ArtOptions,
   logger: Logger,
 ): Promise<PlaceTextures | null> {
   const raw = await json(scene, `art:${sceneId}:manifest`, `${BASE}${path}manifest.json`);
@@ -207,7 +220,7 @@ export async function loadPlace(
   const available = LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
   const wanted = variantFor(options.hour, available);
   const version = `?v=${artVersion(raw)}`;
-  const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
+  const low = wantsLowResolution({ ...options, ppu: art.ppu });
   const groundPpu = low ? art.ppu / 2 : art.ppu;
   // The later-day set is cached the first time it is used; offline before
   // then, the morning set stands in for it rather than painting the place
@@ -251,6 +264,7 @@ export async function loadPlace(
       pages,
       spriteScale: sheets.scale,
       shade: readShade(scene, shadeKey),
+      low,
     };
   }
   logger.warn(`Pre-rendered art for ${sceneId} failed to load; painting it instead`);
@@ -294,25 +308,37 @@ export interface PersonTextures {
   light: PeopleLight;
   /** The light of the shadow sheet loaded (it can fall back differently from the body's). */
   shadowLight?: PeopleLight;
+  /** The low-resolution sheets were loaded (the person's `low` set); absent: the full ones. */
+  low?: boolean;
 }
 
 /**
  * Load (once) several people's sheets and shadow sheets for a light, in one
- * pass through the loader, with their frames named. A sheet whose light
- * cannot be loaded (a later-day sheet not cached yet, offline) falls back
- * to the morning's; sheets that still fail are left out (those people are
- * painted instead).
+ * pass through the loader, with their frames named: the low-resolution
+ * sheets when `low` asks for them and they exist. A sheet that cannot be
+ * loaded falls back, in order, to the full sheet in the same light (a
+ * low sheet not cached yet, offline), then to the morning's; sheets that
+ * still fail are left out (those people are painted instead).
  */
 export async function loadPersons(
   scene: Phaser.Scene,
   art: PeopleArt,
   ids: readonly string[],
   light: PeopleLight,
+  low = false,
 ): Promise<Map<string, PersonTextures>> {
-  const out = await attemptPersons(scene, art, ids, light);
-  const missing = ids.filter((id) => !out.has(id));
-  if (missing.length > 0 && light !== 'day')
-    for (const [id, tex] of await attemptPersons(scene, art, missing, 'day')) out.set(id, tex);
+  const out = new Map<string, PersonTextures>();
+  const tries: Array<[PeopleLight, boolean]> = [[light, low]];
+  if (low) tries.push([light, false]);
+  if (light !== 'day') {
+    tries.push(['day', low]);
+    if (low) tries.push(['day', false]);
+  }
+  for (const [l, lo] of tries) {
+    const missing = ids.filter((id) => !out.has(id));
+    if (missing.length === 0) break;
+    for (const [id, tex] of await attemptPersons(scene, art, missing, l, lo)) out.set(id, tex);
+  }
   return out;
 }
 
@@ -321,15 +347,17 @@ async function attemptPersons(
   art: PeopleArt,
   ids: readonly string[],
   light: PeopleLight,
+  low: boolean,
 ): Promise<Map<string, PersonTextures>> {
   const plan: Array<{ id: string; sheet: PersonSheet; file: string; shadow: string | null }> = [];
   const files: Array<[string, string]> = [];
   for (const id of ids) {
     const sheet = art[id];
     if (!sheet) continue;
-    const file = pick(sheet.sheets, light);
+    const set = sheetSet(sheet, low);
+    const file = pick(set.sheets, light);
     if (!file) continue;
-    const shadow = pick(sheet.shadows, light)?.sheet ?? null;
+    const shadow = pick(set.shadows, light)?.sheet ?? null;
     plan.push({ id, sheet, file, shadow });
     const version = `?v=${artVersion(sheet)}`;
     files.push([`person:${file}`, `${BASE}${PEOPLE_ART}${file}${version}`]);
@@ -341,8 +369,9 @@ async function attemptPersons(
     const key = `person:${file}`;
     const shadowKey = shadow ? `person:${shadow}` : null;
     if (failed.has(key) || (shadowKey && failed.has(shadowKey))) continue;
-    frames(scene.textures.get(key), sheet, sheet.atlas[file], sheet.frameWidth, sheet.frameHeight);
-    const s = pick(sheet.shadows, light);
+    const set = sheetSet(sheet, low);
+    frames(scene.textures.get(key), sheet, sheet.atlas[file], set.frameWidth, set.frameHeight);
+    const s = pick(set.shadows, light);
     if (shadowKey && s)
       frames(
         scene.textures.get(shadowKey),
@@ -351,11 +380,17 @@ async function attemptPersons(
         s.frameWidth,
         s.frameHeight,
       );
-    const used = (Object.keys(sheet.sheets) as PeopleLight[]).find((l) => sheet.sheets[l] === file);
+    const used = (Object.keys(set.sheets) as PeopleLight[]).find((l) => set.sheets[l] === file);
     const shadowLight = s
-      ? (Object.keys(sheet.shadows) as PeopleLight[]).find((l) => sheet.shadows[l] === s)
+      ? (Object.keys(set.shadows) as PeopleLight[]).find((l) => set.shadows[l] === s)
       : undefined;
-    out.set(id, { key, shadow: shadowKey, light: used ?? light, shadowLight });
+    out.set(id, {
+      key,
+      shadow: shadowKey,
+      light: used ?? light,
+      shadowLight,
+      low: set !== sheet,
+    });
   }
   return out;
 }
