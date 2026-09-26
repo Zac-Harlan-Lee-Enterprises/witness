@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseChapter } from '@/content';
-import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
+import { chapterSource } from '@/content';
+import type { Chapter } from '@/domain/chapter';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
 import { parseLayout, type LookMark, type Pose } from '@/domain/world';
 import {
@@ -73,7 +73,26 @@ interface AssetEntry {
   license: string;
 }
 
-const chapter = parseChapter(ROAD_TO_JERICHO);
+/** Every available chapter: places with art may come from any of them. */
+const chapters: Chapter[] = await Promise.all(
+  chapterSource
+    .list()
+    .filter((m) => m.available)
+    .map((m) => chapterSource.load(m.id)),
+);
+
+/** A scene and the chapter it belongs to. */
+function sceneOf(id: string): { chapter: Chapter; scene: Chapter['scenes'][number] } | null {
+  for (const chapter of chapters) {
+    const scene = chapter.scenes.find((s) => s.id === id);
+    if (scene) return { chapter, scene };
+  }
+  return null;
+}
+
+/** The Python method that builds a tile kind (dashes become underscores). */
+const builderOf = (kind: string): string => `def tile_${kind.replaceAll('-', '_')}(self)`;
+
 const people: PeopleArt | null = parsePeopleArt(
   JSON.parse(readFileSync(join(ART, 'people', 'people.json'), 'utf8')),
 ).people;
@@ -104,7 +123,7 @@ describe('pre-rendered places', () => {
   });
 
   for (const [sceneId, path] of Object.entries(PLACE_ART)) {
-    const scene = chapter.scenes.find((s) => s.id === sceneId);
+    const scene = sceneOf(sceneId)?.scene;
     const read = () => {
       const dir = join(ROOT, 'public', path);
       const { art, error } = parsePlaceArt(
@@ -122,9 +141,12 @@ describe('pre-rendered places', () => {
       if (!scene) return;
       const grid = parseLayout(scene);
       expect(art.tiles).toEqual({ w: grid.width, h: grid.height });
-      expect(art.peopleLight === 'indoor', 'rooms light people indoors').toBe(
-        scene.kind === 'indoor',
-      );
+      // Rooms light people with their own light (by day, or by lamps);
+      // outdoors the sun of the variant does, or rain cloud.
+      expect(
+        art.peopleLight === 'indoor' || art.peopleLight === 'lamp',
+        'rooms light people with their own light',
+      ).toBe(scene.kind === 'indoor');
       for (const v of [art.variants.day, art.variants.late]) {
         if (!v) continue;
         for (const f of [
@@ -200,9 +222,10 @@ describe('pre-rendered places', () => {
       .map((f) => readFileSync(join(lib, f), 'utf8'))
       .join('\n');
     for (const id of PLACES_WITH_ART) {
-      const scene = chapter.scenes.find((s) => s.id === id);
+      const scene = sceneOf(id)?.scene;
+      expect(scene, `${id} is a scene of an available chapter`).toBeDefined();
       for (const kind of new Set(Object.values(scene?.legend ?? {})))
-        expect(source, `def tile_${kind} (tools/art/lib)`).toContain(`def tile_${kind}(self)`);
+        expect(source, `${builderOf(kind)} (tools/art/lib)`).toContain(builderOf(kind));
     }
   });
 
@@ -210,21 +233,24 @@ describe('pre-rendered places', () => {
     const data = JSON.parse(
       readFileSync(join(ROOT, 'tools', 'art', 'data', 'chapter.json'), 'utf8'),
     ) as {
-      characters: Array<{ id: string; key: string }>;
+      characters: Array<{ id: string; chapter: string; key: string }>;
       players: Array<{ id: string; key: string }>;
       scenes: Array<{ id: string; layout: string[]; legend: Record<string, string> }>;
     };
-    for (const c of chapter.characters)
-      expect(data.characters.find((d) => d.id === c.id)?.key, c.id).toBe(
-        appearanceKey(c.appearance),
-      );
+    for (const chapter of chapters) {
+      for (const c of chapter.characters)
+        expect(
+          data.characters.find((d) => d.id === c.id && d.chapter === chapter.id)?.key,
+          `${chapter.id}: ${c.id}`,
+        ).toBe(appearanceKey(c.appearance));
+      for (const s of chapter.scenes) {
+        const exported = data.scenes.find((d) => d.id === s.id);
+        expect(exported?.layout, s.id).toEqual(s.layout);
+        expect(exported?.legend, s.id).toEqual(s.legend);
+      }
+    }
     for (const [id, a] of Object.entries(PLAYER_APPEARANCES))
       expect(data.players.find((d) => d.id === id)?.key, id).toBe(appearanceKey(a));
-    for (const s of chapter.scenes) {
-      const exported = data.scenes.find((d) => d.id === s.id);
-      expect(exported?.layout, s.id).toEqual(s.layout);
-      expect(exported?.legend, s.id).toEqual(s.legend);
-    }
   });
 });
 
@@ -256,9 +282,19 @@ describe('pre-rendered people', () => {
   const rags = Object.values(PLAYER_APPEARANCES).map((a) => a.robe);
 
   for (const id of PLACES_WITH_ART) {
-    const scene = chapter.scenes.find((s) => s.id === id);
-    if (!scene) continue;
-    const light = scene.kind === 'indoor' ? 'indoor' : 'day';
+    const found = sceneOf(id);
+    if (!found) continue;
+    const { chapter, scene } = found;
+    // The lights people are seen in there: the place's own, else the sun of each variant.
+    const manifest = join(ART, id, 'manifest.json');
+    const art = existsSync(manifest)
+      ? parsePlaceArt(JSON.parse(readFileSync(manifest, 'utf8'))).art
+      : null;
+    const lights = art?.peopleLight
+      ? [art.peopleLight]
+      : art?.variants.late
+        ? (['day', 'late'] as const)
+        : ([scene.kind === 'indoor' ? 'indoor' : 'day'] as const);
 
     it(`${id}: everyone who appears has sheets for every pose and story mark they can show`, () => {
       const missing: string[] = [];
@@ -271,8 +307,10 @@ describe('pre-rendered people', () => {
             for (const rag of marks.includes('rag-bandaged') ? rags : [null]) {
               const pick = pickSheets(people, c.appearance, marks, pose, rag);
               if (!pick) missing.push(`${c.id} ${pose} [${marks.join(', ')}] ${rag ?? ''}`);
-              else if (!people?.[pick.base]?.sheets[light])
-                missing.push(`${c.id} ${pose}: no ${light} light`);
+              else
+                for (const light of lights)
+                  for (const sid of [pick.base, ...pick.overlays])
+                    if (!people?.[sid]?.sheets[light]) missing.push(`${sid}: no ${light} light`);
             }
       }
       expect(missing, 'Run node scripts/art-build.mjs people').toEqual([]);
@@ -285,8 +323,9 @@ describe('pre-rendered people', () => {
           const pick = pickSheets(people, a, marks, 'stand', null);
           if (!pick) missing.push(`${look} [${marks.join(', ')}]`);
           else
-            for (const sid of [pick.base, ...pick.overlays])
-              if (!people?.[sid]?.sheets[light]) missing.push(`${sid}: no ${light} light`);
+            for (const light of lights)
+              for (const sid of [pick.base, ...pick.overlays])
+                if (!people?.[sid]?.sheets[light]) missing.push(`${sid}: no ${light} light`);
         }
       expect(missing, 'Run node scripts/art-build.mjs people').toEqual([]);
     });

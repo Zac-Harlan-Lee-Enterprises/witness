@@ -20,11 +20,20 @@ const entries: Record<string, { appearance: string; kind: string }> = manifest;
 const data = JSON.parse(
   readFileSync(join(ROOT, 'tools', 'art', 'data', 'chapter.json'), 'utf8'),
 ) as {
-  characters: Array<{ id: string; key: string }>;
+  characters: Array<{ id: string; chapter: string; key: string }>;
   players: Array<{ id: string; key: string }>;
 };
+/**
+ * Chapters whose portraits have been rendered. The art data holds every
+ * available chapter (for the place and people art); the portrait pass for
+ * later chapters is its own job, and people named in the New Testament
+ * never get a portrait at all.
+ */
+const PORTRAIT_CHAPTERS = new Set(['road-to-jericho']);
 const people = [
-  ...data.characters.map((c) => ({ id: c.id, key: c.key, kind: 'character' })),
+  ...data.characters
+    .filter((c) => PORTRAIT_CHAPTERS.has(c.chapter))
+    .map((c) => ({ id: c.id, key: c.key, kind: 'character' })),
   ...data.players.map((p) => ({ id: `player-${p.id}`, key: p.key, kind: 'player' })),
 ];
 

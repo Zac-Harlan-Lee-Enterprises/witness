@@ -27,10 +27,20 @@ const CANDIDATES = [
 ].filter(Boolean);
 
 /** Places with pre-rendered art (keep in step with PLACES_WITH_ART in src/game/prerendered/select.ts). */
-const PLACES = ['miriam-house', 'jerusalem-market', 'jericho-road', 'jericho'];
+const PLACES = [
+  'miriam-house',
+  'jerusalem-market',
+  'jericho-road',
+  'jericho',
+  // Chapter 4: A Letter from Paul
+  'ammia-workshop',
+  'colossae-street',
+  'lycus-road',
+  'philemon-house',
+];
 
 /** Samples per place: rooms need more (their light is mostly bounced). */
-const SAMPLES = { 'miriam-house': '512' };
+const SAMPLES = { 'miriam-house': '512', 'ammia-workshop': '512', 'philemon-house': '640' };
 
 const [what, ...rest] = process.argv.slice(2);
 const blender = CANDIDATES.find((c) => existsSync(c));
