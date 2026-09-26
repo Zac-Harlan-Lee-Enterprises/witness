@@ -22,6 +22,9 @@ export const PLACES_WITH_ART = [
   'jerusalem-market',
   'jericho-road',
   'jericho',
+  'tamar-house',
+  'bethlehem-lanes',
+  'shepherds-fields',
 ] as const;
 
 /** Where each place's art is served (relative to the site base). */
@@ -37,18 +40,89 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
+/** Night art from dusk (when the world's lamps start to glow) until before dawn. */
+export const NIGHT_FROM_HOUR = 18;
+export const NIGHT_UNTIL_HOUR = 5;
 
+export function isNightHour(hour: number | null): boolean {
+  if (hour === null) return false;
+  const h = ((hour % 24) + 24) % 24;
+  return h >= NIGHT_FROM_HOUR || h < NIGHT_UNTIL_HOUR;
+}
+
+/**
+ * The light to draw a place in: its night art after dark, its later-day art
+ * from mid-afternoon, else its morning art; if it has no art in that light,
+ * the nearest it has (a place is rendered only in the lights its story shows).
+ */
 export function variantFor(
   hour: number | null,
   available: readonly LightingVariant[],
 ): LightingVariant {
-  if (hour !== null && hour >= LATE_FROM_HOUR && available.includes('late')) return 'late';
-  return 'day';
+  const wanted: LightingVariant = isNightHour(hour)
+    ? 'night'
+    : hour !== null && hour >= LATE_FROM_HOUR
+      ? 'late'
+      : 'day';
+  return variantOrder(wanted).find((v) => available.includes(v)) ?? wanted;
 }
 
-/** How people are lit in a place: indoors by the room's own light, else by the place's sun. */
+/**
+ * The light a place already drawn should change to as the story clock moves
+ * on (the sun sets while you are in the fields), or null to stay as it is.
+ */
+export function relightTo(
+  loaded: LightingVariant,
+  hour: number | null,
+  available: readonly LightingVariant[],
+): LightingVariant | null {
+  const wanted = variantFor(hour, available);
+  return wanted === loaded ? null : wanted;
+}
+
+/** A light and then the others, nearest first (what stands in when one is missing). */
+function variantOrder(wanted: LightingVariant): LightingVariant[] {
+  if (wanted === 'night') return ['night', 'late', 'day'];
+  if (wanted === 'late') return ['late', 'day', 'night'];
+  return ['day', 'late', 'night'];
+}
+
+/**
+ * The sets to try loading, in order: the light wanted, then (should it fail,
+ * offline before it was cached) the morning's if the place has one, else
+ * the nearest light it has.
+ */
+export function variantLoadOrder(
+  wanted: LightingVariant,
+  available: readonly LightingVariant[],
+): LightingVariant[] {
+  if (available.includes('day')) return wanted === 'day' ? ['day'] : [wanted, 'day'];
+  return variantOrder(wanted).filter((v) => available.includes(v));
+}
+
+/**
+ * How people are lit in a place: indoors by the room's own light (lamps and
+ * the hearth after dark), else by the place's sun or moon.
+ */
 export function peopleLightFor(variant: LightingVariant, room: 'indoor' | undefined): PeopleLight {
-  return room ?? variant;
+  if (room) return variant === 'night' ? 'lamplight' : room;
+  return variant;
+}
+
+/** A people light and then those that may stand in for it, nearest first. */
+export function peopleLightOrder(light: PeopleLight): PeopleLight[] {
+  switch (light) {
+    case 'lamplight':
+      return ['lamplight', 'indoor', 'night', 'day', 'late'];
+    case 'night':
+      return ['night', 'late', 'day', 'lamplight', 'indoor'];
+    case 'indoor':
+      return ['indoor', 'day', 'late', 'lamplight', 'night'];
+    case 'late':
+      return ['late', 'day', 'indoor', 'night', 'lamplight'];
+    case 'day':
+      return ['day', 'late', 'indoor', 'night', 'lamplight'];
+  }
 }
 
 /**

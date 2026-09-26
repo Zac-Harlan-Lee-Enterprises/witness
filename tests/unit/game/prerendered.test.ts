@@ -6,17 +6,22 @@ import {
   artPathFor,
   behindCanopy,
   depthRow,
+  isNightHour,
   LATE_FROM_HOUR,
+  NIGHT_FROM_HOUR,
   pagesFor,
   peopleLightFor,
+  peopleLightOrder,
   pickSheets,
   PLACE_ART,
+  relightTo,
   sampleShade,
   shadeTint,
   sheetsToLoad,
   tileOrigin,
   turnPath,
   variantFor,
+  variantLoadOrder,
   wantsLowResolution,
 } from '@/game/prerendered/select';
 import { naturalColor } from '@/shared/color';
@@ -68,9 +73,11 @@ describe('pre-rendered place art', () => {
       variants: { day: variant, late: variant },
     });
     expect(ok.error).toBeNull();
-    expect(ok.art?.variants.day.sprites[0]?.id).toBe('stall-11-6');
-    expect(ok.art?.variants.day.sprites[0]?.fade).toBe(false);
-    expect(ok.art?.variants.day.sprites[1]?.fade).toBe(true);
+    expect(ok.art?.variants.day?.sprites[0]?.id).toBe('stall-11-6');
+    expect(ok.art?.variants.day?.sprites[0]?.fade).toBe(false);
+    expect(ok.art?.variants.day?.sprites[1]?.fade).toBe(true);
+    // Fires and lamps to flicker are optional (none, by default).
+    expect(ok.art?.variants.day?.lights).toEqual([]);
     const bad = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -113,10 +120,81 @@ describe('pre-rendered place art', () => {
     expect(variantFor(null, ['day', 'late'])).toBe('day');
   });
 
+  it('uses night art from dusk until before dawn, where a place has it', () => {
+    expect([17, NIGHT_FROM_HOUR, 23, 0, 4, 5].map(isNightHour)).toEqual([
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(isNightHour(null)).toBe(false);
+    expect(variantFor(20, ['day', 'night'])).toBe('night');
+    expect(variantFor(2, ['late', 'night'])).toBe('night');
+    // Without night art, the later-day art stands in after dark (as before).
+    expect(variantFor(20, ['day', 'late'])).toBe('late');
+    expect(variantFor(20, ['day'])).toBe('day');
+  });
+
+  it('draws a place rendered only in the lights its story shows in the nearest it has', () => {
+    // Bethlehem's lanes: from mid-afternoon into the night, no morning.
+    expect(variantFor(16, ['late', 'night'])).toBe('late');
+    expect(variantFor(9, ['late', 'night'])).toBe('late');
+    expect(variantFor(21, ['late', 'night'])).toBe('night');
+    const art = parsePlaceArt({
+      version: 1,
+      scene: 'bethlehem-lanes',
+      tiles: { w: 38, h: 24 },
+      ppu: 3,
+      variants: {
+        late: variant,
+        night: { ...variant, lights: [{ kind: 'lamp', x: 176, y: 128, radius: 34 }] },
+      },
+    });
+    expect(art.error).toBeNull();
+    expect(art.art?.variants.day).toBeUndefined();
+    expect(art.art?.variants.night?.lights[0]?.kind).toBe('lamp');
+    // Its glow is baked in, so its flickering pool is gentler than a painted one's.
+    expect(art.art?.variants.night?.lights[0]?.strength).toBe(0.5);
+    const none = parsePlaceArt({
+      version: 1,
+      scene: 'x',
+      tiles: { w: 2, h: 2 },
+      ppu: 3,
+      variants: {},
+    });
+    expect(none.error).toMatch(/at least one light/);
+  });
+
+  it('changes a place’s light as the story clock crosses into one its art has', () => {
+    // The sun sets while you carry the lamb back to the fold.
+    expect(relightTo('late', 18, ['late', 'night'])).toBe('night');
+    expect(relightTo('late', 17, ['late', 'night'])).toBeNull();
+    // A place without night art stays as it is after dark.
+    expect(relightTo('late', 20, ['day', 'late'])).toBeNull();
+    expect(relightTo('day', 20, ['day', 'night'])).toBe('night');
+  });
+
+  it('falls back, if a light fails to load offline, to the morning set or else the nearest', () => {
+    expect(variantLoadOrder('day', ['day', 'late'])).toEqual(['day']);
+    expect(variantLoadOrder('late', ['day', 'late'])).toEqual(['late', 'day']);
+    expect(variantLoadOrder('night', ['day', 'night'])).toEqual(['night', 'day']);
+    expect(variantLoadOrder('night', ['late', 'night'])).toEqual(['night', 'late']);
+    expect(variantLoadOrder('late', ['late', 'night'])).toEqual(['late', 'night']);
+  });
+
   it('lights people for the room indoors, and by the place’s sun outdoors', () => {
     expect(peopleLightFor('day', undefined)).toBe('day');
     expect(peopleLightFor('late', undefined)).toBe('late');
     expect(peopleLightFor('day', 'indoor')).toBe('indoor');
+    // After dark: by the moon outdoors, by lamps and the hearth in a room.
+    expect(peopleLightFor('night', undefined)).toBe('night');
+    expect(peopleLightFor('night', 'indoor')).toBe('lamplight');
+    // A missing sheet is stood in for by the nearest light.
+    expect(peopleLightOrder('lamplight').slice(0, 2)).toEqual(['lamplight', 'indoor']);
+    expect(peopleLightOrder('night').slice(0, 2)).toEqual(['night', 'late']);
+    expect(new Set(peopleLightOrder('day')).size).toBe(5);
     const room = parsePlaceArt({
       version: 1,
       scene: 'miriam-house',
