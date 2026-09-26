@@ -37,11 +37,21 @@ Walkable kinds keep fixed heights (`WALK`: the wadi is 0.34 below the ground, th
 | Asset | Pixels per game unit (ppu) | Notes |
 |---|---|---|
 | Place layers and sprites | **3** | 96 px per tile. Sharp up to the close framing's desktop zoom (3.0). |
-| Low-resolution ground and sprite pages | 1.5 | Loaded when the camera shows ≤ 2 px per unit (phones) and on devices that asked for simpler effects (`wantsLowResolution`) |
+| Low-resolution ground and sprite pages | 1.5 | The **low set**: loaded on phones, on devices short of memory, on views that show ≤ 2 px per unit, and when the device asked for simpler effects (`wantsLowResolution`, below) |
 | Character sheets | **3** | A 54-unit adult is about 160 px tall in the texture and about 122 px on a 1280×720 screen |
-| Shadow sheets | 1 | Soft by nature |
+| Low-resolution character sheets | 1.5 | With the low set: `<sheet>-low.webp`, made from the full sheets without rendering ([`downsample_people.py`](../../tools/art/downsample_people.py)) |
+| Shadow sheets | 1 | Soft by nature. The low set keeps them: one byte a pixel on the GPU, so halving them saves little, and at 0.5 a phone would show each texel about nine device pixels wide |
 
 The game shows textures at `1/ppu` scale. The Phaser canvas renders at device pixels (up to 2×; see [ADR-0015](../adr/0015-world-rendering-effects.md)), so on a high-DPI screen at close framing one texture pixel of 3-ppu art covers about two screen pixels, and a 1-ppu shadow sheet about six: richer art would show.
+
+**Which devices load the low set** (`wantsLowResolution` in [`select.ts`](../../src/game/prerendered/select.ts), device rules in [`resolution.ts`](../../src/game/systems/resolution.ts)): the place's low set and everyone's low sheets go together, to
+
+- **phones**: a coarse (touch) pointer and a screen under 600 CSS px on its shorter side (`isPhone`; Android's tablet breakpoint: phones are about 320–430, tablets 600 and more), whatever the zoom;
+- **devices short of memory**: `navigator.deviceMemory` ≤ 2 GB (Chromium reports it; Safari and Firefox don't, and are judged by the screen alone);
+- devices that asked for **simpler effects**, or dropped to them (`lowPower`);
+- any view showing **less than two-thirds of the full set's pixels** (a small window at 1×).
+
+Desktops and tablets keep the full art. The zoom alone never picks the low set on a phone any more: the high-DPI canvas makes a phone's zoom (3.5 canvas pixels per unit on a Pixel 7, the close framing's 1.75 CSS px × a render ratio of 2) as high as a desktop's, so phones used to load the full set and the full people, 45–80 MB of textures a place (§9). On the phone's screen a low texel is about one CSS pixel (1.17 at the close framing): at the phone's device pixels the low art is visibly softer when magnified side by side, and reads the same at arm's length (review captures, §9).
 
 **No texture is bigger than 2048 px** (`MAX_ART_TEXTURE`), the size every WebGL 2 GPU must hold; many phones stop at 4096. Atlas pages are 2048 px at most, and a ground bigger than that is cut into tiles (`imageio.save_tiles`): the road's ground, 48 × 30 tiles of map, is 4608 × 2880 px at 3 ppu and ships as six tiles of 1536 × 1440. Neighbouring tiles overlap by 2 px, so no hairline opens between them when the camera sits between pixels. The game draws one image per tile; the content test checks that every texture fits and that the tiles cover the whole place.
 
@@ -161,7 +171,7 @@ Not produced, because they wouldn't improve anything in this view: normal maps (
 | `<id>.<chapter>` | Someone whose name another chapter also uses for a different person (`kallias.letter-from-paul`): sheet ids name the chapter too |
 | `<sheet>@rag-bandaged-<rrggbb>` | Bandages torn from the player's tunic: one per tunic colour |
 
-Files are `<sheet id>-<light>.webp` and `<sheet id>-shadow-<light>.webp`. Each entry carries its **appearance key** (`appearanceKey` in [`select.ts`](../../src/game/prerendered/select.ts)), its `pose`, its body `marks`, and for overlays `overlay: { mark, of, rag? }`. The game matches people by key, pose and marks (`pickSheets`), not by name.
+Files are `<sheet id>-<light>.webp` and `<sheet id>-shadow-<light>.webp`, and their half-resolution copies `…-low.webp` (§2), recorded under the entry's `low` (`ppu`, frame size and origin at that size, `sheets`, `shadows`), their frame tables in `atlas` beside the full sheets'. Each entry carries its **appearance key** (`appearanceKey` in [`select.ts`](../../src/game/prerendered/select.ts)), its `pose`, its body `marks`, and for overlays `overlay: { mark, of, rag? }`. The game matches people by key, pose and marks (`pickSheets`), not by name.
 
 **Standing sheet layout** (frame 44 × 68 game units, feet 62 units from the top):
 
@@ -189,15 +199,16 @@ Everything is WebP, written by Blender:
 |---|---|
 | Colour layers and sprite pages | 86–90 |
 | Low-resolution ground | 84 |
-| Shadow sheets | 62 (opaque tint, multiplied) |
+| People sheets, full and low | 90 |
+| Shadow sheets, full and low | 62 (opaque tint, multiplied) |
 | Shade mask | 90 |
 
 WebP decodes in every current browser, including Safari 14+.
 
 **What is cached, and when** (`workbox` in [`vite.config.ts`](../../vite.config.ts)):
 
-- **Precached on install:** the morning (`day`) set of every place, every morning and indoor people sheet, and all manifests. One visit is enough to play the whole chapter offline.
-- **Cached on first use:** later-day sets (`*-late*`). Offline before one has been seen, the loader draws the morning set in its place rather than painting the place (`loadPlace`, `loadPersons`).
+- **Precached on install:** the morning (`day`) set of every place, every morning and indoor people sheet (both resolutions: `*-low.webp` too), and all manifests. One visit is enough to play the whole chapter offline.
+- **Cached on first use:** later-day sets (`*-late*`). Offline before one has been seen, the loader draws the morning set in its place rather than painting the place (`loadPlace`, `loadPersons`). A person's low sheet that can't load falls back to their full sheet in the same light first, then to the morning's.
 - Anything that still fails to load falls back to the Canvas painters, and a warning goes to the diagnostics log.
 
 Precaching every later-day set too would roughly double the install for light the player may never see; painting whole places offline would break the look. See §9 for the measured sizes.
@@ -266,7 +277,7 @@ A builder reads `self.map` (tiles, runs, neighbours), builds geometry with the s
 
 **A story entity's prop.** Add `entity_<sprite>(self, name, x, y, e)` to [`kit_props.py`](../../tools/art/lib/kit_props.py) (or the kit of its chapter's world, like [`kit_village.py`](../../tools/art/lib/kit_village.py)) (dashes in the sprite name become underscores). Return the objects, or `(objects, base_in_game_units, flat)` for something lying on the ground.
 
-**Another character.** Give them an `appearance` in the chapter content, then `npm run art:data` and `npm run art:people`. The people job plans from the chapter data: standing sheets for everyone who stands, rest sheets for anyone whose looks sit or lay them down, overlays for every mark their looks can show, in every light the places they appear in were rendered in (a room's morning is `indoor`, its night `lamplight`; read from each place's manifest, so render the places first), and passers-by for places with a crowd. It renders only what `people.json` doesn't have yet.
+**Another character.** Give them an `appearance` in the chapter content, then `npm run art:data` and `npm run art:people`. The people job plans from the chapter data: standing sheets for everyone who stands, rest sheets for anyone whose looks sit or lay them down, overlays for every mark their looks can show, in every light the places they appear in were rendered in (a room's morning is `indoor`, its night `lamplight`; read from each place's manifest, so render the places first), and passers-by for places with a crowd. It renders only what `people.json` doesn't have yet, and then makes the half-resolution copies of what it rendered (§2). `node scripts/art-build.mjs people-low` makes any that are missing or out of date without rendering (about 5 minutes for every sheet with `--force`; a sheet re-rendered under the same file name needs `--force`, since only the set of lights is compared).
 
 The generator is parametric. It reads the appearance (build, skin, hair, beard, robe and stripe colours, head covering, what they carry) and builds, rigs and renders the person. New kinds of clothing, carried items or marks go in [`tools/art/lib/people.py`](../../tools/art/lib/people.py): a mark's parts are tagged `Part(..., mark="<mark>")` so they can be rendered as an overlay. Marks that change the body rather than add to it (a torn hem) go in `BASE_MARKS` ([`build_people.py`](../../tools/art/build_people.py)) and `BODY_MARKS` ([`select.ts`](../../src/game/prerendered/select.ts)) and get a sheet of their own.
 
@@ -274,16 +285,16 @@ The generator is parametric. It reads the appearance (build, skin, hair, beard, 
 
 [`src/game/prerendered/`](../../src/game/prerendered/) and [`world-scene.ts`](../../src/game/scenes/world-scene.ts):
 
-1. **Load** (`prepareArt` in [`figures.ts`](../../src/game/prerendered/figures.ts)). The place's manifest, the variant for the story hour, the resolution for the zoom, and every sheet the people present might need (`sheetsToLoad`: all sheets of their appearances, and passers-by where the place has a crowd), all through Phaser's loader. Loading everyone's sheets up front means that when the story changes how someone looks (a bandage, the spare cloak, sitting up) the figure is ready at once.
+1. **Load** (`prepareArt` in [`figures.ts`](../../src/game/prerendered/figures.ts)). The place's manifest, the variant for the story hour, the resolution for the device and the zoom (§2: the full or the low set; people's sheets at the same resolution, their frame sizes and origins from the sheet loaded), and every sheet the people present might need (`sheetsToLoad`: all sheets of their appearances, and passers-by where the place has a crowd), all through Phaser's loader. Loading everyone's sheets up front means that when the story changes how someone looks (a bandage, the spare cloak, sitting up) the figure is ready at once.
 2. **Release.** Textures of the place before are released on the first frame nothing draws them (`beginPlace`), so memory holds one place at a time.
 3. **Composite.** The ground is one image per tile. Each sprite is an image from an atlas page, anchored at its bottom centre, with depth set by its ground line (`depthRow`). People are sprites with a baked shadow sprite and depth by their feet; their story marks are overlay sprites kept in step frame by frame just above them (`attachLayers`).
 4. **Behaviour.** Turning passes through the diagonal frames (70 ms each). Standing in shade tints a person toward the shade colour, sampled from the shade mask. Canopies fade to 38% while the player is behind them (`CanopyFader`, `behindCanopy`). The fires and lamps the manifest lists for the light flicker: a warm pool drawn over each (at night; a small glow by day). A night bake has no painted lamplight at every door (the lit doors are in the art).
 5. **Relight.** When the story clock crosses into another light the place has (`relightTo`), the world loads that set and rebuilds the place around everyone where they stand (never while a scene is loading: it waits a moment, and a scene change wins).
-6. **Fallback.** If anything fails to load, the place or person is painted by Canvas as before, and a warning goes to the diagnostics log. The canvas carries `data-art="prerendered:<variant>"` or `data-art="painted"`, and `data-texture-mb` with the texture memory in use.
+6. **Fallback.** If anything fails to load, the place or person is painted by Canvas as before, and a warning goes to the diagnostics log. The canvas carries `data-art="prerendered:<variant>"` or `data-art="painted"`, `data-art-ppu` and `data-people-ppu` (the resolution of the place and of its people: `3` full, `1.5` low; `none` without pre-rendered people), and `data-texture-mb` with the texture memory in use. An overlay (a bandage, a lamp) that loaded at another resolution than the body under it would not line up, so that person is painted instead.
 
 ## 9. Measurements
 
-Measured on the art in `public/art/` as rendered (September 2026). Texture memory is what the files decode to on the GPU: RGBA, uncompressed, width × height × 4 bytes. The **full** set is what desktops and tablets load; the **low** set (half resolution: a quarter of the pixels) is what phones and devices that asked for simpler effects load.
+Measured on the art in `public/art/` as rendered (September 2026). Texture memory is what the files decode to on the GPU: RGBA, uncompressed, width × height × 4 bytes. The **full** set is what desktops and tablets load; the **low** set (half resolution: a quarter of the pixels) is what phones, devices short of memory and devices that asked for simpler effects load (§2), with half-resolution people.
 
 | Place | Light | Download, full set | Download, low set | Textures, full | Textures, low | Ground tiles (full / low) | Sprite pages |
 |---|---|---|---|---|---|---|---|
@@ -322,6 +333,7 @@ Measured on the art in `public/art/` as rendered (September 2026). Texture memor
 | | lamp (the house at night) | 1.13 MB (42 files) | | | | | |
 | | later day | 1.58 MB (40 files) | | | | | |
 | | night (moonlight) | 1.21 MB (40 files) | | | | | |
+| Every person's colour sheets and overlays above, full / half resolution (`-low`: phones; the cast shadows are shared) | every light | 12.36 MB (306 files) | 7.64 MB (306 files) | 264 MB | 67 MB | | |
 
 The fold below Bethlehem is the heaviest of Chapter 3 (138 sprites: the flock, olives, thorn shrubs, rocks and stones on the hills); at night its pages compress better (dark, little detail). A night set takes as much texture memory as a day set but downloads a fifth to a quarter less.
 
@@ -329,33 +341,31 @@ The open lake downloads little (its water is smooth and compresses well). Its fa
 
 The Laodicea road is the heaviest download so far: 140 sprites, most of them reeds and young grain whose fine detail WebP compresses poorly (its two big sprite pages are 1.1 and 1.9 MB). Merging the grain into the ground layer (it is solid, so nobody walks through it) would roughly halve it.
 
-**Phones** load about 28% of the texture memory desktops do (a place's low set is 12–17 MB against 44–58 MB). People sheets are the same on every device.
+**Phones** load a place's low set (a quarter of the full set's texture memory: 2–22 MB against 7–79 MB) and everyone's half-resolution sheets (a quarter of the full sheets' memory; cast shadows are kept at full size, one byte a pixel).
 
-**In the game**, the texture memory the canvas reports (`data-texture-mb`: every texture loaded, including people, passers-by and the game's own) with one place in memory at a time, from the review captures (§10; headless Chromium drawing with the Mac's GPU):
+**In the game**, the texture memory the canvas reports (`data-texture-mb`: every texture loaded, including people, passers-by and the game's own) with one place in memory at a time, from the review captures (§10; headless Chromium drawing with the Mac's GPU). The desktop column is from the captures of the full art (unchanged by the phone work); the phone columns are the Pixel 7 viewport before and after phones were given the half-resolution art (§2), measured the same day on the same routes ([performance §2c](../performance.md#2c-phones-half-resolution-places-and-people)):
 
-| Place | Desktop and tablet (full set) | Phone (low set) |
-|---|---|---|
-| Aunt Miriam's house | 16–32 MB | 10–26 MB |
-| Lower market | 98–101 MB | 67–69 MB |
-| Road down to Jericho | 89 MB | 47 MB |
-| Jericho, morning | 104 MB | 68 MB |
-| Jericho, later day | 122 MB | 87 MB |
-| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17–22 MB |
-| A street in Colossae, morning (Ch. 4) | 83–84 MB | 83–84 MB |
-| A street in Colossae, later day (Ch. 4) | 97 MB | 97 MB |
-| The Laodicea road (Ch. 4) | 105 MB | 105 MB |
-| Philemon's house (Ch. 4) | 41–42 MB | 41–42 MB |
-| Grandmother Shelomit's house (Ch. 2) | 17–18 MB | 15–17 MB |
-| The shore at Capernaum, later day (Ch. 2) | 125 MB | 125 MB |
-| The shore at Capernaum, night (Ch. 2) | 103–107 MB | 103–107 MB |
-| The open lake (Ch. 2) | 84 MB | 84 MB |
-| Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 24 / 40 MB |
-| The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 109 / 87 MB |
-| The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 81 / 77 MB |
+| Place | Desktop and tablet (full set) | Phone, before (full set and people) | Phone, now (low set and people) |
+|---|---|---|---|
+| Aunt Miriam's house | 16–32 MB | 14.6–14.7 MB | 5.7–5.8 MB |
+| Lower market | 98–101 MB | 62.2 MB | 21.2 MB |
+| Road down to Jericho | 89 MB | 46.8 MB | 16.3 MB |
+| Jericho, morning | 104 MB | 62.9 MB | 20.8 MB |
+| Jericho, later day | 122 MB | 70.0 MB | 25.1 MB |
+| Ammia's dye workshop (Ch. 4) | 17–22 MB | 17.3–17.4 MB | 6.5–6.6 MB |
+| A street in Colossae, morning (Ch. 4) | 83–84 MB | 61.6–62.7 MB | 20.3–20.7 MB |
+| A street in Colossae, later day (Ch. 4) | 97 MB | 66.1 MB | 23.8 MB |
+| The Laodicea road (Ch. 4) | 105 MB | 80.0 MB | 24.7 MB |
+| Philemon's house (Ch. 4) | 41–42 MB | 31.0–32.3 MB | 11.0–11.4 MB |
+| Grandmother Shelomit's house (Ch. 2), later day / lamplight | 17–18 MB | 14.8 / 13.1 MB | 6.0 / 5.3 MB |
+| The shore at Capernaum, later day (Ch. 2) | 125 MB | 81.0 MB | 30.1 MB |
+| The shore at Capernaum, night (Ch. 2) | 103–107 MB | 72.6–75.4 MB | 24.5–25.6 MB |
+| The open lake (Ch. 2) | 84 MB | 62.3 MB | 20.6 MB |
+| Tamar's house (Ch. 3), by day / at night | 29 / 40 MB | 23.9 / 30.0 MB | 8.3 / 10.8 MB |
+| The lanes of Bethlehem (Ch. 3), later day / night | 109 / 87 MB | 74.9 / 64.2 MB | 26.5 / 21.0 MB |
+| The fold below Bethlehem (Ch. 3), later day / night | 81 / 77 MB | 53.9 / 53.1 MB | 18.6 / 17.8 MB |
 
-In the Chapter 2, 3 and 4 captures (`storm-art.spec.ts`, `bethlehem-art.spec.ts`, `letter-art.spec.ts`, September 2026) the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the threshold for the half-resolution set (`wantsLowResolution`). The half-resolution set now goes to devices that ask for simpler effects, and to screens at 1× whose view is zoomed out below it.
-
-People (and the game's own textures) make up 30–55 MB of each figure, most where there are passers-by: their sheets are full resolution on every device, and the later-day shadows are long. Half-resolution people sheets for phones, and GPU-compressed textures, are the next savings.
+Until the phone work, the phone loaded the full set, as desktops do: its view's zoom (the close framing at a Pixel 7's width, times the render ratio, capped at 2) is above the zoom threshold for the half-resolution set, and people sheets had no half-resolution version. Now the device decides (§2), and a phone holds 31–41% of what it did. Of the phone's textures before, people's colour sheets were 7–30 MB a place, and the ground and sprite pages the rest; now the low set and people are each a quarter of that, and the cast shadows (one byte a pixel) and the game's own textures make up the remainder. GPU-compressed textures (KTX2) are the next saving.
 
 Before this work only the market was pre-rendered and nothing was released: by Jericho the painted chapter held about 100 MB of textures.
 
@@ -365,7 +375,7 @@ Before this work only the market was pre-rendered and nothing was released: by J
 - once a later-day scene has been seen, it too works offline; before that, offline, the morning set stands in for it (the place is never painted);
 - a player who never reaches the afternoon never downloads its light.
 
-Caching the morning sets on first use instead would save the install about 10 MB, but a player who lost the connection on the road would then see Jericho painted. Precaching the later-day sets too would add 8 MB for light some players never see. Both resolutions of the morning sets are precached (the low one adds 1.8 MB) because a desktop can switch to the low set mid-chapter, offline, when it runs slowly.
+Caching the morning sets on first use instead would save the install about 10 MB, but a player who lost the connection on the road would then see Jericho painted. Precaching the later-day sets too would add 8 MB for light some players never see. Both resolutions of the morning sets are precached (the low one adds 1.8 MB) because a desktop can switch to the low set mid-chapter, offline, when it runs slowly. For the same reason the half-resolution copies of the morning and indoor people are precached too: with them (and the larger `people.json` that lists them) the precache grew from 356 files, 17.3 MB, to 458 files, 20.7 MB (`npm run build`, September 2026, four chapters).
 
 ## 10. Review captures
 

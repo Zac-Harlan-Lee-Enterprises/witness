@@ -21,8 +21,8 @@ and each new file's frame table in `atlas`, as for the full sheets.
 Colour sheets go from 3 to --ppu pixels per game unit (1.5 by default: a
 quarter of the pixels). Shadow sheets stay as they are (1 ppu, one byte a
 pixel on the GPU) and `low.shadows` names them, unless --shadow-ppu asks for
-less: at 0.5 a phone magnifies a shadow texel to about nine device pixels,
-and its edges showed steps. Idempotent: a person whose low sheets are
+less: halving them saves little, and at 0.5 a phone magnifies a shadow texel
+to about nine device pixels. Idempotent: a person whose low sheets are
 recorded at these sizes, with their files present, is skipped (--force
 redoes them); low files nothing refers to any more are removed.
 """
@@ -196,8 +196,7 @@ def shadows_up_to_date(folder, e, shadow_ppu):
 def low_shadow(folder, atlas, s, shadow_ppu):
     """A low shadow entry: the full sheet itself when it is no finer than
     shadow_ppu (shadows are 1 ppu, and one byte a pixel on the GPU: at half
-    that, magnified seven times on a phone, their edges showed texel steps),
-    else a smaller copy."""
+    that a phone would magnify each texel seven times), else a smaller copy."""
     if shadow_ppu >= s["ppu"]:
         return dict(s)
     k = shadow_ppu / s["ppu"]
