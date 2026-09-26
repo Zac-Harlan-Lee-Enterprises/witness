@@ -55,6 +55,7 @@ import lighting  # noqa: E402
 import materials as M  # noqa: E402
 import people  # noqa: E402
 import repack_people  # noqa: E402
+import shadow_edges  # noqa: E402
 import view  # noqa: E402
 
 FRAME_W = 44
@@ -327,19 +328,25 @@ def render(job, a, manifest, tmp):
         l, t, rgt, b = (REST_SHADOW_BOX if rest else SHADOW_BOX)[variant]
         sw, sh = int((rgt - l) * SHADOW_PPU), int((b - t) * SHADOW_PPU)
         view.setup_camera(scene, (l + rgt) / 2, (t + b) / 2, sw, sh, SHADOW_PPU)
-        ssheet = np.ones((sh * n_rows, sw * n_cols, 4), dtype=np.float32)
+        shots = []
         for r, c, label, spec in poses():
             person.pose(**spec)
             img = render_frame(scene, os.path.join(tmp, f"{job.id}-s-{variant}-{label}.png"))
-            ssheet[r * sh : (r + 1) * sh, c * sw : (c + 1) * sw] = shadow_grey(img[:, :, 3])
+            shots.append((r, c, shadow_grey(img[:, :, 3])))
+        # A soft light's shadow can reach past the box: it fades out beyond it.
+        framed, margin = shadow_edges.add_margin([s for _, _, s in shots])
+        sw, sh = sw + 2 * margin, sh + 2 * margin
+        ssheet = np.ones((sh * n_rows, sw * n_cols, 4), dtype=np.float32)
+        for (r, c, _), frame in zip(shots, framed):
+            ssheet[r * sh : (r + 1) * sh, c * sw : (c + 1) * sw] = frame
         sname = f"{job.id}-shadow-{variant}.webp"
         imageio.save(ssheet, os.path.join(a.out, sname), "WEBP", 62)
         entry.setdefault("shadows", {})[variant] = {
             "sheet": sname,
             "frameWidth": sw,
             "frameHeight": sh,
-            "originX": -l * SHADOW_PPU,
-            "originY": -t * SHADOW_PPU,
+            "originX": -l * SHADOW_PPU + margin,
+            "originY": -t * SHADOW_PPU + margin,
             "ppu": SHADOW_PPU,
         }
     manifest[job.id] = entry
