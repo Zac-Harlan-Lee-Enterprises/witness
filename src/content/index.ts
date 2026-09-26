@@ -29,10 +29,11 @@ const REGISTRY: RegistryEntry[] = [
       id: 'storm-on-galilee',
       number: 2,
       title: 'A Storm on Galilee',
-      subtitle: 'Coming later',
-      available: false,
-      estimatedMinutes: null,
+      subtitle: 'One of the other boats',
+      available: true,
+      estimatedMinutes: { min: 20, max: 30 },
     },
+    load: () => import('./chapters/storm-on-galilee').then((m) => m.STORM_ON_GALILEE),
   },
   {
     meta: {

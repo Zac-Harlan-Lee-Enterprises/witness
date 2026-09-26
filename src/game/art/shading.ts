@@ -147,10 +147,22 @@ function castShape(m: Ctx, kind: TileKind, x: number, y: number, h: number): voi
       m.fillRect(x + 14, y + 12, 4, 16);
       return;
     }
+    case 'mast': {
+      // A long, thin pole shadow with the yard's shadow crossing it.
+      m.beginPath();
+      m.ellipse(x + 8, y + 14, 22, 2.4, 0.6, 0, Math.PI * 2);
+      m.fill();
+      m.beginPath();
+      m.ellipse(x - 2, y + 6, 18, 2, -0.5, 0, Math.PI * 2);
+      m.fill();
+      return;
+    }
     case 'tent':
     case 'stall':
     case 'loom':
     case 'cloth':
+    case 'nets':
+    case 'rack':
       m.beginPath();
       m.moveTo(x + 2, y + 28);
       m.lineTo(x + 6, y + 6);

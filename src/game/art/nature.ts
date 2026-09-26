@@ -1,6 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import type { Look } from './direction';
-import { ellipse, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } from './paint';
+import { paintMastTop } from './boats';
+import { ellipse, fbm, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } from './paint';
 import type { Site } from './site';
 
 /**
@@ -337,6 +338,191 @@ export function paintWater(ctx: Ctx, site: Site, look: Look): void {
   });
 }
 
+// ── The lake (the Sea of Galilee) ────────────────────────────────────────
+const LAKE_DEEP = '#2d5e71';
+const LAKE_SHALLOW = '#5f978f';
+const FOAM = '#e6f0ec';
+
+const isLakeWater = (k: TileKind): boolean => k === 'lake' || k === 'shallows';
+/** Boats: boats.ts paints them and the water or beach around their curved ends. */
+const isVessel = (k: TileKind): boolean => k === 'boat' || k === 'hull';
+
+/**
+ * Open water and shallows: broad variation that ignores the grid, wind
+ * ripples, pebbles seen through the shallows, and foam and wet stones where
+ * the water laps the shore. Map edges read as more lake, not as a shore.
+ */
+export function paintLake(ctx: Ctx, site: Site, _look: Look): void {
+  const waterAt = (x: number, y: number): 'lake' | 'shallows' | null => {
+    const k = site.kindAt(x, y);
+    return k === 'lake' || k === 'shallows' ? k : null;
+  };
+  const inside = (x: number, y: number): boolean =>
+    x >= 0 && y >= 0 && x < site.grid.width && y < site.grid.height;
+  const isShore = (x: number, y: number): boolean => {
+    if (!inside(x, y)) return false;
+    const k = site.kindAt(x, y);
+    return !isLakeWater(k) && !isVessel(k) && k !== 'water' && k !== 'deck' && k !== 'mast';
+  };
+  // A boat floats on this water (the one you're aboard always does; a boat
+  // drawn up at the water's edge doesn't), so the water runs on under it.
+  const afloat = (x: number, y: number): boolean => {
+    const k = site.kindAt(x, y);
+    if (k === 'hull') return true;
+    if (k !== 'boat') return false;
+    let wet = 0;
+    let dry = 0;
+    for (const [dx, dy] of [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+    ] as const) {
+      const n = site.kindAt(x + dx, y + dy);
+      if (n === 'boat' || !inside(x + dx, y + dy)) continue;
+      if (isLakeWater(n)) wet++;
+      else dry++;
+    }
+    return wet > 0 && wet >= dry;
+  };
+  // 1. Colour: one sample per tile, smoothly scaled up, so the shallows fade
+  //    into deep water over a tile or two instead of stepping at the grid.
+  const { width, height } = site.grid;
+  const colourAt = (x: number, y: number): string => {
+    let w = waterAt(x, y);
+    // Off the water (boats, the shore), take the colour of the nearest open water.
+    for (let d = 1; !w && d <= 2; d++)
+      for (let dy = -d; dy <= d && w !== 'lake'; dy++)
+        for (let dx = -d; dx <= d && w !== 'lake'; dx++) w = waterAt(x + dx, y + dy) ?? w;
+    return shade(
+      (w ?? 'shallows') === 'lake' ? LAKE_DEEP : LAKE_SHALLOW,
+      (fbm(x / 6, y / 6, 41) - 0.5) * 0.3,
+    );
+  };
+  const field = ctx.canvas.ownerDocument.createElement('canvas');
+  field.width = width;
+  field.height = height;
+  const f = field.getContext('2d');
+  if (f)
+    site.forEach((x, y) => {
+      f.fillStyle = colourAt(x, y);
+      f.fillRect(x, y, 1, 1);
+    });
+  ctx.save();
+  ctx.beginPath();
+  site.forEach((x, y) => {
+    if (waterAt(x, y) || afloat(x, y)) ctx.rect(x * TILE, y * TILE, TILE, TILE);
+  });
+  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  if (f) ctx.drawImage(field, 0, 0, width * TILE, height * TILE);
+  else
+    site.forEach((x, y) => {
+      ctx.fillStyle = colourAt(x, y);
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+    });
+  ctx.restore();
+  // 2. Detail: pebbles under the shallows, darker swells out deep, ripples everywhere.
+  site.forEach((x, y) => {
+    const w = waterAt(x, y);
+    if (!w) return;
+    const X = x * TILE;
+    const Y = y * TILE;
+    const r = rng(hash(x, y, 43));
+    if (w === 'shallows') {
+      for (let i = 0; i < 6; i++)
+        ellipse(
+          ctx,
+          X + 3 + r() * 26,
+          Y + 3 + r() * 26,
+          1.2 + r() * 1.8,
+          0.9 + r(),
+          rgba(r() < 0.6 ? '#2f3b36' : '#b9ad92', 0.35),
+        );
+      ctx.strokeStyle = rgba('#dff3ea', 0.3);
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < 2; i++) {
+        const cx = X + 4 + r() * 22;
+        const cy = Y + 4 + r() * 22;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.quadraticCurveTo(cx + 3, cy - 2, cx + 6, cy + 0.5);
+        ctx.quadraticCurveTo(cx + 8, cy + 2, cx + 10, cy);
+        ctx.stroke();
+      }
+    } else if (r() < 0.5) {
+      lumpy(ctx, X + 8 + r() * 16, Y + 8 + r() * 16, 8 + r() * 6, r, rgba('#1c3e4e', 0.22), 8);
+    }
+    // Wind ripples: short bright crests with a darker trough beneath.
+    for (let i = 0; i < 3; i++) {
+      const wx = X + 1 + r() * 20;
+      const wy = Y + 5 + i * 9 + r() * 3;
+      const len = 7 + r() * 6;
+      ctx.strokeStyle = rgba('#10303c', 0.25);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy + 1.2);
+      ctx.quadraticCurveTo(wx + len / 2, wy - 0.8, wx + len, wy + 1.2);
+      ctx.stroke();
+      ctx.strokeStyle = rgba('#d8eef0', w === 'lake' ? 0.45 : 0.35);
+      ctx.beginPath();
+      ctx.moveTo(wx, wy);
+      ctx.quadraticCurveTo(wx + len / 2, wy - 2, wx + len, wy);
+      ctx.stroke();
+    }
+    // 3. The shore: wet dark stones and a line of foam.
+    for (const [dx, dy] of [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+    ] as const) {
+      if (!isShore(x + dx, y + dy)) continue;
+      const along = (t: number): [number, number] => {
+        if (dy === -1) return [X + t, Y];
+        if (dy === 1) return [X + t, Y + TILE];
+        if (dx === -1) return [X, Y + t];
+        return [X + TILE, Y + t];
+      };
+      const x0 = dx === 1 ? X + TILE : X;
+      const y0 = dy === 1 ? Y + TILE : Y;
+      const grad = ctx.createLinearGradient(x0, y0, x0 - dx * 9, y0 - dy * 9);
+      grad.addColorStop(0, rgba(FOAM, 0.55));
+      grad.addColorStop(1, rgba(FOAM, 0));
+      ctx.fillStyle = grad;
+      ctx.fillRect(
+        dx === 1 ? X + TILE - 9 : X,
+        dy === 1 ? Y + TILE - 9 : Y,
+        dx === 0 ? TILE : 9,
+        dy === 0 ? TILE : 9,
+      );
+      ctx.strokeStyle = rgba(FOAM, 0.85);
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (let t = 0; t <= TILE; t += 4) {
+        const [px, py] = along(t);
+        const wob = Math.sin((px + py) * 0.35) * 1.3;
+        const fx = px - dx * (2.5 + wob);
+        const fy = py - dy * (2.5 + wob);
+        if (t === 0) ctx.moveTo(fx, fy);
+        else ctx.lineTo(fx, fy);
+      }
+      ctx.stroke();
+      for (let i = 0; i < 4; i++) {
+        const [px, py] = along(r() * TILE);
+        ellipse(
+          ctx,
+          px + dx * 2,
+          py + dy * 2,
+          2.2 + r() * 1.4,
+          1.5,
+          r() < 0.5 ? '#4f4a43' : '#6c665c',
+        );
+      }
+    }
+  });
+}
+
 // ── Growing things and stones (drawn as outlined props, local coords 0–32) ─
 export function paintNatureProp(c: Ctx, kind: TileKind, look: Look, seed: number): boolean {
   const r = rng(seed);
@@ -567,6 +753,10 @@ export function paintCanopy(c: Ctx, kind: TileKind, look: Look, seed: number): v
   const ox = CANOPY_BOX.left;
   const oy = CANOPY_BOX.top;
   const f = look.foliage;
+  if (kind === 'mast') {
+    paintMastTop(c, ox, oy, seed);
+    return;
+  }
   if (kind === 'olive') {
     for (let i = 0; i < 8; i++)
       lumpy(c, ox + 4 + r() * 24, oy - 3 + r() * 15, 8 + r() * 3.5, r, shade(f.dark, -0.05), 8);

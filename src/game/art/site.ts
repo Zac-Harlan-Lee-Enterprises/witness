@@ -44,6 +44,9 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'garden',
   'lampstand',
   'fountain',
+  'mast',
+  'nets',
+  'rack',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -61,6 +64,11 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'terrace',
   'tile-roof',
   'travertine',
+  // The lake and its boats are painted in their own passes (nature.ts, boats.ts).
+  'lake',
+  'shallows',
+  'hull',
+  'boat',
 ]);
 
 /** Low dry-stone walls: drawn over the ground they stand on, like a fence. */
@@ -70,7 +78,8 @@ export function isLowWall(kind: TileKind): boolean {
   return LOW_WALLS.has(kind);
 }
 
-const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig']);
+/** Tall things whose tops are drawn above people: trees, and a boat's mast and yard. */
+const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig', 'mast']);
 
 /**
  * Height in world units (a tile is 32) — how far a thing's shadow reaches.
@@ -119,6 +128,9 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   garden: 12,
   lampstand: 36,
   fountain: 16,
+  mast: 70,
+  nets: 26,
+  rack: 22,
 };
 
 export function isPropTile(kind: TileKind): boolean {
@@ -201,7 +213,10 @@ export function readSite(
     x >= 0 && y >= 0 && x < grid.width && y < grid.height;
   const groundAt = (x: number, y: number): TileKind => {
     const k = kindAt(x, y);
-    return PROP_TILES.has(k) || LOW_WALLS.has(k) ? groundUnder(grid, x, y, baseTile) : k;
+    // Low walls and props stand on the ground around them; so does a boat drawn up on a beach (boats afloat get water from boats.ts).
+    return PROP_TILES.has(k) || LOW_WALLS.has(k) || k === 'boat'
+      ? groundUnder(grid, x, y, baseTile)
+      : k;
   };
   const opensSouth = (x: number, y: number): boolean => {
     if (!inside(x, y + 1)) return false;

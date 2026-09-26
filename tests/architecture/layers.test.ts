@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest';
  *   content → domain (data only)       shared ← everyone
  */
 const ROOT = resolve(__dirname, '../..');
+/** These tests read every source file; give them room on a busy machine as the game grows. */
+const SCAN_TIMEOUT_MS = 30_000;
 const SRC = join(ROOT, 'src');
 
 type Layer =
@@ -139,7 +141,7 @@ function violationsFor(layer: Layer): string[] {
   );
 }
 
-describe('architecture: layer boundaries', () => {
+describe('architecture: layer boundaries', { timeout: SCAN_TIMEOUT_MS }, () => {
   (Object.keys(ALLOWED) as Layer[]).forEach((layer) => {
     it(`${layer}/ only imports from: ${ALLOWED[layer].join(', ')}`, () => {
       expect(violationsFor(layer), violationsFor(layer).join('\n\n')).toEqual([]);
@@ -153,7 +155,7 @@ function packageViolations(pkg: RegExp, allowedDirs: string[], why: string, fix:
     .map((i) => `FAIL  ${rel(i.file)} imports '${i.spec}'\n      Why: ${why}\n      Fix: ${fix}`);
 }
 
-describe('architecture: framework containment', () => {
+describe('architecture: framework containment', { timeout: SCAN_TIMEOUT_MS }, () => {
   it('only src/game imports Phaser', () => {
     const v = packageViolations(
       /^phaser/,
@@ -227,7 +229,7 @@ function codeOf(file: string): string {
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
 }
 
-describe('architecture: safety and privacy rules', () => {
+describe('architecture: safety and privacy rules', { timeout: SCAN_TIMEOUT_MS }, () => {
   const offenders = (re: RegExp, allow: (file: string) => boolean = () => false) =>
     FILES.filter((f) => !allow(f))
       .filter((f) => re.test(codeOf(f)))

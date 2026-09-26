@@ -1,13 +1,15 @@
 import type { TileKind } from '@/domain/world';
+import { paintMastFoot } from './boats';
 import type { Look } from './direction';
 import { ellipse, mix, rgba, rng, shade, type Ctx } from './paint';
 
 /**
  * Things people made: stalls, pottery, the bread oven, a well, crates and
  * sacks, a loom, mats, a cart, a caravan tent, a stone manger, a heap of
- * straw and a shepherds' fire; and in the Greek cities of Asia Minor,
- * stone columns, dye vats, amphorae, dining couches, milestones, bronze
- * lampstands and public fountains. Painted in local coordinates
+ * straw and a shepherds' fire; in the Greek cities of Asia Minor, stone
+ * columns, dye vats, amphorae, dining couches, milestones, bronze lampstands
+ * and public fountains; and by the lake, nets hung to dry, a fish-drying
+ * rack and the foot of a boat's mast. Painted in local coordinates
  * (the tile spans 0–32; tall things may rise above 0). Returns false for
  * kinds it doesn't paint.
  */
@@ -16,6 +18,7 @@ const WOOD_DARK = '#573b22';
 const CLAY = '#b8683e';
 const CLAY_DARK = '#8c4f2e';
 const LINEN = '#ece2c8';
+const ROPE_COLOR = '#c9b184';
 
 function pick<T>(items: readonly T[], r: () => number, fallback: T): T {
   return items[Math.floor(r() * items.length)] ?? fallback;
@@ -660,6 +663,87 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
       c.ellipse(16, 15, 4, 1.4, 0, 0, Math.PI * 2);
       c.ellipse(16, 15, 7, 2.4, 0, 0.3, Math.PI - 0.3);
       c.stroke();
+      return true;
+    }
+    case 'mast':
+      paintMastFoot(c, seed);
+      return true;
+    case 'nets': {
+      // Nets hung to dry between two poles: cork floats along the head rope,
+      // stone sinkers along the foot, and a mended patch.
+      c.fillStyle = WOOD_DARK;
+      c.fillRect(1.5, -6, 2.4, 34);
+      c.fillRect(28.1, -6, 2.4, 34);
+      const top = (x: number): number => -3 + Math.sin((x / 32) * Math.PI) * 3;
+      c.save();
+      c.fillStyle = rgba('#d8ccad', 0.35);
+      c.beginPath();
+      c.moveTo(3, top(3));
+      for (let x = 3; x <= 29; x += 2) c.lineTo(x, top(x));
+      c.lineTo(29, 22);
+      c.quadraticCurveTo(16, 26, 3, 22);
+      c.closePath();
+      c.fill();
+      // The mesh, kept inside the hanging net.
+      c.clip();
+      c.strokeStyle = rgba('#e6dcc0', 0.85);
+      c.lineWidth = 0.45;
+      for (let i = -8; i < 14; i++) {
+        c.beginPath();
+        c.moveTo(3 + i * 3, top(3));
+        c.lineTo(3 + i * 3 + 22, 22);
+        c.moveTo(3 + i * 3 + 22, top(3));
+        c.lineTo(3 + i * 3, 22);
+        c.stroke();
+      }
+      c.restore();
+      c.strokeStyle = ROPE_COLOR;
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(2, top(2));
+      for (let x = 2; x <= 30; x += 2) c.lineTo(x, top(x));
+      c.stroke();
+      for (let x = 5; x < 29; x += 4.5) ellipse(c, x, top(x) + 0.8, 1.6, 1.1, '#b07a3a');
+      for (let x = 6; x < 28; x += 5) ellipse(c, x, 22.5 + Math.sin(x) * 0.8, 1.3, 1.2, '#5a554c');
+      if (r() < 0.6) {
+        c.fillStyle = rgba(accent(1), 0.55);
+        c.fillRect(11 + r() * 8, 6 + r() * 6, 5, 4);
+      }
+      return true;
+    }
+    case 'rack': {
+      // A drying rack: two trestles and poles hung with split fish.
+      c.fillStyle = WOOD_DARK;
+      for (const x of [2, 28]) {
+        c.beginPath();
+        c.moveTo(x - 1.5, 28);
+        c.lineTo(x + 0.5, 0);
+        c.lineTo(x + 2.5, 28);
+        c.lineTo(x + 1.2, 28);
+        c.lineTo(x + 0.5, 6);
+        c.lineTo(x - 0.2, 28);
+        c.closePath();
+        c.fill();
+      }
+      for (const y of [2, 13]) {
+        c.fillStyle = WOOD;
+        c.fillRect(0, y, 32, 2);
+        for (let i = 0; i < 6; i++) {
+          const fx = 3 + i * 4.8 + r() * 0.8;
+          const len = 7 + r() * 2;
+          const fish = mix('#c9b89a', '#8f8a7e', r());
+          ellipse(c, fx, y + 2 + len / 2, 1.9, len / 2, fish);
+          ellipse(c, fx - 0.5, y + 2 + len / 2 - 1, 0.7, len / 2 - 1.5, rgba('#ffffff', 0.35));
+          c.fillStyle = shade(fish, -0.35);
+          c.beginPath();
+          c.moveTo(fx - 1.6, y + 2 + len);
+          c.lineTo(fx + 1.6, y + 2 + len);
+          c.lineTo(fx, y + len - 0.5);
+          c.closePath();
+          c.fill();
+        }
+      }
+      ellipse(c, 16, 28, 12, 1.6, rgba('#8a7a5a', 0.4));
       return true;
     }
     default:

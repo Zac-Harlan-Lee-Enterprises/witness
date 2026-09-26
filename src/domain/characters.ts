@@ -39,6 +39,9 @@ export const AppearanceSchema = z.object({
       'tablets',
       /** A cylindrical leather case for carrying letters (a letter carrier). */
       'scroll-case',
+      // A folded fishing net over the shoulder, and an oar (Chapter 2's fishing families).
+      'net',
+      'oar',
     ])
     .default('none'),
 });
