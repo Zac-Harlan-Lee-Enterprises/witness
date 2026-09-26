@@ -261,11 +261,11 @@ class RomanValley:
             return
         from place import value_noise
 
-        K = 12
+        K = 20
         W, Hh = m.w * K + 1, m.h * K + 1
-        lobe = value_noise(W + 2, Hh + 2, 16, 505) - 0.5
-        lobe2 = value_noise(W + 2, Hh + 2, 5, 506) - 0.5
-        fringe = value_noise(W + 2, Hh + 2, 10, 507)
+        lobe = value_noise(W + 2, Hh + 2, 27, 505) - 0.5
+        lobe2 = value_noise(W + 2, Hh + 2, 8, 506) - 0.5
+        fringe = value_noise(W + 2, Hh + 2, 17, 507)
         step = 0.3
 
         def shape(i, j):
@@ -273,29 +273,35 @@ class RomanValley:
             t = (self.H(x, y) + 0.2 * lobe[j, i] + 0.09 * lobe2[j, i]) / step
             k = math.floor(t)
             f = t - k
-            rise = 0.0 if f < 0.8 else (1 - math.cos(math.pi * min(1.0, (f - 0.8) / 0.17))) / 2
+            rise = 0.0 if f < 0.74 else (1 - math.cos(math.pi * min(1.0, (f - 0.74) / 0.23))) / 2
             rim = 0.022 * math.exp(-((f - 0.03) / 0.045) ** 2)
-            wet = min(1.0, max(0.0, (f - 0.08) / 0.06)) * min(1.0, max(0.0, (0.78 - f) / 0.05))
+            wet = min(1.0, max(0.0, (f - 0.08) / 0.06)) * min(1.0, max(0.0, (0.72 - f) / 0.05))
             depth = wet * min(1.0, max(0.0, (f - 0.08) / 0.5))
             # Quantized upward, so the skin always lies over the terrain.
             return (k + 1 + rise) * step + rim, wet, depth
 
-        def covered(i, j):
-            x, y = (i + 0.5) / K, (j + 0.5) / K
-            tx, ty = int(x), int(y)
-            if (tx, ty) in cells:
-                # A ragged foot where the terraces meet the meadow below.
-                if m.walkable(tx, ty + 1) and (y - ty) > 0.35 + 0.6 * fringe[j, i]:
-                    return False
-                return True
-            if m.walkable(tx, ty):
-                return False
-            near = any((tx + dx, ty + dy) in cells for dx in (-1, 0, 1) for dy in (-1, 0, 1))
-            return near and fringe[j, i] > 0.55
+        # How much the calcite covers each point (1 on the travertine, fading
+        # out over a ragged margin onto the hillside and toward the meadow),
+        # so the white spills irregularly onto the slopes around it.
+        import numpy as np
+
+        import terrain as T
+
+        inside = np.zeros((Hh, W))
+        for j in range(Hh):
+            for i in range(W):
+                tx, ty = min(m.w - 1, i // K), min(m.h - 1, j // K)
+                inside[j, i] = 1.0 if (tx, ty) in cells else 0.0
+        soft = T._blur(inside, K // 3)
+        cover = np.clip((soft + (fringe[:Hh, :W] - 0.5) * 0.7) * 2.2 - 0.55, 0.0, 1.0)
+
+        def walk(i, j):
+            return m.walkable(min(m.w - 1, i // K), min(m.h - 1, j // K))
 
         bm = bmesh.new()
         wet_l = bm.verts.layers.float.new("wet")
         dep_l = bm.verts.layers.float.new("depth")
+        cov_l = bm.verts.layers.float.new("cover")
         grid = {}
 
         def vert(i, j):
@@ -304,13 +310,15 @@ class RomanValley:
                 v = bm.verts.new(Vector((i / K, -(j / K + h), h + 0.006)))
                 v[wet_l] = wet
                 v[dep_l] = depth
+                v[cov_l] = 0.0 if walk(i, j) else float(cover[j, i])
                 grid[(i, j)] = v
             return grid[(i, j)]
 
         for j in range(m.h * K):
             for i in range(m.w * K):
-                if covered(i, j):
-                    bm.faces.new((vert(i, j), vert(i, j + 1), vert(i + 1, j + 1), vert(i + 1, j)))
+                if walk(i, j) or max(cover[j, i], cover[j + 1, i], cover[j, i + 1], cover[j + 1, i + 1]) < 0.01:
+                    continue
+                bm.faces.new((vert(i, j), vert(i, j + 1), vert(i + 1, j + 1), vert(i + 1, j)))
         bm.normal_update()
         skin = common.mesh_object("travertine", bm, R.travertine(), None, smooth=True)
         self.to_ground(skin)

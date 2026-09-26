@@ -508,6 +508,7 @@ def travertine():
         obj = n.coords()
         wet = n.new("ShaderNodeAttribute", _attribute_name="wet", _attribute_type="GEOMETRY")
         depth = n.new("ShaderNodeAttribute", _attribute_name="depth", _attribute_type="GEOMETRY")
+        cover = n.new("ShaderNodeAttribute", _attribute_name="cover", _attribute_type="GEOMETRY")
         stretch = n.new("ShaderNodeVectorMath", _operation="MULTIPLY")
         n.link(obj[0], obj[1], stretch, 0)
         stretch.inputs[1].default_value = (7.0, 7.0, 0.8)
@@ -520,7 +521,9 @@ def travertine():
         crust = (n.mix((stain, "Result"), (crust, 2), "#d8c49c"), 2)
         pool = n.mix((depth, "Fac"), "#c4e0da", "#78aaa8")
         pool2 = n.mix((n.math("MULTIPLY", (mid, "Fac"), 0.3), "Value"), (pool, 2), "#d0e6e0")
-        wm = n.new("ShaderNodeMapRange", Value=(wet, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.0, "To Max": 1.0})
+        # Water stands only where the crust is whole.
+        wet_c = n.math("MULTIPLY", (wet, "Fac"), (n.new("ShaderNodeMapRange", Value=(cover, "Fac"), **{"From Min": 0.6, "From Max": 0.95, "To Min": 0.0, "To Max": 1.0}), "Result"))
+        wm = n.new("ShaderNodeMapRange", Value=(wet_c, "Value"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.0, "To Max": 1.0})
         col = n.mix((wm, "Result"), crust, (pool2, 2))
         rough = n.new("ShaderNodeMapRange", Value=(wm, "Result"), **{"From Min": 0.0, "From Max": 1.0, "To Min": 0.55, "To Max": 0.03})
         ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.1, _samples=8, _only_local=False)
@@ -529,7 +532,10 @@ def travertine():
         h = n.math("ADD", (drip, "Fac"), (n.math("MULTIPLY", (fine, "Fac"), 0.35), "Value"))
         h = n.math("MULTIPLY", (h, "Value"), (n.math("SUBTRACT", 1.0, (wm, "Result")), "Value"))
         bump = n.bump((h, "Value"), strength=0.3, distance=0.008)
-        n.bsdf(**{"Base Color": (col2, 2), "Roughness": (rough, "Result"), "Specular IOR Level": 0.5, "Normal": (bump, "Normal")})
+        # A thin, broken crust where it spills onto the hillside.
+        grain = n.noise(18.0, 4.0, 0.6, obj)
+        alpha = n.new("ShaderNodeMapRange", Value=(n.math("ADD", (cover, "Fac"), (n.math("MULTIPLY", (grain, "Fac"), 0.35), "Value")), "Value"), **{"From Min": 0.35, "From Max": 0.75, "To Min": 0.0, "To Max": 1.0})
+        n.bsdf(**{"Base Color": (col2, 2), "Roughness": (rough, "Result"), "Specular IOR Level": 0.5, "Normal": (bump, "Normal"), "Alpha": (alpha, "Result")})
         return n.mat
 
     return cached(("travertine",), build)
