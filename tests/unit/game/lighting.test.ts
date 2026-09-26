@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { gradeColors, lightingFor } from '@/game/systems/lighting';
+import { gradeColors, lightingFor, overBakedArt } from '@/game/systems/lighting';
+
+describe('time-of-day lighting over pre-rendered art', () => {
+  it('keeps only a trace of the hour over day art, which carries its own light', () => {
+    const day = lightingFor(12, false);
+    expect(overBakedArt(day, 'day').alpha).toBeCloseTo(day.alpha * 0.35);
+    expect(overBakedArt(day, 'late').vignette).toBeLessThanOrEqual(0.2);
+  });
+
+  it('grades a night bake gently: its moon, fires and lamps are in the art', () => {
+    for (const indoor of [false, true]) {
+      const night = lightingFor(22, indoor);
+      const baked = overBakedArt(night, 'night');
+      // Not darkened twice…
+      expect(baked.alpha).toBeLessThan(night.alpha * 0.5);
+      expect(baked.vignette).toBeLessThanOrEqual(0.42);
+      // …but still night: lamps glow and the lamp you carry lights your way.
+      expect(baked.night).toBe(true);
+      expect(baked.tint).toBe(night.tint);
+    }
+  });
+});
 
 describe('time-of-day lighting', () => {
   it('follows the story clock from morning to night', () => {

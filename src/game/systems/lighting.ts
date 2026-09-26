@@ -44,6 +44,19 @@ export function lightingFor(hour: number | null, indoor: boolean): Lighting {
   return { tint: 0x243366, alpha: 0.52, vignette: 0.6, night: true, label: 'night' };
 }
 
+/**
+ * The time-of-day layer over pre-rendered art, which carries its own light.
+ * Over day or later-day art only a trace of the hour's tint; over a night
+ * bake (the moon, the fires and the lamps are in the art) a gentle night
+ * that keeps the dark gathering round the lamps without darkening the art
+ * twice. (Day art shown at night keeps the full night: see world-scene.)
+ */
+export function overBakedArt(l: Lighting, variant: 'day' | 'late' | 'night'): Lighting {
+  if (variant === 'night')
+    return { ...l, alpha: l.alpha * 0.3, vignette: Math.min(l.vignette, 0.42), night: true };
+  return { ...l, alpha: l.alpha * 0.35, vignette: Math.min(l.vignette, 0.2) };
+}
+
 export type Rgb = readonly [number, number, number];
 
 /** A second multiply tint over the time of day's: cloud, rain, a storm's gloom. */

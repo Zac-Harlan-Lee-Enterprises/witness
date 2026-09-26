@@ -72,7 +72,7 @@ export function waterRegions(grid: TileGrid): WaterRegion[] {
  */
 export function sunForWater(
   hour: number | null,
-  variant: 'painted' | 'day' | 'late',
+  variant: 'painted' | 'day' | 'late' | 'night',
 ): { x: number; y: number; height: number } {
   const h = hour === null ? 12 : ((hour % 24) + 24) % 24;
   const night = h < 5 || h >= 19;
@@ -80,6 +80,8 @@ export function sunForWater(
   let y: number;
   if (variant === 'day') [x, y] = [0.92, 0.38];
   else if (variant === 'late') [x, y] = [-0.92, 0.38];
+  // A night bake's moon stands in the south-south-east.
+  else if (variant === 'night') [x, y] = [0.41, 0.91];
   else {
     // Painted art: light from the upper left, swinging with the hour.
     const t = Math.min(1, Math.max(0, (h - 6) / 12));

@@ -257,6 +257,8 @@ export interface LightSpot {
   x: number;
   y: number;
   radius: number;
+  /** How strong its pool of light is (1: painted places; less where the art already glows). */
+  strength?: number;
 }
 
 /** Hearth glows at ovens and campfires, lamps on lampstands; indoors, lamp niches and windows along the back wall. */

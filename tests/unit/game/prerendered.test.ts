@@ -6,11 +6,14 @@ import {
   artPathFor,
   behindCanopy,
   depthRow,
+  isNightHour,
   LATE_FROM_HOUR,
+  NIGHT_FROM_HOUR,
   pagesFor,
   peopleLightFor,
   pickSheets,
   PLACE_ART,
+  relightTo,
   sampleShade,
   shadeTint,
   sheetsToLoad,
@@ -68,9 +71,11 @@ describe('pre-rendered place art', () => {
       variants: { day: variant, late: variant },
     });
     expect(ok.error).toBeNull();
-    expect(ok.art?.variants.day.sprites[0]?.id).toBe('stall-11-6');
-    expect(ok.art?.variants.day.sprites[0]?.fade).toBe(false);
-    expect(ok.art?.variants.day.sprites[1]?.fade).toBe(true);
+    expect(ok.art?.variants.day?.sprites[0]?.id).toBe('stall-11-6');
+    expect(ok.art?.variants.day?.sprites[0]?.fade).toBe(false);
+    expect(ok.art?.variants.day?.sprites[1]?.fade).toBe(true);
+    // Fires and lamps to flicker are optional (none, by default).
+    expect(ok.art?.variants.day?.lights).toEqual([]);
     const bad = parsePlaceArt({
       version: 1,
       scene: 'x',
@@ -113,6 +118,68 @@ describe('pre-rendered place art', () => {
     expect(variantFor(null, ['day', 'late'])).toBe('day');
   });
 
+  it('uses night art from dusk until before dawn, where a place has it', () => {
+    expect([17, NIGHT_FROM_HOUR, 23, 0, 4, 5].map(isNightHour)).toEqual([
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(isNightHour(null)).toBe(false);
+    expect(variantFor(20, ['day', 'night'])).toBe('night');
+    expect(variantFor(2, ['late', 'night'])).toBe('night');
+    // Without night art, the later-day art stands in after dark (as before).
+    expect(variantFor(20, ['day', 'late'])).toBe('late');
+    expect(variantFor(20, ['day'])).toBe('day');
+  });
+
+  it('draws a place seen from mid-afternoon into the night in its day and night sets', () => {
+    // Bethlehem's lanes: the story shows them from hour 16; their day set is
+    // rendered in the later-day light (the light plan), their night set by the moon.
+    expect(variantFor(16, ['day', 'night'])).toBe('day');
+    expect(variantFor(21, ['day', 'night'])).toBe('night');
+    const art = parsePlaceArt({
+      version: 1,
+      scene: 'bethlehem-lanes',
+      tiles: { w: 38, h: 24 },
+      ppu: 3,
+      variants: {
+        day: variant,
+        night: {
+          ...variant,
+          peopleLight: 'night',
+          lights: [{ kind: 'lamp', x: 176, y: 128, radius: 34 }],
+        },
+      },
+    });
+    expect(art.error).toBeNull();
+    expect(art.art?.variants.night?.lights[0]?.kind).toBe('lamp');
+    // Its glow is baked in, so its flickering pool is gentler than a painted one's.
+    expect(art.art?.variants.night?.lights[0]?.strength).toBe(0.5);
+    expect(art.art?.variants.night?.peopleLight).toBe('night');
+    // Every place has a day set: the one the game falls back to.
+    const nightOnly = parsePlaceArt({
+      version: 1,
+      scene: 'x',
+      tiles: { w: 2, h: 2 },
+      ppu: 3,
+      variants: { night: variant },
+    });
+    expect(nightOnly.art).toBeNull();
+  });
+
+  it('changes a place’s set as the story clock crosses into one its art has', () => {
+    // The sun sets while you carry the lamb back to the fold.
+    expect(relightTo('day', NIGHT_FROM_HOUR, ['day', 'night'])).toBe('night');
+    expect(relightTo('day', 17, ['day', 'night'])).toBeNull();
+    // A place without night art stays as it is after dark.
+    expect(relightTo('late', 20, ['day', 'late'])).toBeNull();
+    // Morning comes.
+    expect(relightTo('night', 6, ['day', 'night'])).toBe('day');
+  });
+
   it('lights people for the room indoors, and by the place’s sun outdoors', () => {
     expect(peopleLightFor('day', undefined)).toBe('day');
     expect(peopleLightFor('late', undefined)).toBe('late');
@@ -126,6 +193,28 @@ describe('pre-rendered place art', () => {
       variants: { day: variant },
     });
     expect(room.art?.peopleLight).toBe('indoor');
+  });
+
+  it('lights people as each set says, where a place’s sets differ', () => {
+    // Tamar's house: by the room's own light by day, by its lamps at night.
+    const house = parsePlaceArt({
+      version: 1,
+      scene: 'tamar-house',
+      tiles: { w: 18, h: 11 },
+      ppu: 3,
+      variants: {
+        day: { ...variant, peopleLight: 'indoor' },
+        night: { ...variant, peopleLight: 'lamp' },
+      },
+    });
+    expect(house.error).toBeNull();
+    const v = house.art?.variants;
+    expect(peopleLightFor('day', house.art?.peopleLight, v?.day.peopleLight)).toBe('indoor');
+    expect(peopleLightFor('night', house.art?.peopleLight, v?.night?.peopleLight)).toBe('lamp');
+    // A set's own light wins over the place's; outdoors at night, the moon.
+    expect(peopleLightFor('night', 'indoor', 'lamp')).toBe('lamp');
+    expect(peopleLightFor('night', undefined, 'night')).toBe('night');
+    expect(peopleLightFor('night', undefined)).toBe('night');
   });
 
   it('lights people as a place asks: under rain cloud, or at lamp-lighting', () => {
@@ -223,6 +312,10 @@ describe('pre-rendered people', () => {
       shadows: undefined,
     }),
     'player-look-1@lamp': sheet({ overlay: { mark: 'lamp', of: 'player-look-1' } }),
+    'player-look-1@carrying-lamb': sheet({
+      overlay: { mark: 'carrying-lamb', of: 'player-look-1' },
+      shadows: undefined,
+    }),
     'player-look-1~sit': sheet({ pose: 'sit' }),
     'player-look-1~sit@rag-bandaged-x': sheet({
       pose: 'sit',
@@ -244,6 +337,18 @@ describe('pre-rendered people', () => {
       base: 'player-look-1',
       overlays: ['player-look-1@water-skin', 'player-look-1@lamp'],
     });
+  });
+
+  it('draws a lamb carried across the shoulders over the water skin, under a lamp', () => {
+    expect(pickSheets(people, player, ['carrying-lamb'])).toEqual({
+      base: 'player-look-1',
+      overlays: ['player-look-1@carrying-lamb'],
+    });
+    expect(pickSheets(people, player, ['lamp', 'carrying-lamb', 'water-skin'])?.overlays).toEqual([
+      'player-look-1@water-skin',
+      'player-look-1@carrying-lamb',
+      'player-look-1@lamp',
+    ]);
   });
 
   it('draws the letter case at the hip over the rolled cloak, under a lamp', () => {

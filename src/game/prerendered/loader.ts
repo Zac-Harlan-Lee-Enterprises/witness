@@ -195,7 +195,7 @@ export async function loadPlace(
     return {
       art,
       variant,
-      peopleLight: peopleLightFor(variant, art.peopleLight),
+      peopleLight: peopleLightFor(variant, art.peopleLight, v.peopleLight),
       groundPpu,
       ground,
       pages,
@@ -227,6 +227,7 @@ function pick<T>(byLight: Partial<Record<PeopleLight, T>>, light: PeopleLight): 
   return (
     byLight[light] ??
     (light === 'lamp' ? byLight.indoor : undefined) ??
+    (light === 'night' ? byLight.late : undefined) ??
     byLight.day ??
     byLight.late ??
     byLight.indoor ??
