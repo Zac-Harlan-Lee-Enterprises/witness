@@ -86,7 +86,7 @@ class Studio:
         # Short lighting, as in painted portraits: a big soft key from the side
         # the face turns toward, about 45 degrees round and above, so the
         # near cheek falls into soft shadow with a triangle of light.
-        _area("Key", at(42, 30, 1.15), head, 0.72, 62.0, "#ffe6cc")
+        _area("Key", at(42, 30, 1.15), head, 0.85, 62.0, "#ffe6cc")
         # Fill: broad and dim from the camera's side, cooler, like light from
         # the open sky (warm key, cool fill: the colour of shadow in daylight).
         _area("Fill", at(-80, 8, 1.4), head, 1.8, 9.0, "#d4dcea")

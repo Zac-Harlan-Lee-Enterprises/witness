@@ -105,8 +105,6 @@ class Clothes:
         elif kind == "headcloth":
             self._covering("scarf")
             self._cord()
-        elif kind == "kerchief":
-            self._kerchief()
         elif kind == "wrap":
             self._wrap()
         elif kind == "band":
@@ -253,7 +251,7 @@ class Clothes:
         def outer_f(p):
             hem = np.exp(-((open_f(p) / 0.7) ** 2))
             # The hem round the face is folded over: thicker, standing a little proud.
-            return cover(p) - folds(p) - fine(p) - 0.14 * hem
+            return cover(p) - folds(p) - fine(p) - 0.08 * hem
 
         def cloth_f(p):
             d = outer_f(p)
@@ -451,46 +449,6 @@ class Clothes:
 
         shape = S.Fn(cord, ((-12, -14, 0), (12, 14, 16)))
         self.parts["cord"] = (shape, "cord", (-12, -14, 1), (12, 14, 15), 0.09)
-
-    def _kerchief(self):
-        """A child's kerchief: a cloth over the crown and the back of the head,
-        tied at the nape, with hair showing at the front."""
-        head = self.head
-        s = head.s
-        P = self.P
-        rng = np.random.default_rng(P.seed + 9)
-        env = self._hair_volume(0.55, 0.7)
-        tilt = math.radians(38 + rng.uniform(-3, 3))
-        en = np.array([0, math.sin(tilt), math.cos(tilt)], F)
-        ec = np.array([0, 0.0, (2.6 + rng.uniform(-0.3, 0.3)) * s], F)
-        folds = undulation(P.seed + 10, amp=0.35, count=8, spread=(2.0, 5.0))
-
-        def above(p):
-            return (p - ec) @ en
-
-        def outer_f(p):
-            hem = np.exp(-((above(p) / 0.45) ** 2))
-            return env(p) - 0.2 - folds(p) * np.clip(above(p) / 2.0, 0, 1) - 0.18 * hem
-
-        def cloth_f(p):
-            d = outer_f(p)
-            hem = np.exp(-((above(p) / 0.45) ** 2))
-            shell_d = np.maximum(d, -d - (0.3 + 0.25 * hem))
-            return np.maximum(shell_d, -above(p))
-
-        knot_c = np.array([0, 8.6 * s, -1.6 * s], F)
-        knot = S.Union(
-            [
-                S.Ellipsoid(knot_c, (1.5, 1.1, 1.2)),
-                S.RoundCone(knot_c + np.array([0.4, 0.3, -0.5], F), knot_c + np.array([1.6, 1.0, -5.0], F), 0.5, 0.25),
-                S.RoundCone(knot_c + np.array([-0.4, 0.3, -0.5], F), knot_c + np.array([-1.2, 1.2, -4.4], F), 0.5, 0.25),
-            ],
-            0.4,
-        )
-        cloth = S.Union([S.Fn(cloth_f, ((-13, -14, -8), (13, 14, 19))), knot], 0.5)
-        self.parts["headwear"] = (cloth, "headwear", (-13, -14, -9), (13, 14, 19), 0.12)
-        # Hair stays under the cloth, except below its front edge.
-        self.obstacle = S.Fn(lambda p: np.minimum(outer_f(p) + 0.4, above(p) + 0.2), ((-14, -15, -10), (14, 15, 20)))
 
     def _band(self):
         head = self.head

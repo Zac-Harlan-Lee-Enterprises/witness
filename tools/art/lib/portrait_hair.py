@@ -71,8 +71,6 @@ def covered(kind):
         return [(0, 27.0), (45, 24.0), (80, 16.0), (110, 12.0), (180, 0.0)]
     if kind in ("veil", "scarf", "hood", "headcloth"):
         return [(0, 31.0), (30, 29.0), (55, 20.0), (70, -60.0), (180, -80.0)]
-    if kind == "kerchief":
-        return [(0, 36.0), (40, 33.0), (80, 22.0), (120, 5.0), (180, -30.0)]
     return None
 
 
@@ -369,6 +367,8 @@ class Hair:
             # a helmet with a hard edge).
             side = np.tanh((roots[:, 0] + 0.8) / 2.5) * 0.8
             forward = np.clip((el - 22.0) / 25.0, 0, 1)  # the hairline edge falls forward, the crown sweeps back
+            if headwear in ("veil", "scarf", "hood", "headcloth"):
+                forward = np.ones_like(forward)  # under a covering, swept back
             swept = np.stack([side, 0.8 - 1.3 * (1 - forward), 0.3 - 0.9 * (1 - forward)], 1).astype(F)
             dirs = np.where(front, swept, dirs)
         self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003), flat=0.25 if style == "long" else 0.0, guard=True)

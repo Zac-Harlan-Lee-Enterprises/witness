@@ -619,7 +619,7 @@ class Head:
         c = P.child
         open_ = P.eye_open + self.asym(sx, "eye_open")
         # Weary lids hang lower; smiling and squinting eyes narrow from below.
-        up = math.radians(16.0 + 4.0 * open_ + 3.0 * c - 10.0 * P.lid_droop - 3.0 * P.squint - 2.0 * P.eyes_smile)
+        up = math.radians(14.2 + 3.5 * open_ + 2.0 * c - 10.0 * P.lid_droop - 3.0 * P.squint - 2.0 * P.eyes_smile)
         lo = math.radians(-21.0 - 3.0 * open_ - 2.0 * c + 6.0 * P.squint + 7.0 * P.eyes_smile * (1 - 0.5 * c))
         tilt = math.radians(P.canthal_tilt)
         worry = math.radians(3.0) * max(0.0, P.brow_inner)  # lifted inner brows lift the inner lid

@@ -55,7 +55,7 @@ def _scale(n, vec, fac):
 
 
 # ── Skin ───────────────────────────────────────────────────────────────────
-def skin(key, child=0.0, sss=1.0, detail=1.0):
+def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
     """Skin for one person. `detail` scales the fine relief (1 adult)."""
 
     def build():
@@ -133,15 +133,18 @@ def skin(key, child=0.0, sss=1.0, detail=1.0):
         h = h_pores
         for part in (h_net, h_wav, h_lip, h_un, h_st, h_sc):
             h = n.math("ADD", (h, "Value"), (part, "Value"))
-        bump = n.bump((h, "Value"), strength=(0.34 - 0.14 * child) * detail, distance=0.00025)
+        bump = n.bump((h, "Value"), strength=(0.44 - 0.18 * child) * detail, distance=0.00025)
         # Broader unevenness of the surface (millimetre bumps), for the coat.
         cn = n.noise(90.0, 3.0, 0.5, obj)
         cbump = n.bump((cn, "Fac"), strength=0.12 * detail, distance=0.0004, normal=(bump, "Normal"))
 
         # ── Finish: regional roughness broken up; oily sheen; moist lips ───
         rn = n.noise(55.0, 3.0, 0.5, obj)
-        rv = _range(n, (rn, "Fac"), 0.3, 0.7, -0.08, 0.08)
+        rv = _range(n, (rn, "Fac"), 0.3, 0.7, -0.13, 0.13)
         rr = n.math("ADD", (rough, "Fac"), rv)
+        rn2 = n.noise(190.0, 3.0, 0.6, obj)
+        rv2 = _range(n, (rn2, "Fac"), 0.3, 0.7, -0.06, 0.06)
+        rr = n.math("ADD", (rr, "Value"), rv2)
         rp = n.math("MULTIPLY", (pit[0], pit[1]), -0.1)
         rr = n.math("ADD", (rr, "Value"), (rp, "Value"))
         on = n.noise(35.0, 3.0, 0.6, obj)
@@ -157,7 +160,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0):
                 "Roughness": (rr, "Value"),
                 "Subsurface Weight": sss,
                 "Subsurface Radius": (1.0, 0.45, 0.25),
-                "Subsurface Scale": 0.0022,
+                "Subsurface Scale": 0.0022 * (1 - 0.35 * dark),
                 "Subsurface IOR": 1.4,
                 "Subsurface Anisotropy": 0.8,
                 "Specular IOR Level": 0.5,
@@ -174,7 +177,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0):
         )
         return n.mat
 
-    return cached(("pskin", key, round(child, 2), sss, detail), build)
+    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2)), build)
 
 
 def clay():
@@ -282,7 +285,7 @@ def cornea():
 
     def build():
         n = Nodes("cornea")
-        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.05)
+        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.1)
         glass.inputs["Color"].default_value = (1, 1, 1, 1)
         n.link(glass, "BSDF", n.out, "Surface")
         return n.mat

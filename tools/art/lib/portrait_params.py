@@ -374,7 +374,7 @@ def params_for(pid, appearance, player=False):
     p.tip_width = base[8] + j(0.1) + 0.08 * age_t
     p.alar_width = base[9] + j(0.08) + 0.06 * mb + 0.06 * age_t
     p.alar_flare = base[10] + j(0.1)
-    p.nose_deviation = j(0.22) * (1 - 0.6 * child)
+    p.nose_deviation = j(0.12) * (1 - 0.85 * child)
 
     # ── Eyes and brows ─────────────────────────────────────────────────────
     eye = pick([("almond", 3), ("hooded", 2.5), ("deep", 2.0), ("round", 1.2), ("down", 1.2)])
@@ -404,14 +404,17 @@ def params_for(pid, appearance, player=False):
     p.ear_out = max(0.0, j(1.0))
 
     # ── Small asymmetries (cm unless noted) ────────────────────────────────
+    # Enough to keep a face from looking mirrored, never enough to read as
+    # a deformity; children's faces are more symmetric than adults'.
+    sym = 0.5 * (1 - 0.75 * child)
     p.asym = {
-        "eye_z": j(0.09),
-        "eye_open": j(0.1),
-        "brow_z": j(0.12),
-        "mouth_z": j(0.06),
-        "cheek": j(0.08),
-        "jaw": j(0.12),
-        "ear_z": j(0.25),
+        "eye_z": j(0.09) * sym,
+        "eye_open": j(0.1) * sym,
+        "brow_z": j(0.12) * sym,
+        "mouth_z": j(0.06) * sym,
+        "cheek": j(0.08) * sym,
+        "jaw": j(0.12) * sym,
+        "ear_z": j(0.25) * sym,
     }
 
     # ── Skin and its history ───────────────────────────────────────────────
@@ -455,12 +458,10 @@ def params_for(pid, appearance, player=False):
         p.hair_style = "long"
     else:
         p.hair_style = "short"
-    # How the covering is worn: a child's scarf is a kerchief tied at the nape;
-    # a man's is a head cloth held on by a cord; a woman's falls to her shoulders.
+    # How the covering is worn: a man's scarf is a head cloth held on by a
+    # cord; a woman's or a child's falls from the crown to the shoulders.
     hw = a["headwear"]
-    if hw == "scarf" and child > 0.5:
-        p.head_style = "kerchief"
-    elif hw == "scarf" and sex == "m":
+    if hw == "scarf" and sex == "m" and child < 0.5:
         p.head_style = "headcloth"
     else:
         p.head_style = hw

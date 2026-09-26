@@ -95,7 +95,7 @@ def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair
     col = common.collection("portrait")
     skin_hex = a["skin"]
     detail = 1.0 + 0.3 * P.sun + 0.3 * P.age_t
-    skin = PM.skin(pid, P.child, portrait_skin.subsurface_weight(skin_hex), detail)
+    skin = PM.skin(pid, P.child, portrait_skin.subsurface_weight(skin_hex), detail, portrait_skin.darkness(skin_hex))
     obj = portrait_mesh.from_arrays("head", V, Q, N, skin, col)
     _set_maps(obj, portrait_skin.maps(head, V, skin_hex, beard=a["beard"]))
     body = portrait_mesh.from_arrays("body", Vb, Qb, Nb, skin, col)
