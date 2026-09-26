@@ -102,7 +102,7 @@ VILLAGE_LOOKS = {
     "stony": {"color": "#a4957a", "grit": 0.7, "scale": "mid", "mottle": 0.45, "mottle_color": "#86684c", "chips": 0.5},
     "fold": {"color": "#7c6a4c", "scale": "mid", "grit": 0.35, "mottle": 0.5, "mottle_color": "#5e503a", "rough": 0.9},
     "ash": {"color": "#6c655c", "grit": 0.2, "scale": "mid", "mottle": 0.5, "mottle_color": "#3c3530"},
-    "plastered": {"color": "#b8a07a", "grit": 0.25, "scale": "mid", "dark": 0.12, "light": 0.06, "chips": 0.1, "mottle": 0.3, "mottle_color": "#a38a66", "cracks": 0.28, "crack_scale": 1.8},
+    "plastered": {"color": "#bba27a", "grit": 0.3, "scale": "mid", "dark": 0.17, "light": 0.08, "chips": 0.14, "mottle": 0.48, "mottle_color": "#9c8260", "cracks": 0.34, "crack_scale": 1.6},
     "byre": {"color": "#6a5840", "scale": "mid", "grit": 0.3, "mottle": 0.5, "mottle_color": "#4e4030", "rough": 0.95},
     "hearth": {"color": "#6a5848", "grit": 0.25, "scale": "mid", "mottle": 0.45, "mottle_color": "#40352c"},
     "trodden": {"color": "#c2a984", "dark": 0.06, "light": 0.05, "grit": 0.12},

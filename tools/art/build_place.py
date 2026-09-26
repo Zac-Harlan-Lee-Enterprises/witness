@@ -90,9 +90,22 @@ def screen_rect(objects, margin=0.25):
     return (min(xs) - margin) * TILE, (min(ys) - margin) * TILE, (max(xs) + margin) * TILE, (max(ys) + margin) * TILE
 
 
-def render_to(scene, path):
+def render_to(scene, path, tries=6):
+    """Render to a file and load it. A render the GPU could not finish (out of
+    memory while other jobs share it) is retried after a pause, rather than
+    losing a long place render."""
+    import time
+
     scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
+    for attempt in range(tries):
+        try:
+            bpy.ops.render.render(write_still=True)
+            break
+        except RuntimeError as error:
+            if attempt == tries - 1 or "Command buffer" not in str(error):
+                raise
+            print("RENDER RETRY", attempt + 1, os.path.basename(path), flush=True)
+            time.sleep(20 * (attempt + 1))
     return imageio.load(path)
 
 

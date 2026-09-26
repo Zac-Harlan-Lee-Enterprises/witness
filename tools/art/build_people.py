@@ -202,9 +202,21 @@ def shadow_grey(alpha):
     return np.dstack([rgb, np.ones_like(a)])
 
 
-def render_frame(scene, path):
+def render_frame(scene, path, tries=6):
+    """Render one frame and load it, retrying after a pause if the GPU could
+    not finish it (out of memory while other jobs share it)."""
+    import time
+
     scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
+    for attempt in range(tries):
+        try:
+            bpy.ops.render.render(write_still=True)
+            break
+        except RuntimeError as error:
+            if attempt == tries - 1 or "Command buffer" not in str(error):
+                raise
+            print("RENDER RETRY", attempt + 1, os.path.basename(path), flush=True)
+            time.sleep(20 * (attempt + 1))
     return imageio.load(path)
 
 
