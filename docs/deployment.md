@@ -75,9 +75,10 @@ The workflow is [`.github/workflows/deploy-pages.yml`](../.github/workflows/depl
 
 | Property | Value |
 |---|---|
-| Trigger | **`workflow_dispatch` only**: you start it from the Actions tab |
-| Branch guard | The job has `if: github.ref == 'refs/heads/main'`, so dispatching it on any other branch deploys nothing |
-| Environment | `github-pages` (add required reviewers: see §10) |
+| Trigger | **Automatic:** when the CI workflow finishes on a push to `main` (a merged pull request) and succeeded (`workflow_run`). Also `workflow_dispatch`, to re-deploy by hand from the Actions tab |
+| What is deployed | The exact commit CI tested (`workflow_run.head_sha`), not whatever `main` is by the time the deploy starts |
+| Guards | The job runs only if `github.ref` is `main` **and** either it was dispatched by hand, or the CI run succeeded, was a `push`, was on `main`, and came from this repository. That last check matters: a fork's pull request from a branch named `main` also reports `head_branch == 'main'`. A failed or cancelled CI run deploys nothing. Pinned by [`tests/architecture/deploy-workflow.test.ts`](../tests/architecture/deploy-workflow.test.ts) |
+| Environment | `github-pages`. Required reviewers are optional: with them, every deploy waits for your approval (§10) |
 | Permissions | `contents: read`, `pages: write`, `id-token: write` |
 | Concurrency | Group `pages`; a running deploy is never cancelled |
 | Steps | `npm ci` → typecheck → `test:unit` → `test:ui` → `npm run build` with **`VITE_BASE_PATH=/<repository-name>/`** → configure-pages → upload `dist/` → deploy-pages |
@@ -85,14 +86,15 @@ The workflow is [`.github/workflows/deploy-pages.yml`](../.github/workflows/depl
 **One-time setup**
 
 1. Push the repository to GitHub.
-2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
-3. Run `bash harden-github.sh <owner>/<repo>` (§10) and add required reviewers to the `github-pages` environment.
-4. Start it from **Actions → Deploy to GitHub Pages → Run workflow** (branch `main`). The site is published at `https://<owner>.github.io/<repo>/`.
+2. Enable Pages with **GitHub Actions** as the source: **Settings → Pages → Source → GitHub Actions**, or `gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow`.
+3. Run `bash harden-github.sh <owner>/<repo>` (§10), so nothing reaches `main` without a pull request and a green `build-and-test`.
+4. Merge a pull request. CI runs on `main`, then the deploy. The site is published at `https://<owner>.github.io/<repo>/`. To deploy without a merge, use **Actions → Deploy to GitHub Pages → Run workflow** on `main`.
 
 **Caveats**
 
 - The workflow always builds for `/<repo>/`. For a **user or organisation site** (a repository named `<owner>.github.io`) or a **custom domain**, the site is served from the root, so `VITE_BASE_PATH` must be `/`. Changing this means editing the workflow, which is a sensitive path: it needs human approval and a `SECURITY-REVIEW:` commit trailer.
-- The deploy workflow doesn't run lint or E2E itself. It relies on `main` having passed CI, which branch protection enforces through the required check `build-and-test`.
+- The deploy workflow doesn't run lint or E2E itself. It deploys only after CI (which runs both) has passed on that commit.
+- **Merging is publishing.** Every merge to `main` goes live within about 15 minutes (CI, then the deploy). The site is public, so unapproved educational content appears labelled "Awaiting editorial review" (preview mode; see [risks.md](risks.md) R15).
 - GitHub Pages **can't set custom response headers**, so you can't configure cache headers or a CSP header there. A `<meta>` CSP is the only option ([security-privacy.md](security-privacy.md#11-recommendations-not-yet-implemented)). Updates still work, because browsers check `sw.js` for a new version without using the HTTP cache by default.
 - **Shared origin.** Every project site of one owner is served from the same origin, `https://<owner>.github.io`. IndexedDB belongs to an origin, not a path. Other Pages sites under the same account (including a second copy of this game) can therefore read and write the `witness-game` database. Use a dedicated account or organisation, or a custom domain, for anything beyond testing.
 - The uploaded artifact includes source maps.
@@ -230,7 +232,7 @@ bash harden-github.sh <owner>/<repo>                 # team: 1 required review (
   - no force-pushes or deletions
   - conversation resolution required
 - **`REQUIRED_REVIEWS=0` for solo maintainers.** GitHub never lets you approve your own pull request. With admins included in the rules, a solo maintainer who requires 1 review could never merge. With 0, a PR with green CI is still mandatory, so nothing reaches `main` directly.
-- **Environment `github-pages`:** the script creates it. Then, **by hand**, in Settings → Environments → `github-pages`: add 1–2 human required reviewers, set a wait timer (5 minutes is suggested), and limit deployment branches to `main`.
+- **Environment `github-pages`:** the script creates it. Then, **by hand**, in Settings → Environments → `github-pages`: limit deployment branches to `main`. Optionally add a wait timer (it delays each automatic deploy and gives you time to cancel) or required reviewers (then every deploy waits for your approval instead of going out on merge).
 - **Repository settings:** auto-merge off; branch deletion after merge; `GITHUB_TOKEN` read-only by default, and workflows can't approve PRs.
 - **Secret scanning and push protection:** turned on where the plan allows.
 - **Plan note:** the script's own message says that branch protection on *private* repositories needs a paid GitHub plan (Team or Enterprise).

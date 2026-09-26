@@ -33,7 +33,7 @@ Ordered by dependency: human gates first, then platform confidence, then new con
 
 | Item | Owner | Links |
 |---|---|---|
-| Make the first commit and push to GitHub. Then run `REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>` (solo maintainer) and add reviewers to the `github-pages` environment. | Maintainer | Registry `github-branch-protection` |
+| Make the first commit and push to GitHub. Then run `REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>` (solo maintainer) and limit the `github-pages` environment to `main`. | Maintainer | Registry `github-branch-protection` |
 | Editorial review of all 31 educational records (Scripture references, paraphrases, history, reconstruction, interpretation) by a named pastor, teacher or historian. Record the approvals. | Content editors | Registry `content-editorially-approved`; [content-governance.md](content-governance.md) |
 | Proofread the stored WEB Luke 10:25–37 against eBible.org, set `approvedForDisplay: true`, and record the approver (sensitive path, needs a `SECURITY-REVIEW` trailer) | Content editor | Registry `scripture-translation-approved` |
 | **Decide what strict content mode means, then implement it.** Today `VITE_CONTENT_MODE=strict` only hides the "Awaiting editorial review" label. Either make strict mode run `content:publish-check` and fail, or hide unapproved records. Add `content:publish-check` to the deploy workflow for public releases. | Developer + product owner | [risks.md R15](risks.md) |
