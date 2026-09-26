@@ -143,3 +143,19 @@ NEXT   : Check the live site https://zac-harlan-lee-enterprises.github.io/witnes
          (gh run list --workflow deploy-pages.yml). Then the art roadmap: KTX2/Basis textures to cut
          market texture memory (docs/art/prototype-report.md §8).
 BLOCKED: none. Content editorial approval and enabling Bible text remain human decisions by rule.
+
+--- 2026-09-26  Claude Opus 5.5 — realistic rendered portraits (branch feat/realistic-portraits) ---
+DONE   : Replaced the cartoon SVG portraits with rendered, photographic heads and shoulders of all
+         12 Chapter 1 characters and the 4 player looks. Offline Blender pipeline
+         (tools/art/build_portraits.py, tools/art/lib/portrait_*.py, npm run art:portraits):
+         SDF-sculpted anatomical heads meshed with OpenVDB, per-id variation, eyes with cornea and
+         tear line, subsurface skin with regional colour, hair curves (Principled Hair), cloth
+         shells, short portrait lighting, 85 mm lens. Portrait.tsx shows them (SVG fallback),
+         lookup by appearance key (src/domain/appearance-key.ts); dialogue portrait 104 px.
+         Photographic finish chosen over a Kuwahara painterly pass (docs/art/portraits.md §5).
+TESTS  : Vitest 340 → 355. Playwright portraits/smoke/a11y/pwa: 14 passed, 5 skipped (opt-in
+         captures, keyboard test on mobile). typecheck, lint, prettier, knip clean.
+NEXT   : When Chapters 2–4 add characters: npm run art:data && npm run art:portraits, then
+         npx vitest run tests/content/portraits.test.ts. Unify src/domain/appearance-key.ts with
+         appearanceKey in src/game/prerendered/select.ts (select.ts could import the domain one).
+BLOCKED: none.
