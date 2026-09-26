@@ -340,5 +340,14 @@
     "priority": 3,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "chapter-3-journey-to-bethlehem",
+    "category": "functional",
+    "description": "Chapter 3, A Journey to Bethlehem (Luke 2:1-20), is playable end to end as content only: the player is a fictional child of a crowded Bethlehem household during the registration; four puzzle types (measuring, packing, optional sequence side quest, deduction); choices that show in the world (what stays in the guest room, the lost lamb, where the stranger Zerah sleeps, what to do with the shepherds' news); the people of Luke 2 stay off-stage and are heard of only through Scripture references and a neighbor's labelled paraphrase; every educational record cites retrieved sources and awaits human review.",
+    "verification": "npx vitest run --project unit tests/content/journey-to-bethlehem.test.ts tests/integration/journey-to-bethlehem-playthrough.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]
