@@ -68,6 +68,7 @@ import { gradeColors, lightingFor, overBakedArt, type Lighting } from '../system
 import { departed } from '../systems/life';
 import {
   chosenLevel,
+  startLevel,
   effectsFor,
   effectsLabel,
   INITIAL_QUALITY,
@@ -235,7 +236,7 @@ export class WorldScene extends Phaser.Scene {
     this.gpu = rendererInfo(this.game);
     // Without a GPU every pixel costs CPU: start without post-processing or
     // full-screen weather layers (the lite level), and step down from there.
-    if (this.gpu.software && this.quality.level === 'full') this.quality = chosenLevel('lite');
+    if (this.quality.level === 'full') this.quality = chosenLevel(startLevel(this.gpu.software));
     registerPostFx(this.game);
     releaseUnusedTargets(this.game);
     fixCanvasBlendModes(this.game);
@@ -452,7 +453,8 @@ export class WorldScene extends Phaser.Scene {
     }
     if (options.simpleEffects !== this.simpleEffects) {
       this.simpleEffects = options.simpleEffects;
-      const level = options.simpleEffects ? 'low' : 'full';
+      // Back to where this renderer starts (lite without a GPU), not always full.
+      const level = options.simpleEffects ? 'low' : startLevel(this.gpu.software);
       this.quality = chosenLevel(level);
       this.onQualityLevel(level, false);
       // Rebuild what the level decides at build time (crowds, decoration).

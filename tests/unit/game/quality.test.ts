@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   chosenLevel,
+  startLevel,
   effectsFor,
   effectsLabel,
   INITIAL_QUALITY,
@@ -18,6 +19,13 @@ function run(fps: number, seconds: number, highDpi = false, from: QualityState =
   for (let t = 0; t < seconds * 1000; t += frame) s = stepQuality(s, frame, highDpi);
   return s;
 }
+
+describe('where quality starts', () => {
+  it('starts software renderers at lite and GPUs at full, including after simpler effects are turned off', () => {
+    expect(startLevel(true)).toBe('lite');
+    expect(startLevel(false)).toBe('full');
+  });
+});
 
 describe('automatic quality', () => {
   it('keeps full effects when the frame rate is fine', () => {

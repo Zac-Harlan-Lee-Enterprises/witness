@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import type { SceneMood } from '@/application/ports';
-import type { TileGrid, TileKind, Weather } from '@/domain/world';
+import type { TileGrid, Weather } from '@/domain/world';
 import { hash, rng } from '../art/paint';
+import { takesPuddles, takesSplashes } from './weather-ground';
 import {
   gust,
   Lightning,
@@ -29,18 +30,6 @@ import { FX, FX_PPU } from './fx-textures';
  * automatic quality level scales them down first.
  */
 const TILE = 32;
-const PUDDLE_GROUND: ReadonlySet<TileKind> = new Set<TileKind>([
-  'paving',
-  'road',
-  'sand',
-  'mud',
-  'floor',
-  'steps',
-  'deck',
-  'jetty',
-]);
-/** Where splashes land: anything but open water and the void beyond the map. */
-const NO_SPLASH: ReadonlySet<TileKind> = new Set<TileKind>(['water', 'lake', 'shallows', 'void']);
 /** How fast rain falls on screen (world units per second). */
 const FALL = 430;
 /** World units per texel of the near and far sheets of rain. */
@@ -321,7 +310,7 @@ export class WeatherLayer {
     const spots: Array<{ x: number; y: number; seed: number }> = [];
     for (let y = 1; y < grid.height - 1; y++) {
       for (let x = 1; x < grid.width - 1; x++) {
-        if (!PUDDLE_GROUND.has(grid.tiles[y]?.[x] ?? 'void')) continue;
+        if (!takesPuddles(grid.tiles[y]?.[x] ?? 'void')) continue;
         const seed = hash(x, y, 31);
         if (seed % 100 < 6) spots.push({ x, y, seed });
       }
@@ -360,7 +349,7 @@ export class WeatherLayer {
       const kind = this.d.grid.tiles[Math.floor(y / TILE)]?.[Math.floor(x / TILE)] ?? 'void';
       p.x = x;
       p.y = y;
-      if (!NO_SPLASH.has(kind)) return;
+      if (takesSplashes(kind)) return;
     }
   }
 

@@ -108,6 +108,16 @@ export function stepQuality(state: QualityState, deltaMs: number, highDpi = fals
  * A level the player chose (simpler effects on, or back off): start there,
  * and measure afresh from it.
  */
+/**
+ * Where the world starts before measuring itself: without a GPU every pixel
+ * costs CPU, so software renderers start without post-processing or
+ * full-screen weather (lite). Also where it returns when the player turns
+ * "Simpler visual effects" off again.
+ */
+export function startLevel(softwareRenderer: boolean): EffectsLevel {
+  return softwareRenderer ? 'lite' : 'full';
+}
+
 export function chosenLevel(level: EffectsLevel): QualityState {
   return { ...INITIAL_QUALITY, level, lowPower: level === 'low' };
 }
