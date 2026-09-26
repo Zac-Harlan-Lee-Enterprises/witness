@@ -411,15 +411,31 @@ class RomanRooms:
             self.to_ground(rug)
 
     def _decal(self, name, cx, cy, w, h, angle, mat, z=0.012):
-        """A soft stain lying on the ground or floor (UVs for soft_decal)."""
+        """A soft stain lying on the ground or floor: an irregular ellipse
+        (UVs for soft_decal: the centre at 0.5, its rim where the stain has
+        faded out). Not a rectangle: the denoiser's albedo guide sees a
+        decal's whole outline, so it must be a natural one."""
+        rng = self.rng
         bm = bmesh.new()
         uv = bm.loops.layers.uv.new("UVMap")
         ca, sa = math.cos(angle), math.sin(angle)
-        corners = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
-        vs = [bm.verts.new(self.P(cx + u * ca - v * sa, cy + u * sa + v * ca, z)) for u, v in corners]
-        f = bm.faces.new(vs[::-1])
-        for loop, (u, v) in zip(f.loops, ((0, 1), (1, 1), (1, 0), (0, 0))):
-            loop[uv].uv = (u, v)
+        n = 36
+        ph = rng.random() * math.tau
+        centre = bm.verts.new(self.P(cx, cy, z))
+        ring = []
+        uvs = []
+        for k in range(n):
+            a = math.tau * k / n
+            r = 1.0 + 0.16 * math.sin(a * 3 + ph) + 0.08 * math.sin(a * 5 + ph * 1.7)
+            u, v = math.cos(a) * w / 2 * r, math.sin(a) * h / 2 * r
+            ring.append(bm.verts.new(self.P(cx + u * ca - v * sa, cy + u * sa + v * ca, z)))
+            # The rim sits where soft_decal has faded to nothing, whatever its ragged edge.
+            uvs.append((0.5 + math.cos(a) * 0.5, 0.5 + math.sin(a) * 0.5))
+        for k in range(n):
+            kk = (k + 1) % n
+            f = bm.faces.new((centre, ring[kk], ring[k]))
+            for loop, t in zip(f.loops, ((0.5, 0.5), uvs[kk], uvs[k])):
+                loop[uv].uv = t
         return self.to_ground(self._flat_decal(common.mesh_object(name, bm, mat, None)))
 
     @staticmethod

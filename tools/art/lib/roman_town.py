@@ -302,10 +302,14 @@ class RomanTown:
         rng = self.rng
         bm, layer = self._rbm()
         stylobate = self._stylobate_rows()
+        # Stalls, jars, tables and the fountain stand on the paving.
+        under = ("stall", "jars", "table", "fountain")
+
         def paved(px, py):
             if any(a <= px <= b and s0 <= py <= s1 for a, b, s0, s1 in stylobate):
                 return False
-            return m.kind(int(math.floor(px)), int(math.floor(py))) in kinds
+            k = m.kind(int(math.floor(px)), int(math.floor(py)))
+            return k in kinds or k in under
 
         cells = [c for k in kinds for c in m.tiles(k)]
         first_x = min(c[0] for c in cells) if cells else 0
@@ -450,21 +454,11 @@ class RomanTown:
             return super().tile_sand()
         m = self.map
         rng = self.rng
-        clay = R.soft_decal("#e2dccc", 0.45, "fullers-clay")
+        clay = R.soft_decal("#e2dccc", 0.5, "fullers-clay", core=0.0)
         for x, y in m.tiles("sand"):
             for k in range(2):
-                bm = bmesh.new()
-                uv = bm.loops.layers.uv.new("UVMap")
-                cx, cy = x + rng.random(), y + rng.random()
-                a = rng.random() * math.pi
-                L, W = 0.45 + rng.random() * 0.45, 0.35 + rng.random() * 0.25
-                ca, sa = math.cos(a), math.sin(a)
-                corners = [(-L, -W), (L, -W), (L, W), (-L, W)]
-                vs = [bm.verts.new(self.P(cx + u * ca - v * sa, cy + u * sa + v * ca, 0.004)) for u, v in corners]
-                f = bm.faces.new(vs[::-1])
-                for loop, (u, v) in zip(f.loops, ((0, 1), (1, 1), (1, 0), (0, 0))):
-                    loop[uv].uv = (u, v)
-                self.to_ground(self._flat_decal(common.mesh_object(f"clay-{x}-{y}-{k}", bm, clay, None)))
+                L, W = 1.1 + rng.random() * 0.9, 0.9 + rng.random() * 0.6
+                self._decal(f"clay-{x}-{y}-{k}", x + rng.random(), y + rng.random(), L, W, rng.random() * math.pi, clay, 0.004)
         lib = self._library()
         import scatter
 

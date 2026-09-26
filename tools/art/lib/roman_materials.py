@@ -242,9 +242,11 @@ def puddle():
     return cached(("puddle",), build)
 
 
-def soft_decal(color, opacity=0.8, name=None):
+def soft_decal(color, opacity=0.8, name=None, core=0.35):
     """A stain lying in the ground or floor (spilt clay, a dye splash, wet
-    earth): its colour fading out to a ragged edge. Expects UVs 0-1."""
+    earth): its colour fading out to a ragged edge. Expects UVs 0-1.
+    `core`: how much of it is solid before it starts to fade (0: it fades
+    all the way from its centre, a film rather than a patch)."""
 
     def build():
         n = Nodes(name or f"decal-{color}-{opacity}")
@@ -256,13 +258,13 @@ def soft_decal(color, opacity=0.8, name=None):
         rag = n.noise(4.0, 4.0, 0.6, obj)
         wob = n.math("MULTIPLY", (n.math("SUBTRACT", (rag, "Fac"), 0.5), "Value"), 0.4)
         dd = n.math("ADD", (n.math("MULTIPLY", (d, "Value"), 2.0), "Value"), (wob, "Value"))
-        a = n.new("ShaderNodeMapRange", Value=(dd, "Value"), **{"From Min": 0.78, "From Max": 0.35, "To Min": 0.0, "To Max": opacity})
+        a = n.new("ShaderNodeMapRange", Value=(dd, "Value"), **{"From Min": 0.78, "From Max": core, "To Min": 0.0, "To Max": opacity})
         grain = n.noise(30.0, 3.0, 0.6, obj)
         col = n.mix((grain, "Fac"), shade(color, -0.1), shade(color, 0.08))
         n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.85, "Alpha": (a, "Result")})
         return n.mat
 
-    return cached(("decal", color, opacity, name), build)
+    return cached(("decal", color, opacity, name, core), build)
 
 
 def steam():
