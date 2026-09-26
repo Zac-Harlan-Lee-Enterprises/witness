@@ -17,9 +17,10 @@ import {
  * Art captures of every place in Chapter 2 at fixed moments (not a
  * pass/fail test): Grandmother's house in the afternoon, the shore (arrival,
  * the salting place, the jetty), the shore at evening as the boats put out
- * (its later-day set, tinted for sunset), the lake by night (arriving at
- * sunset, under way, the gust, the storm, the calm), home on the shore in the
- * night, and the house by lamplight, at desktop, tablet and phone sizes.
+ * (the world changes to its night set as the clock reaches 18:00), the lake
+ * by night (arriving at sunset, under way, the gust, the storm, the calm),
+ * home on the shore in the night, and the house by lamplight, at desktop,
+ * tablet and phone sizes.
  *
  *   E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/storm-art.spec.ts --project=desktop-chromium
  *
@@ -138,10 +139,10 @@ for (const vp of VIEWPORTS) {
       await pack('Clay lamp');
       await load.getByRole('button', { name: 'Finish packing' }).click();
       await load.getByRole('button', { name: 'Continue' }).click();
-      // Evening: the sun sets while the boats put out (the later-day set;
-      // the game tints it for sunset).
+      // Evening: the sun sets while the boats put out, and the shore
+      // changes to its night set.
       await expect(box(page)).toBeVisible();
-      await expect(art).toHaveAttribute('data-art', /prerendered:late|painted/, {
+      await expect(art).toHaveAttribute('data-art', /prerendered:night|painted/, {
         timeout: 20_000,
       });
       await shot('shore-evening', 2500);
