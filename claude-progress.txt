@@ -200,3 +200,19 @@ NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of ever
          market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
 BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
          docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).
+
+--- 2026-09-26  Claude Opus 5.5 (lead) — realism pass + Chapters 2–4, handoff checkpoint ---
+DONE   : Integration branch feat/realism-and-chapters (pushed): Chapters 2–4 as content (playable,
+         tested, researched, all records awaiting review); story-driven weather; engine graphics
+         (high-DPI, weather, water, post-FX, night interiors, −59–71% texture memory); first-pass
+         rendered portraits; Chapter 1 fully pre-rendered + general place builder; integration fixes
+         (chapter-card labels, e2e choose() race, footsteps for new ground, one appearanceKey).
+         WIP branches pushed: feat/art-{storm-on-galilee,journey-to-bethlehem,letter-from-paul},
+         feat/portraits-v2 (agents stopped by an expired sign-in; work committed as-is).
+TESTS  : Vitest 341 → 520 on the integration branch; e2e suite green after 76c342b.
+NEXT   : Follow docs/handoff/2026-09-26-realism-and-chapters.md: finish the three chapters' place
+         renders and the portrait re-render, merge art branches in the order given there (Chapter 4's
+         light plan first), set Chapters 2–4 art to cache-on-first-use in vite.config.ts, run the
+         code-review skill, then PR feat/realism-and-chapters → main, merge, verify the Pages deploy.
+BLOCKED: none. (Owner decisions pending: editorial review of Chapters 2–4 records; whether to use
+         any CC0 base mesh for portraits.)
