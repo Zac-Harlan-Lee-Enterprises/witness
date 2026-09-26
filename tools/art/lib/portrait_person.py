@@ -2,10 +2,10 @@
 portrait studio and render it.
 
 The steps, all deterministic for a given id and appearance:
-1. parameters from the appearance and id (portrait_params);
+1. parameters from the appearance, the casting table and the id (portrait_params);
 2. the head field (portrait_head), meshed finely; the shoulders, coarsely;
 3. regional skin maps written onto the head mesh (portrait_skin);
-4. eyes turned to the camera (portrait_eyes);
+4. eyes turned to the camera, or a little away (portrait_eyes);
 5. clothes and head covering (portrait_cloth), meshed;
 6. hair grown on the head and kept under any covering (portrait_hair);
 7. the studio: lens, lights, backdrop (portrait_scene).
@@ -15,7 +15,8 @@ import os
 import time
 
 import bpy
-from mathutils import Vector
+from bpy_extras.object_utils import world_to_camera_view
+from mathutils import Matrix, Vector
 
 import common
 import portrait_cloth
@@ -39,10 +40,10 @@ def log(*a):
     print("[portrait]", *a, flush=True)
 
 
-def framing(P):
+def framing(P, frame_cm=None):
     """(picture height at the face in cm, what the camera looks at)."""
-    frame = FRAME_CM * (1.0 - 0.08 * P.child)
-    return frame, (CENTRE[0], CENTRE[1], CENTRE[2] + 0.4 * P.child)
+    frame = (frame_cm or FRAME_CM) * (1.0 - 0.1 * P.child)
+    return frame, (CENTRE[0], CENTRE[1], CENTRE[2] + 0.6 * P.child)
 
 
 def camera_position(turn_deg=TURN_DEG, frame_cm=FRAME_CM, centre=CENTRE, lens=85.0, sensor=36.0):
@@ -52,8 +53,27 @@ def camera_position(turn_deg=TURN_DEG, frame_cm=FRAME_CM, centre=CENTRE, lens=85
     return c + Vector((math.sin(a) * dist, -math.cos(a) * dist, 0.035))
 
 
-def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair_quality=1.0):
-    """Build the scene for one person (replacing whatever was loaded)."""
+def gaze_target(head, P, cam):
+    """Where the eyes look: the camera, or a few degrees away from it."""
+    mid = (Vector(head.eye_centre(-1).tolist()) + Vector(head.eye_centre(1).tolist())) * 0.005
+    d = cam - mid
+    dx, dz = P.gaze
+    if dx or dz:
+        d = Matrix.Rotation(math.radians(dx), 3, "Z") @ d
+        side = d.cross(Vector((0, 0, 1))).normalized()
+        d = Matrix.Rotation(math.radians(dz), 3, side) @ d
+    return mid + d
+
+
+def _set_maps(obj, maps):
+    for name, values in maps.items():
+        portrait_mesh.set_attribute(obj, name, values)
+
+
+def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair_quality=1.0, clay=False, frame_cm=None, turn=TURN_DEG, device="gpu", threads=0):
+    """Build the scene for one person (replacing whatever was loaded).
+    Returns (scene, params, marks): marks are the picture positions (pixels,
+    top-left origin) of the eyes and the mouth, for review close-ups."""
     t0 = time.time()
     P = portrait_params.params_for(pid, appearance, player=player)
     log(portrait_params.describe(P))
@@ -67,27 +87,28 @@ def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair
     log("head", len(V), "vertices", f"{time.time() - t0:.1f}s")
 
     scene = common.reset(samples)
+    if device == "cpu":
+        scene.cycles.device = "CPU"
+    if threads:
+        scene.render.threads_mode = "FIXED"
+        scene.render.threads = threads
     col = common.collection("portrait")
-    elder = a["build"] == "elder"
-    weathered = 0.35 if elder else (0.05 if a["build"] == "child" else 0.15)
-    alb, rough, pores = portrait_skin.maps(head, V, a["skin"], beard=a["beard"], weathered=weathered)
-    skin = PM.skin(pid, weathered, P.child, portrait_skin.subsurface_weight(a["skin"]))
+    skin_hex = a["skin"]
+    detail = 1.0 + 0.3 * P.sun + 0.3 * P.age_t
+    skin = PM.skin(pid, P.child, portrait_skin.subsurface_weight(skin_hex), detail, portrait_skin.darkness(skin_hex))
     obj = portrait_mesh.from_arrays("head", V, Q, N, skin, col)
-    portrait_mesh.set_attribute(obj, "albedo", alb)
-    portrait_mesh.set_attribute(obj, "rough", rough)
-    portrait_mesh.set_attribute(obj, "pores", pores)
+    _set_maps(obj, portrait_skin.maps(head, V, skin_hex, beard=a["beard"]))
     body = portrait_mesh.from_arrays("body", Vb, Qb, Nb, skin, col)
-    ab, rb, pb = portrait_skin.maps(head, Vb, a["skin"], beard=False, weathered=weathered)
-    portrait_mesh.set_attribute(body, "albedo", ab)
-    portrait_mesh.set_attribute(body, "rough", rb)
-    portrait_mesh.set_attribute(body, "pores", pb)
+    _set_maps(body, portrait_skin.maps(head, Vb, skin_hex, beard=False))
 
     # Clothes and head covering.
     wool_head = a["headwear"] in ("band", "hood")
+    style = P.head_style
     mats = {
         "tunic": PM.cloth(a["robe"], "wool", a["accent"], 0.062, 0.011, name="tunic"),
         "mantle": PM.cloth(MANTLE[0], "wool", MANTLE[1], 0.1, 0.02, name="mantle"),
-        "headwear": PM.cloth(a["headwearColor"], "wool" if wool_head else "linen", name="headwear"),
+        "headwear": PM.cloth(a["headwearColor"], "wool" if wool_head else "linen", name="headwear", uv="cloth_uv" if style == "wrap" else None),
+        "cord": PM.cloth("#2c2621", "wool", name="cord"),
     }
     # The head sampled once on grids: clothes (over the head without its ears)
     # and hair are built on them.
@@ -98,7 +119,10 @@ def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair
     for name, (shape, key, lo, hi, vox) in clothes.parts.items():
         Vc, Qc, Nc = S.polygonize(shape, lo, hi, vox)
         Qc = portrait_mesh.orient_quads(Vc, Qc, Nc)
-        portrait_mesh.from_arrays(name, Vc, Qc, Nc, mats[key], col)
+        o = portrait_mesh.from_arrays(name, Vc, Qc, Nc, mats[key], col)
+        extra = clothes.attributes(name, Vc)
+        if extra:
+            _set_maps(o, extra)
     log("clothes", f"{time.time() - t0:.1f}s")
 
     # Hair.
@@ -117,21 +141,46 @@ def build(pid, appearance, player=False, voxel=0.08, samples=256, size=512, hair
     portrait_hair.Hair(head, P, V, Q, N, field, col, hair_mats, quality=hair_quality, obstacle=obstacle)
     log("hair", f"{time.time() - t0:.1f}s")
 
-    # Eyes, looking at the camera, and the studio.
+    # Eyes, looking at the camera (or a little away), and the studio.
     # Children are framed a little closer, so their faces fill the picture like an adult's.
-    frame, centre = framing(P)
-    cam = camera_position(frame_cm=frame, centre=centre)
-    portrait_eyes.Eyes(head, P, col, cam)
-    focus = Vector(head.eye_centre(-1 if TURN_DEG < 0 else 1).tolist()) * 0.01
-    portrait_scene.Studio(scene, focus=focus, turn_deg=TURN_DEG, frame_cm=frame, centre=centre, size=size, samples=samples)
+    frame, centre = framing(P, frame_cm)
+    cam = camera_position(turn_deg=turn, frame_cm=frame, centre=centre)
+    portrait_eyes.Eyes(head, P, col, gaze_target(head, P, cam))
+    focus = Vector(head.eye_centre(-1 if turn < 0 else 1).tolist()) * 0.01
+    studio = portrait_scene.Studio(scene, focus=focus, turn_deg=turn, frame_cm=frame, centre=centre, size=size, samples=samples)
+    if clay:
+        scene.view_layers[0].material_override = PM.clay()
     log("built", f"{time.time() - t0:.1f}s")
-    return scene, P
+
+    def px(p_cm):
+        v = world_to_camera_view(scene, studio.camera, Vector(p_cm) * 0.01)
+        return (v.x * size, (1 - v.y) * size)
+
+    eyes = [px(head.eye_centre(sx).tolist()) for sx in (-1, 1)]
+    marks = {
+        "eyes": ((eyes[0][0] + eyes[1][0]) / 2, (eyes[0][1] + eyes[1][1]) / 2),
+        "mouth": px(head.stomion.tolist()),
+    }
+    return scene, P, marks
 
 
-def render(scene, path):
+def render(scene, path, retries=3, wait=45.0):
+    """Render to a PNG. The GPU is shared with other renders: if it runs out
+    of memory, wait and try again, and in the end render on the CPU."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGB"
     scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
+    for attempt in range(retries + 1):
+        try:
+            bpy.ops.render.render(write_still=True)
+            return path
+        except RuntimeError as e:  # noqa: PERF203 - a few retries at most
+            if attempt == retries:
+                log("GPU render failed; rendering on the CPU:", str(e).splitlines()[0][:120])
+                scene.cycles.device = "CPU"
+                bpy.ops.render.render(write_still=True)
+                return path
+            log("render failed, retrying:", str(e).splitlines()[0][:120])
+            time.sleep(wait)
     return path

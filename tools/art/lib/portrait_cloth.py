@@ -9,9 +9,13 @@ the face under a veil). The edges are real edges, so hems catch the light.
   accent colour, as the world figures wear.
 - mantle: elders, over both shoulders and open at the front (undyed wool,
   as in the world).
-- veil, scarf, hood: over the head and hair, framing the face and falling
-  to the shoulders (veil and hood longer, scarf closed under the chin).
-- wrap: a cloth wound round the head in bands, over short hair.
+- veil, scarf, hood: over the head and hair, resting on the crown, framing
+  the face and falling to the shoulders in deep folds, with a thick, rolled
+  hem round the face.
+- wrap: a long cloth wound round the head in overlapping bands: each turn
+  lies on the turns before it, crossing them, with pleats along it and a
+  rolled edge; the end of the cloth hangs behind one ear. The weave follows
+  each band (per-vertex coordinates for the material).
 - band: a woven fillet round the head, over the hair.
 
 Units are centimetres, like the head.
@@ -33,6 +37,11 @@ def shell(outer, thickness):
         return np.maximum(d, -d - thickness)
 
     return S.Fn(f, outer.bbox)
+
+
+def _smoothstep(x):
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3 - 2 * x)
 
 
 def undulation(seed, amp=0.2, count=6, spread=(3.0, 6.0)):
@@ -77,6 +86,7 @@ def drape_folds(seed, axis_y=1.5, amp=0.3, count=7, spread=(2.5, 6.0), sway=0.06
 
 class Clothes:
     def __init__(self, head, params, hair_lift=1.0, head_shape=None):
+        self.bands = None
         self.head = head
         self.P = params
         self.a = params.appearance
@@ -89,13 +99,24 @@ class Clothes:
         self._tunic()
         if self.a["build"] == "elder":
             self._mantle()
-        kind = self.a["headwear"]
+        kind = params.head_style
         if kind in ("veil", "scarf", "hood"):
             self._covering(kind)
+        elif kind == "headcloth":
+            self._covering("scarf")
+            self._cord()
         elif kind == "wrap":
             self._wrap()
         elif kind == "band":
             self._band()
+
+    def attributes(self, name, V):
+        """Extra per-vertex maps for a garment's mesh (name -> values), or None.
+        The wrap's weave runs along each band: `cloth_uv` is (along, across)
+        in centimetres on the band a point belongs to."""
+        if name == "headwear" and self.bands:
+            return {"cloth_uv": self._band_uv(V)}
+        return None
 
     # ── Body garments ──────────────────────────────────────────────────────
     def _neck_hole(self, extra, front_z, back_z):
@@ -113,17 +134,43 @@ class Clothes:
         return S.Fn(f, ((-12, -12, front_z - 3), (12, 12, 20)))
 
     def _tunic(self):
+        """The tunic: folds from the shoulders, a hemmed neckline (turned
+        over, so it stands a little proud), and for most men and children a
+        short slit at the front, where the notch between the collarbones shows."""
         head = self.head
+        s = head.s
+        P = self.P
         body = head.body()
-        folds = drape_folds(self.P.seed + 1, amp=0.45, count=8, top=-14.0)
+        folds = drape_folds(P.seed + 1, amp=0.5, count=8, top=-14.0)
+        creases = drape_folds(P.seed + 11, amp=0.14, count=6, spread=(1.0, 2.5), top=-16.0, sway=0.15)
+        front_z = (-17.5 - 0.8 * (1 - P.masc)) * s * head.body_z
+        hole = self._neck_hole(0.9, front_z, -13.5 * s * head.body_z)
+        slit_len = 0.0 if P.sex == "f" else (4.5 + 2.0 * ((P.seed >> 3) % 7) / 6.0) * s
+        slit_w = 0.8 * s
+
+        def opening(p):
+            d = hole(p)
+            if slit_len > 0:
+                # A narrow slit down from the front of the neckline.
+                depth = np.clip((front_z + 0.5 - p[:, 2]) / slit_len, 0, 1)
+                half = slit_w * (1 - depth) + 0.05
+                slit = np.maximum(np.abs(p[:, 0]) - half, np.maximum(p[:, 2] - front_z - 1.0, front_z - slit_len - p[:, 2]))
+                slit = np.maximum(slit, p[:, 1] + 2.0)
+                d = np.minimum(d, slit)
+            return d
 
         def outer_f(p):
-            return body(p) - 0.45 - folds(p)
+            hem = np.exp(-((opening(p) / 0.55) ** 2))
+            return body(p) - 0.45 - folds(p) - creases(p) - 0.12 * hem
 
-        outer = S.Fn(outer_f, ((-30, -16, -45), (30, 18, -5)))
-        cloth = shell(outer, 0.36)
-        hole = self._neck_hole(0.9, -17.5 * head.s * head.body_z, -13.5 * head.s * head.body_z)
-        self.parts["tunic"] = (S.Subtract(cloth, hole, 0.25), "tunic", (-24, -14, -27), (24, 16, -8), 0.14)
+        def cloth_f(p):
+            d = outer_f(p)
+            hem = np.exp(-((opening(p) / 0.55) ** 2))
+            return np.maximum(d, -d - (0.34 + 0.26 * hem))
+
+        cloth = S.Fn(cloth_f, ((-30, -16, -45), (30, 18, -5)))
+        cut = S.Subtract(cloth, S.Fn(opening, ((-12, -12, front_z - slit_len - 3), (12, 12, 20))), 0.22)
+        self.parts["tunic"] = (cut, "tunic", (-24, -14, -27), (24, 16, -8), 0.13)
 
     def _mantle(self):
         head = self.head
@@ -163,29 +210,30 @@ class Clothes:
     def _covering(self, kind):
         head = self.head
         s = head.s
-        env = self._hair_volume(0.55, 1.9 if self.P.hair_style == "long" else 0.9)
+        P = self.P
+        env = self._hair_volume(0.55, 1.9 if P.hair_style == "long" else 0.9)
         # A bun of hair gathered at the back, for women.
-        if self.P.hair_style == "long":
+        if P.hair_style == "long":
             env = S.Union([env, S.Ellipsoid((0, 7.8 * s, 4.5 * s), (4.2, 3.2, 3.6))], 2.0)
-        # The cloth falls from the sides of the head to the shoulders: loosely
-        # for a veil or hood, closer for a scarf (a smaller head cloth).
+        # The cloth rests on the crown and falls from there to the shoulders:
+        # loosely for a veil or hood, closer for a scarf (a smaller head cloth).
         body = head.body()
         drape = S.Offset(body, 1.4 if kind != "scarf" else 1.2)
         low = -40.0
         if kind == "scarf":
-            curtain = S.RoundCone((0, 1.6 * s, 3.0 * s), (0, 2.1 * s, -20.0 * s), 8.4 * s, 10.0 * s)
+            curtain = S.RoundCone((0, 2.0 * s, 8.0 * s), (0, 2.3 * s, -20.0 * s), 6.4 * s, 10.0 * s)
         else:
-            curtain = S.RoundCone((0, 1.9 * s, 3.0 * s), (0, 2.4 * s, -20.0 * s), 8.9 * s, 10.8 * s)
-        cover = S.Union([env, curtain], 3.0)
+            curtain = S.RoundCone((0, 2.2 * s, 8.0 * s), (0, 2.6 * s, -20.0 * s), 6.8 * s, 10.8 * s)
+        cover = S.Union([env, curtain], 3.5)
         cover = S.Union([cover, S.Clip(drape, (-40, -40, low), (40, 40, 0))], 2.5)
-        folds = drape_folds(self.P.seed + 3, amp=0.4, count=7, spread=(3.0, 8.0), top=4.0)
-        outer = S.Offset(cover, S.Fn(folds, ((-40, -40, -45), (40, 40, 20))))
-        cloth = shell(outer, 0.4)
+        # Folds: long, deep ones falling from the head, finer creases between.
+        folds = drape_folds(P.seed + 3, amp=0.8, count=9, spread=(2.5, 9.0), top=7.0)
+        fine = drape_folds(P.seed + 4, amp=0.2, count=6, spread=(1.1, 2.4), top=9.0, sway=0.12)
         # The opening for the face, as an angle round the head, so the hem
         # follows the cloth: an arch over the brow, edges hanging in front of
         # the ears, and open down the front onto the chest.
-        top_z = 8.9 * s if kind != "hood" else 8.0 * s
-        face = 50.0 if kind != "scarf" else 47.0
+        top_z = 9.1 * s if kind != "hood" else 8.6 * s
+        face = 57.0 if kind != "scarf" else 54.0
         zc = 1.0 * s
 
         def open_f(p):
@@ -200,58 +248,207 @@ class Clothes:
             )
             return (az - theta) * (math.pi / 180.0) * 9.0
 
+        def outer_f(p):
+            hem = np.exp(-((open_f(p) / 0.7) ** 2))
+            # The hem round the face is folded over: thicker, standing a little proud.
+            return cover(p) - folds(p) - fine(p) - 0.08 * hem
+
+        def cloth_f(p):
+            d = outer_f(p)
+            hem = np.exp(-((open_f(p) / 0.7) ** 2))
+            return np.maximum(d, -d - (0.46 + 0.3 * hem))
+
+        outer = S.Fn(outer_f, ((-40, -40, -45), (40, 40, 20)))
+        self.cloth_outer = outer
+        cloth = S.Fn(cloth_f, ((-40, -40, -45), (40, 40, 20)))
         opening = S.Fn(open_f, ((-15, -25, -45), (15, 0, 20)))
-        cut = S.Subtract(cloth, opening, 0.35)
-        self.parts["headwear"] = (cut, "headwear", (-26, -17, -27), (26, 19, 21), 0.15)
+        cut = S.Subtract(cloth, opening, 0.3)
+        self.parts["headwear"] = (cut, "headwear", (-26, -17, -27), (26, 19, 21), 0.11)
 
         # Hair must stay under the cloth, except where the face shows.
         def obstacle(p):
-            return np.minimum(outer(p) + 0.45, open_f(p))
+            return np.minimum(outer(p) + 0.65, open_f(p))
 
         self.obstacle = S.Fn(obstacle, ((-30, -17, low - 2), (30, 19, 21)))
 
+    # ── The wrap: a long cloth wound round the head ────────────────────────
     def _wrap(self):
         head = self.head
         s = head.s
-        env = self._hair_volume(0.8 * self.hair_lift, 0.3)
-        rng = np.random.default_rng(self.P.seed + 5)
-        spacing = 2.1 + rng.uniform(-0.2, 0.2)
-        tilt = (0.35 + rng.uniform(-0.08, 0.08)) * (1 if rng.random() < 0.5 else -1)
-        phase = rng.uniform(0, 1)
-        nA = np.array([tilt, 0.15, 1.0], F)
-        nA /= np.linalg.norm(nA)
-        wr = undulation(self.P.seed + 6, amp=0.35, count=7, spread=(3.0, 7.0))
-        # The lower edge: across the upper forehead, above the ears, over the occiput.
-        edge_tilt = math.radians(10)
-        en = np.array([0, math.sin(edge_tilt), math.cos(edge_tilt)], F)
-        ec = np.array([0, 0.0, 6.3 * s], F)
+        P = self.P
+        rng = np.random.default_rng(P.seed + 5)
+        env = self._hair_volume(0.7 * self.hair_lift, 0.35)
+        # The lower edge of the whole wrap: across the forehead a few
+        # centimetres above the brows, over the tops of the ears, and low over
+        # the back of the head.
+        tilt = math.radians(14 + rng.uniform(-4, 4))
+        en = np.array([rng.uniform(-0.05, 0.05), math.sin(tilt), math.cos(tilt)], F)
+        en /= np.linalg.norm(en)
+        ec = np.array([0, 0.0, (4.4 + rng.uniform(-0.3, 0.3)) * s], F)
+
+        def rotated(n, about_y, about_x):
+            ay, ax = math.radians(about_y), math.radians(about_x)
+            Ry = np.array([[math.cos(ay), 0, math.sin(ay)], [0, 1, 0], [-math.sin(ay), 0, math.cos(ay)]], F)
+            Rx = np.array([[1, 0, 0], [0, math.cos(ax), -math.sin(ax)], [0, math.sin(ax), math.cos(ax)]], F)
+            v = Rx @ (Ry @ n)
+            return v / np.linalg.norm(v)
+
+        # The turns, first to last: (tilt sideways, tilt forward, how far up
+        # the head, width). Turns cross each other over the forehead.
+        side = 1 if rng.random() < 0.5 else -1
+        specs = [
+            (0, 0, 0.0, 4.4),
+            (side * 17, 5, 1.3, 4.8),
+            (-side * 19, 3, 2.3, 4.6),
+            (side * 9, -9, 3.4, 4.5),
+            (-side * 25, 7, 4.4, 4.2),
+            (side * 6, -5, 5.5, 4.0),
+            (-side * 12, 0, 6.6, 3.6),
+        ]
+        bands = []
+        for ay, ax, lift, w in specs:
+            n = rotated(en, ay + rng.uniform(-4, 4), ax + rng.uniform(-3, 3))
+            w = w * (1 + rng.uniform(-0.08, 0.08))
+            c = ec + en * (w / 2 + lift + rng.uniform(-0.2, 0.2))
+            bands.append(
+                {
+                    "n": n,
+                    "c": c.astype(F),
+                    "w": w,
+                    "t": 0.46 + rng.uniform(-0.05, 0.08),
+                    "ph": rng.uniform(0, 2 * math.pi, 6).astype(F),
+                    "pleats": rng.uniform(1.2, 2.2),
+                }
+            )
+        self.bands = bands
 
         def above_edge(p):
             return (p - ec) @ en
 
-        def layers(p):
-            """Wound cloth: each turn rises gently round the head and ends in a
-            soft edge over the turn below."""
-            t = (p @ nA) / spacing + phase
-            f = t - np.floor(t)
-            edge = np.clip((f - 0.55) / 0.45, 0, 1)
-            return 0.42 * np.sin(np.pi * f * 0.5) * (1 - edge * edge * (3 - 2 * edge))
+        def stack(p):
+            """Height of the wound cloth above the envelope at p: a thin cap
+            under everything, then each turn lying on what is already there."""
+            H = 0.28 * _smoothstep(above_edge(p) / 1.2 - 0.2)
+            for b in bands:
+                q, az = self._band_coords(b, p)
+                w2 = b["w"] / 2 * (1 + 0.08 * np.sin(2 * az + b["ph"][0]) + 0.04 * np.sin(5 * az + b["ph"][1]))
+                inside = np.abs(q) * b["w"] / 2 / np.maximum(w2, 0.5)  # 0 in the middle of the turn, 1 at its edge
+                rim = np.clip((1 - inside) * w2 / 0.3, 0, 1)
+                profile = 0.62 + 0.38 * np.sqrt(np.clip(1 - inside * inside, 0, 1))
+                # Pleats along the turn, drifting, and crumples across it.
+                pleat = 0.09 * np.cos(2 * math.pi * b["pleats"] * q + b["ph"][2] + 0.6 * np.sin(az * 2 + b["ph"][3]))
+                crumple = 0.06 * np.sin(az * 9.0 + b["ph"][4] + 3.0 * q) * np.sin(az * 3.0 + b["ph"][5])
+                t = b["t"] * profile + pleat + crumple
+                H = np.where(inside < 1, H + np.maximum(t, 0.08) * np.sqrt(_smoothstep(rim)), H)
+            return H
 
-        def thick(p):
-            # Thin where it meets the forehead, fuller above; turns and creases on top.
-            up = np.clip(above_edge(p) / 3.0, 0, 1)
-            return 0.45 + 1.25 * up + (layers(p) + wr(p)) * np.clip(above_edge(p) / 1.2, 0, 1)
+        def wrap_f(p):
+            d = env(p) - stack(p)
+            # Nothing below the lower edge (the first turn makes the edge).
+            return np.maximum(d, -(above_edge(p) + 0.9))
 
-        mass = S.Offset(env, S.Fn(thick, ((-16, -16, 0), (16, 16, 22))))
-        body = S.Intersect(mass, S.Fn(lambda p: -above_edge(p), ((-16, -16, -5), (16, 16, 22))), 0.3)
+        wrap = S.Fn(wrap_f, ((-13, -14, -2), (13, 14, 20)))
+        tail = self._tail(rng)
+        shape = S.Union([wrap, tail], 0.35)
+        self.parts["headwear"] = (shape, "headwear", (-13, -14, -22), (13, 14, 19), 0.11)
+        self.obstacle = S.Fn(lambda p: 0.1 - shape(p), ((-14, -15, -24), (14, 15, 20)))
 
-        # A rolled hem round the lower edge, lying on the forehead and hair.
-        def roll(p):
-            return np.hypot(env(p) - 0.55, above_edge(p) - 0.45) - 0.5
+    def _band_coords(self, b, p):
+        """(across: -1..1 over the turn's width, around: angle round the head) for a turn."""
+        n = b["n"]
+        d = p - b["c"]
+        q = (d @ n) / (b["w"] / 2)
+        # An angle round the turn's own axis.
+        ref = np.cross(n, np.array([0, 0, 1], F))
+        if np.linalg.norm(ref) < 1e-3:
+            ref = np.array([1, 0, 0], F)
+        ref = (ref / np.linalg.norm(ref)).astype(F)
+        ref2 = np.cross(n, ref).astype(F)
+        az = np.arctan2(d @ ref2, d @ ref)
+        return q.astype(F), az.astype(F)
 
-        wrap = S.Union([body, S.Fn(roll, ((-14, -15, 0), (14, 15, 14)))], 0.35)
-        self.parts["headwear"] = (wrap, "headwear", (-12, -14, 2), (12, 14, 19), 0.12)
-        self.obstacle = S.Fn(lambda p: 0.1 - wrap(p), wrap.bbox)
+    def _band_uv(self, V):
+        """Per vertex: (along, across) in cm on the top-most turn under it."""
+        uv = np.zeros((len(V), 3), F)
+        for b in self.bands:
+            q, az = self._band_coords(b, V)
+            inside = np.abs(q) < 1.02
+            uv[inside, 0] = az[inside] * 9.0
+            uv[inside, 1] = q[inside] * b["w"] / 2
+        return uv
+
+    def _tail(self, rng):
+        """The end of the cloth, falling from behind one ear onto the neck and
+        shoulder: a strip lying on the body, with folds along it."""
+        head = self.head
+        s = head.s
+        z = head.body_z
+        sx = -1.0  # on the side the camera sees (the person's right)
+        lying_on = S.Union([self.head_shape, head.body()], 0.8)
+        pts = np.array(
+            [
+                (sx * 5.2 * s, 6.4 * s, 5.0 * s),
+                (sx * 6.2 * s, 6.2 * s, 0.0),
+                (sx * 6.4 * s, 5.2 * s, -6.5 * s * z),
+                (sx * 8.0 * s, 4.0 * s, -13.0 * s * z),
+                (sx * 11.0 * s, 3.4 * s, -18.0 * s * z),
+            ],
+            F,
+        )
+        seg = np.diff(pts, axis=0)
+        L = np.linalg.norm(seg, axis=1)
+        cum = np.concatenate([[0], np.cumsum(L)])
+        total = float(cum[-1])
+        ph = rng.uniform(0, 2 * math.pi, 3)
+
+        def f(p):
+            best = np.full(len(p), 1e3, F)
+            t_at = np.zeros(len(p), F)
+            for i in range(len(seg)):
+                d = p - pts[i]
+                t = np.clip((d @ seg[i]) / (L[i] ** 2), 0, 1)
+                c = pts[i] + t[:, None] * seg[i]
+                dist = np.linalg.norm(p - c, axis=1)
+                m = dist < best
+                best[m] = dist[m]
+                t_at[m] = (cum[i] + t[m] * L[i]) / total
+            # Across the strip: distance from its middle line along the body.
+            e = lying_on(p)
+            across = np.sqrt(np.maximum(best * best - e * e, 0))
+            width = (2.4 + 0.8 * np.clip(t_at * 2, 0, 1)) * s
+            fold = 0.3 * np.sin(across * 2.2 + ph[0] + 5.0 * t_at) * np.clip(t_at * 4, 0, 1)
+            lift = 0.45 + fold + 0.25 * (across / width) ** 2
+            dx = np.abs(e - lift) - 0.2
+            dy = across - width
+            end = (t_at - 0.999) * total
+            box = np.minimum(np.maximum(dx, dy), 0) + np.hypot(np.maximum(dx, 0), np.maximum(dy, 0)) - 0.06
+            return np.maximum(box, end)
+
+        return S.Fn(f, (pts.min(0) - 4.0, pts.max(0) + 4.0))
+
+    def _cord(self):
+        """Two twisted wool cords round a man's head cloth, holding it on."""
+        head = self.head
+        s = head.s
+        outer = self.cloth_outer
+        tilt = math.radians(12)
+        n = np.array([0, math.sin(tilt), math.cos(tilt)], F)
+        c = np.array([0, 0.0, 6.0 * s], F)
+        r = 0.32
+
+        def cord(p):
+            d_env = outer(p) - r * 0.9
+            best = np.full(len(p), 1e3, F)
+            for off in (-0.33, 0.33):
+                d_pl = (p - c) @ n - off
+                # A twist: the cord's radius swells and narrows along it.
+                az = np.arctan2(p[:, 0], -(p[:, 1] - 1.5))
+                tw = 0.05 * np.sin(az * 26.0 + (off > 0) * 1.5)
+                best = np.minimum(best, np.hypot(d_env, d_pl) - r - tw)
+            return best
+
+        shape = S.Fn(cord, ((-12, -14, 0), (12, 14, 16)))
+        self.parts["cord"] = (shape, "cord", (-12, -14, 1), (12, 14, 15), 0.09)
 
     def _band(self):
         head = self.head

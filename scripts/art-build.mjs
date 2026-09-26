@@ -8,7 +8,8 @@
  *   node scripts/art-build.mjs places              # render every place in PLACES (below)
  *   npm run art:market                             # = place jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people                             # every person those places need (only what is missing)
- *   npm run art:portraits                          # render public/art/portraits (≈ 25 min for 16 people)
+ *   npm run art:portrait-data                      # export everyone who speaks, in every chapter
+ *   npm run art:portraits                          # render public/art/portraits (≈ 2 min a person)
  *   npm run art:portraits -- --who miriam player:look-1   # just some people
  *   node scripts/art-build.mjs probe <scene-id> x0 y0 x1 y1 [ppu]   # a quick beauty render for review
  *
@@ -91,8 +92,9 @@ const jobs = {
       ...(rest.length ? rest : PLACES).map((id) => `public/art/${id}`),
     ],
   ],
-  // Everyone in the portrait data (characters and player looks) unless --who
-  // is given; the manifest is bundled by src/features/portraits.
+  // Everyone in tools/art/data/portrait-people.json (every character who
+  // speaks in any chapter, and the player looks) unless --who is given; the
+  // manifest is bundled by src/features/portraits.
   portraits: () => [
     [
       'tools/art/build_portraits.py',

@@ -1,0 +1,915 @@
+{
+  "chapters": [
+    {
+      "id": "road-to-jericho",
+      "number": 1,
+      "title": "The Road to Jericho"
+    },
+    {
+      "id": "storm-on-galilee",
+      "number": 2,
+      "title": "A Storm on Galilee"
+    },
+    {
+      "id": "journey-to-bethlehem",
+      "number": 3,
+      "title": "A Journey to Bethlehem"
+    },
+    {
+      "id": "letter-from-paul",
+      "number": 4,
+      "title": "A Letter from Paul"
+    }
+  ],
+  "characters": [
+    {
+      "id": "miriam",
+      "character": "miriam",
+      "chapter": "road-to-jericho",
+      "name": "Aunt Miriam",
+      "role": "Healer, your aunt",
+      "lines": 15,
+      "key": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#4a3a30",
+        "robe": "#7b5648",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#dfd1b3",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "malik",
+      "character": "malik",
+      "chapter": "road-to-jericho",
+      "name": "Malik",
+      "role": "Nabataean trader",
+      "lines": 12,
+      "key": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#1c1410",
+        "robe": "#3e6b73",
+        "accent": "#bb9959",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      }
+    },
+    {
+      "id": "shimon",
+      "character": "shimon",
+      "chapter": "road-to-jericho",
+      "name": "Old Shimon",
+      "role": "Shepherd from the wilderness",
+      "lines": 6,
+      "key": "#8a5a3a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
+      "appearance": {
+        "skin": "#865b3e",
+        "hair": "#d8d0c0",
+        "robe": "#887b63",
+        "accent": "#625547",
+        "headwear": "scarf",
+        "headwearColor": "#d8cbae",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      }
+    },
+    {
+      "id": "tobiah",
+      "character": "tobiah",
+      "chapter": "road-to-jericho",
+      "name": "Tobiah",
+      "role": "Carter",
+      "lines": 2,
+      "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#667347",
+        "accent": "#b89c63",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "hadassah",
+      "character": "hadassah",
+      "chapter": "road-to-jericho",
+      "name": "Hadassah",
+      "role": "Weaver",
+      "lines": 6,
+      "key": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#4d608b",
+        "accent": "#d3c394",
+        "headwear": "scarf",
+        "headwearColor": "#c2a66a",
+        "beard": false,
+        "build": "adult",
+        "carry": "spindle"
+      }
+    },
+    {
+      "id": "ezer",
+      "character": "ezer",
+      "chapter": "road-to-jericho",
+      "name": "Ezer",
+      "role": "Baker",
+      "lines": 9,
+      "key": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#2a1a10",
+        "robe": "#cdc1a5",
+        "accent": "#88593f",
+        "headwear": "wrap",
+        "headwearColor": "#e0d4b9",
+        "beard": true,
+        "build": "adult",
+        "carry": "bread"
+      }
+    },
+    {
+      "id": "menashe",
+      "character": "menashe",
+      "chapter": "road-to-jericho",
+      "name": "Menashe",
+      "role": "Samaritan oil merchant",
+      "lines": 24,
+      "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
+      "appearance": {
+        "skin": "#8b6043",
+        "hair": "#1f1510",
+        "robe": "#736247",
+        "accent": "#4d788b",
+        "headwear": "wrap",
+        "headwearColor": "#c8ba97",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "hanan",
+      "character": "hanan",
+      "chapter": "road-to-jericho",
+      "name": "Hanan",
+      "role": "A young Levite",
+      "lines": 7,
+      "key": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
+      "appearance": {
+        "skin": "#a17654",
+        "hair": "#2a1a10",
+        "robe": "#dfd4bc",
+        "accent": "#4d608b",
+        "headwear": "none",
+        "headwearColor": "#dfd4bc",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "salome",
+      "character": "salome",
+      "chapter": "road-to-jericho",
+      "name": "Salome",
+      "role": "Innkeeper",
+      "lines": 17,
+      "key": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#1a1210",
+        "robe": "#8b4d40",
+        "accent": "#c2a56a",
+        "headwear": "veil",
+        "headwearColor": "#c8ba9e",
+        "beard": false,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "rivka",
+      "character": "rivka",
+      "chapter": "road-to-jericho",
+      "name": "Rivka",
+      "role": "Aunt Miriam’s friend in Jericho",
+      "lines": 12,
+      "key": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#5e7047",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#dfd1b3",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "natan",
+      "character": "natan",
+      "chapter": "road-to-jericho",
+      "name": "Natan",
+      "role": "Rivka’s son",
+      "lines": 2,
+      "key": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#baa07a",
+        "accent": "#5e7047",
+        "headwear": "none",
+        "headwearColor": "#baa07a",
+        "beard": false,
+        "build": "child",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "yair",
+      "character": "yair",
+      "chapter": "road-to-jericho",
+      "name": "Yair",
+      "role": "Rivka’s brother, a fig grower",
+      "lines": 11,
+      "key": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#3a2a1c",
+        "robe": "#705b44",
+        "accent": "#c2a66a",
+        "headwear": "scarf",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "shelomit",
+      "character": "shelomit",
+      "chapter": "storm-on-galilee",
+      "name": "Grandmother Shelomit",
+      "role": "Your grandmother, a net-mender",
+      "lines": 23,
+      "key": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
+      "appearance": {
+        "skin": "#906547",
+        "hair": "#3a2e26",
+        "robe": "#665571",
+        "accent": "#c2a66a",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "elder",
+        "carry": "net"
+      }
+    },
+    {
+      "id": "elazar",
+      "character": "elazar",
+      "chapter": "storm-on-galilee",
+      "name": "Uncle Elazar",
+      "role": "Master of the family boat",
+      "lines": 22,
+      "key": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
+      "appearance": {
+        "skin": "#865738",
+        "hair": "#1f1611",
+        "robe": "#4c6873",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#c8ba97",
+        "beard": true,
+        "build": "adult",
+        "carry": "oar"
+      }
+    },
+    {
+      "id": "tamar",
+      "character": "tamar",
+      "chapter": "storm-on-galilee",
+      "name": "Tamar",
+      "role": "Your cousin, a rower",
+      "lines": 13,
+      "key": "#9a6440|#1a1210|#8f3f2f|#e2b555|scarf|#c96f3b|clean|adult|net",
+      "appearance": {
+        "skin": "#956545",
+        "hair": "#1a1210",
+        "robe": "#8b4d40",
+        "accent": "#c2a56a",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "adult",
+        "carry": "net"
+      }
+    },
+    {
+      "id": "yoezer",
+      "character": "yoezer",
+      "chapter": "storm-on-galilee",
+      "name": "Yoezer",
+      "role": "A hired man on the family boat",
+      "lines": 6,
+      "key": "#7a4a2e|#2a1a10|#6b5a3a|#8a6a4a|band|#5a4a3a|beard|adult|jar",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#2a1a10",
+        "robe": "#706247",
+        "accent": "#876e56",
+        "headwear": "band",
+        "headwearColor": "#625547",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "hanina",
+      "character": "hanina",
+      "chapter": "storm-on-galilee",
+      "name": "Old Hanina",
+      "role": "A fisherman who has read the lake for sixty years",
+      "lines": 7,
+      "key": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
+      "appearance": {
+        "skin": "#82593e",
+        "hair": "#d8d0c0",
+        "robe": "#7b6e5c",
+        "accent": "#55636e",
+        "headwear": "hood",
+        "headwearColor": "#887b63",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      }
+    },
+    {
+      "id": "nikanor",
+      "character": "nikanor",
+      "chapter": "storm-on-galilee",
+      "name": "Nikanor",
+      "role": "A salt-fish trader from Magdala",
+      "lines": 17,
+      "key": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#3f6c7f",
+        "accent": "#d3c394",
+        "headwear": "wrap",
+        "headwearColor": "#dfd4bc",
+        "beard": true,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "shifra",
+      "character": "shifra",
+      "chapter": "storm-on-galilee",
+      "name": "Shifra",
+      "role": "A potter’s wife from the hills",
+      "lines": 18,
+      "key": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#5e7047",
+        "accent": "#d3c394",
+        "headwear": "veil",
+        "headwearColor": "#c8ba9e",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "ami",
+      "character": "ami",
+      "chapter": "storm-on-galilee",
+      "name": "Ami",
+      "role": "Shifra’s son",
+      "lines": 10,
+      "key": "#b07a50|#2a1a12|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1a12",
+        "robe": "#baa07a",
+        "accent": "#5e7047",
+        "headwear": "none",
+        "headwearColor": "#baa07a",
+        "beard": false,
+        "build": "child",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "oded",
+      "character": "oded",
+      "chapter": "storm-on-galilee",
+      "name": "Oded",
+      "role": "Shifra’s brother, a potter",
+      "lines": 5,
+      "key": "#a8734a|#3a2a1c|#8a7a5c|#b8683e|band|#8a2f2f|beard|adult|oar",
+      "appearance": {
+        "skin": "#a3744f",
+        "hair": "#3a2a1c",
+        "robe": "#877b64",
+        "accent": "#a96f4e",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": true,
+        "build": "adult",
+        "carry": "oar"
+      }
+    },
+    {
+      "id": "dinah",
+      "character": "dinah",
+      "chapter": "storm-on-galilee",
+      "name": "Dinah",
+      "role": "A farmer’s wife, in the crowd",
+      "lines": 3,
+      "key": "#9a6a45|#2a1a10|#7a4b3a|#e3c27a|scarf|#d9b25f|clean|adult|basket",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#2a1a10",
+        "robe": "#7b5648",
+        "accent": "#cbb37f",
+        "headwear": "scarf",
+        "headwearColor": "#c2a66a",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "tamar.journey-to-bethlehem",
+      "character": "tamar",
+      "chapter": "journey-to-bethlehem",
+      "name": "Tamar",
+      "role": "Your mother",
+      "lines": 20,
+      "key": "#a0704a|#2a1a10|#7a3f34|#e3c27a|veil|#e8dcc0|clean|adult|bread",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#7b4c43",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "adult",
+        "carry": "bread"
+      }
+    },
+    {
+      "id": "amram",
+      "character": "amram",
+      "chapter": "journey-to-bethlehem",
+      "name": "Saba Amram",
+      "role": "Your grandfather",
+      "lines": 11,
+      "key": "#9a6a45|#dcd4c4|#5f5a44|#c9a45a|wrap|#efe6d2|beard|elder|staff",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#dcd4c4",
+        "robe": "#666250",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#dfd4bc",
+        "beard": true,
+        "build": "elder",
+        "carry": "staff"
+      }
+    },
+    {
+      "id": "asa",
+      "character": "asa",
+      "chapter": "journey-to-bethlehem",
+      "name": "Uncle Asa",
+      "role": "A stonemason, your mother’s brother",
+      "lines": 11,
+      "key": "#946040|#2a1a10|#8a7a5c|#4f6a7a|band|#6f4a2c|beard|adult|bundle",
+      "appearance": {
+        "skin": "#906144",
+        "hair": "#2a1a10",
+        "robe": "#877b64",
+        "accent": "#59707b",
+        "headwear": "band",
+        "headwearColor": "#73553c",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      }
+    },
+    {
+      "id": "peninah",
+      "character": "peninah",
+      "chapter": "journey-to-bethlehem",
+      "name": "Aunt Peninah",
+      "role": "Uncle Asa’s wife",
+      "lines": 9,
+      "key": "#b07a50|#1f1511|#35527a|#e8d49a|scarf|#c96f3b|clean|adult|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#1f1511",
+        "robe": "#44607b",
+        "accent": "#d3c394",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "kallias",
+      "character": "kallias",
+      "chapter": "journey-to-bethlehem",
+      "name": "Kallias",
+      "role": "Registration clerk",
+      "lines": 6,
+      "key": "#c08a5e|#3a2a1c|#e6dcc6|#3f5f8f|none|#e6dcc6|clean|adult|tablet",
+      "appearance": {
+        "skin": "#bb8b63",
+        "hair": "#3a2a1c",
+        "robe": "#d6cbb4",
+        "accent": "#4d608b",
+        "headwear": "none",
+        "headwearColor": "#d6cbb4",
+        "beard": false,
+        "build": "adult",
+        "carry": "tablet"
+      }
+    },
+    {
+      "id": "hagit",
+      "character": "hagit",
+      "chapter": "journey-to-bethlehem",
+      "name": "Hagit",
+      "role": "Your neighbor, who keeps goats",
+      "lines": 17,
+      "key": "#8a5a38|#cfc8bb|#556b3a|#d9b25f|veil|#6b5a7a|clean|elder|jar",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#cfc8bb",
+        "robe": "#5e7047",
+        "accent": "#c2a66a",
+        "headwear": "veil",
+        "headwearColor": "#70627b",
+        "beard": false,
+        "build": "elder",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "yonatan",
+      "character": "yonatan",
+      "chapter": "journey-to-bethlehem",
+      "name": "Cousin Yonatan",
+      "role": "A young shepherd, your cousin",
+      "lines": 11,
+      "key": "#8d5a3a|#1f1611|#8b7a5a|#a8322a|scarf|#d8c49a|clean|adult|staff",
+      "appearance": {
+        "skin": "#895b3e",
+        "hair": "#1f1611",
+        "robe": "#887b63",
+        "accent": "#9b4840",
+        "headwear": "scarf",
+        "headwearColor": "#c8b793",
+        "beard": false,
+        "build": "adult",
+        "carry": "staff"
+      }
+    },
+    {
+      "id": "yoram",
+      "character": "yoram",
+      "chapter": "journey-to-bethlehem",
+      "name": "Old Yoram",
+      "role": "Shepherd of the village flock",
+      "lines": 6,
+      "key": "#7a4a2e|#e2dbcf|#6f5a3a|#5a4a3a|hood|#8a6a4a|beard|elder|lamb",
+      "appearance": {
+        "skin": "#764b32",
+        "hair": "#e2dbcf",
+        "robe": "#736247",
+        "accent": "#625547",
+        "headwear": "hood",
+        "headwearColor": "#876e56",
+        "beard": true,
+        "build": "elder",
+        "carry": "lamb"
+      }
+    },
+    {
+      "id": "zerah",
+      "character": "zerah",
+      "chapter": "journey-to-bethlehem",
+      "name": "Zerah",
+      "role": "A basket-maker from Tekoa",
+      "lines": 11,
+      "key": "#946040|#cfc8bb|#7a6448|#2f5590|wrap|#c9b48a|beard|elder|lamp",
+      "appearance": {
+        "skin": "#906144",
+        "hair": "#cfc8bb",
+        "robe": "#7b6953",
+        "accent": "#40548c",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "elder",
+        "carry": "lamp"
+      }
+    },
+    {
+      "id": "ammia",
+      "character": "ammia",
+      "chapter": "letter-from-paul",
+      "name": "Ammia",
+      "role": "Your grandmother, a dyer of red wool",
+      "lines": 36,
+      "key": "#a8744c|#3a2c22|#7a3228|#e2c27a|veil|#e8dcc0|clean|elder|basket",
+      "appearance": {
+        "skin": "#a37551",
+        "hair": "#3a2c22",
+        "robe": "#7c4238",
+        "accent": "#cbb37f",
+        "headwear": "veil",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "elder",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "kallias.letter-from-paul",
+      "character": "kallias",
+      "chapter": "letter-from-paul",
+      "name": "Kallias",
+      "role": "Ammia’s former apprentice",
+      "lines": 29,
+      "key": "#b07a50|#2a1c12|#8a6a4a|#9a2e28|none|#8a6a4a|clean|adult|none",
+      "appearance": {
+        "skin": "#ab7b55",
+        "hair": "#2a1c12",
+        "robe": "#876e56",
+        "accent": "#92433c",
+        "headwear": "none",
+        "headwearColor": "#876e56",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "zenon",
+      "character": "zenon",
+      "chapter": "letter-from-paul",
+      "name": "Zenon",
+      "role": "A scribe who writes and reads letters",
+      "lines": 12,
+      "key": "#9a6a45|#3a3028|#e6dcc4|#35527a|none|#e6dcc4|beard|adult|tablets",
+      "appearance": {
+        "skin": "#966b49",
+        "hair": "#3a3028",
+        "robe": "#d6cbb2",
+        "accent": "#44607b",
+        "headwear": "none",
+        "headwearColor": "#d6cbb2",
+        "beard": true,
+        "build": "adult",
+        "carry": "tablets"
+      }
+    },
+    {
+      "id": "attalos",
+      "character": "attalos",
+      "chapter": "letter-from-paul",
+      "name": "Attalos",
+      "role": "A mule driver on the Laodicea road",
+      "lines": 11,
+      "key": "#8a5a38|#1f1611|#6b5a3a|#c9a45a|wrap|#c9b48a|beard|adult|bundle",
+      "appearance": {
+        "skin": "#865b3c",
+        "hair": "#1f1611",
+        "robe": "#706247",
+        "accent": "#b89c63",
+        "headwear": "wrap",
+        "headwearColor": "#bbaa87",
+        "beard": true,
+        "build": "adult",
+        "carry": "bundle"
+      }
+    },
+    {
+      "id": "tatia",
+      "character": "tatia",
+      "chapter": "letter-from-paul",
+      "name": "Tatia",
+      "role": "A fuller who cleans and finishes cloth",
+      "lines": 8,
+      "key": "#b8845a|#2a1a12|#d8d0b8|#5f7438|scarf|#9a8a6a|clean|adult|basket",
+      "appearance": {
+        "skin": "#b3855f",
+        "hair": "#2a1a12",
+        "robe": "#c8c1ab",
+        "accent": "#677746",
+        "headwear": "scarf",
+        "headwearColor": "#938770",
+        "beard": false,
+        "build": "adult",
+        "carry": "basket"
+      }
+    },
+    {
+      "id": "menandros",
+      "character": "menandros",
+      "chapter": "letter-from-paul",
+      "name": "Menandros",
+      "role": "A potter",
+      "lines": 3,
+      "key": "#a0704a|#2a1a10|#8c5231|#e2c170|band|#5a3a22|beard|adult|jar",
+      "appearance": {
+        "skin": "#9c714e",
+        "hair": "#2a1a10",
+        "robe": "#895c41",
+        "accent": "#c8b179",
+        "headwear": "band",
+        "headwearColor": "#644832",
+        "beard": true,
+        "build": "adult",
+        "carry": "jar"
+      }
+    },
+    {
+      "id": "nikon",
+      "character": "nikon",
+      "chapter": "letter-from-paul",
+      "name": "Nikon",
+      "role": "Overseer of the dye works by the bridge",
+      "lines": 4,
+      "key": "#9a6040|#4a3a30|#3f5f8f|#d9b25f|none|#3f5f8f|beard|adult|none",
+      "appearance": {
+        "skin": "#956145",
+        "hair": "#4a3a30",
+        "robe": "#4d608b",
+        "accent": "#c2a66a",
+        "headwear": "none",
+        "headwearColor": "#4d608b",
+        "beard": true,
+        "build": "adult",
+        "carry": "none"
+      }
+    },
+    {
+      "id": "chrysis",
+      "character": "chrysis",
+      "chapter": "letter-from-paul",
+      "name": "Chrysis",
+      "role": "An enslaved worker at the dye works",
+      "lines": 8,
+      "key": "#8f5f3f|#1a1210|#7a6a58|#6a2a4f|scarf|#6a5a48|clean|adult|none",
+      "appearance": {
+        "skin": "#8b6043",
+        "hair": "#1a1210",
+        "robe": "#7b6e60",
+        "accent": "#703a57",
+        "headwear": "scarf",
+        "headwearColor": "#6e6253",
+        "beard": false,
+        "build": "adult",
+        "carry": "none"
+      }
+    }
+  ],
+  "players": [
+    {
+      "id": "look-1",
+      "key": "#a8734a|#2b1d14|#3f6f8f|#d9b25f|wrap|#e8dcc0|clean|child|satchel",
+      "appearance": {
+        "skin": "#a3744f",
+        "hair": "#2b1d14",
+        "robe": "#4d788b",
+        "accent": "#c2a66a",
+        "headwear": "wrap",
+        "headwearColor": "#d8cbae",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-2",
+      "key": "#8d5a3a|#1f1611|#7a3b2e|#e3c27a|scarf|#c96f3b|clean|child|satchel",
+      "appearance": {
+        "skin": "#895b3e",
+        "hair": "#1f1611",
+        "robe": "#7c493e",
+        "accent": "#cbb37f",
+        "headwear": "scarf",
+        "headwearColor": "#b6744d",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-3",
+      "key": "#c08a5e|#3a2a1c|#556b3a|#f0e0b0|band|#8a2f2f|clean|child|satchel",
+      "appearance": {
+        "skin": "#bb8b63",
+        "hair": "#3a2a1c",
+        "robe": "#5e7047",
+        "accent": "#dacda5",
+        "headwear": "band",
+        "headwearColor": "#88413f",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    },
+    {
+      "id": "look-4",
+      "key": "#6f4630|#141010|#6b5a8e|#e8d49a|none|#6b5a8e|clean|child|satchel",
+      "appearance": {
+        "skin": "#6c4733",
+        "hair": "#141010",
+        "robe": "#71638a",
+        "accent": "#d3c394",
+        "headwear": "none",
+        "headwearColor": "#71638a",
+        "beard": false,
+        "build": "child",
+        "carry": "satchel"
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "character": "listener-a",
+      "chapter": "storm-on-galilee",
+      "reason": "never speaks"
+    },
+    {
+      "character": "listener-b",
+      "chapter": "storm-on-galilee",
+      "reason": "never speaks"
+    },
+    {
+      "character": "listener-c",
+      "chapter": "storm-on-galilee",
+      "reason": "never speaks"
+    },
+    {
+      "character": "dodi",
+      "chapter": "journey-to-bethlehem",
+      "reason": "never speaks"
+    },
+    {
+      "character": "hermon",
+      "chapter": "letter-from-paul",
+      "reason": "never speaks"
+    },
+    {
+      "character": "melitta",
+      "chapter": "letter-from-paul",
+      "reason": "never speaks"
+    },
+    {
+      "character": "philemon",
+      "chapter": "letter-from-paul",
+      "reason": "biblical figure"
+    },
+    {
+      "character": "tychicus",
+      "chapter": "letter-from-paul",
+      "reason": "biblical figure"
+    },
+    {
+      "character": "onesimus",
+      "chapter": "letter-from-paul",
+      "reason": "biblical figure"
+    }
+  ]
+}
