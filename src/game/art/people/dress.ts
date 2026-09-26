@@ -30,7 +30,13 @@ export interface Dress {
   /** The player's spare cloak, if this person is wrapped in it. */
   cloak: string | null;
   tornHem: boolean;
-  gear: { waterSkin: boolean; lamp: boolean; cloakRoll: boolean };
+  gear: {
+    waterSkin: boolean;
+    lamp: boolean;
+    cloakRoll: boolean;
+    lambOnShoulders: boolean;
+    letterCase: boolean;
+  };
 }
 
 /** The player's spare cloak: undyed brown wool with a madder cast. */
@@ -68,6 +74,8 @@ export function dressFor(a: Appearance, marks: readonly LookMark[], rag: string)
       waterSkin: has('water-skin'),
       lamp: has('lamp'),
       cloakRoll: has('cloak-roll'),
+      lambOnShoulders: has('carrying-lamb'),
+      letterCase: has('letter-case'),
     },
   };
 }

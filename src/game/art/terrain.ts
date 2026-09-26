@@ -1,7 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import type { Look } from './direction';
 import { ellipse, fbm, hash, lumpy, mix, rgba, rng, shade, speckle, TILE, type Ctx } from './paint';
-import { isPropTile, isStructure, type Site } from './site';
+import { isLowWall, isPropTile, isStructure, type Site } from './site';
 
 /**
  * Ground: flat material fills, broad light/dark variation that ignores the
@@ -14,14 +14,26 @@ const SPREAD: Partial<Record<TileKind, number>> = {
   grass: 7,
   scrub: 6,
   sand: 5,
+  shingle: 4.5,
   wadi: 4,
   mud: 3.5,
   soil: 3,
   road: 3,
+  threshing: 2.5,
   paving: 2,
+  'roman-road': 2,
   steps: 2,
+  straw: 1.5,
   floor: 1,
+  platform: 1,
 };
+
+/** Dry straw and chaff: pale gold stalks. */
+const STRAW = '#d9bd72';
+/** The lake shore is dark basalt pebbles; boats and landing stages are timber and basalt. */
+const SHINGLE = '#8d857a';
+const DECK = '#a27d52';
+const JETTY = '#7a746b';
 
 export function groundColor(look: Look, kind: TileKind): string {
   switch (kind) {
@@ -38,11 +50,29 @@ export function groundColor(look: Look, kind: TileKind): string {
     case 'steps':
     case 'door':
     case 'gate':
+    case 'bridge':
       return look.ground.paving;
+    case 'roman-road':
+      return shade(look.ground.paving, -0.12);
+    case 'mosaic':
+      return '#e6dcc4';
     case 'rug':
     case 'mat':
     case 'bedroll':
       return look.ground.floor;
+    case 'platform':
+      // Lime-plastered, a shade paler than trodden earth.
+      return shade(look.ground.floor, 0.1);
+    case 'straw':
+      return mix(look.ground.floor, STRAW, 0.45);
+    case 'threshing':
+      return mix(look.ground.sand, '#e8d9ae', 0.5);
+    case 'shingle':
+      return mix(look.ground.sand, SHINGLE, 0.5);
+    case 'deck':
+      return DECK;
+    case 'jetty':
+      return mix(JETTY, look.ground.paving, 0.2);
     default:
       return look.ground.sand;
   }
@@ -97,7 +127,12 @@ export function paintGround(ctx: Ctx, site: Site, look: Look, doc: Document): vo
       k === 'paving' ||
       k === 'steps' ||
       k === 'door' ||
-      k === 'gate'
+      k === 'gate' ||
+      k === 'mosaic' ||
+      k === 'roman-road' ||
+      k === 'bridge' ||
+      k === 'deck' ||
+      k === 'jetty'
     )
       return;
     const r = rng(hash(x, y, 7));
@@ -246,7 +281,14 @@ function besideSomething(site: Site, x: number, y: number): boolean {
     [0, 1],
   ] as const) {
     const k = site.kindAt(x + dx, y + dy);
-    if (k === 'wall' || k === 'roof' || k === 'fence' || k === 'cliff' || isPropTile(k))
+    if (
+      k === 'wall' ||
+      k === 'roof' ||
+      k === 'tile-roof' ||
+      k === 'cliff' ||
+      isLowWall(k) ||
+      isPropTile(k)
+    )
       return true;
   }
   return false;
@@ -473,6 +515,81 @@ function paintDetail(
     case 'rug':
       paintRug(ctx, site, look, tx, ty);
       return;
+    case 'straw':
+      paintStraw(ctx, X, Y, r);
+      return;
+    case 'platform':
+      paintPlatform(ctx, site, look, tx, ty, r);
+      return;
+    case 'threshing':
+      paintThreshing(ctx, site, look, tx, ty, r);
+      return;
+    case 'mosaic':
+      paintMosaic(ctx, site, tx, ty);
+      return;
+    case 'roman-road':
+      paintRomanRoad(ctx, site, look, tx, ty, r);
+      return;
+    case 'bridge':
+      paintBridge(ctx, site, look, tx, ty, r);
+      return;
+    case 'shingle': {
+      // Rounded basalt and limestone pebbles; the odd shell.
+      const base = groundColor(look, 'shingle');
+      for (let i = 0; i < 11; i++)
+        pebble(
+          ctx,
+          X + 2 + r() * 28,
+          Y + 2 + r() * 28,
+          1 + r() * 1.8,
+          r() < 0.55 ? shade(base, -0.3 - r() * 0.15) : shade(base, 0.18),
+        );
+      if (r() < 0.2) ellipse(ctx, X + 6 + r() * 20, Y + 6 + r() * 20, 1.4, 1, '#efe6d6');
+      if (edge) paintClutter(ctx, look, X, Y, r);
+      return;
+    }
+    case 'deck': {
+      // Planks running fore and aft, pegged to the frames beneath.
+      ctx.strokeStyle = rgba(shade(DECK, -0.45), 0.55);
+      ctx.lineWidth = 0.7;
+      for (let i = 1; i < 6; i++) {
+        ctx.beginPath();
+        ctx.moveTo(X, Y + i * 5.4);
+        ctx.lineTo(X + TILE, Y + i * 5.4);
+        ctx.stroke();
+      }
+      ctx.fillStyle = rgba('#ffffff', 0.08);
+      for (let i = 0; i < 6; i++) ctx.fillRect(X, Y + i * 5.4 + 0.8, TILE, 1);
+      const joint = X + 4 + r() * 24;
+      ctx.beginPath();
+      ctx.moveTo(joint, Y + Math.floor(r() * 5) * 5.4);
+      ctx.lineTo(joint, Y + Math.floor(r() * 5) * 5.4 + 5.4);
+      ctx.stroke();
+      for (let i = 0; i < 3; i++)
+        ellipse(ctx, X + 3 + r() * 26, Y + 2.7 + Math.floor(r() * 6) * 5.4, 0.5, 0.5, '#3c2a1a');
+      return;
+    }
+    case 'jetty': {
+      // Big dressed basalt blocks, darker in the joints, pale where feet go.
+      const base = groundColor(look, 'jetty');
+      for (let row = 0; row < 2; row++) {
+        let x0 = X - (row === 1 ? 6 : 0);
+        while (x0 < X + TILE) {
+          const w = 11 + r() * 9;
+          const left = Math.max(X, x0);
+          const right = Math.min(X + TILE, x0 + w);
+          if (right - left > 1) {
+            ctx.fillStyle = shade(base, (r() - 0.5) * 0.18);
+            ctx.fillRect(left + 0.8, Y + row * 16 + 0.8, right - left - 1.6, 14.4);
+            ctx.fillStyle = rgba('#ffffff', 0.14);
+            ctx.fillRect(left + 0.8, Y + row * 16 + 0.8, right - left - 1.6, 1.2);
+          }
+          x0 += w;
+        }
+      }
+      speckle(ctx, X, Y, TILE, TILE, r, [shade(base, -0.35), shade(base, 0.2)], 10, 0.9);
+      return;
+    }
     case 'wadi': {
       for (let i = 0; i < 7; i++)
         pebble(
@@ -507,6 +624,122 @@ function paintDetail(
     }
     default:
       return;
+  }
+}
+
+/** Loose straw on the animals' floor: crossing stalks, darker trodden patches. */
+function paintStraw(ctx: Ctx, X: number, Y: number, r: () => number): void {
+  for (let i = 0; i < 2; i++)
+    lumpy(ctx, X + r() * TILE, Y + r() * TILE, 5 + r() * 6, r, rgba('#6a4a24', 0.14), 7);
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 16; i++) {
+    const sx = X + r() * TILE;
+    const sy = Y + r() * TILE;
+    const a = r() * Math.PI;
+    const len = 4 + r() * 6;
+    ctx.strokeStyle = r() < 0.5 ? rgba(shade(STRAW, 0.15), 0.9) : rgba(shade(STRAW, -0.25), 0.8);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + Math.cos(a) * len, sy + Math.sin(a) * len * 0.6);
+    ctx.stroke();
+  }
+}
+
+/**
+ * The raised family floor: smooth lime plaster with trowel marks, and a
+ * lip where it steps down to the animals' straw (the step casts a shadow).
+ */
+function paintPlatform(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const base = groundColor(look, 'platform');
+  ctx.strokeStyle = rgba(shade(base, 0.12), 0.35);
+  ctx.lineWidth = 1;
+  if (r() < 0.5) {
+    ctx.beginPath();
+    ctx.arc(X + r() * TILE, Y + r() * TILE, 7 + r() * 8, r() * 6, r() * 6 + 1.4);
+    ctx.stroke();
+  }
+  speckle(ctx, X, Y, TILE, TILE, r, [shade(base, -0.12), shade(base, 0.12)], 6, 1);
+  const lower = (dx: number, dy: number): boolean => {
+    const n = site.groundAt(tx + dx, ty + dy);
+    return n === 'straw' || site.kindAt(tx + dx, ty + dy) === 'manger';
+  };
+  // The edge of the step: a pale plastered lip and a shadow falling onto the straw.
+  const lip = shade(base, 0.2);
+  const drop = rgba(look.shadow.color, 0.45);
+  if (lower(-1, 0)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y, 3, TILE);
+    ctx.fillStyle = drop;
+    ctx.fillRect(X - 5, Y, 5, TILE);
+  }
+  if (lower(1, 0)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X + TILE - 3, Y, 3, TILE);
+  }
+  if (lower(0, 1)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y + TILE - 3, TILE, 3);
+    ctx.fillStyle = drop;
+    ctx.fillRect(X, Y + TILE, TILE, 5);
+  }
+  if (lower(0, -1)) {
+    ctx.fillStyle = lip;
+    ctx.fillRect(X, Y, TILE, 2);
+  }
+}
+
+/** A threshing floor: hard, pale ground, chaff blown about, a ring of edging stones. */
+function paintThreshing(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const base = groundColor(look, 'threshing');
+  // Swept arcs where the threshing sledge went round.
+  ctx.strokeStyle = rgba(shade(base, -0.18), 0.35);
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.arc(X + 16 + (r() - 0.5) * 30, Y + 16 + (r() - 0.5) * 30, 14 + r() * 10, 0, Math.PI * 0.7);
+    ctx.stroke();
+  }
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < 9; i++) {
+    const cx = X + r() * TILE;
+    const cy = Y + r() * TILE;
+    ctx.strokeStyle = rgba(STRAW, 0.85);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + 2 + r() * 3, cy + (r() - 0.5) * 2);
+    ctx.stroke();
+  }
+  for (const [dx, dy] of [
+    [0, -1],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+  ] as const) {
+    if (site.groundAt(tx + dx, ty + dy) === 'threshing') continue;
+    for (let i = 0; i < 4; i++) {
+      const t = 3 + r() * 26;
+      const sx = dy !== 0 ? X + t : dx === 1 ? X + TILE - 3 : X + 3;
+      const sy = dx !== 0 ? Y + t : dy === 1 ? Y + TILE - 3 : Y + 3;
+      pebble(ctx, sx, sy, 2 + r() * 1.4, shade(look.ground.sand, -0.12));
+    }
   }
 }
 
@@ -564,6 +797,176 @@ function paintClutter(ctx: Ctx, look: Look, X: number, Y: number, r: () => numbe
       return;
     }
   }
+}
+
+/**
+ * A floor of small stone tesserae: a cream field with a guilloche-like border
+ * where the floor meets a wall, and a repeating rosette-and-diamond motif.
+ */
+function paintMosaic(ctx: Ctx, site: Site, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const field = '#e6dcc4';
+  const red = '#9a3b2a';
+  const dark = '#3b3430';
+  const ochre = '#c9953e';
+  const r = rng(hash(tx, ty, 61));
+  // The grain of the tesserae.
+  ctx.fillStyle = rgba('#8a7a60', 0.18);
+  for (let i = 0; i < TILE; i += 2.6) ctx.fillRect(X, Y + i, TILE, 0.35);
+  for (let i = 0; i < TILE; i += 2.6) ctx.fillRect(X + i, Y, 0.35, TILE);
+  speckle(ctx, X, Y, TILE, TILE, r, [shade(field, -0.08), shade(field, 0.06)], 18, 1.2);
+  const edge = (dx: number, dy: number): boolean => site.kindAt(tx + dx, ty + dy) !== 'mosaic';
+  // Border bands where the mosaic ends.
+  const band = (x: number, y: number, w: number, h: number): void => {
+    ctx.fillStyle = dark;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = red;
+    if (w > h) for (let i = 0; i < w; i += 4) ellipse(ctx, x + i + 2, y + h / 2, 1.6, h / 3, red);
+    else for (let i = 0; i < h; i += 4) ellipse(ctx, x + w / 2, y + i + 2, w / 3, 1.6, red);
+  };
+  if (edge(0, -1)) band(X, Y + 1, TILE, 4);
+  if (edge(0, 1)) band(X, Y + TILE - 5, TILE, 4);
+  if (edge(-1, 0)) band(X + 1, Y, 4, TILE);
+  if (edge(1, 0)) band(X + TILE - 5, Y, 4, TILE);
+  // Alternate a rosette and a diamond, like panels in a carpet of stone.
+  if ((tx + ty) % 2 === 0) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ellipse(ctx, X + 16 + Math.cos(a) * 4.5, Y + 16 + Math.sin(a) * 4.5, 2.4, 1.2, red, a);
+    }
+    ellipse(ctx, X + 16, Y + 16, 2.2, 2.2, ochre);
+  } else {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(X + 16, Y + 9);
+    ctx.lineTo(X + 23, Y + 16);
+    ctx.lineTo(X + 16, Y + 23);
+    ctx.lineTo(X + 9, Y + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = ochre;
+    ctx.beginPath();
+    ctx.moveTo(X + 16, Y + 12);
+    ctx.lineTo(X + 20, Y + 16);
+    ctx.lineTo(X + 16, Y + 20);
+    ctx.lineTo(X + 12, Y + 16);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/**
+ * A paved Roman highway: big, closely fitted paving stones, a slight camber
+ * (lighter along the crown), and a line of kerbstones where the road ends.
+ */
+function paintRomanRoad(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const stone = shade(look.ground.paving, -0.1);
+  const road = (dx: number, dy: number): boolean => {
+    const k = site.groundAt(tx + dx, ty + dy);
+    return k === 'roman-road' || k === 'bridge' || k === 'gate';
+  };
+  // Irregular slabs laid in rough courses across the road.
+  for (let row = 0; row < 3; row++) {
+    let x0 = X + (row % 2) * -5;
+    const y0 = Y + row * 10.7;
+    while (x0 < X + TILE) {
+      const w = 9 + r() * 7;
+      const sx = Math.max(X, x0);
+      const sw = Math.min(X + TILE, x0 + w) - sx;
+      if (sw > 1.2) {
+        ctx.fillStyle = shade(stone, (r() - 0.5) * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(sx + 0.8, y0 + 1 + r());
+        ctx.lineTo(sx + sw - 0.8, y0 + 0.8 + r());
+        ctx.lineTo(sx + sw - 0.6, y0 + 10 - r());
+        ctx.lineTo(sx + 0.7, y0 + 10.2 - r());
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = rgba('#ffffff', 0.16);
+        ctx.fillRect(sx + 1.2, y0 + 1.4, sw - 2.4, 0.8);
+      }
+      x0 += w;
+    }
+  }
+  // Worn wheel ruts along the road.
+  const horizontal = road(-1, 0) || road(1, 0);
+  ctx.strokeStyle = rgba(shade(stone, -0.45), 0.28);
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  if (horizontal) {
+    ctx.moveTo(X, Y + 11);
+    ctx.lineTo(X + TILE, Y + 11);
+    ctx.moveTo(X, Y + 21);
+    ctx.lineTo(X + TILE, Y + 21);
+  } else {
+    ctx.moveTo(X + 11, Y);
+    ctx.lineTo(X + 11, Y + TILE);
+    ctx.moveTo(X + 21, Y);
+    ctx.lineTo(X + 21, Y + TILE);
+  }
+  ctx.stroke();
+  // Kerbstones: a raised line of long blocks where the road meets the verge.
+  const kerb = shade(look.ground.paving, 0.08);
+  const kerbRun = (x: number, y: number, w: number, h: number, alongX: boolean): void => {
+    ctx.fillStyle = rgba(look.shadow.color, 0.35);
+    ctx.fillRect(x + 1, y + 1.2, w, h);
+    ctx.fillStyle = kerb;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rgba('#ffffff', 0.35);
+    ctx.fillRect(x, y, alongX ? w : 1, alongX ? 1 : h);
+    ctx.fillStyle = rgba(shade(kerb, -0.5), 0.5);
+    const len = alongX ? w : h;
+    for (let i = 8 + r() * 4; i < len; i += 9 + r() * 5)
+      if (alongX) ctx.fillRect(x + i, y, 0.7, h);
+      else ctx.fillRect(x, y + i, w, 0.7);
+  };
+  if (!road(0, -1)) kerbRun(X, Y, TILE, 3.2, true);
+  if (!road(0, 1)) kerbRun(X, Y + TILE - 3.2, TILE, 3.2, true);
+  if (!road(-1, 0)) kerbRun(X, Y, 3.2, TILE, false);
+  if (!road(1, 0)) kerbRun(X + TILE - 3.2, Y, 3.2, TILE, false);
+}
+
+/** A stone bridge deck, with a low parapet wherever the deck meets water. */
+function paintBridge(
+  ctx: Ctx,
+  site: Site,
+  look: Look,
+  tx: number,
+  ty: number,
+  r: () => number,
+): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const stone = shade(look.ground.paving, -0.05);
+  for (let row = 0; row < 4; row++) {
+    ctx.fillStyle = shade(stone, (r() - 0.5) * 0.12);
+    ctx.fillRect(X + 0.6, Y + row * 8 + 0.6, TILE - 1.2, 6.8);
+    ctx.fillStyle = rgba(shade(stone, -0.5), 0.35);
+    ctx.fillRect(X, Y + row * 8 + 7.4, TILE, 0.8);
+  }
+  const water = (dx: number, dy: number): boolean => site.kindAt(tx + dx, ty + dy) === 'water';
+  const parapet = (x: number, y: number, w: number, h: number): void => {
+    ctx.fillStyle = rgba(look.shadow.color, 0.4);
+    ctx.fillRect(x + 1.5, y + 2, w, h);
+    ctx.fillStyle = shade(look.building.face, -0.08);
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rgba('#ffffff', 0.4);
+    ctx.fillRect(x, y, w, 1.2);
+  };
+  if (water(-1, 0)) parapet(X, Y, 4.5, TILE);
+  if (water(1, 0)) parapet(X + TILE - 4.5, Y, 4.5, TILE);
+  if (water(0, -1)) parapet(X, Y, TILE, 4.5);
+  if (water(0, 1)) parapet(X, Y + TILE - 4.5, TILE, 4.5);
 }
 
 function paintRug(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {

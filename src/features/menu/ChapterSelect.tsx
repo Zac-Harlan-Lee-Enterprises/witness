@@ -49,7 +49,7 @@ export function ChapterSelect({
   return (
     <main className="screen chapter-select" aria-labelledby="chapters-title">
       <div className="player-banner">
-        <Portrait appearance={PLAYER_APPEARANCES[profile.look]} size={48} />
+        <Portrait appearance={PLAYER_APPEARANCES[profile.look]} size={56} />
         <p>
           Playing as <strong>{profile.displayName}</strong>
         </p>
@@ -64,9 +64,10 @@ export function ChapterSelect({
             <li
               key={meta.id}
               className={`chapter-card ${meta.available ? '' : 'chapter-card--locked'}`}
+              aria-labelledby={`chapter-title-${meta.id}`}
             >
               {meta.available && <JourneyArt className="chapter-card__art" />}
-              <h2 className="chapter-card__title">
+              <h2 className="chapter-card__title" id={`chapter-title-${meta.id}`}>
                 <span className="chapter-card__number">Chapter {meta.number}</span> {meta.title}
               </h2>
               <p className="chapter-card__subtitle">{meta.subtitle}</p>

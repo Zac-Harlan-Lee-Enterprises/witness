@@ -2,7 +2,8 @@
  * Time-of-day lighting as a pure function of the story clock (the chapter's
  * hour counter). The world applies it as ONE multiply-blend layer (colour
  * grade in the middle, darker towards the edges — see `gradeColors`); at
- * night a carried lamp adds a warm glow around the player.
+ * night a carried lamp adds a warm pool of light around the player, and
+ * indoors the lamps and the hearth become the room's light.
  * Pure and Phaser-free so it can be unit-tested.
  */
 export interface Lighting {
@@ -19,7 +20,15 @@ export interface Lighting {
 }
 
 export function lightingFor(hour: number | null, indoor: boolean): Lighting {
-  if (indoor) return { tint: 0xffd49a, alpha: 0.12, vignette: 0.5, night: false, label: 'indoor' };
+  if (indoor) {
+    // Interiors keep their warm daylight; after dark only lamps and the hearth light the room.
+    const h = hour === null ? 12 : ((hour % 24) + 24) % 24;
+    if (h < 5 || h >= 19)
+      return { tint: 0x2e2640, alpha: 0.6, vignette: 0.75, night: true, label: 'indoor night' };
+    if (h >= 18)
+      return { tint: 0x8a6a70, alpha: 0.3, vignette: 0.6, night: true, label: 'indoor evening' };
+    return { tint: 0xffd49a, alpha: 0.12, vignette: 0.5, night: false, label: 'indoor' };
+  }
   if (hour === null)
     return { tint: 0xfff4dc, alpha: 0.04, vignette: 0.3, night: false, label: 'day' };
   const h = ((hour % 24) + 24) % 24;
@@ -35,20 +44,44 @@ export function lightingFor(hour: number | null, indoor: boolean): Lighting {
   return { tint: 0x243366, alpha: 0.52, vignette: 0.6, night: true, label: 'night' };
 }
 
+/**
+ * The time-of-day layer over pre-rendered art, which carries its own light.
+ * Over day or later-day art only a trace of the hour's tint; over a night
+ * bake (the moon, the fires and the lamps are in the art) a gentle night
+ * that keeps the dark gathering round the lamps without darkening the art
+ * twice. (Day art shown at night keeps the full night: see world-scene.)
+ */
+export function overBakedArt(l: Lighting, variant: 'day' | 'late' | 'night'): Lighting {
+  if (variant === 'night')
+    return { ...l, alpha: l.alpha * 0.3, vignette: Math.min(l.vignette, 0.42), night: true };
+  return { ...l, alpha: l.alpha * 0.35, vignette: Math.min(l.vignette, 0.2) };
+}
+
 export type Rgb = readonly [number, number, number];
+
+/** A second multiply tint over the time of day's: cloud, rain, a storm's gloom. */
+export interface SkyTint {
+  tint: number;
+  alpha: number;
+  vignette: number;
+}
 
 /**
  * The two colours of the single multiply layer. Multiplying by `center` is
- * the same as a `tint` overlay at `alpha`; `edge` additionally darkens by the
- * vignette strength. One full-screen pass instead of two keeps the frame rate
- * up on weak or software-rendered GPUs.
+ * the same as a `tint` overlay at `alpha` (times the sky's own tint, if
+ * any); `edge` additionally darkens by the vignette strength. One
+ * full-screen pass instead of two keeps the frame rate up on weak or
+ * software-rendered GPUs.
  */
-export function gradeColors(l: Lighting): { center: Rgb; edge: Rgb } {
-  const channel = (shift: number): number => (l.tint >> shift) & 255;
+export function gradeColors(l: Lighting, sky?: SkyTint): { center: Rgb; edge: Rgb } {
+  const overlay = (tint: number, alpha: number, shift: number): number =>
+    1 - alpha + (((tint >> shift) & 255) / 255) * alpha;
   const graded = (shift: number): number =>
-    Math.round(255 * (1 - l.alpha) + channel(shift) * l.alpha);
+    Math.round(
+      255 * overlay(l.tint, l.alpha, shift) * (sky ? overlay(sky.tint, sky.alpha, shift) : 1),
+    );
   const center: Rgb = [graded(16), graded(8), graded(0)];
-  const keep = 1 - 0.85 * l.vignette;
+  const keep = 1 - 0.85 * Math.min(1, l.vignette + (sky?.vignette ?? 0));
   const edge: Rgb = [
     Math.round(center[0] * keep),
     Math.round(center[1] * keep),

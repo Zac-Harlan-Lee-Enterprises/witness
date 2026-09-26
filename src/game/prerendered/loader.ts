@@ -1,32 +1,71 @@
 import type Phaser from 'phaser';
 import type { Logger } from '@/shared/logger';
+import { textureMegabytes } from '../phaser/texture-memory';
 import {
   LIGHTING_VARIANTS,
   parsePeopleArt,
   parsePlaceArt,
   type LightingVariant,
   type PeopleArt,
+  type PeopleLight,
   type PersonSheet,
   type PlaceArt,
 } from './manifest';
-import { PEOPLE_ART, variantFor, wantsLowResolution, type ShadeMask } from './select';
+import {
+  pagesFor,
+  PEOPLE_ART,
+  peopleLightFor,
+  tileOrigin,
+  variantFor,
+  wantsLowResolution,
+  type ShadeMask,
+} from './select';
 
 /**
  * Loads pre-rendered art through Phaser's loader (static files under the
- * site base, precached by the service worker). Any failure resolves to
- * null and the world falls back to painting the place itself.
+ * site base, cached by the service worker). Any failure resolves to null
+ * and the world falls back to painting the place itself.
+ *
+ * Textures of places and people left behind are released as soon as nothing
+ * on screen draws them any more, so memory holds one place at a time.
  */
 export interface PlaceTextures {
   art: PlaceArt;
   variant: LightingVariant;
-  /** Pixels per game unit of the loaded ground texture. */
+  /** The lighting sets this place's art has. */
+  available: readonly LightingVariant[];
+  /** How people are lit here (their sheets' variant). */
+  peopleLight: PeopleLight;
+  /** Pixels per game unit of the loaded ground textures. */
   groundPpu: number;
-  ground: string;
+  /** The ground's tiles: texture keys and where each goes (game units, top-left). */
+  ground: ReadonlyArray<{ key: string; x: number; y: number }>;
   pages: string[];
+  /** Scale of the loaded pages' pixels against the manifest's (0.5: half-resolution pages). */
+  spriteScale: number;
   shade: ShadeMask | null;
 }
 
 const BASE = import.meta.env.BASE_URL;
+
+/**
+ * A short version for art files, from the manifest entry that describes them
+ * (FNV-1a over its JSON). Art files keep fixed names, so their URLs carry
+ * this: re-rendered art comes with a changed manifest, hence new URLs, and the
+ * cache-on-first-use cache never serves an old page with a new manifest. The
+ * service worker's precache ignores the parameter (vite.config.ts).
+ */
+export function artVersion(entry: unknown): string {
+  const text = JSON.stringify(entry) ?? '';
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+const PLACE_PREFIX = 'art:';
+const PERSON_PREFIX = 'person:';
 
 function run(scene: Phaser.Scene, queue: () => void): Promise<string[]> {
   return new Promise((resolve) => {
@@ -52,11 +91,86 @@ async function json(scene: Phaser.Scene, key: string, url: string): Promise<unkn
   return scene.cache.json.get(key) as unknown;
 }
 
-async function images(scene: Phaser.Scene, files: Array<[string, string]>): Promise<boolean> {
+async function images(scene: Phaser.Scene, files: Array<[string, string]>): Promise<string[]> {
+  files.forEach(([key]) => keep(key));
   const todo = files.filter(([key]) => !scene.textures.exists(key));
-  if (todo.length === 0) return true;
-  const failed = await run(scene, () => todo.forEach(([key, url]) => scene.load.image(key, url)));
-  return failed.length === 0;
+  if (todo.length === 0) return [];
+  return run(scene, () => todo.forEach(([key, url]) => scene.load.image(key, url)));
+}
+
+// ── releasing textures ──────────────────────────────────────────────────────
+/** Textures from before the current place, waiting until nothing draws them. */
+const stale = new Set<string>();
+let watching: Phaser.Scene | null = null;
+/** Places being prepared: nothing is released until their loads have kept what they use. */
+let preparing = 0;
+
+function keep(key: string): void {
+  stale.delete(key);
+}
+
+/**
+ * Mark every pre-rendered texture as stale; the next place's loads keep the
+ * ones it uses again. The rest are removed on the first frame nothing
+ * draws them (the old place is cleared only when the new one is built).
+ */
+export function beginPlace(scene: Phaser.Scene): void {
+  preparing++;
+  for (const key of scene.textures.getTextureKeys())
+    if (key.startsWith(PLACE_PREFIX) || key.startsWith(PERSON_PREFIX)) stale.add(key);
+  if (watching === scene) return;
+  watching = scene;
+  scene.events.on('postupdate', () => release(scene));
+  scene.events.once('destroy', () => {
+    if (watching !== scene) return;
+    watching = null;
+    stale.clear();
+    preparing = 0;
+  });
+}
+
+/** Every texture of a place's loaded set (its ground tiles, sprite pages and shade). */
+export function placeTextureKeys(place: PlaceTextures): string[] {
+  return [
+    ...place.ground.map((g) => g.key),
+    ...place.pages,
+    `${PLACE_PREFIX}${place.art.scene}:${place.variant}:shade`,
+  ];
+}
+
+/** Let these textures go once nothing draws them (e.g. a relight that was abandoned). */
+export function releaseLater(keys: Iterable<string>): void {
+  for (const key of keys) stale.add(key);
+}
+
+/**
+ * The place's art has loaded (or failed): what it uses has been kept, so the
+ * rest may go once nothing draws it. Releasing earlier would drop sheets the
+ * new place is about to keep (preloaded overlays, poses), only to download
+ * them again.
+ */
+export function endPlace(): void {
+  preparing = Math.max(0, preparing - 1);
+}
+
+function release(scene: Phaser.Scene): void {
+  if (stale.size === 0 || preparing > 0) return;
+  const drawn = new Set<string>();
+  for (const obj of scene.children.list) {
+    const tex = (obj as Partial<Phaser.GameObjects.Image>).texture;
+    if (tex) drawn.add(tex.key);
+  }
+  let removed = false;
+  for (const key of [...stale]) {
+    if (drawn.has(key)) continue;
+    stale.delete(key);
+    if (scene.textures.exists(key)) {
+      scene.textures.remove(key);
+      removed = true;
+    }
+  }
+  // Keep the texture memory the canvas reports (data-texture-mb) true after a release.
+  if (removed) scene.game.canvas.dataset.textureMb = textureMegabytes(scene.textures).toFixed(1);
 }
 
 function readShade(scene: Phaser.Scene, key: string): ShadeMask | null {
@@ -91,30 +205,56 @@ export async function loadPlace(
     return null;
   }
   const available = LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
-  const variant = variantFor(options.hour, available);
-  const v = art.variants[variant] ?? art.variants.day;
+  const wanted = variantFor(options.hour, available);
+  const version = `?v=${artVersion(raw)}`;
   const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
-  const prefix = `art:${sceneId}:${variant}`;
-  const ground = `${prefix}:ground${low ? '-low' : ''}`;
-  const shadeKey = `${prefix}:shade`;
-  const pages = v.pages.map((_, i) => `${prefix}:page${i}`);
-  const ok = await images(scene, [
-    [ground, `${BASE}${path}${low ? v.groundLow : v.ground}`],
-    [shadeKey, `${BASE}${path}${v.shade}`],
-    ...v.pages.map((file, i): [string, string] => [pages[i] as string, `${BASE}${path}${file}`]),
-  ]);
-  if (!ok) {
-    logger.warn(`Pre-rendered art for ${sceneId} failed to load; painting it instead`);
-    return null;
+  const groundPpu = low ? art.ppu / 2 : art.ppu;
+  // The later-day set is cached the first time it is used; offline before
+  // then, the morning set stands in for it rather than painting the place
+  // (a place without a morning set: its first set).
+  const standIn = available[0] ?? 'day';
+  for (const variant of wanted === standIn ? [wanted] : [wanted, standIn]) {
+    const v = art.variants[variant];
+    if (!v) continue;
+    const prefix = `art:${sceneId}:${variant}`;
+    const tiles = low ? v.groundLow : v.ground;
+    const ground = tiles.map((tile, i) => ({
+      key: `${prefix}:ground${low ? '-low' : ''}${i}`,
+      ...tileOrigin(tile, groundPpu),
+    }));
+    const shadeKey = `${prefix}:shade`;
+    const sheets = pagesFor(v, low);
+    const suffix = sheets.scale < 1 ? '-low' : '';
+    const pages = sheets.files.map((_, i) => `${prefix}:page${i}${suffix}`);
+    const failed = await images(scene, [
+      ...tiles.map((tile, i): [string, string] => [
+        ground[i]?.key ?? '',
+        `${BASE}${path}${tile.file}${version}`,
+      ]),
+      [shadeKey, `${BASE}${path}${v.shade}${version}`],
+      ...sheets.files.map((file, i): [string, string] => [
+        pages[i] as string,
+        `${BASE}${path}${file}${version}`,
+      ]),
+    ]);
+    if (failed.length > 0) {
+      logger.warn(`Pre-rendered ${variant} art for ${sceneId} failed to load`);
+      continue;
+    }
+    return {
+      art,
+      variant,
+      available,
+      peopleLight: peopleLightFor(variant, art.peopleLight, v.peopleLight),
+      groundPpu,
+      ground,
+      pages,
+      spriteScale: sheets.scale,
+      shade: readShade(scene, shadeKey),
+    };
   }
-  return {
-    art,
-    variant,
-    groundPpu: low ? art.ppu / 2 : art.ppu,
-    ground,
-    pages,
-    shade: readShade(scene, shadeKey),
-  };
+  logger.warn(`Pre-rendered art for ${sceneId} failed to load; painting it instead`);
+  return null;
 }
 
 let people: PeopleArt | null | undefined;
@@ -129,35 +269,95 @@ export async function loadPeople(scene: Phaser.Scene, logger: Logger): Promise<P
   return people;
 }
 
-/** Load (once) a person's sheet and shadow sheet for a lighting variant, with frames named. */
-export async function loadPerson(
+/**
+ * A sheet in a light: the light asked for, else the nearest there is (a
+ * room's for lamp-lighting), else the morning's (or any there is).
+ */
+function pick<T>(byLight: Partial<Record<PeopleLight, T>>, light: PeopleLight): T | undefined {
+  return (
+    byLight[light] ??
+    (light === 'lamp' ? byLight.indoor : undefined) ??
+    (light === 'night' ? byLight.late : undefined) ??
+    byLight.day ??
+    byLight.late ??
+    byLight.indoor ??
+    byLight.overcast ??
+    byLight.lamp
+  );
+}
+
+export interface PersonTextures {
+  key: string;
+  /** The cast-shadow sheet (overlays have none). */
+  shadow: string | null;
+  /** The light of the body sheet loaded. */
+  light: PeopleLight;
+  /** The light of the shadow sheet loaded (it can fall back differently from the body's). */
+  shadowLight?: PeopleLight;
+}
+
+/**
+ * Load (once) several people's sheets and shadow sheets for a light, in one
+ * pass through the loader, with their frames named. A sheet whose light
+ * cannot be loaded (a later-day sheet not cached yet, offline) falls back
+ * to the morning's; sheets that still fail are left out (those people are
+ * painted instead).
+ */
+export async function loadPersons(
   scene: Phaser.Scene,
   art: PeopleArt,
-  id: string,
-  variant: LightingVariant,
-): Promise<{ key: string; shadow: string } | null> {
-  const sheet = art[id];
-  if (!sheet) return null;
-  const v = sheet.sheets[variant] ? variant : 'day';
-  const file = sheet.sheets[v];
-  const shadow = sheet.shadows[v] ?? sheet.shadows.day;
-  if (!file) return null;
-  const key = `person:${id}:${v}`;
-  const shadowKey = `person:${id}:${v}:shadow`;
-  const ok = await images(scene, [
-    [key, `${BASE}${PEOPLE_ART}${file}`],
-    [shadowKey, `${BASE}${PEOPLE_ART}${shadow.sheet}`],
-  ]);
-  if (!ok) return null;
-  frames(scene.textures.get(key), sheet, sheet.atlas[file], sheet.frameWidth, sheet.frameHeight);
-  frames(
-    scene.textures.get(shadowKey),
-    sheet,
-    sheet.atlas[shadow.sheet],
-    shadow.frameWidth,
-    shadow.frameHeight,
-  );
-  return { key, shadow: shadowKey };
+  ids: readonly string[],
+  light: PeopleLight,
+): Promise<Map<string, PersonTextures>> {
+  const out = await attemptPersons(scene, art, ids, light);
+  const missing = ids.filter((id) => !out.has(id));
+  if (missing.length > 0 && light !== 'day')
+    for (const [id, tex] of await attemptPersons(scene, art, missing, 'day')) out.set(id, tex);
+  return out;
+}
+
+async function attemptPersons(
+  scene: Phaser.Scene,
+  art: PeopleArt,
+  ids: readonly string[],
+  light: PeopleLight,
+): Promise<Map<string, PersonTextures>> {
+  const plan: Array<{ id: string; sheet: PersonSheet; file: string; shadow: string | null }> = [];
+  const files: Array<[string, string]> = [];
+  for (const id of ids) {
+    const sheet = art[id];
+    if (!sheet) continue;
+    const file = pick(sheet.sheets, light);
+    if (!file) continue;
+    const shadow = pick(sheet.shadows, light)?.sheet ?? null;
+    plan.push({ id, sheet, file, shadow });
+    const version = `?v=${artVersion(sheet)}`;
+    files.push([`person:${file}`, `${BASE}${PEOPLE_ART}${file}${version}`]);
+    if (shadow) files.push([`person:${shadow}`, `${BASE}${PEOPLE_ART}${shadow}${version}`]);
+  }
+  const failed = new Set(await images(scene, files));
+  const out = new Map<string, PersonTextures>();
+  for (const { id, sheet, file, shadow } of plan) {
+    const key = `person:${file}`;
+    const shadowKey = shadow ? `person:${shadow}` : null;
+    if (failed.has(key) || (shadowKey && failed.has(shadowKey))) continue;
+    frames(scene.textures.get(key), sheet, sheet.atlas[file], sheet.frameWidth, sheet.frameHeight);
+    const s = pick(sheet.shadows, light);
+    if (shadowKey && s)
+      frames(
+        scene.textures.get(shadowKey),
+        sheet,
+        sheet.atlas[s.sheet],
+        s.frameWidth,
+        s.frameHeight,
+      );
+    const used = (Object.keys(sheet.sheets) as PeopleLight[]).find((l) => sheet.sheets[l] === file);
+    const shadowLight = s
+      ? (Object.keys(sheet.shadows) as PeopleLight[]).find((l) => sheet.shadows[l] === s)
+      : undefined;
+    out.set(id, { key, shadow: shadowKey, light: used ?? light, shadowLight });
+  }
+  return out;
 }
 
 /** Name a sheet's frames: trimmed frames from its atlas table, or a plain grid. */

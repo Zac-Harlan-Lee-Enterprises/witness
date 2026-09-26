@@ -143,3 +143,171 @@ NEXT   : Check the live site https://zac-harlan-lee-enterprises.github.io/witnes
          (gh run list --workflow deploy-pages.yml). Then the art roadmap: KTX2/Basis textures to cut
          market texture memory (docs/art/prototype-report.md §8).
 BLOCKED: none. Content editorial approval and enabling Bible text remain human decisions by rule.
+
+--- 2026-09-26  Claude Opus 5.5 — rendering engine: high-DPI, weather, water, post-processing, memory ---
+DONE   : ADR-0015. Canvas renders at device pixels (≤2×, ≤6 MP; Viewport + Phaser NONE scale mode).
+         Weather drawn and story-driven (rain, splashes, puddles, ripples, sheets, dust, grit,
+         chaff, cloud shadows, swaying trees/palms, lightning ≤3 flashes/s, wet-ground grade);
+         live water shader (swells, glints, rain rings, storm foam); one post-processing pass
+         (grade, half-res bloom, flash, heat shimmer, dither); lamplit interiors and doorway
+         light at night. Quality levels full → lite → crisp → low; software GL starts lite at 1×.
+         Memory: Phaser pre/post FX targets disabled, unused screen targets shrunk, last place's
+         art released, shadow sheets as LUMINANCE, 16-bit ground on touch/low-memory devices.
+         Fixed: Canvas fallback drew the light layer over the whole world (pre-existing).
+         New setting: Simpler visual effects. Review switch VITE_FORCE_WEATHER.
+TESTS  : Vitest 341 → 394. New e2e: high-dpi, rendering (story storm, reduced motion),
+         canvas-renderer. Market GPU memory 177.6 → 72.5 MB (desktop), 95 → 58.8 MB (phone at 2×).
+         GPU 60 fps in every view incl. 2× and storms (M3 Pro; see docs/performance.md §2b).
+NEXT   : Measure on a real mid-range Android phone and an older iPad (docs/performance.md §5):
+         `PERF_MARKET=1` numbers are emulation only. Then GPU-compressed textures for the market
+         art (per-format KTX from tools/art, loaded with Phaser's multi-format `load.texture`).
+BLOCKED: Thunder/rain sound needs an application-layer cue (AudioPort) — not a world change.
+--- 2026-09-26  Claude Opus 5.5 — realistic rendered portraits (branch feat/realistic-portraits) ---
+DONE   : Replaced the cartoon SVG portraits with rendered, photographic heads and shoulders of all
+         12 Chapter 1 characters and the 4 player looks. Offline Blender pipeline
+         (tools/art/build_portraits.py, tools/art/lib/portrait_*.py, npm run art:portraits):
+         SDF-sculpted anatomical heads meshed with OpenVDB, per-id variation, eyes with cornea and
+         tear line, subsurface skin with regional colour, hair curves (Principled Hair), cloth
+         shells, short portrait lighting, 85 mm lens. Portrait.tsx shows them (SVG fallback),
+         lookup by appearance key (src/domain/appearance-key.ts); dialogue portrait 104 px.
+         Photographic finish chosen over a Kuwahara painterly pass (docs/art/portraits.md §5).
+TESTS  : Vitest 340 → 355. Playwright portraits/smoke/a11y/pwa: 14 passed, 5 skipped (opt-in
+         captures, keyboard test on mobile). typecheck, lint, prettier, knip clean.
+NEXT   : When Chapters 2–4 add characters: npm run art:data && npm run art:portraits, then
+         npx vitest run tests/content/portraits.test.ts. Unify src/domain/appearance-key.ts with
+         appearanceKey in src/game/prerendered/select.ts (select.ts could import the domain one).
+BLOCKED: none.
+--- 2026-09-26  Claude Opus 5.5 (art agent, worktree-agent-aac276231ddf55de0) — every Chapter 1 place pre-rendered ---
+DONE   : Generalized place builder (tools/art/lib/place.py + one kit per family: ground, masonry,
+         props, plants, mudbrick, interior; one tile_<kind> method per tile kind; build stops naming
+         any kind without one). export-art-data exports every chapter. Pre-rendered miriam-house
+         (cutaway room: window + door sun, dust beams, lamp, tannur, room fill and bounce),
+         jericho-road (terrain mesh with sheared registration, strata, wadi, stones, scrub, evidence
+         as scuffs in the dust) and jericho (palms with fading crowns, figs, pool, mudbrick houses,
+         inn yard, courtyard portico), morning + later day. People: rest poses (world camera),
+         story-mark overlays (bandages incl. tunic-coloured rags, cloak, cloak roll, water skin,
+         lamp), torn-hem sheets, indoor light. Runtime: FigureBook/pickSheets, overlay layers,
+         canopy fading, textures released per place, late→day fallback offline, grounds in
+         2048-px tiles, half-resolution sets for phones. Sprites cut by the ground (holdouts);
+         flat props out of the ground pass. Measurements + caching decision in
+         docs/art/technical-art-guide.md §9. Commits 9c65e26 efd00dc 80d3501 c3262cf 1e51b8f (+docs).
+TESTS  : Vitest ~341 → 377 (art-assets: manifests vs maps, provenance, tile coverage, every pose ×
+         mark × light has sheets). Playwright chapter/smoke/pwa: 10 passed + 1 intentional skip.
+         Captures: test-results/place-art/{before,final} (6 runs, desktop/tablet/phone).
+NEXT   : Half-resolution people sheets for phones (people are 30–55 MB of every place's texture
+         memory): add a `-low` sheet per person in tools/art/build_people.py (box-filter like
+         upgrade_place.py) and pick it in loadPersons when wantsLowResolution. Then re-render the
+         market with the current kit: `node scripts/art-build.mjs place jerusalem-market`.
+BLOCKED: none. Merge points with other agents: scripts/art-build.mjs (portraits job),
+         docs/art/asset-manifest.json, src/game/scenes/world-scene.ts (ground-tile loop).
+
+--- 2026-09-26  Claude Opus 5.5 (lead) — realism pass + Chapters 2–4, handoff checkpoint ---
+DONE   : Integration branch feat/realism-and-chapters (pushed): Chapters 2–4 as content (playable,
+         tested, researched, all records awaiting review); story-driven weather; engine graphics
+         (high-DPI, weather, water, post-FX, night interiors, −59–71% texture memory); first-pass
+         rendered portraits; Chapter 1 fully pre-rendered + general place builder; integration fixes
+         (chapter-card labels, e2e choose() race, footsteps for new ground, one appearanceKey).
+         WIP branches pushed: feat/art-{storm-on-galilee,journey-to-bethlehem,letter-from-paul},
+         feat/portraits-v2 (agents stopped by an expired sign-in; work committed as-is).
+TESTS  : Vitest 341 → 520 on the integration branch; e2e suite green after 76c342b.
+NEXT   : Follow docs/handoff/2026-09-26-realism-and-chapters.md: finish the three chapters' place
+         renders and the portrait re-render, merge art branches in the order given there (Chapter 4's
+         light plan first), set Chapters 2–4 art to cache-on-first-use in vite.config.ts, run the
+         code-review skill, then PR feat/realism-and-chapters → main, merge, verify the Pages deploy.
+BLOCKED: none. (Owner decisions pending: editorial review of Chapters 2–4 records; whether to use
+         any CC0 base mesh for portraits.)
+--- 2026-09-26  Claude Opus 5.5 — portraits, second pass (branch feat/portraits-v2) ---
+DONE   : Second pass on the rendered portraits, for all four chapters. New portrait data
+         (src/content/portrait-cast.ts, scripts/export-portrait-data.ts → tools/art/data/
+         portrait-people.json, npm run art:portrait-data): every speaking character in every
+         chapter (39) + 4 player looks; biblical figures never; later namesakes get
+         <id>.<chapter id>. Casting (age, sex, sun, mood, scars) for everyone. Pipeline:
+         face/nose/eye/lip types + small asymmetry, expressions in the relief, nose bridge as
+         relief, lips with a Cupid's bow and a lower-border apex, hooding, child proportions
+         and baby hair, skin maps (oil, pores, lines, freckles, moles, scars, stubble, lid rims,
+         lips) and a richer skin shader, darker warmer eyes with soft catchlights, wound wraps
+         with a tail, veils with deep folds, men's head cloths with a cord, hemmed necklines,
+         collarbones, cooler fill light; render at 1024 → 512, WebP q93. Review sheets
+         (npm run art:portrait-sheets) per chapter + v1/v2. docs/art/portraits.md §9.
+TESTS  : Vitest 489 (portraits content test rewritten for all chapters; new
+         tests/unit/content/portrait-cast.test.ts). e2e portraits spec: + Chapter 3 namesake.
+NEXT   : Judge in-game at 60–104 px on a real phone; if faces still read CG at 256 px,
+         the next lever is a displacement pass for skin detail (currently bump only).
+BLOCKED: none.
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-letter-from-paul) — Chapter 4 pre-rendered ---
+DONE   : Every Chapter 4 place pre-rendered with the offline Blender pipeline: ammia-workshop (day),
+         colossae-street (morning + later day), lycus-road (rain cloud: overcast sky, wet stone,
+         travertine terraces, milestones, bridge, dye works) and philemon-house (lamp-lighting:
+         dusk through the open peristyle roof, lampstands). New Roman kit tools/art/lib/kit_roman.py
+         + roman_{geom,materials,arch,props,town,valley,rooms}.py (tile roofs, Ionic order, stoa,
+         mosaics, opus signinum, fresco, dye vats, fullers' tubs, amphorae, milestones, travertine).
+         Per-place light plans (lighting.PLACE_LIGHTS -> manifest peopleLight -> select/loader):
+         the canonical mechanism for Chapters 2-3's dusk/night/lamp light (guide §3). People: rain
+         cloud and lamp lights, tablets, scroll case, letter-case overlay; chapter-named sheet ids
+         when a character id is shared across chapters. Review fixes: decals as irregular ellipses
+         left out of sprite renders (no pale boxes), paving flush to walls/stoa/pots, milestone
+         lines face the road, Philemon's far colonnade sorts behind the gathering (documented cheat).
+TESTS  : Vitest 542 passed (art-assets per chapter, peopleLightFor/manifest schema, portraits scoped
+         to Chapter 1). Captures: e2e/letter-art.spec.ts, 6/6 (desktop/tablet/phone x home/reply).
+NEXT   : Content owner: move kallias-gathering (9,6) and zenon-reader (12,6) off the columns'
+         line in src/content/chapters/letter-from-paul (e.g. to (8,6) and (13,6)), then drop the
+         far-row sort cheat in tools/art/lib/kit_roman.py tile_column and re-render philemon-house.
+         Then merge the road's young grain into its ground layer to halve its 4 MB download.
+BLOCKED: none. Merge points: tools/art/lib/{place,lighting,people}.py, tools/art/build_{place,people}.py,
+         src/game/prerendered/{manifest,select,loader}.ts, scripts/art-build.mjs, docs/art/*.
+--- 2026-09-26  Claude Opus 5.5 (art agent, feat/art-journey-to-bethlehem) — Chapter 3 pre-rendered, night through the light plans ---
+DONE   : Merged feat/art-letter-from-paul and folded Chapter 3's night into Chapter 4's light-plan table
+         (lighting.PLACE_LIGHTS): a `night` light and set (shown 18:00–05:00), per-set people lights,
+         flickering baked fires/lamps per set (`lights`, optional strength), relight when the clock
+         crosses sets (select.relightTo, world-scene), overBakedArt over night bakes. Rendered
+         bethlehem-lanes and shepherds-fields (day set in later-day sun + night set), the goat in
+         tamar-house; people for all three in indoor/lamp/late/night (player with lamp and lamb).
+         Village kit: one-piece animal bodies, softer fleece, mud patch, warmer square, brighter
+         moon, gentle campfire pool. carrying-lamb overlay was missing from OVERLAY_ORDER (fixed).
+         e2e: endArrivalNarration (a pre-rendered place's arrival narration starts after load).
+TESTS  : Vitest 553 + 11 failing (unrendered places) → 564/564. journey-to-bethlehem + smoke on
+         4422: 9 passed, 1 intentional skip. bethlehem-art captures: 6/6 (desktop, tablet, phone).
+NEXT   : If the campfire's ring should not go near-white at night, give tile_campfire a night-only
+         light at about half power (tag the 150 W/40 W pair DAYLIT, add a NIGHT pair) and run
+         `node scripts/art-build.mjs place shepherds-fields --variants night`; then look at the
+         night ground (the first full render once came out unlit on a shared GPU).
+BLOCKED: none. Merge points: src/game/prerendered/{manifest,select,loader}.ts, world-scene.ts,
+         ambient.ts, systems/lighting.ts, e2e/support.ts, docs/art/*, public/art/people/people.json.
+--- 2026-09-26  Claude Opus 5.5 (art agent, branch feat/art-storm-on-galilee) — Chapter 2 pre-rendered ---
+DONE   : Every Chapter 2 place pre-rendered with the lake kit (tools/art/lib/kit_lake.py + lake_{boats,
+         houses,materials}.py): shelomit-house (later day + lamplight), capernaum-shore (later day +
+         moonlit night), open-lake (moonlit night only). Merged feat/realism-and-chapters twice (Chapter
+         4's light plans, then Chapter 3's night) and put Chapter 2 on them: PLACE_LIGHTS entries, the
+         shared `night` light (Chapter 3's moon) for places and people, a `lamplight` light for a room by
+         its lamps, per-set peopleLight (the house at night: `lamp`), night-only things tagged
+         (obj["variants"]) and lamps in Place.flicker. Engine: a place needs some set, not a day one
+         (the night-only lake): manifest refine, firstVariant, variantFor's fallback. Kept engine tweaks:
+         lake/shallows are live water (waterRegions), waterSky per set, open water glints at 0.3
+         (glintsFor), puddles on deck and jetty, no splashes on lake water, the sail fades like a
+         canopy. Art fixes: the planks material had its seam mask inverted (every deck read as dark
+         tiles), plaited rush mat, a cobbled earth floor surface, sun-greyed sails, hull rows split in
+         stern/bow halves.
+TESTS  : Vitest 598 passed (new: open water and glintsFor; a night-only lake manifest, empty variants rejected,
+         the shore's and the lake's sets by hour). e2e storm-on-galilee (waits for the lake's narration
+         while its art loads) and smoke on 4421/5421. Captures: e2e/storm-art.spec.ts (desktop, tablet,
+         phone), and with VITE_FORCE_WEATHER=storm.
+NEXT   : Judge the shore's afternoon light in game (a basalt town under a low sun reads dim: if it
+         should read brighter, add `self.exposure += 0.3` for the lake style in kit_lake.py
+         regional_materials and re-render capernaum-shore --variants late, ~10 min on the GPU).
+BLOCKED: none. Already merged with Chapters 3 and 4 (feat/realism-and-chapters at dbf14cf).
+
+--- 2026-09-26  Claude Opus 5.5 (lead) — realism pass + Chapters 2–4 complete; review; PR ---
+DONE   : Merged into feat/realism-and-chapters: portraits second pass (43 people); Chapter 4 art (light
+         plans, canonical); Chapter 3 art (night set, relighting); Chapter 2 art (lake, Capernaum,
+         Shelomit's house). Two code reviews (high): 20 findings, all fixed — lake water, puddles,
+         simpler-effects start level, harness weather, portrait index, shadow light, one texture-memory
+         counter, no release while a place loads, sky skip, safe live relighting (snapshot, stand-in,
+         epoch race, dropped clock change, abandoned textures), art versions (?v= from manifests) with one
+         runtime cache and network-first manifests. PWA: later chapters' art and later-chapter people
+         lights cached on first use (precache 16.6 MB). Docs updated for four chapters.
+TESTS  : Vitest 341 → 605; e2e 32 passed / 28 opt-in skipped, 0 failed (all four chapters to summary,
+         offline PWA); quality-sweep clean (branch protection optional); init.sh healthy.
+NEXT   : PR feat/realism-and-chapters → main; merge after CI; verify the Pages deploy and play each
+         chapter on the live site. Then: people sheets at half resolution for phones (memory), dimmer
+         night campfire (fields), human editorial review of Chapters 2–4 records.
+BLOCKED: none (editorial approval of content remains a human decision).

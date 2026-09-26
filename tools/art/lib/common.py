@@ -5,6 +5,7 @@ Everything here is authoring-time only. Players never run Blender; they
 download the rendered images this pipeline writes into public/art/.
 """
 import math
+import os
 import random
 
 import bmesh
@@ -18,6 +19,10 @@ def reset(samples=64):
     scene.render.engine = "CYCLES"
     prefs = bpy.context.preferences.addons["cycles"].preferences
     try:
+        # ART_DEVICE=CPU (or WITNESS_CYCLES_DEVICE=CPU) renders on the CPU
+        # (small jobs while the GPU is busy, or short of memory).
+        if "CPU" in (os.environ.get("ART_DEVICE", ""), os.environ.get("WITNESS_CYCLES_DEVICE", "").upper()):
+            raise RuntimeError("CPU asked for")
         prefs.compute_device_type = "METAL"
         prefs.refresh_devices()
         for d in prefs.devices:
@@ -26,12 +31,18 @@ def reset(samples=64):
     except Exception:  # noqa: BLE001 - fall back to the CPU
         scene.cycles.device = "CPU"
     c = scene.cycles
+    # WITNESS_CYCLES_TILE=512 renders in smaller tiles: much less GPU memory
+    # for a big image (when other renders share the GPU), a little slower.
+    tile = os.environ.get("WITNESS_CYCLES_TILE")
+    if tile:
+        c.use_auto_tile = True
+        c.tile_size = int(tile)
     c.samples = samples
     c.use_adaptive_sampling = True
     c.adaptive_threshold = 0.02
     c.use_denoising = True
     c.max_bounces = 6
-    c.diffuse_bounces = 3
+    c.diffuse_bounces = 4
     c.glossy_bounces = 2
     c.transparent_max_bounces = 8
     c.seed = 7

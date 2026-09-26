@@ -29,7 +29,8 @@ describe('Road to Jericho content', () => {
   it('loads through the lazy chapter registry', async () => {
     const loaded = await chapterSource.load('road-to-jericho');
     expect(loaded.id).toBe('road-to-jericho');
-    await expect(chapterSource.load('storm-on-galilee')).rejects.toThrow(/not available/);
+    // Chapters become playable one by one; an id with no content is never loadable.
+    await expect(chapterSource.load('no-such-chapter')).rejects.toThrow(/not available/);
   });
 
   it('includes at least three distinct puzzle types', () => {

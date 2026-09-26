@@ -340,5 +340,32 @@
     "priority": 3,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "chapter-3-journey-to-bethlehem",
+    "category": "functional",
+    "description": "Chapter 3, A Journey to Bethlehem (Luke 2:1-20), is playable end to end as content only: the player is a fictional child of a crowded Bethlehem household during the registration; four puzzle types (measuring, packing, optional sequence side quest, deduction); choices that show in the world (what stays in the guest room, the lost lamb, where the stranger Zerah sleeps, what to do with the shepherds' news); the people of Luke 2 stay off-stage and are heard of only through Scripture references and a neighbor's labelled paraphrase; every educational record cites retrieved sources and awaits human review.",
+    "verification": "npx vitest run --project unit tests/content/journey-to-bethlehem.test.ts tests/integration/journey-to-bethlehem-playthrough.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "chapter-letter-from-paul",
+    "category": "functional",
+    "description": "Chapter 4, A Letter from Paul (Philemon and Colossians 4:7-18): four scenes in Colossae and the Lycus valley, all four puzzle types, an optional side quest, story-driven rain, choices visible in the world, silent biblical figures, open disputed questions, and headless playthroughs of every major branch to the summary.",
+    "verification": "npx vitest run --project unit tests/content/letter-from-paul.test.ts tests/integration/letter-from-paul-playthrough.test.ts",
+    "priority": 3,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "chapter-2-storm-on-galilee",
+    "category": "functional",
+    "description": "Chapter 2, A Storm on Galilee (Mark 4:35–41): the player's fishing family is one of the \"other boats\". Playable from chapter select to the summary on every major branch, with four puzzle types, an optional side quest, choices that show in the world, and weather driven by the story; content integrity, reachability and governance verified.",
+    "verification": "npx --no-install vitest run --project unit tests/content/storm-on-galilee.test.ts tests/integration/storm-on-galilee-playthrough.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]

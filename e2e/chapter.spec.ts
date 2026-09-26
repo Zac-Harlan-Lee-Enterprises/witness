@@ -6,6 +6,7 @@ import {
   endDialogue,
   expectScene,
   goTo,
+  newGame,
   openApp,
   setFastSettings,
   snap,
@@ -27,7 +28,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
 
   // 1–2
   await createProfile(page, 'Ari');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await expectScene(page, 'Aunt Miriam’s house');
   await snap(page, '01-house-opening');

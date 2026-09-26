@@ -284,9 +284,11 @@ def _random_attr(n, name="rand"):
     return n.new("ShaderNodeAttribute", _attribute_name=name, _attribute_type="GEOMETRY")
 
 
-def limestone(color="#d6c8aa", name="limestone", worn=0.5):
+def limestone(color="#d6c8aa", name="limestone", worn=0.5, glow=0.0):
     """Jerusalem limestone: warm cream with grey weathering, pitted, with a
-    per-block variation from the builder's `rand` attribute."""
+    per-block variation from the builder's `rand` attribute. `glow` makes it
+    faintly self-lit: the cut tops of a cutaway's walls, which sit under the
+    invisible walls and would otherwise be black."""
 
     def build():
         n = Nodes(name)
@@ -311,10 +313,11 @@ def limestone(color="#d6c8aa", name="limestone", worn=0.5):
         col3 = n.mix((grime, "Result"), (col2, 2), shade(color, -0.42))
         h = n.math("ADD", (fine, "Fac"), (pits, "Distance"))
         bump = n.bump((h, "Value"), strength=0.35, distance=0.01)
-        n.bsdf(**{"Base Color": (col3, 2), "Roughness": 0.86, "Specular IOR Level": 0.3, "Normal": (bump, "Normal")})
+        extra = {"Emission Color": (col3, 2), "Emission Strength": glow} if glow else {}
+        n.bsdf(**{"Base Color": (col3, 2), "Roughness": 0.86, "Specular IOR Level": 0.3, "Normal": (bump, "Normal"), **extra})
         return n.mat
 
-    return cached(("limestone", color, name, worn), build)
+    return cached(("limestone", color, name, worn, glow), build)
 
 
 def plaster(color="#cdbd9e", name="plaster"):
@@ -403,11 +406,11 @@ def leaf(top="#4d5a3a", under="#9aa287"):
     def build():
         n = Nodes(f"leaf-{top}")
         geo = n.new("ShaderNodeNewGeometry")
-        rnd = n.new("ShaderNodeObjectInfo")
+        rnd = n.new("ShaderNodeAttribute", _attribute_name="irand", _attribute_type="GEOMETRY")
         mix = n.mix((geo, "Backfacing"), top, under)
-        var = n.mix((rnd, "Random"), (mix, 2), shade(top, 0.25))
+        var = n.mix((rnd, "Fac"), (mix, 2), shade(top, 0.25))
         var.inputs[0].default_value = 0.0
-        vr = n.math("MULTIPLY", (rnd, "Random"), 0.35)
+        vr = n.math("MULTIPLY", (rnd, "Fac"), 0.35)
         var2 = n.mix((vr, "Value"), (mix, 2), shade(under, 0.1))
         n.bsdf(
             **{
@@ -492,6 +495,30 @@ def water():
     return cached(("water",), build)
 
 
+def scuff(color="#9c8a6c", opacity=0.7):
+    """Disturbed dust (heels dragged through it): streaks along the mark,
+    fading out at its edges so it lies in the ground rather than on it.
+    Expects UVs: u across the mark (0-1), v along it."""
+
+    def build():
+        n = Nodes(f"scuff-{color}")
+        uv = n.coords("UV")
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=uv)
+        # Streaks run along the mark: fast across it, slow along it.
+        stretch = n.new("ShaderNodeCombineXYZ", X=(n.math("MULTIPLY", (sep, "X"), 9.0), "Value"), Y=(n.math("MULTIPLY", (sep, "Y"), 1.2), "Value"))
+        streak = n.noise(1.0, 3.0, 0.6, (stretch, "Vector"))
+        # 1 in the middle of the mark, 0 at its edges.
+        centre = n.math("SUBTRACT", 1.0, (n.math("ABSOLUTE", (n.math("SUBTRACT", (n.math("MULTIPLY", (sep, "X"), 2.0), "Value"), 1.0), "Value")), "Value"))
+        soft = n.new("ShaderNodeMapRange", Value=(centre, "Value"), **{"From Min": 0.0, "From Max": 0.7, "To Min": 0.0, "To Max": 1.0})
+        grain = n.new("ShaderNodeMapRange", Value=(streak, "Fac"), **{"From Min": 0.3, "From Max": 0.7, "To Min": 0.45, "To Max": 1.0})
+        alpha = n.math("MULTIPLY", (n.math("MULTIPLY", (soft, "Result"), (grain, "Result")), "Value"), opacity)
+        col = n.mix((streak, "Fac"), shade(color, -0.12), shade(color, 0.1))
+        n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.97, "Alpha": (alpha, "Value")})
+        return n.mat
+
+    return cached(("scuff", color, opacity), build)
+
+
 def emissive(color="#ff8a3a", strength=6.0):
     def build():
         n = Nodes(f"glow-{color}")
@@ -522,10 +549,10 @@ def grass_blades():
 
     def build():
         n = Nodes("grass-blades")
-        info = n.new("ShaderNodeObjectInfo")
+        info = n.new("ShaderNodeAttribute", _attribute_name="irand", _attribute_type="GEOMETRY")
         geo = n.new("ShaderNodeNewGeometry")
         sep = n.new("ShaderNodeSeparateXYZ", Vector=(geo, "Position"))
-        tone = n.ramp((info, "Random"), [(0.0, "#9a9261"), (0.45, "#bcad78"), (0.8, "#cdbd8a"), (1.0, "#86874f")])
+        tone = n.ramp((info, "Fac"), [(0.0, "#9a9261"), (0.45, "#bcad78"), (0.8, "#cdbd8a"), (1.0, "#86874f")])
         up = n.new("ShaderNodeMapRange", Value=(sep, "Z"), **{"From Min": 0.0, "From Max": 0.12, "To Min": 0.35, "To Max": 1.0})
         col = n.mix((up, "Result"), shade("#6a6040", 0.0), (tone, "Color"))
         n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.75, "Subsurface Weight": 0.08})
@@ -537,9 +564,517 @@ def grass_blades():
 def pebble():
     def build():
         n = Nodes("pebble")
-        info = n.new("ShaderNodeObjectInfo")
-        tone = n.ramp((info, "Random"), [(0.0, "#7d7262"), (0.4, "#a4957a"), (0.7, "#b5a382"), (1.0, "#8c7058")])
+        info = n.new("ShaderNodeAttribute", _attribute_name="irand", _attribute_type="GEOMETRY")
+        tone = n.ramp((info, "Fac"), [(0.0, "#7d7262"), (0.4, "#a4957a"), (0.7, "#b5a382"), (1.0, "#8c7058")])
         n.bsdf(**{"Base Color": (tone, "Color"), "Roughness": 0.85})
         return n.mat
 
     return cached(("pebble",), build)
+
+
+# ── Places beyond the market: layered ground, terrain, mudbrick, interiors ──
+def _mask(n, masks, index):
+    """The mask of layer `index` (1-based): channel (index-1) % 3 of image (index-1) // 3."""
+    img, ch = masks[(index - 1) // 3], (index - 1) % 3
+    key = f"_mask_{img.name}"
+    sep = getattr(n, key, None)
+    if sep is None:
+        t = n.new("ShaderNodeTexImage", Vector=n.coords("UV"), _interpolation="Cubic")
+        t.image = img
+        sep = n.new("ShaderNodeSeparateColor", Color=(t, "Color"))
+        setattr(n, key, sep)
+    return (sep, ["Red", "Green", "Blue"][ch])
+
+
+def _layer_colour(n, L, noises):
+    """A ground layer's colour: macro variation, optional ripples, grit and mottling."""
+    c = L["color"]
+    src = noises["mid" if L.get("scale") == "mid" else "big"]
+    out = (n.mix((src, "Fac"), shade(c, -L.get("dark", 0.1)), shade(c, L.get("light", 0.07))), 2)
+    if L.get("ripple"):
+        rip = n.math("MULTIPLY", (noises["ripple"], "Fac"), L["ripple"])
+        out = (n.mix((rip, "Value"), out, shade(c, -0.16)), 2)
+    if L.get("grit", 0.3):
+        g = n.math("MULTIPLY", (noises["grit"], "Result"), L.get("grit", 0.3))
+        out = (n.mix((g, "Value"), out, shade(c, -0.45)), 2)
+    if L.get("mottle"):
+        mm = n.math("MULTIPLY", (noises["mid"], "Fac"), L["mottle"])
+        out = (n.mix((mm, "Value"), out, L.get("mottle_color", shade(c, -0.3))), 2)
+    if L.get("streak"):
+        # Furrows, ruts or fibres running east-west.
+        s = n.math("MULTIPLY", (noises["streak"], "Fac"), L["streak"])
+        out = (n.mix((s, "Value"), out, shade(c, -0.3)), 2)
+    if L.get("cracks"):
+        # Fine shrinkage cracks, as in a mud-plastered floor.
+        v = n.new("ShaderNodeTexVoronoi", Scale=L.get("crack_scale", 2.5), Vector=n.coords("Object"), _feature="DISTANCE_TO_EDGE")
+        cr = n.new("ShaderNodeMapRange", Value=(v, "Distance"), **{"From Min": 0.0, "From Max": 0.012, "To Min": L["cracks"], "To Max": 0.0})
+        out = (n.mix((cr, "Result"), out, shade(c, -0.45)), 2)
+    return out
+
+
+def ground_surface(name, masks, layers, rock=None, red_mask=None, macro=0.0):
+    """The ground of any place, as one material over the whole terrain mesh.
+
+    - `layers[0]` covers everything; each further layer i is blended in by its
+      mask (channel (i-1) % 3 of masks[(i-1) // 3], RGB images laid over the
+      map). A layer is a dict: color, and optionally dark/light (variation),
+      scale ('big' or 'mid' noise), grit, ripple, mottle (+ mottle_color),
+      streak, rough.
+    - `rock` (a dict: color, strata, dust) turns steep faces into banded
+      limestone and marl (bedding by height, cracks, weathering) and settles
+      dust on whatever faces up, so hills and cliffs need no other material.
+      `red_mask` (an image; its red channel) stains the rock with iron, in
+      streaks running down the faces: the red rocks of Adummim.
+    """
+
+    def build():
+        n = Nodes(name)
+        obj = n.coords("Object")
+        noises = {
+            "big": n.noise(0.35, 4.0, 0.6, obj),
+            "mid": n.noise(3.5, 5.0, 0.6, obj),
+            "ripple": n.new("ShaderNodeTexWave", Scale=4.5, Distortion=7.0, Detail=2.0, Vector=obj, _bands_direction="DIAGONAL"),
+            "streak": n.new("ShaderNodeTexWave", Scale=14.0, Distortion=1.2, Detail=2.0, Vector=obj, _bands_direction="Y"),
+        }
+        grit = n.new("ShaderNodeTexVoronoi", Scale=70.0, Vector=obj)
+        noises["grit"] = n.new("ShaderNodeMapRange", Value=(grit, "Distance"), **{"From Min": 0.0, "From Max": 0.12, "To Min": 1.0, "To Max": 0.0})
+        fine = n.noise(40.0, 6.0, 0.7, obj)
+        col = _layer_colour(n, layers[0], noises)
+        rough = n.new("ShaderNodeValue")
+        rough.outputs[0].default_value = layers[0].get("rough", 0.95)
+        rough = (rough, 0)
+        for i, L in enumerate(layers[1:], start=1):
+            fac = _mask(n, masks, i)
+            col = (n.mix(fac, col, _layer_colour(n, L, noises)), 2)
+            rm = n.new("ShaderNodeMix", _data_type="FLOAT")
+            n._in(rm, 0, fac)
+            n.nt.links.new(rough[0].outputs[rough[1]], rm.inputs[2])
+            rm.inputs[3].default_value = L.get("rough", 0.95)
+            rough = (rm, "Result")
+        ripb = n.math("MULTIPLY", (noises["ripple"], "Fac"), 0.3)
+        height = n.math("ADD", (fine, "Fac"), (ripb, "Value"))
+        height = n.math("SUBTRACT", (height, "Value"), (noises["grit"], "Result"))
+        if rock:
+            geo = n.new("ShaderNodeNewGeometry")
+            sepN = n.new("ShaderNodeSeparateXYZ", Vector=(geo, "Normal"))
+            sepP = n.new("ShaderNodeSeparateXYZ", Vector=obj)
+            # Bedding: bands by height, warped so they wander like real strata.
+            warp = n.noise(0.45, 3.0, 0.5, obj)
+            wz = n.math("MULTIPLY_ADD", (warp, "Fac"), 0.45)
+            n._in(wz, 2, (sepP, "Z"))
+            comb = n.new("ShaderNodeCombineXYZ")
+            n.nt.links.new(wz.outputs["Value"], comb.inputs["Z"])
+            band = n.new("ShaderNodeTexWave", Scale=1.1, Distortion=3.0, Detail=2.0, _bands_direction="Z", Vector=(comb, "Vector"))
+            # Fine layering: noise squeezed vertically into thin horizontal streaks.
+            aniso = n.new("ShaderNodeVectorMath", _operation="MULTIPLY")
+            n.link(obj[0], obj[1], aniso, 0)
+            aniso.inputs[1].default_value = (0.9, 0.9, 5.0)
+            layers_fine = n.noise(1.6, 5.0, 0.6, (aniso, "Vector"))
+            # Vertical joints: cells stretched upright.
+            vj = n.new("ShaderNodeVectorMath", _operation="MULTIPLY")
+            n.link(obj[0], obj[1], vj, 0)
+            vj.inputs[1].default_value = (1.0, 1.0, 0.22)
+            joints = n.new("ShaderNodeTexVoronoi", Scale=1.8, Vector=(vj, "Vector"), _feature="DISTANCE_TO_EDGE")
+            joint = n.new("ShaderNodeMapRange", Value=(joints, "Distance"), **{"From Min": 0.0, "From Max": 0.018, "To Min": 0.8, "To Max": 0.0})
+            big = n.noise(0.8, 4.0, 0.6, obj)
+            cracks = n.new("ShaderNodeTexVoronoi", Scale=1.6, Vector=obj, _feature="DISTANCE_TO_EDGE")
+            crack = n.new("ShaderNodeMapRange", Value=(cracks, "Distance"), **{"From Min": 0.0, "From Max": 0.03, "To Min": 0.14, "To Max": 0.0})
+            bandf = n.math("MULTIPLY", (band, "Fac"), 0.55)
+            rc = n.mix((bandf, "Value"), shade(rock["color"], 0.04), rock["strata"])
+            lf = n.math("MULTIPLY", (layers_fine, "Fac"), 0.4)
+            rc = n.mix((lf, "Value"), (rc, 2), shade(rock["strata"], -0.2), "MULTIPLY")
+            rw = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.4, "From Max": 0.75, "To Min": 0.0, "To Max": 0.45})
+            rc = n.mix((rw, "Result"), (rc, 2), shade(rock["color"], -0.3))
+            rocko = (rc, 2)
+            if red_mask is not None:
+                rt = n.new("ShaderNodeTexImage", Vector=n.coords("UV"), _interpolation="Cubic")
+                rt.image = red_mask
+                rsep = n.new("ShaderNodeSeparateColor", Color=(rt, "Color"))
+                streak = n.new("ShaderNodeTexWave", Scale=3.0, Distortion=10.0, Detail=4.0, _bands_direction="X", Vector=obj)
+                sm = n.new("ShaderNodeMapRange", Value=(streak, "Fac"), **{"From Min": 0.2, "From Max": 0.8, "To Min": 0.15, "To Max": 0.75})
+                patch = n.noise(1.4, 3.0, 0.6, obj)
+                pm = n.new("ShaderNodeMapRange", Value=(patch, "Fac"), **{"From Min": 0.35, "From Max": 0.65, "To Min": 0.3, "To Max": 1.0})
+                rs = n.math("MULTIPLY", (rsep, "Red"), (sm, "Result"))
+                rs = n.math("MULTIPLY", (rs, "Value"), (pm, "Result"))
+                redc = n.mix((band, "Fac"), rock.get("red", "#a0583c"), shade(rock.get("red", "#a0583c"), -0.28))
+                rocko = (n.mix((rs, "Value"), rocko, (redc, 2)), 2)
+            jb = n.math("MULTIPLY", (joint, "Result"), 0.25)
+            cj0 = n.math("MAXIMUM", (crack, "Result"), (jb, "Value"))
+            steepc = n.new("ShaderNodeMapRange", Value=(sepN, "Z"), **{"From Min": 0.4, "From Max": 0.62, "To Min": 1.0, "To Max": 0.0})
+            cj = n.math("MULTIPLY", (cj0, "Value"), (steepc, "Result"))
+            rocko = (n.mix((cj, "Value"), rocko, shade(rock["strata"], -0.62)), 2)
+            # Up-facing: the ground layers (dust, gravel, soil); steep: bare rock.
+            upn = n.math("MULTIPLY_ADD", (noises["mid"], "Fac"), 0.22)
+            upn.inputs[2].default_value = -0.11
+            ups = n.math("ADD", (sepN, "Z"), (upn, "Value"))
+            up = n.new("ShaderNodeMapRange", Value=(ups, "Value"), **{"From Min": 0.66, "From Max": 0.84, "To Min": 0.0, "To Max": 1.0})
+            col = (n.mix((up, "Result"), rocko, col), 2)
+            lfs = n.math("MULTIPLY", (layers_fine, "Fac"), 0.6)
+            height = n.math("ADD", (height, "Value"), (lfs, "Value"))
+            steep = n.new("ShaderNodeMapRange", Value=(sepN, "Z"), **{"From Min": 0.35, "From Max": 0.55, "To Min": 1.0, "To Max": 0.0})
+            cr = n.math("MULTIPLY", (cj, "Value"), (steep, "Result"))
+            height = n.math("SUBTRACT", (height, "Value"), (cr, "Value"))
+        # Desert pavement: lighter stone chips among the grit.
+        chips = n.new("ShaderNodeTexVoronoi", Scale=26.0, Vector=obj, Randomness=1.0)
+        chip = n.new("ShaderNodeMapRange", Value=(chips, "Distance"), **{"From Min": 0.05, "From Max": 0.16, "To Min": 1.0, "To Max": 0.0})
+        chipc = n.math("MULTIPLY", (chip, "Result"), layers[0].get("chips", 0.0))
+        col = (n.mix((chipc, "Value"), col, shade(layers[0]["color"], 0.12)), 2)
+        height = n.math("ADD", (height, "Value"), (chipc, "Value"))
+        if macro:
+            big = n.noise(0.07, 3.0, 0.55, obj)
+            warm = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.52, "From Max": 0.68, "To Min": 0.0, "To Max": macro})
+            grey = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.48, "From Max": 0.32, "To Min": 0.0, "To Max": macro * 0.8})
+            col = (n.mix((warm, "Result"), col, "#c29a70", "MULTIPLY"), 2)
+            col = (n.mix((grey, "Result"), col, "#b4ada2"), 2)
+        c5 = n.mix((fine, "Fac"), col, shade(layers[0]["color"], -0.25), "MULTIPLY")
+        c5.inputs[0].default_value = 0.2
+        ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.25, _samples=8, _only_local=False)
+        grime = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.3, "From Max": 0.95, "To Min": 0.45, "To Max": 0.0})
+        c6 = n.mix((grime, "Result"), (c5, 2), shade(layers[0]["color"], -0.5))
+        bump = n.bump((height, "Value"), strength=0.32, distance=0.008)
+        n.bsdf(**{"Base Color": (c6, 2), "Roughness": rough, "Specular IOR Level": 0.2, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("ground-surface", name), build)
+
+
+def rock(color="#bcae90", name=None, lichen=0.0, red=0.0):
+    """Loose limestone and chert: blocky, weathered grey-cream with fresher,
+    paler broken edges, a darker brown patina of desert varnish on faces
+    turned to the sky, fine pitting, grime in the hollows, and spots of
+    grey-green and orange lichen or iron staining if asked."""
+
+    def build():
+        n = Nodes(name or f"rock-{color}-{lichen}-{red}")
+        obj = n.coords()
+        geo = n.new("ShaderNodeNewGeometry")
+        sepN = n.new("ShaderNodeSeparateXYZ", Vector=(geo, "Normal"))
+        rnd = n.new("ShaderNodeObjectInfo")
+        attr = _random_attr(n)
+        big = n.noise(2.4, 4.0, 0.6, obj)
+        mid = n.noise(9.0, 5.0, 0.6, obj)
+        fine = n.noise(55.0, 6.0, 0.7, obj)
+        pits = n.new("ShaderNodeTexVoronoi", Scale=85.0, Vector=obj)
+        irand = n.new("ShaderNodeAttribute", _attribute_name="irand", _attribute_type="GEOMETRY")
+        rsum = n.math("ADD", (rnd, "Random"), (attr, "Fac"))
+        rsum = n.math("ADD", (rsum, "Value"), (irand, "Fac"))
+        rfr = n.math("FRACT", (rsum, "Value"))
+        # Limestone greys and creams, with the odd brown or near-black chert.
+        tone = n.ramp(
+            (rfr, "Value"),
+            [(0.0, shade(color, -0.2)), (0.35, color), (0.62, _toward(color, "#b3ada2", 0.5)), (0.8, shade(color, 0.06)), (0.9, "#8a6a4e"), (1.0, "#4a4036")],
+        )
+        tone.color_ramp.interpolation = "CONSTANT"
+        w = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.42, "From Max": 0.72, "To Min": 0.0, "To Max": 0.5})
+        out = (n.mix((w, "Result"), (tone, "Color"), shade(color, -0.3)), 2)
+        mm = n.math("MULTIPLY", (mid, "Fac"), 0.35)
+        out = (n.mix((mm, "Value"), out, shade(color, -0.2), "MULTIPLY"), 2)
+        # Desert varnish on what faces up.
+        up = n.new("ShaderNodeMapRange", Value=(sepN, "Z"), **{"From Min": 0.3, "From Max": 0.95, "To Min": 0.0, "To Max": 0.42})
+        vn = n.math("MULTIPLY", (up, "Result"), (big, "Fac"))
+        vn2 = n.math("MULTIPLY", (vn, "Value"), 1.6, clamp=True)
+        out = (n.mix((vn2, "Value"), out, "#8c7658"), 2)
+        # Fresh, paler rims on sharp edges.
+        edge = n.new("ShaderNodeMapRange", Value=(geo, "Pointiness"), **{"From Min": 0.52, "From Max": 0.62, "To Min": 0.0, "To Max": 0.5})
+        out = (n.mix((edge, "Result"), out, _toward(color, "#e8e0cc", 0.5)), 2)
+        if red > 0:
+            rm = n.new("ShaderNodeMapRange", Value=(mid, "Fac"), **{"From Min": 0.35, "From Max": 0.6, "To Min": 0.0, "To Max": red * 0.8})
+            out = (n.mix((rm, "Result"), out, "#98705a"), 2)
+        if lichen > 0:
+            li = n.noise(14.0, 5.0, 0.7, obj)
+            lm = n.new("ShaderNodeMapRange", Value=(li, "Fac"), **{"From Min": 0.63, "From Max": 0.68, "To Min": 0.0, "To Max": lichen})
+            lc = n.mix((mid, "Fac"), "#8f8c6a", "#b8903e")
+            out = (n.mix((lm, "Result"), out, (lc, 2)), 2)
+        ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.08, _samples=8, _only_local=False)
+        grime = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.3, "From Max": 0.95, "To Min": 0.55, "To Max": 0.0})
+        out = (n.mix((grime, "Result"), out, shade(color, -0.62)), 2)
+        h = n.math("ADD", (fine, "Fac"), (pits, "Distance"))
+        h2 = n.math("MULTIPLY_ADD", (mid, "Fac"), 0.4)
+        n._in(h2, 2, (h, "Value"))
+        bump = n.bump((h2, "Value"), strength=0.55, distance=0.01)
+        n.bsdf(**{"Base Color": out, "Roughness": 0.88, "Specular IOR Level": 0.28, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("rock", color, name, lichen, red), build)
+
+
+def mudbrick(color="#a8845c", plaster="#bf9f76", name=None, plastered=0.55):
+    """Sun-dried mudbrick laid in courses with mud mortar, partly rendered
+    over with mud plaster that has flaked away in patches, rain-streaked and
+    darker and damp toward the ground. Bricks follow the wall in object
+    space, so walls facing either axis get courses."""
+
+    def build():
+        n = Nodes(name or f"mudbrick-{color}-{plastered}")
+        obj = n.coords()
+        rnd = n.new("ShaderNodeObjectInfo")
+        sepP = n.new("ShaderNodeSeparateXYZ", Vector=obj)
+        comb = n.new("ShaderNodeCombineXYZ")
+        xy = n.math("ADD", (sepP, "X"), (sepP, "Y"))
+        n.nt.links.new(xy.outputs["Value"], comb.inputs["X"])
+        n.nt.links.new(sepP.outputs["Z"], comb.inputs["Y"])
+        brick = n.new(
+            "ShaderNodeTexBrick",
+            Vector=(comb, "Vector"),
+            Color1=shade(color, 0.06),
+            Color2=shade(color, -0.1),
+            Mortar=shade(color, -0.3),
+            Scale=1.0,
+            **{"Mortar Size": 0.012, "Mortar Smooth": 0.4, "Bias": 0.0, "Brick Width": 0.42, "Row Height": 0.12},
+        )
+        big = n.noise(1.1, 4.0, 0.6, obj)
+        mid = n.noise(6.0, 5.0, 0.6, obj)
+        fine = n.noise(60.0, 5.0, 0.7, obj)
+        lo = 0.72 - plastered * 0.45
+        pm = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": lo, "From Max": lo + 0.035, "To Min": 1.0, "To Max": 0.0})
+        pl = n.mix((mid, "Fac"), shade(plaster, -0.09), shade(plaster, 0.05))
+        col = n.mix((pm, "Result"), (brick, "Color"), (pl, 2))
+        streak = n.new("ShaderNodeTexWave", Scale=5.0, Distortion=7.0, Detail=3.0, _bands_direction="X", Vector=obj)
+        st = n.math("MULTIPLY", (streak, "Fac"), 0.16)
+        col = n.mix((st, "Value"), (col, 2), shade(color, -0.3))
+        foot = n.new("ShaderNodeMapRange", Value=(sepP, "Z"), **{"From Min": 0.0, "From Max": 0.3, "To Min": 0.4, "To Max": 0.0})
+        col = n.mix((foot, "Result"), (col, 2), shade(color, -0.42))
+        tone = n.math("MULTIPLY", (rnd, "Random"), 0.12)
+        col = n.mix((tone, "Value"), (col, 2), shade(color, -0.2))
+        ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.08, _samples=8, _only_local=False)
+        grime = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.35, "From Max": 0.95, "To Min": 0.5, "To Max": 0.0})
+        col = n.mix((grime, "Result"), (col, 2), shade(color, -0.52))
+        hb = n.math("MULTIPLY", (brick, "Fac"), (pm, "Result"))
+        h = n.math("SUBTRACT", (fine, "Fac"), (hb, "Value"))
+        h2 = n.math("ADD", (h, "Value"), (pm, "Result"))
+        bump = n.bump((h2, "Value"), strength=0.4, distance=0.012)
+        n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.94, "Specular IOR Level": 0.2, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("mudbrick", color, plaster, name, plastered), build)
+
+
+def lime_plaster(color="#ddd0b4", name=None, soot=0.0, grime=0.5):
+    """Lime plaster smoothed by hand: a little uneven, hairline cracks, worn
+    and grubby low down, and sooty toward the top (smoke from the oven and
+    the lamp) when `soot` > 0. Heights are object Z in tiles."""
+
+    def build():
+        n = Nodes(name or f"lime-{color}-{soot}")
+        obj = n.coords()
+        sepP = n.new("ShaderNodeSeparateXYZ", Vector=obj)
+        big = n.noise(0.8, 5.0, 0.6, obj)
+        mid = n.noise(5.0, 5.0, 0.6, obj)
+        fine = n.noise(70.0, 4.0, 0.6, obj)
+        cracks = n.new("ShaderNodeTexVoronoi", Scale=1.8, Vector=obj, _feature="DISTANCE_TO_EDGE")
+        crack = n.new("ShaderNodeMapRange", Value=(cracks, "Distance"), **{"From Min": 0.0, "From Max": 0.004, "To Min": 0.45, "To Max": 0.0})
+        base = n.mix((big, "Fac"), shade(color, -0.1), shade(color, 0.04))
+        col = n.mix((mid, "Fac"), (base, 2), shade(color, -0.16), "MULTIPLY")
+        col.inputs[0].default_value = 0.25
+        out = (n.mix((crack, "Result"), (col, 2), shade(color, -0.45)), 2)
+        if soot > 0:
+            s = n.new("ShaderNodeMapRange", Value=(sepP, "Z"), **{"From Min": 1.0, "From Max": 2.6, "To Min": 0.0, "To Max": soot})
+            sn = n.math("MULTIPLY", (s, "Result"), (big, "Fac"))
+            sn2 = n.math("MULTIPLY", (sn, "Value"), 1.6, clamp=True)
+            out = (n.mix((sn2, "Value"), out, "#3d3228"), 2)
+        foot = n.new("ShaderNodeMapRange", Value=(sepP, "Z"), **{"From Min": 0.0, "From Max": 0.45, "To Min": 0.35, "To Max": 0.0})
+        out = (n.mix((foot, "Result"), out, shade(color, -0.38)), 2)
+        ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.3, _samples=8, _only_local=False)
+        g = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.3, "From Max": 0.95, "To Min": grime, "To Max": 0.0})
+        out = (n.mix((g, "Result"), out, shade(color, -0.5)), 2)
+        h = n.math("SUBTRACT", (mid, "Fac"), (crack, "Result"))
+        h2 = n.math("ADD", (h, "Value"), (fine, "Fac"))
+        bump = n.bump((h2, "Value"), strength=0.18, distance=0.01)
+        n.bsdf(**{"Base Color": out, "Roughness": 0.9, "Specular IOR Level": 0.25, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("lime", color, name, soot, grime), build)
+
+
+def thatch(color="#9c8454", name=None):
+    """A roof of palm fronds and reeds laid over beams and packed with mud:
+    long straw-coloured streaks, sun-bleached, darker mud between."""
+
+    def build():
+        n = Nodes(name or f"thatch-{color}")
+        obj = n.coords()
+        streak = n.new("ShaderNodeTexWave", Scale=26.0, Distortion=4.0, Detail=5.0, Vector=obj, _bands_direction="Y")
+        streak2 = n.new("ShaderNodeTexWave", Scale=11.0, Distortion=9.0, Detail=3.0, Vector=obj, _bands_direction="Y")
+        big = n.noise(1.4, 4.0, 0.6, obj)
+        mud = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.55, "From Max": 0.7, "To Min": 0.0, "To Max": 0.6})
+        col = n.mix((streak, "Fac"), shade(color, -0.3), shade(color, 0.18))
+        col2 = n.mix((streak2, "Fac"), (col, 2), shade(color, -0.2), "MULTIPLY")
+        col2.inputs[0].default_value = 0.3
+        col3 = n.mix((mud, "Result"), (col2, 2), "#8a6c4c")
+        ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.1, _samples=8, _only_local=False)
+        g = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.3, "From Max": 0.95, "To Min": 0.5, "To Max": 0.0})
+        col4 = n.mix((g, "Result"), (col3, 2), shade(color, -0.6))
+        h = n.math("ADD", (streak, "Fac"), (streak2, "Fac"))
+        bump = n.bump((h, "Value"), strength=0.6, distance=0.01)
+        n.bsdf(**{"Base Color": (col4, 2), "Roughness": 0.92, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("thatch", color, name), build)
+
+
+def frond(color="#5a6a36", dry="#a8955c", rough=0.48):
+    """Date palm leaflets: waxy grey-green, yellowing on the oldest fronds
+    (per-instance random), paler beneath, a little translucent in the sun.
+    Cut and dried (`rough` near 1) they lose their wax and their sheen."""
+
+    def build():
+        n = Nodes(f"frond-{color}")
+        info = _random_attr(n)
+        geo = n.new("ShaderNodeNewGeometry")
+        tone = n.ramp((info, "Fac"), [(0.0, shade(color, -0.14)), (0.55, color), (0.8, shade(color, 0.1)), (0.92, dry), (1.0, shade(dry, -0.25))])
+        back = n.mix((geo, "Backfacing"), (tone, "Color"), shade(color, 0.2))
+        n.bsdf(
+            **{
+                "Base Color": (back, 2),
+                "Roughness": rough,
+                "Specular IOR Level": 0.35 * min(1.0, (1.2 - rough) / 0.72),
+                "Subsurface Weight": 0.12,
+                "Subsurface Radius": (0.3, 0.5, 0.1),
+            }
+        )
+        return n.mat
+
+    return cached(("frond", color, dry, rough), build)
+
+
+def palm_trunk(color="#6e5a44"):
+    """A date palm's trunk: the stubs of old leaf bases in rings, fibrous and
+    grey-brown."""
+
+    def build():
+        n = Nodes(f"palmtrunk-{color}")
+        obj = n.coords()
+        sepP = n.new("ShaderNodeSeparateXYZ", Vector=obj)
+        rings = n.new("ShaderNodeTexWave", Scale=4.0, Distortion=1.5, Detail=2.0, _wave_profile="SAW", _bands_direction="Z", Vector=obj)
+        cells = n.new("ShaderNodeTexVoronoi", Scale=16.0, Vector=obj, _feature="DISTANCE_TO_EDGE")
+        stub = n.new("ShaderNodeMapRange", Value=(cells, "Distance"), **{"From Min": 0.0, "From Max": 0.07, "To Min": 0.0, "To Max": 1.0})
+        fib = n.new("ShaderNodeTexWave", Scale=60.0, Distortion=3.0, Detail=4.0, Vector=obj, _bands_direction="Z")
+        h = n.math("MULTIPLY", (rings, "Fac"), (stub, "Result"))
+        col = n.mix((h, "Value"), shade(color, -0.5), shade(color, 0.14))
+        fm = n.math("MULTIPLY", (fib, "Fac"), 0.22)
+        col = n.mix((fm, "Value"), (col, 2), "#a8977a")
+        _ = sepP
+        h2 = n.math("ADD", (h, "Value"), (fib, "Fac"))
+        # A gentle bump: the trunk is thin, and a strong one turns it black.
+        bump = n.bump((h2, "Value"), strength=0.3, distance=0.005)
+        n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.95, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("palmtrunk", color), build)
+
+
+def pool_water(tint="#9dbca0", deep="#5d8a78"):
+    """Spring water: clear and a little green, darker with depth (absorption
+    in the water body), reflecting the sky, with fine wind ripples."""
+
+    def build():
+        n = Nodes("pool-water")
+        obj = n.coords()
+        r1 = n.noise(16.0, 3.0, 0.5, obj)
+        r2 = n.new("ShaderNodeTexWave", Scale=7.0, Distortion=4.0, Detail=3.0, Vector=obj, _bands_direction="DIAGONAL")
+        h = n.math("ADD", (r1, "Fac"), (r2, "Fac"))
+        bump = n.bump((h, "Value"), strength=0.06, distance=0.01)
+        n.bsdf(
+            **{
+                "Base Color": hex_rgb(tint),
+                "Roughness": 0.03,
+                "IOR": 1.333,
+                "Transmission Weight": 0.95,
+                "Specular IOR Level": 0.5,
+                "Normal": (bump, "Normal"),
+            }
+        )
+        vol = n.new("ShaderNodeVolumeAbsorption", Color=hex_rgb(deep), Density=0.3)
+        n.link(vol, "Volume", n.out, "Volume")
+        return n.mat
+
+    return cached(("pool-water", tint, deep), build)
+
+
+def textile(colors, name, weave=180.0, band=0.1, border=None):
+    """A woven textile (a rug, mat, blanket or bedroll): bands of natural dyes
+    across the weft, an optional border, the weave as fine bump, and fibre
+    sheen tinted by the dye."""
+
+    def build():
+        n = Nodes(name)
+        gen = n.coords("Generated")
+        obj = n.coords("Object")
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=gen)
+        scaled = n.math("MULTIPLY", (sep, "Y"), 1.0 / band)
+        idx = n.math("FLOOR", (scaled, "Value"))
+        k = float(len(colors))
+        idxm = n.math("MODULO", (idx, "Value"), k)
+        idxn = n.math("DIVIDE", (idxm, "Value"), k)
+        rmp = n.new("ShaderNodeValToRGB")
+        n.link(idxn, "Value", rmp, "Fac")
+        rmp.color_ramp.interpolation = "CONSTANT"
+        els = rmp.color_ramp.elements
+        while len(els) < len(colors):
+            els.new(0.5)
+        for i, (el, c) in enumerate(zip(els, colors)):
+            el.position = i / k
+            el.color = hex_rgb(c)
+        out = (rmp, "Color")
+        if border:
+            ex = n.math("SUBTRACT", (sep, "X"), 0.5)
+            ex = n.math("ABSOLUTE", (ex, "Value"))
+            bx = n.math("GREATER_THAN", (ex, "Value"), 0.42)
+            out = (n.mix((bx, "Value"), out, border), 2)
+        fade = n.noise(2.5, 3.0, 0.5, obj)
+        fm = n.math("MULTIPLY", (fade, "Fac"), 0.2)
+        out = (n.mix((fm, "Value"), out, "#c9b996"), 2)
+        w1 = n.new("ShaderNodeTexWave", Scale=weave, Distortion=1.0, Vector=obj)
+        w2 = n.new("ShaderNodeTexWave", Scale=weave, Distortion=1.0, Vector=obj, _bands_direction="Y")
+        s = n.math("MULTIPLY", (w1, "Fac"), (w2, "Fac"))
+        sm = n.math("MULTIPLY", (s, "Value"), 0.25)
+        out2 = n.mix((sm, "Value"), out, "#2a2018", "MULTIPLY")
+        bump = n.bump((s, "Value"), strength=0.3, distance=0.003)
+        n.bsdf(**{"Base Color": (out2, 2), "Roughness": 0.92, "Sheen Weight": 0.2, "Sheen Tint": (out2, 2), "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("textile", tuple(colors), name, weave, band, border), build)
+
+
+def mud():
+    """Flood mud drying out: dark and glossy where still damp, paler and
+    cracked into curling plates toward the edges."""
+
+    def build():
+        n = Nodes("mud")
+        obj = n.coords()
+        cells = n.new("ShaderNodeTexVoronoi", Scale=9.0, Vector=obj, _feature="DISTANCE_TO_EDGE")
+        crack = n.new("ShaderNodeMapRange", Value=(cells, "Distance"), **{"From Min": 0.0, "From Max": 0.025, "To Min": 1.0, "To Max": 0.0})
+        dry = n.noise(2.5, 4.0, 0.6, obj)
+        dm = n.new("ShaderNodeMapRange", Value=(dry, "Fac"), **{"From Min": 0.45, "From Max": 0.6, "To Min": 0.0, "To Max": 1.0})
+        col = n.mix((dm, "Result"), "#4a3c2c", "#8c7658")
+        cr = n.math("MULTIPLY", (crack, "Result"), (dm, "Result"))
+        col2 = n.mix((cr, "Value"), (col, 2), "#2e261e")
+        rough = n.new("ShaderNodeMapRange", Value=(dm, "Result"), **{"From Min": 0.0, "From Max": 1.0, "To Min": 0.25, "To Max": 0.85})
+        bump = n.bump((cr, "Value"), strength=0.6, distance=0.01)
+        n.bsdf(**{"Base Color": (col2, 2), "Roughness": (rough, "Result"), "Specular IOR Level": 0.45, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("mud",), build)
+
+
+def grass_blades_green():
+    """Watered grass and weeds: fresh green to olive, a few going to seed."""
+
+    def build():
+        n = Nodes("grass-green")
+        info = n.new("ShaderNodeAttribute", _attribute_name="irand", _attribute_type="GEOMETRY")
+        geo = n.new("ShaderNodeNewGeometry")
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=(geo, "Position"))
+        tone = n.ramp((info, "Fac"), [(0.0, "#56682e"), (0.45, "#6f7f36"), (0.8, "#8a8c46"), (1.0, "#b0a064")])
+        up = n.new("ShaderNodeMapRange", Value=(sep, "Z"), **{"From Min": 0.0, "From Max": 0.14, "To Min": 0.35, "To Max": 1.0})
+        col = n.mix((up, "Result"), shade("#3e4a22", 0.0), (tone, "Color"))
+        n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.6, "Subsurface Weight": 0.1, "Subsurface Radius": (0.2, 0.5, 0.1)})
+        return n.mat
+
+    return cached(("grass-green",), build)
+
+
+def glow(color="#ffb060", strength=4.0):
+    """A flame or embers: emission only (lamps, the oven's mouth)."""
+    return emissive(color, strength)

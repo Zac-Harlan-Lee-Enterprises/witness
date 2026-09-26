@@ -338,12 +338,498 @@ const PAINTERS: Record<string, Painter> = {
     ellipse(ctx, 7, 17.5, 3, 5.5, PALETTE.wood);
     ellipse(ctx, 25, 17.5, 3, 5.5, PALETTE.wood);
   },
+  tablets: (ctx) => {
+    // A pair of hinged wooden writing tablets, open, their wax scratched with writing.
+    softShadow(ctx, 16, 26, 12, 3, 0.3);
+    for (const [x, tone] of [
+      [4, 0.1],
+      [16.5, -0.05],
+    ] as const) {
+      ctx.fillStyle = shade('#b99a64', tone);
+      ctx.fillRect(x, 12, 11.5, 13);
+      ctx.fillStyle = '#3b3128';
+      ctx.fillRect(x + 1.3, 13.3, 8.9, 10.4);
+      ctx.strokeStyle = rgba('#d8c9a8', 0.6);
+      ctx.lineWidth = 0.4;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + 2.2, 15.5 + i * 2.2);
+        ctx.lineTo(x + 9 - (i % 2) * 2, 15.5 + i * 2.2);
+        ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = '#8a8a8a';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(22, 27);
+    ctx.lineTo(30, 23);
+    ctx.stroke();
+  },
+  'letter-sheets': (ctx) => {
+    // Loose papyrus sheets, stained where the ink ran in the rain.
+    softShadow(ctx, 16, 25, 12, 3, 0.25);
+    const sheet = (x: number, y: number, a: number): void => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.fillStyle = '#e8d9b0';
+      ctx.fillRect(-6, -7, 12, 14);
+      ctx.strokeStyle = rgba('#7a6038', 0.4);
+      ctx.lineWidth = 0.3;
+      for (let i = 0; i < 12; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(-6, -7 + i);
+        ctx.lineTo(6, -7 + i);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = rgba('#2a1c10', 0.7);
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-4.5, -4 + i * 3);
+        ctx.lineTo(4 - (i % 2) * 2, -4 + i * 3);
+        ctx.stroke();
+      }
+      ellipse(ctx, 2, 3, 3, 2, rgba('#3a2a1c', 0.25));
+      ctx.restore();
+    };
+    sheet(10, 19, -0.3);
+    sheet(18, 17, 0.15);
+    sheet(22, 21, 0.4);
+  },
+  'letter-bundle': (ctx) => {
+    // Folded letters tied together with cord, a lump of sealing clay on each.
+    softShadow(ctx, 16, 26, 11, 3, 0.3);
+    for (const [x, y, col] of [
+      [8, 17, '#e3d2a6'],
+      [13, 14, '#d8c496'],
+      [11, 20, '#ecdcb4'],
+    ] as const) {
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y, 14, 6);
+      ctx.fillStyle = rgba('#000000', 0.12);
+      ctx.fillRect(x, y + 5, 14, 1);
+      ellipse(ctx, x + 7, y + 3, 1.6, 1.4, '#8a3a2a');
+    }
+    ctx.strokeStyle = '#6b4f30';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(16, 12);
+    ctx.lineTo(16, 27);
+    ctx.stroke();
+  },
+  wool: (ctx) => {
+    // Skeins of dyed wool, madder red, laid over a pole.
+    softShadow(ctx, 16, 27, 12, 3, 0.3);
+    ctx.fillStyle = PALETTE.woodDark;
+    ctx.fillRect(3, 9, 26, 2);
+    for (let i = 0; i < 4; i++) {
+      const col = ['#9a2e28', '#b23a2c', '#7a2432', '#a8322a'][i] ?? '#9a2e28';
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(5 + i * 6, 10);
+      ctx.quadraticCurveTo(4 + i * 6, 20, 6.5 + i * 6, 26);
+      ctx.lineTo(9 + i * 6, 26);
+      ctx.quadraticCurveTo(11 + i * 6, 20, 10 + i * 6, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = rgba('#000000', 0.2);
+      ctx.lineWidth = 0.4;
+      ctx.beginPath();
+      ctx.moveTo(7.5 + i * 6, 11);
+      ctx.lineTo(7.8 + i * 6, 25);
+      ctx.stroke();
+    }
+  },
   marker: (ctx) => {
     ellipse(ctx, 16, 16, 7, 7, '#f2b441');
+  },
+  // ── Bethlehem: house, village and fields ───────────────────────────────
+  lamb: (ctx) => {
+    softShadow(ctx, 16, 27, 10, 2.5, 0.35);
+    ctx.strokeStyle = '#3b2e26';
+    ctx.lineWidth = 1.3;
+    for (const x of [10, 13, 19, 22]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x + 0.3, 27);
+      ctx.stroke();
+    }
+    ellipse(ctx, 16, 17, 9, 6, '#ece4d2');
+    for (let i = 0; i < 6; i++)
+      ellipse(ctx, 9 + i * 2.8, 15 + (i % 2) * 2, 2.4, 2, i % 2 ? '#f6f1e6' : '#d9cfb8');
+    // A speckled lamb: a few dark spots, a dark face and one black ear.
+    ellipse(ctx, 13, 18, 1.2, 1, '#6a5444');
+    ellipse(ctx, 18, 15, 1, 0.8, '#6a5444');
+    ellipse(ctx, 25, 13, 3.4, 2.8, '#3b2e26');
+    ellipse(ctx, 23.5, 10.8, 1.8, 0.9, '#1c1410', -0.6);
+    ellipse(ctx, 27.4, 11, 1.8, 0.9, '#ece4d2', 0.6);
+    ellipse(ctx, 26.2, 12.6, 0.5, 0.5, '#f2e6c8');
+  },
+  ewe: (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    ctx.strokeStyle = '#3b2e26';
+    ctx.lineWidth = 1.6;
+    for (const x of [8, 11, 20, 23]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x, 28);
+      ctx.stroke();
+    }
+    ellipse(ctx, 15, 16, 11, 7, '#e6ddc8');
+    for (let i = 0; i < 7; i++)
+      ellipse(ctx, 6 + i * 3, 13 + (i % 2) * 3, 2.8, 2.3, i % 2 ? '#f2ecde' : '#d6ccb4');
+    ellipse(ctx, 12, 12, 4, 2, rgba('#ffffff', 0.4));
+    // Head raised, calling.
+    ellipse(ctx, 26.5, 9, 3.4, 3, '#3b2e26');
+    ellipse(ctx, 24.5, 6.8, 1.8, 0.9, '#3b2e26', -0.6);
+    ellipse(ctx, 28.8, 8, 1, 1.4, '#6a5444');
+    ellipse(ctx, 27.2, 8.4, 0.5, 0.5, '#f2e6c8');
+  },
+  goat: (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    ctx.fillStyle = '#2e2620';
+    for (const x of [9, 12, 19, 22]) ctx.fillRect(x, 19, 2, 8);
+    ellipse(ctx, 15, 16, 9.5, 5.5, '#3a302a');
+    ellipse(ctx, 13, 13.5, 5, 2, rgba('#ffffff', 0.12));
+    ellipse(ctx, 25, 11, 3.2, 4, '#3a302a');
+    ctx.strokeStyle = '#8a7a64';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(24, 8);
+    ctx.quadraticCurveTo(22, 4, 20, 5);
+    ctx.moveTo(26, 8);
+    ctx.quadraticCurveTo(26, 3, 24, 3);
+    ctx.stroke();
+    ellipse(ctx, 27, 14, 1.4, 2.2, '#2a221c');
+    ellipse(ctx, 26, 10, 0.6, 0.6, '#d8c070');
+  },
+  loom: (ctx) => {
+    softShadow(ctx, 17, 29, 12, 3, 0.35);
+    ctx.fillStyle = PALETTE.woodDark;
+    ctx.fillRect(6, 2, 2.4, 27);
+    ctx.fillRect(23.6, 2, 2.4, 27);
+    ctx.fillRect(4, 2, 24, 2.6);
+    ctx.strokeStyle = rgba('#efe6d2', 0.9);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath();
+      ctx.moveTo(9.5 + i * 1.7, 5);
+      ctx.lineTo(9.5 + i * 1.7, 24);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#8f3f2f';
+    ctx.fillRect(9, 5, 14.6, 9);
+    ctx.fillStyle = '#e0b453';
+    ctx.fillRect(9, 9, 14.6, 1.4);
+    for (let i = 0; i < 5; i++) ellipse(ctx, 10.5 + i * 2.8, 25.5, 1.3, 1.6, '#9c8a6c');
+  },
+  'grain-jars': (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3, 0.35);
+    const jar = (x: number, y: number, s: number): void => {
+      ellipse(ctx, x, y, 6 * s, 9 * s, PALETTE.clay);
+      ellipse(ctx, x - 2 * s, y - 2 * s, 1.8 * s, 4 * s, rgba('#ffffff', 0.22));
+      ellipse(ctx, x, y - 9 * s, 3.2 * s, 1.4 * s, PALETTE.clayDark);
+      ellipse(ctx, x, y - 9.4 * s, 2.6 * s, 1 * s, '#e0c77a');
+    };
+    jar(11, 18, 1);
+    jar(22, 20, 0.85);
+  },
+  'tool-bag': (ctx) => {
+    softShadow(ctx, 16, 27, 11, 3, 0.35);
+    ctx.fillStyle = '#6e4a2c';
+    ctx.beginPath();
+    ctx.roundRect(6, 14, 20, 12, 3);
+    ctx.fill();
+    ctx.fillStyle = rgba('#ffffff', 0.12);
+    ctx.fillRect(7, 15, 18, 2);
+    // A mason's hammer and chisels poking out.
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(10, 5, 2, 11);
+    ctx.fillStyle = '#6f757a';
+    ctx.fillRect(7, 4, 8, 3.2);
+    ctx.fillRect(17, 7, 1.6, 9);
+    ctx.fillRect(20.5, 8.5, 1.4, 7.5);
+  },
+  ladder: (ctx) => {
+    softShadow(ctx, 18, 29, 9, 2.5, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(9, 0, 2.4, 29);
+    ctx.fillRect(21, 0, 2.4, 29);
+    ctx.fillStyle = PALETTE.woodDark;
+    for (let i = 0; i < 5; i++) ctx.fillRect(10, 3 + i * 5.5, 12, 1.8);
+  },
+  'snagged-wool': (ctx) => {
+    // A thornbush with a tuft of speckled wool snagged on it.
+    ctx.strokeStyle = '#573b22';
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 7; i++) {
+      ctx.beginPath();
+      ctx.moveTo(16, 27);
+      ctx.lineTo(5 + i * 3.5, 10 + (i % 3) * 4);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) ellipse(ctx, 7 + i * 3.6, 14 + (i % 2) * 5, 3, 2.4, '#5d6036');
+    ellipse(ctx, 20, 15, 3.4, 2.4, '#ece4d2');
+    ellipse(ctx, 21.5, 14, 1.1, 0.8, '#6a5444');
+    ellipse(ctx, 19, 16, 1.4, 1, '#f6f1e6');
+  },
+  hoofprints: (ctx) => {
+    // Small split hoofprints pressed into damp ground, heading one way.
+    ellipse(ctx, 16, 18, 13, 9, 'rgba(90,64,40,0.18)');
+    const hoof = (x: number, y: number): void => {
+      ellipse(ctx, x - 0.8, y, 0.8, 1.4, 'rgba(70,48,28,0.6)', 0.15);
+      ellipse(ctx, x + 0.8, y, 0.8, 1.4, 'rgba(70,48,28,0.6)', -0.15);
+    };
+    for (let i = 0; i < 5; i++) {
+      hoof(8 + i * 4.5, 24 - i * 2.5);
+      hoof(10 + i * 4.5, 20 - i * 2.5);
+    }
+  },
+  'straw-bed': (ctx) => {
+    softShadow(ctx, 16, 25, 14, 3, 0.3);
+    ellipse(ctx, 16, 21, 14, 6, '#b99a52');
+    ellipse(ctx, 16, 19.5, 12.5, 4.6, '#d9bd72');
+    ctx.strokeStyle = rgba('#8a6e3c', 0.7);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 12; i++) {
+      ctx.beginPath();
+      ctx.moveTo(5 + i * 2, 17 + (i % 3));
+      ctx.lineTo(7 + i * 2, 22 - (i % 2));
+      ctx.stroke();
+    }
+    // A folded blanket at one end.
+    ctx.fillStyle = '#7a4a34';
+    ctx.fillRect(20, 16, 8, 6);
+    ctx.fillStyle = rgba('#ffffff', 0.15);
+    ctx.fillRect(20, 16, 8, 1.2);
+  },
+  'thorn-branch': (ctx) => {
+    // A cut thorn branch dragged across a gap to close it.
+    softShadow(ctx, 16, 27, 13, 3, 0.3);
+    ctx.strokeStyle = '#4a3620';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(2, 24);
+    ctx.lineTo(30, 18);
+    ctx.stroke();
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 9; i++) {
+      const x = 4 + i * 3;
+      const y = 24 - i * 0.65;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 2, y - 5 - (i % 3) * 2);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 1, y + 3);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 5; i++) ellipse(ctx, 6 + i * 5.5, 16 + (i % 2) * 3, 2.4, 1.8, '#5d6036');
+  },
+  'kneading-trough': (ctx) => {
+    // A wooden kneading trough, a flour jar, and two measures.
+    softShadow(ctx, 16, 28, 14, 3, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.beginPath();
+    ctx.moveTo(3, 17);
+    ctx.lineTo(24, 17);
+    ctx.lineTo(22, 26);
+    ctx.lineTo(5, 26);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 13.5, 18, 10, 2.6, '#efe6d2');
+    ellipse(ctx, 26, 15, 4.6, 7, PALETTE.clay);
+    ellipse(ctx, 26, 8.4, 2.6, 1.1, '#f4efe2');
+    ellipse(ctx, 8, 12, 3.4, 2.2, '#c49a5a');
+  },
+  tablet: (ctx) => {
+    softShadow(ctx, 16, 24, 10, 2.5, 0.3);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.fillRect(6, 13, 20, 12);
+    ctx.fillStyle = '#3b2a1a';
+    ctx.fillRect(8, 15, 16, 8);
+    ctx.strokeStyle = rgba('#d9c28c', 0.85);
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(9.5, 16.8 + i * 1.8);
+      ctx.lineTo(22 - (i % 2) * 4, 16.8 + i * 1.8);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#c9b48a';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(24, 11);
+    ctx.lineTo(29, 22);
+    ctx.stroke();
+  },
+  // ── By the lake (Chapter 2) ────────────────────────────────────────────
+  /** Storage jars of salted fish, stoppered and roped for carrying. */
+  'fish-jars': (ctx) => {
+    softShadow(ctx, 16, 28, 13, 3.5, 0.35);
+    const jar = (x: number, y: number, s: number, col: string): void => {
+      ellipse(ctx, x, y, 4.6 * s, 7.4 * s, col);
+      ellipse(ctx, x - 1.6 * s, y - 2 * s, 1.4 * s, 3 * s, rgba('#ffffff', 0.22));
+      ctx.fillStyle = shade(col, -0.3);
+      ctx.fillRect(x - 1.6 * s, y - 9.6 * s, 3.2 * s, 2.6 * s);
+      ellipse(ctx, x, y - 9.8 * s, 2 * s, 1 * s, '#d8c9a4');
+      ctx.strokeStyle = rgba('#c9b184', 0.9);
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x - 4.2 * s, y - 2 * s);
+      ctx.quadraticCurveTo(x, y + 0.6 * s, x + 4.2 * s, y - 2 * s);
+      ctx.stroke();
+    };
+    jar(9, 20, 1, PALETTE.clay);
+    jar(20, 21, 1, PALETTE.clayDark);
+    jar(14.5, 25, 0.8, '#c9905e');
+  },
+  /** A wooden bailing scoop. */
+  bailer: (ctx) => {
+    softShadow(ctx, 16, 25, 10, 2.5, 0.35);
+    ctx.fillStyle = PALETTE.wood;
+    ctx.beginPath();
+    ctx.moveTo(7, 15);
+    ctx.lineTo(21, 15);
+    ctx.quadraticCurveTo(21, 25, 14, 25);
+    ctx.quadraticCurveTo(7, 25, 7, 15);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, 14, 15, 7, 2.2, PALETTE.woodDark);
+    ellipse(ctx, 11, 19, 1.4, 3, rgba('#ffffff', 0.18));
+    ctx.strokeStyle = PALETTE.woodDark;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, 16);
+    ctx.lineTo(28, 11);
+    ctx.stroke();
+  },
+  /** A coil of rope. */
+  rope: (ctx) => {
+    softShadow(ctx, 16, 25, 10, 3, 0.3);
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(16, 21 - i * 1.4, 9 - i * 1.6, 4 - i * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = rgba('#fff3d6', 0.4);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(16, 20, 8, 3.4, 0, Math.PI, Math.PI * 1.8);
+    ctx.stroke();
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(24, 22);
+    ctx.quadraticCurveTo(28, 25, 30, 22);
+    ctx.stroke();
+  },
+  /** An oar lying across the boards. */
+  oar: (ctx) => {
+    softShadow(ctx, 16, 24, 13, 2.2, 0.3);
+    ctx.strokeStyle = PALETTE.wood;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(3, 25);
+    ctx.lineTo(22, 16);
+    ctx.stroke();
+    ctx.fillStyle = shade(PALETTE.wood, 0.1);
+    ctx.beginPath();
+    ctx.ellipse(25.5, 14.5, 6, 2.6, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = rgba(PALETTE.woodDark, 0.6);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(20.5, 17);
+    ctx.lineTo(30.5, 12);
+    ctx.stroke();
+  },
+  /** A heap of net with cork floats and stone sinkers. */
+  'net-pile': (ctx) => {
+    softShadow(ctx, 16, 26, 13, 3.5, 0.3);
+    ellipse(ctx, 16, 21, 12, 6.5, '#cdbf9c');
+    ellipse(ctx, 13, 18, 7, 4, '#dccfae');
+    ctx.strokeStyle = rgba('#7d6e52', 0.55);
+    ctx.lineWidth = 0.4;
+    for (let i = -3; i < 6; i++) {
+      ctx.beginPath();
+      ctx.moveTo(6 + i * 3, 15);
+      ctx.lineTo(10 + i * 3, 27);
+      ctx.moveTo(10 + i * 3, 15);
+      ctx.lineTo(6 + i * 3, 27);
+      ctx.stroke();
+    }
+    for (const [x, y] of [
+      [8, 18],
+      [14, 15.5],
+      [21, 17],
+      [25, 21],
+      [11, 24],
+    ] as const)
+      ellipse(ctx, x, y, 1.7, 1.1, '#a8743a');
+    for (const [x, y] of [
+      [18, 26],
+      [6, 23],
+    ] as const)
+      ellipse(ctx, x, y, 1.5, 1.3, '#5a554c');
+  },
+  /** Jars thrown overboard, bobbing in the water. */
+  'floating-jars': (ctx) => {
+    for (const [x, y, s] of [
+      [9, 18, 1],
+      [21, 23, 0.85],
+    ] as const) {
+      ellipse(ctx, x, y + 3 * s, 7 * s, 2.2 * s, rgba('#e6f0ec', 0.45));
+      ctx.fillStyle = PALETTE.clay;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 5 * s, 3.6 * s, -0.5, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ellipse(ctx, x - 3.5 * s, y - 2 * s, 1.4 * s, 1 * s, '#d8c9a4');
+    }
+  },
+  /** A tow rope running out across the water. */
+  towline: (ctx) => {
+    ctx.strokeStyle = '#b89c68';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(2, 20);
+    ctx.bezierCurveTo(10, 26, 20, 14, 30, 22);
+    ctx.stroke();
+    ellipse(ctx, 12, 23, 3, 0.9, rgba('#e6f0ec', 0.5));
+    ellipse(ctx, 24, 19, 3, 0.9, rgba('#e6f0ec', 0.5));
+  },
+  /** A shallow basket of fresh fish. */
+  'fish-basket': (ctx) => {
+    softShadow(ctx, 16, 27, 12, 3.5, 0.35);
+    ellipse(ctx, 16, 21, 11, 7, '#b8904e');
+    ctx.strokeStyle = rgba('#7a5a2c', 0.8);
+    ctx.lineWidth = 0.6;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.ellipse(16, 21 + i * 2.2, 10.5 - Math.abs(i), 1.3, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+    ellipse(ctx, 16, 17, 9.5, 4, '#7a5a2c');
+    for (const [x, y, a] of [
+      [11, 16.5, 0.3],
+      [16, 15.5, -0.2],
+      [21, 17, 0.4],
+      [14, 18.5, -0.5],
+    ] as const) {
+      ellipse(ctx, x, y, 3.6, 1.3, '#b9b8ae', a);
+      ellipse(ctx, x - 0.6, y - 0.4, 2.2, 0.5, rgba('#ffffff', 0.5), a);
+    }
   },
   /** Invisible: for interactive spots on tiles that already draw themselves (wells, cairns). */
   none: () => undefined,
 };
+
+/** Whether a sprite name has a painter (content tests use this to catch typos). */
+export function isKnownProp(name: string): boolean {
+  return Object.hasOwn(PAINTERS, name);
+}
 
 export function paintProp(
   name: string,

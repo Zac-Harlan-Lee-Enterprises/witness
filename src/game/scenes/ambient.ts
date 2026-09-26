@@ -18,6 +18,7 @@ import {
   type RenderedFigure,
   type ShadowCast,
 } from './actors';
+import { FX } from '../fx/fx-textures';
 import { TEX } from './textures';
 
 /**
@@ -59,6 +60,23 @@ export interface AmbientDeps {
   crowd: readonly RenderedFigure[];
   /** The place is pre-rendered: leave out painted extras (pigeons) that would clash. */
   prerendered: boolean;
+  /**
+   * Its art is a night bake: the lamplight at its doors is in the art (only
+   * where a lamp burns), so none is painted at every door.
+   */
+  bakedNight?: boolean;
+  /** Pre-rendered trees that sway (origin already at the foot of the trunk). */
+  trees: readonly Phaser.GameObjects.Image[];
+  /** Water is drawn live by a shader (fx/water-surface.ts): no painted glints. */
+  liveWater: boolean;
+}
+
+/** Something that sways in the wind about its foot. */
+interface Swayer {
+  image: Phaser.GameObjects.Image;
+  seed: number;
+  /** Palms bend more than olive trees. */
+  give: number;
 }
 
 interface Walker {
@@ -86,7 +104,13 @@ export class AmbientLife {
     image: Phaser.GameObjects.Image;
     base: number;
     seed: number;
+    radius: number;
+    kind: LightSpot['kind'] | 'doorway';
+    strength: number;
   }> = [];
+  private readonly swayers: Swayer[] = [];
+  private wind = 0;
+  private night = false;
   private flock: Flock | null = null;
   private spots: Tile[] = [];
   private hawkIn = 6;
@@ -117,17 +141,89 @@ export class AmbientLife {
 
   // ── Light: hearth fire and lamps flicker; window light holds dust ────────
   private buildLights(): void {
+    this.buildDoorways();
     for (const light of this.d.lights) {
       if (light.kind === 'window') continue;
       const image = this.d.scene.add
         .image(light.x, light.y, TEX.glow)
-        .setScale((light.radius / 80) * INV)
         .setDepth(this.d.depths.light + 1)
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setAlpha(light.kind === 'hearth' ? 0.55 : 0.4);
+        .setBlendMode(Phaser.BlendModes.ADD);
       this.objects.push(image);
-      this.flickers.push({ image, base: image.alpha, seed: light.x * 0.37 + light.y });
+      this.flickers.push({
+        image,
+        base: 0,
+        seed: light.x * 0.37 + light.y,
+        radius: light.radius,
+        kind: light.kind,
+        strength: light.strength ?? 1,
+      });
     }
+    this.lightPools();
+  }
+
+  /**
+   * By day a lamp or hearth is a small warm glow; at night it is the light
+   * in the room: a wider, warmer pool that the dark gathers around.
+   */
+  /**
+   * Outdoors after dark, lamplight spills from open doorways onto the ground
+   * in front of them (hidden by day).
+   */
+  private buildDoorways(): void {
+    const { model } = this.d;
+    if (model.kind === 'indoor' || this.d.bakedNight) return;
+    const { grid } = model;
+    for (let y = 0; y < grid.height; y++) {
+      for (let x = 0; x < grid.width; x++) {
+        const kind = grid.tiles[y]?.[x];
+        if (kind !== 'door' && kind !== 'gate') continue;
+        // The door of a building: something solid above it, open ground below.
+        if (grid.tiles[y + 1]?.[x] === 'door') continue;
+        const image = this.d.scene.add
+          .image((x + 0.5) * TILE, (y + 1.1) * TILE, FX.pool)
+          .setDepth(this.d.depths.light + 1)
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setVisible(false);
+        this.objects.push(image);
+        this.flickers.push({
+          image,
+          base: 0,
+          seed: x * 3.1 + y,
+          radius: 34,
+          kind: 'doorway',
+          strength: 1,
+        });
+      }
+    }
+  }
+
+  private lightPools(): void {
+    for (const f of this.flickers) {
+      const hearth = f.kind === 'hearth';
+      if (f.kind === 'doorway') {
+        f.image.setVisible(this.night).setScale((f.radius * 2.3) / 256, (f.radius * 1.6) / 256);
+        f.base = this.night ? 0.55 : 0;
+      } else if (this.night) {
+        f.image.setTexture(FX.pool).setScale((f.radius * 2.3) / 256);
+        f.base = (hearth ? 0.85 : 0.7) * f.strength;
+      } else {
+        f.image.setTexture(TEX.glow).setScale((f.radius / 80) * INV);
+        f.base = (hearth ? 0.55 : 0.4) * f.strength;
+      }
+      f.image.setAlpha(f.base);
+    }
+  }
+
+  /** Night or day (the story clock): lamps and hearths become pools of light. */
+  setNight(night: boolean): void {
+    if (night === this.night) return;
+    this.night = night;
+    this.lightPools();
+  }
+
+  /** Wind strength now, 0–1 with gusts (from the weather). */
+  setWind(wind: number): void {
+    this.wind = wind;
   }
 
   // ── Passers-by ───────────────────────────────────────────────────────────
@@ -332,18 +428,29 @@ export class AmbientLife {
         ((piece.pivotY - piece.y) * ART_SCALE) / h,
       );
       image.setPosition(piece.pivotX, piece.pivotY);
-      const seed = hash(piece.pivotX, piece.pivotY, 3) % 1000;
-      this.tweens.push(
-        this.d.scene.tweens.add({
-          targets: image,
-          angle: { from: -0.5 - (seed % 3) * 0.2, to: 0.6 + (seed % 4) * 0.2 },
-          duration: 2600 + seed * 2,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-          delay: seed,
-        }),
-      );
+      this.swayers.push({
+        image,
+        seed: hash(piece.pivotX, piece.pivotY, 3) % 1000,
+        give: piece.kind === 'palm' ? 1.5 : 1,
+      });
+    }
+    for (const image of this.d.trees) {
+      this.swayers.push({ image, seed: hash(image.x | 0, image.y | 0, 3) % 1000, give: 0.8 });
+    }
+  }
+
+  /**
+   * Trees breathe in still air and lean and thrash in the wind: a slow sway,
+   * a lean downwind, and a quicker flutter that grows with the gusts.
+   */
+  private stepSway(): void {
+    const t = this.elapsed;
+    const w = this.wind;
+    for (const s of this.swayers) {
+      const phase = s.seed * 0.0063;
+      const calm = Math.sin(t * (2.1 + (s.seed % 7) * 0.08) + phase) * (0.55 + (s.seed % 4) * 0.12);
+      const flutter = Math.sin(t * (5.3 + (s.seed % 5) * 0.4) + phase * 2) * 1.6 * w;
+      s.image.setAngle(s.give * (calm * (1 - 0.4 * w) + w * 2.4 + flutter));
     }
   }
 
@@ -413,6 +520,7 @@ export class AmbientLife {
 
   private buildGlints(): void {
     const { model, scene } = this.d;
+    if (this.d.liveWater) return;
     for (let y = 0; y < model.grid.height; y++) {
       for (let x = 0; x < model.grid.width; x++) {
         if (model.grid.tiles[y]?.[x] !== 'water') continue;
@@ -477,10 +585,10 @@ export class AmbientLife {
     if (this.still) return;
     for (const f of this.flickers) {
       const t = this.elapsed * 6 + f.seed;
-      f.image.setAlpha(
-        f.base * (0.85 + Math.sin(t) * 0.08 + Math.sin(t * 2.7) * 0.05 + Math.sin(t * 5.3) * 0.03),
-      );
+      const flicker = Math.sin(t) * 0.08 + Math.sin(t * 2.7) * 0.05 + Math.sin(t * 5.3) * 0.03;
+      f.image.setAlpha(f.base * (0.85 + flicker * (this.night ? 1.4 : 1)));
     }
+    if (!this.d.lowPower) this.stepSway();
   }
 
   /** Drop the decorative extras (the device is struggling). */
@@ -498,7 +606,8 @@ export class AmbientLife {
     for (const o of this.objects) {
       if (o instanceof Phaser.GameObjects.Particles.ParticleEmitter) o.destroy();
     }
-    this.d.canopies.forEach(({ image }) => image.setAngle(0));
+    this.swayers.forEach(({ image }) => image.setAngle(0));
+    this.swayers.length = 0;
   }
 
   destroy(): void {
@@ -508,6 +617,8 @@ export class AmbientLife {
     this.objects.length = 0;
     this.walkers.length = 0;
     this.flickers.length = 0;
+    this.swayers.forEach(({ image }) => image.setAngle(0));
+    this.swayers.length = 0;
     this.flock = null;
   }
 }

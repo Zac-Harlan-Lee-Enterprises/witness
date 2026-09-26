@@ -3,6 +3,11 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import {
+  ART_RUNTIME_CACHE_ENTRIES,
+  CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
+  CACHED_ON_FIRST_USE_PLACES,
+} from './src/app/art-cache';
 
 /**
  * Static-host friendly build.
@@ -68,20 +73,44 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          // Pre-rendered art (art/**: WebP layers and sheets with JSON manifests)
-          // is precached with everything else, so every place works offline —
-          // except the later-day variants, which the story never shows in the
-          // morning market: they are cached the first time they are used.
+          // Pre-rendered art (art/**: WebP layers and sheets with JSON manifests):
+          // the morning set of Chapter 1's places and of every person is
+          // precached, so Chapter 1 can be played offline after one visit;
+          // later chapters' places are cached on first use (src/app/art-cache.ts). Later-day
+          // sets (*-late*) are cached the first time they are shown; offline
+          // before that, the game draws the morning set in their place
+          // (src/game/prerendered/loader.ts). See docs/art/technical-art-guide.md §6.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
-          globIgnores: ['**/art/**/*-late*.webp'],
+          // The art's ?v= version isn't part of the precached file's identity.
+          ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
+          globIgnores: [
+            '**/art/**/*-late*.webp',
+            // Later chapters' places are cached on first use (src/app/art-cache.ts).
+            ...CACHED_ON_FIRST_USE_PLACES.map((id) => `**/art/${id}/**`),
+            ...CACHED_ON_FIRST_USE_PEOPLE_LIGHTS.map((light) => `**/art/people/*-${light}*.webp`),
+          ],
           runtimeCaching: [
             {
+              // Art manifests say which files make up a place (and version their
+              // URLs): fetched fresh when online, from the cache when offline.
+              urlPattern: ({ url }) =>
+                url.pathname.includes('/art/') && url.pathname.endsWith('.json'),
+              handler: 'NetworkFirst',
+              options: { cacheName: 'witness-art-manifests', networkTimeoutSeconds: 4 },
+            },
+            {
+              // Art files have fixed names; their URLs carry a version from their
+              // manifest (?v=, src/game/prerendered/loader.ts), so new art is fetched
+              // anew and never mixed with an older manifest. Old entries age out.
               urlPattern: ({ url }) => url.pathname.includes('/art/'),
               handler: 'CacheFirst',
-              options: { cacheName: 'witness-art', expiration: { maxEntries: 200 } },
+              options: {
+                cacheName: 'witness-art',
+                expiration: { maxEntries: ART_RUNTIME_CACHE_ENTRIES },
+              },
             },
           ],
-          // The Phaser chunk is ~1.2 MB and the largest art layer is under 2 MB.
+          // The Phaser chunk is ~1.2 MB; no art file reaches 1 MB (big grounds are tiled).
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           navigateFallback: `${base}index.html`,
           cleanupOutdatedCaches: true,

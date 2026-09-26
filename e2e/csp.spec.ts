@@ -3,6 +3,7 @@ import {
   choose,
   createProfile,
   endDialogue,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -53,7 +54,7 @@ test('plays under the recommended strict Content-Security-Policy with no violati
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Strict');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await choose(page, 'Of course. What do I need to know?');
   await choose(page, 'I’ll head to the market.');

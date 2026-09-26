@@ -1,7 +1,7 @@
 import type { TileKind } from '@/domain/world';
 import { shadowOffset, type Look } from './direction';
 import { ellipse, makeCanvas, rgba, TILE, type Ctx } from './paint';
-import { backWallSlots, heightOf, isPropTile, type Site } from './site';
+import { backWallSlots, heightOf, isLowWall, isPropTile, type Site } from './site';
 
 /**
  * Light and shade baked into the ground: one sun from the upper left.
@@ -52,7 +52,7 @@ export function paintShadows(
     const Y = y * TILE;
     const tallAt = (dx: number, dy: number): boolean => {
       const n = site.kindAt(x + dx, y + dy);
-      return n === 'wall' || n === 'roof' || n === 'cliff' || n === 'fence';
+      return n === 'wall' || n === 'roof' || n === 'tile-roof' || n === 'cliff' || isLowWall(n);
     };
     const c = look.shadow.color;
     if (tallAt(0, -1)) band(ctx, [X, Y], [X, Y + 10], [X, Y, TILE, 10], c, ao * 0.9);
@@ -88,12 +88,38 @@ function castShape(m: Ctx, kind: TileKind, x: number, y: number, h: number): voi
   switch (kind) {
     case 'wall':
     case 'roof':
+    case 'tile-roof':
     case 'cliff':
     case 'hill':
       m.fillRect(x, y, TILE, TILE);
       return;
+    case 'travertine':
+      m.fillRect(x, y + 8, TILE, TILE - 8);
+      return;
+    case 'column':
+    case 'lampstand':
+    case 'milestone':
+      // A tall, thin thing throws a long, narrow shadow.
+      m.beginPath();
+      m.moveTo(x + 11, y + 26);
+      m.lineTo(x + 21, y + 26);
+      m.lineTo(x + 21 + h * 0.2, y + 22 - h * 0.25);
+      m.lineTo(x + 11 + h * 0.2, y + 22 - h * 0.25);
+      m.closePath();
+      m.fill();
+      return;
     case 'fence':
+    case 'sheepfold':
       m.fillRect(x, y + 10, TILE, 12);
+      return;
+    case 'terrace':
+      // A terrace drops toward the viewer: its shadow lies along its foot.
+      m.fillRect(x, y + 18, TILE, 10);
+      return;
+    case 'sheep':
+      m.beginPath();
+      m.ellipse(x + 16, y + 20, 13, 6, 0.1, 0, Math.PI * 2);
+      m.fill();
       return;
     case 'olive':
     case 'fig': {
@@ -121,10 +147,22 @@ function castShape(m: Ctx, kind: TileKind, x: number, y: number, h: number): voi
       m.fillRect(x + 14, y + 12, 4, 16);
       return;
     }
+    case 'mast': {
+      // A long, thin pole shadow with the yard's shadow crossing it.
+      m.beginPath();
+      m.ellipse(x + 8, y + 14, 22, 2.4, 0.6, 0, Math.PI * 2);
+      m.fill();
+      m.beginPath();
+      m.ellipse(x - 2, y + 6, 18, 2, -0.5, 0, Math.PI * 2);
+      m.fill();
+      return;
+    }
     case 'tent':
     case 'stall':
     case 'loom':
     case 'cloth':
+    case 'nets':
+    case 'rack':
       m.beginPath();
       m.moveTo(x + 2, y + 28);
       m.lineTo(x + 6, y + 6);
@@ -148,7 +186,7 @@ export function paintInteriorLight(ctx: Ctx, site: Site, look: Look): void {
   // Darker toward the walls.
   site.forEach((x, y) => {
     const k = site.groundAt(x, y);
-    if (k === 'wall' || k === 'roof' || k === 'void') return;
+    if (k === 'wall' || k === 'roof' || k === 'tile-roof' || k === 'void') return;
     const X = x * TILE;
     const Y = y * TILE;
     const wall = (dx: number, dy: number): boolean => site.kindAt(x + dx, y + dy) === 'wall';

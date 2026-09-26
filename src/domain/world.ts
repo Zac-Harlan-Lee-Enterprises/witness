@@ -24,6 +24,18 @@ export const TILE_KINDS = {
   bedroll: { solid: false },
   door: { solid: false },
   gate: { solid: false },
+  /** Straw strewn on the lower, animals' end of a village house. */
+  straw: { solid: false },
+  /** The raised family floor of a village house, a step above the animals' level. */
+  platform: { solid: false },
+  /** A threshing floor: flat beaten ground at the village edge, scattered with chaff. */
+  threshing: { solid: false },
+  /** A floor of small stone tesserae laid in patterns (Roman-era houses). */
+  mosaic: { solid: false },
+  /** A paved Roman highway: big fitted paving stones between kerbstones. */
+  'roman-road': { solid: false },
+  /** The stone deck of a bridge over a river. */
+  bridge: { solid: false },
   wall: { solid: true },
   roof: { solid: true },
   water: { solid: true },
@@ -51,7 +63,60 @@ export const TILE_KINDS = {
   reeds: { solid: true },
   fig: { solid: true },
   cloth: { solid: true },
+  /** A stone feeding trough for animals (a manger), built at the edge of the family floor. */
+  manger: { solid: true },
+  /** A dry-stone sheepfold wall, topped with thorny brushwood. */
+  sheepfold: { solid: true },
+  /** A dry-stone terrace wall holding up a hillside field (the step down to the next field). */
+  terrace: { solid: true },
+  /** Sheep resting together in a fold or a field. */
+  sheep: { solid: true },
+  /** A heap of straw and chaff (fodder and bedding). */
+  hay: { solid: true },
+  /** A small open fire ringed with stones, where shepherds keep warm. */
+  campfire: { solid: true },
+  /** A pitched roof of fired terracotta tiles (Greek and Roman towns of Asia Minor). */
+  'tile-roof': { solid: true },
+  /** A stone column: a colonnade (stoa) or the portico of a peristyle garden. */
+  column: { solid: true },
+  /** A dyer's or fuller's vat, sunk in a stone or plastered surround. */
+  vat: { solid: true },
+  /** Tall two-handled transport jars, stacked or leaning together. */
+  amphorae: { solid: true },
+  /** A dining couch (triclinium) with cushions. */
+  couch: { solid: true },
+  /** A Roman milestone: a stone column cut with a distance. */
+  milestone: { solid: true },
+  /** White travertine terraces left by hot springs (Hierapolis, across the valley). */
+  travertine: { solid: true },
+  /** A planted garden bed (a peristyle garden): shrubs, herbs and flowers. */
+  garden: { solid: true },
+  /** A tall bronze lampstand with oil lamps. */
+  lampstand: { solid: true },
+  /** A public fountain: a stone basin fed by a spout. */
+  fountain: { solid: true },
   void: { solid: true },
+  // ── The lake (Chapter 2) ──────────────────────────────────────────────
+  /** A pebbly lake beach. */
+  shingle: { solid: false },
+  /** A boat's deck planking (the boat you are aboard). */
+  deck: { solid: false },
+  /** A stone breakwater or landing stage running out into the water. */
+  jetty: { solid: false },
+  /** Open lake water. */
+  lake: { solid: true },
+  /** Shallow water along the shore. */
+  shallows: { solid: true },
+  /** The side (gunwale) of the boat you are aboard. */
+  hull: { solid: true },
+  /** A mast with its yard and sail. */
+  mast: { solid: true },
+  /** A boat afloat or drawn up on the shore (neighbouring boat tiles form one boat). */
+  boat: { solid: true },
+  /** Fishing nets hung on poles to dry. */
+  nets: { solid: true },
+  /** A wooden rack of fish drying in the sun. */
+  rack: { solid: true },
 } as const;
 export type TileKind = keyof typeof TILE_KINDS;
 export const TILE_KIND_NAMES = Object.keys(TILE_KINDS) as TileKind[];
@@ -93,6 +158,10 @@ export const LOOK_MARKS = [
   'water-skin',
   /** A tunic hem with a strip torn away. */
   'torn-hem',
+  /** A lamb carried home across the shoulders. */
+  'carrying-lamb',
+  /** A leather letter case slung at the hip. */
+  'letter-case',
 ] as const;
 export const LookMarkSchema = z.enum(LOOK_MARKS);
 export type LookMark = (typeof LOOK_MARKS)[number];
@@ -191,6 +260,17 @@ export const TriggerSchema = z
 /** @public Domain-model type (chapter-authoring API). */
 export type Trigger = z.infer<typeof TriggerSchema>;
 
+/** The sky over a place. Outdoor scenes render it; indoor scenes hear it. */
+export const WEATHERS = ['clear', 'wind', 'rain', 'storm'] as const;
+export const WeatherSchema = z.enum(WEATHERS);
+export type Weather = z.infer<typeof WeatherSchema>;
+
+/** Weather that sets in when a story condition holds (later entries win). */
+export const WeatherChangeSchema = z.object({
+  when: ConditionSchema,
+  weather: WeatherSchema,
+});
+
 export const SceneSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -221,6 +301,14 @@ export const SceneSchema = z.object({
    */
   mood: z.enum(['home', 'city', 'wilderness', 'oasis']).optional(),
   music: z.enum(['home', 'journey', 'tension', 'reflection', 'none']).default('none'),
+  /** The weather when nothing in `weatherChanges` applies. */
+  weather: WeatherSchema.default('clear'),
+  /**
+   * Weather driven by the story, e.g. a storm that rises once the boat has
+   * put out and calms after it has passed. Every change whose `when` holds
+   * applies in order, so the last matching entry wins.
+   */
+  weatherChanges: z.array(WeatherChangeSchema).default([]),
 });
 export type Scene = z.infer<typeof SceneSchema>;
 

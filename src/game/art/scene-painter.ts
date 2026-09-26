@@ -1,5 +1,6 @@
 import type { TileGrid, TileKind } from '@/domain/world';
-import { paintBuildings } from './architecture';
+import { paintBuildings, paintColonnadeBeams } from './architecture';
+import { paintBoats } from './boats';
 import { lookFor, type Mood } from './direction';
 import { paintFurnishing } from './furnishings';
 import {
@@ -7,7 +8,9 @@ import {
   paintCanopy,
   paintCliffs,
   paintHills,
+  paintLake,
   paintNatureProp,
+  paintTravertine,
   paintTrunk,
   paintWater,
 } from './nature';
@@ -36,10 +39,13 @@ export interface PaintedScene {
 /** The ink line around people and objects (never around terrain). */
 const INK = 'rgba(38,22,10,0.82)';
 const PROP_MARGIN = 16;
+/** Tall objects (a column's capital) rise further above their tile. */
+const TALL_MARGIN = 34;
 
 /**
- * Paint a whole place once, in passes: ground → raised land → water →
- * cast shadows → cliffs → buildings → indoor light → objects → tree tops.
+ * Paint a whole place once, in passes: ground → raised land → water and
+ * lake → cast shadows → cliffs → buildings → boats → indoor light →
+ * objects → tree tops (and masts).
  */
 export function paintScene(
   grid: TileGrid,
@@ -59,9 +65,12 @@ export function paintScene(
   paintShadows(g, site, look, doc, 'hills');
   paintHills(g, site, look);
   paintWater(g, site, look);
+  paintLake(g, site, look);
   paintShadows(g, site, look, doc, 'rest');
   paintCliffs(g, site);
+  paintTravertine(g, site);
   paintBuildings(g, site, look);
+  paintBoats(g, site, look);
   if (indoor) paintInteriorLight(g, site, look);
 
   // Objects, each with an ink outline. Flat ones (mats) first so upright things overlap them.
@@ -73,6 +82,7 @@ export function paintScene(
   const flat = (k: TileKind): boolean => k === 'mat' || k === 'bedroll';
   props.sort((a, b) => Number(flat(b[2])) - Number(flat(a[2])) || a[1] - b[1]);
   for (const [x, y, k] of props) paintObject(g, k, x, y, look, doc);
+  paintColonnadeBeams(g, site, look);
 
   for (const [x, y, k] of props) {
     if (!hasCanopy(k)) continue;
@@ -113,16 +123,17 @@ function paintObject(
   doc: Document,
 ): void {
   const seed = hash(x, y, 11);
-  const size = TILE + PROP_MARGIN * 2;
+  const margin = kind === 'column' ? TALL_MARGIN : PROP_MARGIN;
+  const size = TILE + margin * 2;
   withOutline(
     g,
-    x * TILE - PROP_MARGIN,
-    y * TILE - PROP_MARGIN,
+    x * TILE - margin,
+    y * TILE - margin,
     size,
     size,
     INK,
     (c) => {
-      c.translate(PROP_MARGIN, PROP_MARGIN);
+      c.translate(margin, margin);
       if (!paintTrunk(c, kind, seed) && !paintNatureProp(c, kind, look, seed))
         paintFurnishing(c, kind, look, seed);
     },

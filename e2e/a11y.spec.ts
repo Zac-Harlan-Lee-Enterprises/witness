@@ -4,6 +4,7 @@ import {
   choose,
   createProfile,
   endDialogue,
+  newGame,
   openApp,
   setFastSettings,
   waitForWorld,
@@ -37,7 +38,7 @@ test('menus, settings and in-game overlays pass automated WCAG checks (incl. col
   await setFastSettings(page);
   await createProfile(page, 'Axe');
   await scan(page, 'chapter select');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await scan(page, 'dialogue');
   await choose(page, 'Of course. What do I need to know?');
@@ -87,7 +88,7 @@ test('200% text still fits a 320 px-wide screen without sideways scrolling', asy
   await setFastSettings(page);
   await createProfile(page, 'Big');
   expect(await overflow(), 'chapter select').toBeLessThanOrEqual(1);
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   expect(await overflow(), 'dialogue').toBeLessThanOrEqual(1);
   await choose(page, 'Of course. What do I need to know?');

@@ -1,6 +1,7 @@
 import type { Chapter } from '@/domain/chapter';
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
+import { weatherOf } from '@/domain/weather';
 import { playerMarks, resolveLook } from '@/domain/looks';
 import type { GameState } from '@/domain/state/game-state';
 import { blockedFn, nearestOpen } from '@/domain/navigation';
@@ -96,6 +97,7 @@ export function buildSceneModel(
     ambience: scene.ambience,
     mood: moodOf(scene),
     lighting: lightingOf(chapter, state),
+    weather: weatherOf(scene, state),
     grid,
     baseTile: scene.baseTile,
     entities,

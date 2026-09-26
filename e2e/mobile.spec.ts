@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { choose, createProfile, endDialogue, goTo, openApp, waitForWorld } from './support';
+import {
+  choose,
+  createProfile,
+  endDialogue,
+  goTo,
+  newGame,
+  openApp,
+  waitForWorld,
+} from './support';
 
 test('touch controls: on-screen pad, action button and Go-to work on phones and tablets', async ({
   page,
@@ -13,7 +21,7 @@ test('touch controls: on-screen pad, action button and Go-to work on phones and 
   await page.getByLabel('Dialogue text speed').selectOption('instant');
   await page.getByRole('button', { name: 'Done' }).click();
   await createProfile(page, 'Touch');
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newGame(page);
   await waitForWorld(page);
   await choose(page, 'Me? All the way to Jericho?');
   await choose(page, 'I’ll head to the market.');

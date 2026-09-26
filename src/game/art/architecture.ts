@@ -1,6 +1,18 @@
 import type { Look } from './direction';
-import { ellipse, hash, mix, rgba, rng, shade, softShadow, speckle, TILE, type Ctx } from './paint';
-import { backWallSlots, type Site } from './site';
+import {
+  ellipse,
+  hash,
+  lumpy,
+  mix,
+  rgba,
+  rng,
+  shade,
+  softShadow,
+  speckle,
+  TILE,
+  type Ctx,
+} from './paint';
+import { backWallSlots, isBuilding, type Site } from './site';
 
 /**
  * Buildings. A wall that faces the viewer is drawn as a FRONT that rises
@@ -18,11 +30,15 @@ export function paintBuildings(ctx: Ctx, site: Site, look: Look): void {
   site.forEach((x, y) => {
     const k = site.kindAt(x, y);
     if (k === 'roof') paintRoof(ctx, site, look, x, y);
+    else if (k === 'tile-roof') paintTileRoof(ctx, site, look, x, y);
     else if (k === 'wall' && !site.isFrontWall(x, y)) paintWallCap(ctx, site, look, x, y);
   });
   site.forEach((x, y) => {
     const k = site.kindAt(x, y);
     if (k === 'fence') paintLowWall(ctx, site, look, x, y);
+    else if (k === 'sheepfold') paintFoldWall(ctx, site, look, x, y);
+    else if (k === 'terrace') paintTerraceWall(ctx, site, look, x, y);
+    else if (k === 'gate' && isFoldGate(site, x, y)) paintFoldGate(ctx, look, x, y);
     else if (k === 'door' || k === 'gate') paintOpening(ctx, site, look, x, y);
   });
   site.forEach((x, y) => {
@@ -38,7 +54,7 @@ function paintWallCap(ctx: Ctx, site: Site, look: Look, tx: number, ty: number):
   const r = rng(hash(tx, ty, 23));
   const wallish = (dx: number, dy: number): boolean => {
     const k = site.kindAt(tx + dx, ty + dy);
-    return k === 'wall' || k === 'roof' || k === 'door' || k === 'gate';
+    return isBuilding(k) || k === 'door' || k === 'gate';
   };
   if (look.mood === 'home') {
     // Interior: the thickness of the walls, framing the room in dark timber-and-earth tones.
@@ -75,10 +91,7 @@ function paintRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): vo
   const X = tx * TILE;
   const Y = ty * TILE;
   const r = rng(hash(tx, ty, 29));
-  const roofAt = (dx: number, dy: number): boolean => {
-    const k = site.kindAt(tx + dx, ty + dy);
-    return k === 'roof' || k === 'wall';
-  };
+  const roofAt = (dx: number, dy: number): boolean => isBuilding(site.kindAt(tx + dx, ty + dy));
   const reed = look.building.material === 'mudbrick';
   const base = reed ? '#b8955a' : shade(look.building.top, -0.02);
   ctx.fillStyle = base;
@@ -201,6 +214,119 @@ function paintRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): vo
       ctx.stroke();
     }
   }
+}
+
+/**
+ * A pitched roof of fired terracotta tiles, as on Greek and Roman houses in
+ * Asia Minor: rows of flat pan tiles with rounded cover tiles over the joints,
+ * a ridge along the top, weathering toward the eaves.
+ */
+function paintTileRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 47));
+  const roofAt = (dx: number, dy: number): boolean => site.kindAt(tx + dx, ty + dy) === 'tile-roof';
+  const clay = '#b4613b';
+  const base = shade(clay, (r() - 0.5) * 0.06);
+  // Slope shading: the upper (north) half catches the sun, the lower half turns away.
+  const g = ctx.createLinearGradient(0, Y, 0, Y + TILE);
+  g.addColorStop(0, shade(base, roofAt(0, -1) ? 0.02 : 0.14));
+  g.addColorStop(1, shade(base, roofAt(0, 1) ? -0.04 : -0.18));
+  ctx.fillStyle = g;
+  ctx.fillRect(X, Y, TILE, TILE);
+  // Cover tiles run down the slope; each course overlaps the one below it.
+  for (let col = 0; col < 5; col++) {
+    const cx = X + 3.2 + col * 6.4;
+    for (let row = 0; row < 4; row++) {
+      const cy = Y + row * 8;
+      const tone = shade(clay, (hash(tx * 5 + col, ty * 4 + row, 3) % 9) / 60 - 0.04);
+      ctx.fillStyle = tone;
+      ctx.beginPath();
+      ctx.moveTo(cx - 2.2, cy + 8);
+      ctx.quadraticCurveTo(cx - 2.4, cy + 1, cx, cy + 0.6);
+      ctx.quadraticCurveTo(cx + 2.4, cy + 1, cx + 2.2, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = rgba('#ffe2c4', 0.3);
+      ctx.fillRect(cx - 1.5, cy + 1.4, 0.9, 5.5);
+      ctx.fillStyle = rgba('#3a150a', 0.35);
+      ctx.fillRect(cx - 2.2, cy + 7.2, 4.4, 0.9);
+    }
+    // The pan tiles' joints between the covers.
+    ctx.fillStyle = rgba('#4a1c0e', 0.3);
+    ctx.fillRect(cx + 2.6, Y, 0.9, TILE);
+  }
+  // Lichen and a few darker, older tiles.
+  if (r() < 0.35) ellipse(ctx, X + 4 + r() * 24, Y + 6 + r() * 20, 2.2, 1.4, rgba('#c9c08a', 0.5));
+  // Ridge along the top of a roof, eaves along the bottom, verges at the sides.
+  if (!roofAt(0, -1)) {
+    ctx.fillStyle = shade(clay, -0.12);
+    ctx.fillRect(X, Y, TILE, 3.4);
+    ctx.fillStyle = rgba('#ffe2c4', 0.45);
+    ctx.fillRect(X, Y, TILE, 1);
+    for (let i = 0; i < 4; i++) ellipse(ctx, X + 4 + i * 8, Y + 1.8, 3.6, 1.8, shade(clay, 0.05));
+  }
+  if (!roofAt(0, 1)) {
+    ctx.fillStyle = rgba('#2a0f06', 0.35);
+    ctx.fillRect(X, Y + TILE - 2.2, TILE, 2.2);
+  }
+  if (!roofAt(-1, 0)) {
+    ctx.fillStyle = rgba('#ffe2c4', 0.3);
+    ctx.fillRect(X, Y, 1.6, TILE);
+  }
+  if (!roofAt(1, 0)) {
+    ctx.fillStyle = rgba(look.shadow.color, 0.3);
+    ctx.fillRect(X + TILE - 2.4, Y, 2.4, TILE);
+  }
+}
+
+/** Columns this far apart (in tiles) or closer still carry one beam between them. */
+const COLONNADE_SPAN = 3;
+
+/**
+ * The next column along a row (dx = 1) or down a column (dy = 1) within a
+ * colonnade's span, with nothing built in between; null if there is none.
+ */
+export function nextColumn(site: Site, x: number, y: number, dx: 0 | 1, dy: 0 | 1): number | null {
+  for (let step = 1; step <= COLONNADE_SPAN; step++) {
+    const k = site.kindAt(x + dx * step, y + dy * step);
+    if (k === 'column') return step;
+    if (isBuilding(k) || k === 'void') return null;
+  }
+  return null;
+}
+
+/**
+ * The beam (architrave) carried from column to column along a colonnade,
+ * drawn over the tops of the columns so a row reads as one portico.
+ */
+export function paintColonnadeBeams(ctx: Ctx, site: Site, look: Look): void {
+  const stone = shade(look.building.face, 0.06);
+  site.forEach((x, y) => {
+    if (site.kindAt(x, y) !== 'column') return;
+    const top = y * TILE - 30;
+    const X = x * TILE + 16;
+    const across = nextColumn(site, x, y, 1, 0);
+    if (across !== null) {
+      const w = across * TILE;
+      ctx.fillStyle = rgba(look.shadow.color, 0.3);
+      ctx.fillRect(X, top + 6, w, 2);
+      ctx.fillStyle = stone;
+      ctx.fillRect(X, top, w, 6);
+      ctx.fillStyle = rgba('#ffffff', 0.35);
+      ctx.fillRect(X, top, w, 1.2);
+      ctx.fillStyle = rgba(shade(look.building.face, -0.5), 0.35);
+      ctx.fillRect(X, top + 3.4, w, 0.6);
+    }
+    const down = nextColumn(site, x, y, 0, 1);
+    if (down !== null) {
+      // A colonnade running north–south: its beam is seen end-on, along the side.
+      ctx.fillStyle = stone;
+      ctx.fillRect(X - 3, top + 4, 6, down * TILE);
+      ctx.fillStyle = rgba('#ffffff', 0.3);
+      ctx.fillRect(X - 3, top + 4, 1.2, down * TILE);
+    }
+  });
 }
 
 function lumpyBundle(ctx: Ctx, x: number, y: number, look: Look): void {
@@ -473,6 +599,137 @@ function paintLowWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number):
   ctx.fillStyle = rgba(shade(face, -0.5), 0.45);
   if (vertical) ctx.fillRect(x0 + w - 2, y0, 2, h);
   else ctx.fillRect(x0, y0 + h - 2, w, 2);
+}
+
+// ── Fields: sheepfolds and terraces ─────────────────────────────────────
+/** Rough field stones in a dry-stone course, no mortar. */
+function fieldStones(
+  ctx: Ctx,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  face: string,
+  r: () => number,
+  count: number,
+): void {
+  for (let i = 0; i < count; i++) {
+    const sx = x0 + 1 + r() * (w - 5);
+    const sy = y0 + 1.5 + r() * (h - 5);
+    const rx = 2.6 + r() * 2.2;
+    const ry = 1.8 + r() * 1.1;
+    ellipse(ctx, sx + rx, sy + ry + 0.8, rx, ry, rgba(shade(face, -0.55), 0.35));
+    ellipse(ctx, sx + rx, sy + ry, rx, ry, shade(face, (r() - 0.5) * 0.24));
+    ellipse(ctx, sx + rx - 1, sy + ry - 0.7, rx * 0.4, ry * 0.3, rgba('#ffffff', 0.22));
+  }
+}
+
+/**
+ * A sheepfold wall: waist-high dry stone, thicker than a garden wall, with
+ * thorny brushwood laid along the top to keep animals in and thieves out.
+ */
+function paintFoldWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 41));
+  const along = (dx: number, dy: number): boolean => {
+    const k = site.kindAt(tx + dx, ty + dy);
+    return k === 'sheepfold' || k === 'gate';
+  };
+  const vertical = (along(0, -1) || along(0, 1)) && !(along(-1, 0) || along(1, 0));
+  const face = mix(look.building.face, '#9c8a6c', 0.45);
+  const x0 = vertical ? X + 6 : X;
+  const w = vertical ? 20 : TILE;
+  const y0 = vertical ? Y : Y + 5;
+  const h = vertical ? TILE : 20;
+  ctx.fillStyle = shade(face, -0.12);
+  ctx.fillRect(x0, y0, w, h);
+  fieldStones(ctx, x0, y0, w, h, face, r, 9);
+  // Brushwood along the top: dark twiggy clumps with thorny tips.
+  const twig = '#4a3620';
+  for (let i = 0; i < 6; i++) {
+    const bx = vertical ? x0 + 3 + r() * (w - 6) : x0 + 2 + r() * (w - 4);
+    const by = vertical ? y0 + 2 + r() * (h - 4) : y0 + 1 + r() * 5;
+    lumpy(ctx, bx, by, 2.6 + r() * 1.6, r, rgba(mix(look.foliage.dark, twig, 0.5), 0.9), 6);
+    ctx.strokeStyle = rgba(twig, 0.9);
+    ctx.lineWidth = 0.6;
+    for (let t = 0; t < 3; t++) {
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + (r() - 0.5) * 8, by - 1 - r() * 4);
+      ctx.stroke();
+    }
+  }
+  ctx.fillStyle = rgba(shade(face, -0.5), 0.4);
+  if (vertical) ctx.fillRect(x0 + w - 2, y0, 2, h);
+  else ctx.fillRect(x0, y0 + h - 2, w, 2);
+}
+
+function isFoldGate(site: Site, tx: number, ty: number): boolean {
+  return [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ].some(([dx, dy]) => site.kindAt(tx + (dx ?? 0), ty + (dy ?? 0)) === 'sheepfold');
+}
+
+/** The fold's single way in: trodden earth between two upright gate stones. */
+function paintFoldGate(ctx: Ctx, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 43));
+  ctx.fillStyle = shade(look.ground.sand, -0.12);
+  ctx.fillRect(X + 2, Y, TILE - 4, TILE);
+  for (let i = 0; i < 8; i++)
+    ellipse(ctx, X + 6 + r() * 20, Y + 4 + r() * 24, 1.3, 1, rgba('#4a3620', 0.4));
+  const stone = mix(look.building.face, '#9c8a6c', 0.45);
+  for (const sx of [X + 1, X + TILE - 6]) {
+    ctx.fillStyle = rgba('#2a1a10', 0.3);
+    ctx.fillRect(sx + 1.5, Y + 6, 5, 22);
+    ctx.fillStyle = stone;
+    ctx.fillRect(sx, Y + 3, 5, 22);
+    ctx.fillStyle = rgba('#ffffff', 0.25);
+    ctx.fillRect(sx, Y + 3, 5, 1.5);
+  }
+}
+
+/**
+ * A terrace wall: the dry-stone step that holds up a hillside field. The
+ * upper field's edge is on top; the stone face drops toward the viewer.
+ */
+function paintTerraceWall(ctx: Ctx, site: Site, look: Look, tx: number, ty: number): void {
+  const X = tx * TILE;
+  const Y = ty * TILE;
+  const r = rng(hash(tx, ty, 47));
+  const face = mix(look.building.face, '#a89272', 0.5);
+  // Top: the lip of the field above, with a few weeds.
+  ctx.fillStyle = shade(face, 0.1);
+  ctx.fillRect(X, Y + 4, TILE, 6);
+  // Face: coursed field stones, shadowed toward the foot.
+  ctx.fillStyle = shade(face, -0.18);
+  ctx.fillRect(X, Y + 10, TILE, 18);
+  fieldStones(ctx, X, Y + 10, TILE, 18, face, r, 10);
+  const grad = ctx.createLinearGradient(0, Y + 14, 0, Y + 28);
+  grad.addColorStop(0, rgba(look.shadow.color, 0));
+  grad.addColorStop(1, rgba(look.shadow.color, 0.4));
+  ctx.fillStyle = grad;
+  ctx.fillRect(X, Y + 14, TILE, 14);
+  if (r() < 0.6) {
+    ctx.strokeStyle = look.foliage.mid;
+    ctx.lineWidth = 0.9;
+    const gx = X + 4 + r() * 24;
+    ctx.beginPath();
+    ctx.moveTo(gx, Y + 9);
+    ctx.lineTo(gx - 1.5, Y + 4);
+    ctx.moveTo(gx, Y + 9);
+    ctx.lineTo(gx + 2, Y + 5);
+    ctx.stroke();
+  }
+  // Where the wall ends, a rounded end stone.
+  if (site.kindAt(tx - 1, ty) !== 'terrace') ellipse(ctx, X + 3, Y + 18, 4, 9, shade(face, -0.05));
+  if (site.kindAt(tx + 1, ty) !== 'terrace')
+    ellipse(ctx, X + TILE - 3, Y + 18, 4, 9, shade(face, -0.25));
 }
 
 // ── Inside Miriam's house: the back wall is where life hangs ─────────────

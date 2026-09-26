@@ -22,6 +22,7 @@ import {
   poseKey,
   type RestPose,
 } from '../art/people/sheet';
+import { attachLayers } from '../prerendered/layers';
 import { shadeTint, turnPath } from '../prerendered/select';
 import { BLINK_MS, faceToward, mouthOpen, nextBlinkDelay, noticesPlayer } from '../systems/life';
 
@@ -93,6 +94,8 @@ export interface RenderedFigure {
     frameWidth: number;
     frameHeight: number;
   };
+  /** Overlay sheets drawn over the figure (story marks: bandages, a cloak, gear). */
+  layers?: readonly string[];
 }
 
 /** Strength of a rendered person's own shadow in full sun (it fades out in shade). */
@@ -112,6 +115,7 @@ export function addRenderedFigure(
     .sprite(0, 0, fig.key, frame)
     .setOrigin(fig.originX / fig.frameWidth, fig.originY / fig.frameHeight)
     .setScale(1 / fig.ppu);
+  attachLayers(scene, sprite, fig.layers ?? []);
   // Shadow sheets are opaque tints on white, multiplied onto the ground.
   const shadow = scene.add
     .sprite(0, 0, fig.shadowKey, frame)
@@ -225,7 +229,7 @@ export class Actors {
     const frame = frameName(view.facing, 0);
     const x = (view.x + 0.5) * TILE;
     const y = (view.y + 0.5) * TILE + (pose === 'stand' ? FEET_BELOW_CENTRE : SEAT_BELOW_CENTRE);
-    const rendered = pose === 'stand' ? this.renderedFor(view) : null;
+    const rendered = this.renderedFor(view);
     let sprite: Phaser.GameObjects.Sprite;
     let shadow: Phaser.GameObjects.Sprite | null = null;
     if (rendered) {

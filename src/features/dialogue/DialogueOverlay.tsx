@@ -7,8 +7,13 @@ import { ContentKindBadge } from '../common/ContentBlock';
 import { useSettings, useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { Portrait } from '../common/Portrait';
+import { preloadPortraits } from '../portraits/portrait-art';
 import type { GameRuntimeLike } from '../game/types';
 import { prefersReducedMotionSetting } from '../game/motion';
+
+/** The speaker's portrait (CSS px; smaller on phones, see app.css). */
+const PORTRAIT_SIZE = 104;
+const PORTRAIT_SIZE_LARGE_TEXT = 72;
 
 /**
  * The conversation box. Text reveals at the chosen speed (or instantly), but
@@ -22,6 +27,11 @@ import { prefersReducedMotionSetting } from '../game/motion';
 export function DialogueOverlay({ runtime }: { runtime: GameRuntimeLike }) {
   const ui = useStore(runtime.ui);
   const view = ui.dialogue;
+  const { chapter } = runtime;
+  useEffect(() => {
+    // Everyone who may speak in this chapter, so their portraits show at once.
+    preloadPortraits(chapter.characters, PORTRAIT_SIZE);
+  }, [chapter]);
   const spoken = view ? `${speakerLabel(view) ? `${speakerLabel(view)}: ` : ''}${view.text}` : '';
   return (
     <>
@@ -92,7 +102,11 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
       aria-labelledby="dialogue-speaker"
     >
       <div className="dialogue__portrait">
-        <Portrait appearance={view.speaker.appearance} size={settings.textScale > 1.4 ? 64 : 88} />
+        <Portrait
+          appearance={view.speaker.appearance}
+          characterId={view.speaker.kind === 'character' ? view.speaker.id : null}
+          size={settings.textScale > 1.4 ? PORTRAIT_SIZE_LARGE_TEXT : PORTRAIT_SIZE}
+        />
       </div>
       <div className="dialogue__main">
         <div className="dialogue__header">

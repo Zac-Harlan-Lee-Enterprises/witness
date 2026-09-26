@@ -32,6 +32,21 @@ const PROP_TILES: ReadonlySet<TileKind> = new Set<TileKind>([
   'cloth',
   'mat',
   'bedroll',
+  'manger',
+  'sheep',
+  'hay',
+  'campfire',
+  'column',
+  'vat',
+  'amphorae',
+  'couch',
+  'milestone',
+  'garden',
+  'lampstand',
+  'fountain',
+  'mast',
+  'nets',
+  'rack',
 ]);
 
 /** Painted as part of the land or buildings rather than as a standing object. */
@@ -45,9 +60,26 @@ const STRUCTURES: ReadonlySet<TileKind> = new Set<TileKind>([
   'door',
   'gate',
   'fence',
+  'sheepfold',
+  'terrace',
+  'tile-roof',
+  'travertine',
+  // The lake and its boats are painted in their own passes (nature.ts, boats.ts).
+  'lake',
+  'shallows',
+  'hull',
+  'boat',
 ]);
 
-const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig']);
+/** Low dry-stone walls: drawn over the ground they stand on, like a fence. */
+const LOW_WALLS: ReadonlySet<TileKind> = new Set<TileKind>(['fence', 'sheepfold', 'terrace']);
+
+export function isLowWall(kind: TileKind): boolean {
+  return LOW_WALLS.has(kind);
+}
+
+/** Tall things whose tops are drawn above people: trees, and a boat's mast and yard. */
+const CANOPIES: ReadonlySet<TileKind> = new Set<TileKind>(['olive', 'palm', 'fig', 'mast']);
 
 /**
  * Height in world units (a tile is 32) — how far a thing's shadow reaches.
@@ -80,6 +112,25 @@ const HEIGHTS: Partial<Record<TileKind, number>> = {
   crops: 12,
   reeds: 22,
   cloth: 26,
+  manger: 10,
+  sheepfold: 16,
+  terrace: 14,
+  sheep: 9,
+  hay: 14,
+  campfire: 5,
+  'tile-roof': 46,
+  column: 56,
+  vat: 8,
+  amphorae: 20,
+  couch: 10,
+  milestone: 26,
+  travertine: 14,
+  garden: 12,
+  lampstand: 36,
+  fountain: 16,
+  mast: 70,
+  nets: 26,
+  rack: 22,
 };
 
 export function isPropTile(kind: TileKind): boolean {
@@ -98,7 +149,9 @@ export function heightOf(kind: TileKind): number {
   return HEIGHTS[kind] ?? 0;
 }
 
-const isBuilding = (k: TileKind): boolean => k === 'wall' || k === 'roof';
+/** Walls and the roofs over them (flat plaster or pitched terracotta). */
+export const isBuilding = (k: TileKind): boolean =>
+  k === 'wall' || k === 'roof' || k === 'tile-roof';
 
 /** The ground a prop stands on: the most common ground-like neighbour (hills count as ground). */
 export function groundUnder(grid: TileGrid, tx: number, ty: number, fallback: TileKind): TileKind {
@@ -160,7 +213,10 @@ export function readSite(
     x >= 0 && y >= 0 && x < grid.width && y < grid.height;
   const groundAt = (x: number, y: number): TileKind => {
     const k = kindAt(x, y);
-    return PROP_TILES.has(k) || k === 'fence' ? groundUnder(grid, x, y, baseTile) : k;
+    // Low walls and props stand on the ground around them; so does a boat drawn up on a beach (boats afloat get water from boats.ts).
+    return PROP_TILES.has(k) || LOW_WALLS.has(k) || k === 'boat'
+      ? groundUnder(grid, x, y, baseTile)
+      : k;
   };
   const opensSouth = (x: number, y: number): boolean => {
     if (!inside(x, y + 1)) return false;
@@ -201,14 +257,20 @@ export interface LightSpot {
   x: number;
   y: number;
   radius: number;
+  /** How strong its pool of light is (1: painted places; less where the art already glows). */
+  strength?: number;
 }
 
-/** Hearth glows at ovens; indoors, lamp niches and windows along the back wall. */
+/** Hearth glows at ovens and campfires, lamps on lampstands; indoors, lamp niches and windows along the back wall. */
 export function findLights(site: Site, indoor: boolean): LightSpot[] {
   const lights: LightSpot[] = [];
   site.forEach((x, y) => {
     if (site.kindAt(x, y) === 'oven')
       lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 12, radius: indoor ? 70 : 40 });
+    if (site.kindAt(x, y) === 'campfire')
+      lights.push({ kind: 'hearth', x: x * 32 + 16, y: y * 32 + 18, radius: 56 });
+    if (site.kindAt(x, y) === 'lampstand')
+      lights.push({ kind: 'lamp', x: x * 32 + 16, y: y * 32 - 2, radius: indoor ? 48 : 36 });
   });
   if (indoor) {
     backWallSlots(site).forEach(({ x, y, use }) => {

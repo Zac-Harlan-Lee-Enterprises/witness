@@ -1,19 +1,54 @@
+import { appearanceKey } from '@/domain/appearance-key';
 import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
-import type { LookMark } from '@/domain/world';
-import type { LightingVariant, PeopleArt } from './manifest';
+import type { LookMark, Pose } from '@/domain/world';
+import { naturalColor } from '@/shared/color';
+import type {
+  ArtSprite,
+  ArtVariant,
+  LightingVariant,
+  PeopleArt,
+  PeopleLight,
+  PlaceArt,
+} from './manifest';
 
 /**
  * The rules for using pre-rendered art, as pure functions (unit-tested):
  * which places have it, which lighting variant and resolution to load,
- * how sprites sort against people, which sheet draws a person, how shade
- * on the ground tints someone standing in it, and how people turn.
+ * how sprites sort against people, which sheets draw a person (and the
+ * overlays for their story marks), how shade on the ground tints someone
+ * standing in it, how people turn, and when a canopy fades.
  */
 
-/** Places with pre-rendered art, and where it is served (relative to the site base). */
-export const PLACE_ART: Readonly<Record<string, string>> = {
-  'jerusalem-market': 'art/jerusalem-market/',
-};
+/**
+ * Places with pre-rendered art: each has public/art/<id>/manifest.json,
+ * written by tools/art/build_place.py. (tests/content/art-assets.test.ts
+ * checks this list against the folders, both ways.)
+ */
+export const PLACES_WITH_ART = [
+  'miriam-house',
+  'jerusalem-market',
+  'jericho-road',
+  'jericho',
+  // Chapter 2: A Storm on Galilee
+  'shelomit-house',
+  'capernaum-shore',
+  'open-lake',
+  // Chapter 3: A Journey to Bethlehem
+  'tamar-house',
+  'bethlehem-lanes',
+  'shepherds-fields',
+  // Chapter 4: A Letter from Paul
+  'ammia-workshop',
+  'colossae-street',
+  'lycus-road',
+  'philemon-house',
+] as const;
+
+/** Where each place's art is served (relative to the site base). */
+export const PLACE_ART: Readonly<Record<string, string>> = Object.fromEntries(
+  PLACES_WITH_ART.map((id) => [id, `art/${id}/`]),
+);
 
 export const PEOPLE_ART = 'art/people/';
 
@@ -23,22 +58,94 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
+/**
+ * A place's night set, where it has one, from dusk until before dawn (the
+ * story clock runs past midnight: 26 is 2 a.m.).
+ */
+export const NIGHT_FROM_HOUR = 18;
+export const NIGHT_UNTIL_HOUR = 5;
 
+export function isNightHour(hour: number | null): boolean {
+  if (hour === null) return false;
+  const h = ((hour % 24) + 24) % 24;
+  return h >= NIGHT_FROM_HOUR || h < NIGHT_UNTIL_HOUR;
+}
+
+/**
+ * The set of a place's art for an hour: its night set after dark, its
+ * later-day set from mid-afternoon, else its morning set; a place without
+ * the set an hour asks for shows the nearest it has (the later day for the
+ * night, the morning for the later day, else whichever it has).
+ */
 export function variantFor(
   hour: number | null,
   available: readonly LightingVariant[],
 ): LightingVariant {
+  if (isNightHour(hour) && available.includes('night')) return 'night';
   if (hour !== null && hour >= LATE_FROM_HOUR && available.includes('late')) return 'late';
-  return 'day';
+  if (available.includes('day')) return 'day';
+  return available.includes('late') ? 'late' : (available[0] ?? 'day');
+}
+
+/** A place's first set in the order of the day (the stand-in when another fails to load). */
+export function firstVariant(art: Pick<PlaceArt, 'variants'>): ArtVariant | undefined {
+  return art.variants.day ?? art.variants.late ?? art.variants.night;
+}
+
+/**
+ * The set a place already drawn should change to as the story clock moves
+ * on (the sun sets while you are in the fields), or null to stay as it is.
+ */
+export function relightTo(
+  loaded: LightingVariant,
+  hour: number | null,
+  available: readonly LightingVariant[],
+): LightingVariant | null {
+  const wanted = variantFor(hour, available);
+  return wanted === loaded ? null : wanted;
+}
+
+/**
+ * How people are lit in a place: as its set says (a house by day and by its
+ * lamps at night), else as the place says (a room's own light, rain cloud,
+ * lamp-lighting), else by the place's sun.
+ */
+export function peopleLightFor(
+  variant: LightingVariant,
+  place: PlaceArt['peopleLight'],
+  set?: ArtVariant['peopleLight'],
+): PeopleLight {
+  return set ?? place ?? variant;
 }
 
 /**
  * Half-resolution art when the view is small enough that it barely shows
  * (below two-thirds of the full set's resolution: phones), saving about
- * 20 MB of texture memory, or when the device has asked for simpler effects.
+ * three quarters of the texture memory, or when the device has asked for
+ * simpler effects. (No texture is bigger than MAX_ART_TEXTURE, so the GPU's
+ * own limit never forces it.)
  */
 export function wantsLowResolution(zoom: number, ppu: number, lowPower: boolean): boolean {
   return lowPower || zoom < (ppu * 2) / 3;
+}
+
+/** Where a ground tile goes in the world (game units), from its pixel offset and the ground's ppu. */
+export function tileOrigin(tile: { x: number; y: number }, ppu: number): { x: number; y: number } {
+  return { x: tile.x / ppu, y: tile.y / ppu };
+}
+
+/**
+ * The sprite atlas pages to load, and the scale of their pixels against the
+ * manifest's (1, or 0.5 for the half-resolution pages when the view asked
+ * for low resolution and they exist).
+ */
+export function pagesFor(
+  variant: Pick<ArtVariant, 'pages' | 'pagesLow'>,
+  low: boolean,
+): { files: readonly string[]; scale: number } {
+  if (low && variant.pagesLow && variant.pagesLow.length === variant.pages.length)
+    return { files: variant.pagesLow, scale: 0.5 };
+  return { files: variant.pages, scale: 1 };
 }
 
 /** A sprite's ground line (game units) as the tile row people are sorted by. */
@@ -46,37 +153,92 @@ export function depthRow(base: number): number {
   return base / 32;
 }
 
-/** A stable key for an authored appearance (matches the offline art build). */
-export function appearanceKey(a: Appearance): string {
-  return [
-    a.skin,
-    a.hair,
-    a.robe,
-    a.accent,
-    a.headwear,
-    a.headwearColor,
-    a.beard ? 'beard' : 'clean',
-    a.build,
-    a.carry,
-  ]
-    .join('|')
-    .toLowerCase();
+/** A stable key for an authored appearance (one definition, in the domain; matches the offline art build). */
+export { appearanceKey };
+
+/** Marks that change the body itself (so they have sheets of their own, not overlays). */
+export const BODY_MARKS: readonly LookMark[] = ['torn-hem'];
+
+/** Overlays draw in this order, bottom to top. */
+const OVERLAY_ORDER: readonly LookMark[] = [
+  'wrapped-in-cloak',
+  'cloak-roll',
+  'water-skin',
+  'letter-case',
+  // A lamb carried across the shoulders (Chapter 3), under a lamp held up.
+  'carrying-lamb',
+  'lamp',
+  'bandaged',
+  'rag-bandaged',
+];
+
+export interface FigureSheets {
+  /** The sheet that draws the person (with any body marks built in). */
+  base: string;
+  /** Overlay sheets for the other marks, bottom to top. */
+  overlays: string[];
 }
 
+const sameMarks = (a: readonly string[], b: readonly string[]): boolean =>
+  a.length === b.length && [...a].sort().every((m, i) => m === [...b].sort()[i]);
+
 /**
- * The pre-rendered sheet for someone, or null to fall back to the painted
- * figure: sheets are rendered without story marks (bandages, a borrowed
- * cloak), so anyone showing marks is painted instead.
+ * The pre-rendered sheets that draw someone with these story marks in this
+ * pose, or null to paint them instead (no sheet for them, or a mark without
+ * art). `rag` is the colour of the player's tunic, for bandages torn from it.
  */
-export function sheetFor(
+export function pickSheets(
   people: PeopleArt | null,
   appearance: Appearance,
   marks: readonly LookMark[],
-): string | null {
-  if (!people || marks.length > 0) return null;
+  pose: Pose = 'stand',
+  rag: string | null = null,
+): FigureSheets | null {
+  if (!people) return null;
   const key = appearanceKey(appearance);
-  for (const [id, sheet] of Object.entries(people)) if (sheet.appearance === key) return id;
-  return null;
+  const entries = Object.entries(people).filter(([, s]) => s.appearance === key && s.pose === pose);
+  const body = marks.filter((m) => BODY_MARKS.includes(m));
+  const base = entries.find(([, s]) => !s.overlay && sameMarks(s.marks, body));
+  // Overlays are made over the sheet without body marks.
+  const plain = entries.find(([, s]) => !s.overlay && s.marks.length === 0);
+  if (!base || !plain) return null;
+  const want = rag ? naturalColor(rag).toLowerCase() : null;
+  const overlays: string[] = [];
+  for (const mark of OVERLAY_ORDER) {
+    if (!marks.includes(mark)) continue;
+    const found = entries.find(
+      ([, s]) =>
+        s.overlay?.of === plain[0] &&
+        s.overlay.mark === mark &&
+        (mark !== 'rag-bandaged' || s.overlay.rag === want),
+    );
+    if (!found) return null;
+    overlays.push(found[0]);
+  }
+  if (marks.some((m) => !BODY_MARKS.includes(m) && !OVERLAY_ORDER.includes(m))) return null;
+  return { base: base[0], overlays };
+}
+
+/**
+ * Every sheet a place may need, loaded before it is shown so the story can
+ * change how people look without a pause: for each appearance present,
+ * all its sheets (standing, at rest, with body marks, overlays), except
+ * bandages torn from another tunic than the player's (`rag`); and the
+ * passers-by if the place has any.
+ */
+export function sheetsToLoad(
+  people: PeopleArt,
+  appearances: readonly Appearance[],
+  crowd: boolean,
+  rag: string | null = null,
+): string[] {
+  const keys = new Set(appearances.map(appearanceKey));
+  const want = rag ? naturalColor(rag).toLowerCase() : null;
+  return Object.entries(people)
+    .filter(([id, s]) => keys.has(s.appearance) || (crowd && id.startsWith('crowd-')))
+    .filter(([, s]) => s.overlay?.rag === undefined || s.overlay.rag === want)
+    .map(([id]) => id)
+    .sort();
 }
 
 export interface ShadeMask {
@@ -118,6 +280,33 @@ export function shadeTint(visibility: number): number {
   const g = Math.round(255 * (0.66 + 0.34 * v));
   const b = Math.round(255 * (0.78 + 0.22 * v));
   return (r << 16) | (g << 8) | b;
+}
+
+/** How far a canopy fades while someone is behind it. */
+export const CANOPY_FADED = 0.38;
+
+/**
+ * Whether someone standing at (x, y) (their feet, game units) is hidden by
+ * a canopy sprite: they are behind its trunk's ground line, and their body
+ * (about 50 units tall) overlaps the middle of its box (crowns are round,
+ * so the corners are left out).
+ */
+export function behindCanopy(
+  sprite: Pick<ArtSprite, 'x' | 'y' | 'w' | 'h' | 'base'>,
+  ppu: number,
+  x: number,
+  y: number,
+): boolean {
+  if (y >= sprite.base) return false;
+  const w = sprite.w / ppu;
+  const h = sprite.h / ppu;
+  const insetX = w * 0.15;
+  const insetY = h * 0.1;
+  const left = sprite.x + insetX;
+  const right = sprite.x + w - insetX;
+  const top = sprite.y + insetY;
+  const bottom = sprite.y + h - insetY;
+  return x + 8 > left && x - 8 < right && y > top && y - 50 < bottom;
 }
 
 const DIAGONAL: Record<string, string> = {

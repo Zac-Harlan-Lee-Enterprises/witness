@@ -1,10 +1,15 @@
 import type { TileKind } from '@/domain/world';
+import { paintMastFoot } from './boats';
 import type { Look } from './direction';
 import { ellipse, mix, rgba, rng, shade, type Ctx } from './paint';
 
 /**
  * Things people made: stalls, pottery, the bread oven, a well, crates and
- * sacks, a loom, mats, a cart, a caravan tent. Painted in local coordinates
+ * sacks, a loom, mats, a cart, a caravan tent, a stone manger, a heap of
+ * straw and a shepherds' fire; in the Greek cities of Asia Minor, stone
+ * columns, dye vats, amphorae, dining couches, milestones, bronze lampstands
+ * and public fountains; and by the lake, nets hung to dry, a fish-drying
+ * rack and the foot of a boat's mast. Painted in local coordinates
  * (the tile spans 0–32; tall things may rise above 0). Returns false for
  * kinds it doesn't paint.
  */
@@ -13,6 +18,7 @@ const WOOD_DARK = '#573b22';
 const CLAY = '#b8683e';
 const CLAY_DARK = '#8c4f2e';
 const LINEN = '#ece2c8';
+const ROPE_COLOR = '#c9b184';
 
 function pick<T>(items: readonly T[], r: () => number, fallback: T): T {
   return items[Math.floor(r() * items.length)] ?? fallback;
@@ -360,6 +366,384 @@ export function paintFurnishing(c: Ctx, kind: TileKind, look: Look, seed: number
         c.fillStyle = rgba('#000000', 0.12);
         c.fillRect(9.5 + i * 8.5, 0, 1.5, 15 + (i % 2) * 3);
       }
+      return true;
+    }
+    case 'manger': {
+      // A feeding trough cut from one block of limestone, with fodder in it.
+      const stone = '#b3a283';
+      c.fillStyle = shade(stone, -0.28);
+      c.beginPath();
+      c.roundRect(2, 12, 28, 15, 3);
+      c.fill();
+      c.fillStyle = stone;
+      c.beginPath();
+      c.roundRect(2, 9, 28, 13, 3);
+      c.fill();
+      // The hollow, then straw heaped in it.
+      c.fillStyle = shade(stone, -0.45);
+      c.beginPath();
+      c.roundRect(5, 11, 22, 8, 2);
+      c.fill();
+      for (let i = 0; i < 14; i++) {
+        c.strokeStyle = i % 2 ? '#d9bd72' : '#b99a52';
+        c.lineWidth = 0.8;
+        const sx = 6 + r() * 20;
+        const sy = 12 + r() * 6;
+        c.beginPath();
+        c.moveTo(sx, sy);
+        c.lineTo(sx + (r() - 0.5) * 7, sy - 1 - r() * 2.5);
+        c.stroke();
+      }
+      c.fillStyle = rgba('#ffffff', 0.25);
+      c.fillRect(3, 9.5, 26, 1.2);
+      // Chisel marks on the face.
+      c.strokeStyle = rgba(shade(stone, -0.5), 0.45);
+      c.lineWidth = 0.5;
+      for (let i = 0; i < 5; i++) {
+        const mx = 5 + i * 5.5 + r();
+        c.beginPath();
+        c.moveTo(mx, 21);
+        c.lineTo(mx + 1.2, 25);
+        c.stroke();
+      }
+      return true;
+    }
+    case 'hay': {
+      // A loose heap of straw and chaff.
+      ellipse(c, 16, 22, 14, 8, '#a8894a');
+      ellipse(c, 15, 18, 12, 9, '#c9aa62');
+      ellipse(c, 13, 14, 8, 6, '#d9bd72');
+      for (let i = 0; i < 24; i++) {
+        const sx = 4 + r() * 24;
+        const sy = 9 + r() * 18;
+        c.strokeStyle = i % 3 ? '#e6cf8a' : '#9c7c3e';
+        c.lineWidth = 0.7;
+        c.beginPath();
+        c.moveTo(sx, sy);
+        c.lineTo(sx + (r() - 0.5) * 8, sy + (r() - 0.5) * 4);
+        c.stroke();
+      }
+      return true;
+    }
+    case 'campfire': {
+      // A ring of blackened stones, embers and a low flame.
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        ellipse(
+          c,
+          16 + Math.cos(a) * 9,
+          22 + Math.sin(a) * 5,
+          3,
+          2.2,
+          i % 2 ? '#8d8069' : '#6e6252',
+        );
+      }
+      ellipse(c, 16, 22, 6.5, 3.6, '#2a1a10');
+      c.strokeStyle = WOOD_DARK;
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.moveTo(11, 24);
+      c.lineTo(21, 20);
+      c.moveTo(12, 20);
+      c.lineTo(20, 24);
+      c.stroke();
+      ellipse(c, 16, 22, 4, 2.2, '#c2481e');
+      ellipse(c, 16, 19, 3.2, 4.5, rgba('#f08a2a', 0.9));
+      ellipse(c, 16, 18.5, 1.8, 3, rgba('#ffd27a', 0.95));
+      return true;
+    }
+    case 'column': {
+      // A stone column: moulded base, a fluted shaft that swells slightly,
+      // and an Ionic capital with its scrolls, rising well above its tile.
+      const stone = shade(look.building.face, 0.08);
+      const g = c.createLinearGradient(10, 0, 22, 0);
+      g.addColorStop(0, shade(stone, 0.16));
+      g.addColorStop(0.45, stone);
+      g.addColorStop(1, shade(stone, -0.3));
+      c.fillStyle = shade(stone, -0.12);
+      c.fillRect(7, 25, 18, 4.5);
+      ellipse(c, 16, 24.5, 8, 2.2, shade(stone, 0.04));
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(11, 24);
+      c.quadraticCurveTo(10.3, 0, 11.6, -20);
+      c.lineTo(20.4, -20);
+      c.quadraticCurveTo(21.7, 0, 21, 24);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = rgba(shade(stone, -0.45), 0.35);
+      c.lineWidth = 0.5;
+      for (let i = 0; i < 4; i++) {
+        c.beginPath();
+        c.moveTo(12.8 + i * 2.2, -19);
+        c.lineTo(12.6 + i * 2.2, 23.5);
+        c.stroke();
+      }
+      // Capital: echinus and the two volutes, then the square abacus.
+      ellipse(c, 16, -21, 6.4, 2, shade(stone, 0.05));
+      ellipse(c, 9.4, -23.5, 2.6, 2.6, shade(stone, -0.05));
+      ellipse(c, 22.6, -23.5, 2.6, 2.6, shade(stone, -0.12));
+      c.strokeStyle = rgba(shade(stone, -0.5), 0.5);
+      c.beginPath();
+      c.arc(9.4, -23.5, 1.2, 0, Math.PI * 1.6);
+      c.moveTo(23.8, -23.5);
+      c.arc(22.6, -23.5, 1.2, 0, Math.PI * 1.6);
+      c.stroke();
+      c.fillStyle = shade(stone, 0.12);
+      c.fillRect(6.5, -28.5, 19, 3.4);
+      c.fillStyle = rgba('#ffffff', 0.35);
+      c.fillRect(6.5, -28.5, 19, 0.9);
+      return true;
+    }
+    case 'vat': {
+      // A round dye vat set in a plastered stone surround, full of colour.
+      const dyes = ['#8e2a26', '#6a2a4f', '#2f4a78', '#a8322a', '#d6cfae'];
+      const dye = dyes[seed % dyes.length] ?? '#8e2a26';
+      c.fillStyle = '#b7a888';
+      c.fillRect(2, 8, 28, 20);
+      c.fillStyle = shade('#b7a888', 0.18);
+      c.fillRect(2, 8, 28, 2.4);
+      c.fillStyle = shade('#b7a888', -0.25);
+      c.fillRect(2, 25.5, 28, 2.5);
+      ellipse(c, 16, 18, 11.5, 7.5, shade('#b7a888', -0.35));
+      const d = c.createRadialGradient(13, 16, 1, 16, 18, 11);
+      d.addColorStop(0, shade(dye, 0.2));
+      d.addColorStop(1, shade(dye, -0.3));
+      c.fillStyle = d;
+      c.beginPath();
+      c.ellipse(16, 18.5, 10, 6.4, 0, 0, Math.PI * 2);
+      c.fill();
+      ellipse(c, 12.5, 16.5, 3, 1, rgba('#ffffff', 0.3));
+      // Stained rim and a stirring pole.
+      c.strokeStyle = rgba(dye, 0.5);
+      c.lineWidth = 0.8;
+      c.beginPath();
+      c.ellipse(16, 18, 11.5, 7.5, 0, Math.PI * 0.1, Math.PI * 0.9);
+      c.stroke();
+      if (r() < 0.6) {
+        c.strokeStyle = WOOD;
+        c.lineWidth = 1.2;
+        c.beginPath();
+        c.moveTo(18, 19);
+        c.lineTo(28, 4);
+        c.stroke();
+      }
+      return true;
+    }
+    case 'amphorae': {
+      // Tall two-handled transport jars leaning together on their pointed feet.
+      const amph = (x: number, lean: number, s: number, col: string): void => {
+        c.save();
+        c.translate(x, 28);
+        c.rotate(lean);
+        c.scale(s, s);
+        c.fillStyle = col;
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.quadraticCurveTo(-6.5, -8, -5.5, -17);
+        c.quadraticCurveTo(-4.5, -24, -1.6, -26);
+        c.lineTo(-1.6, -31);
+        c.lineTo(1.6, -31);
+        c.lineTo(1.6, -26);
+        c.quadraticCurveTo(4.5, -24, 5.5, -17);
+        c.quadraticCurveTo(6.5, -8, 0, 0);
+        c.closePath();
+        c.fill();
+        ellipse(c, -2.4, -16, 1.6, 6, rgba('#ffffff', 0.22));
+        c.strokeStyle = shade(col, -0.25);
+        c.lineWidth = 0.9;
+        c.beginPath();
+        c.moveTo(-1.6, -29);
+        c.quadraticCurveTo(-5, -29, -4.6, -24.5);
+        c.moveTo(1.6, -29);
+        c.quadraticCurveTo(5, -29, 4.6, -24.5);
+        c.stroke();
+        ellipse(c, 0, -31, 1.8, 0.7, shade(col, -0.4));
+        c.restore();
+      };
+      amph(10, -0.12, 0.95, CLAY);
+      amph(21, 0.1, 0.9, mix(CLAY, '#d8b48a', 0.3));
+      if (r() < 0.6) amph(16, 0.02, 0.8, CLAY_DARK);
+      return true;
+    }
+    case 'couch': {
+      // A dining couch: a wooden frame, a thick mattress and a bolster.
+      const cloth = accent(0);
+      c.fillStyle = WOOD_DARK;
+      c.fillRect(1, 12, 30, 15);
+      c.fillStyle = WOOD;
+      c.fillRect(1, 12, 30, 3);
+      c.fillStyle = WOOD_DARK;
+      c.fillRect(2, 26, 2.4, 4);
+      c.fillRect(27.6, 26, 2.4, 4);
+      c.fillStyle = cloth;
+      c.beginPath();
+      c.roundRect(1.5, 8, 29, 13, 4);
+      c.fill();
+      c.fillStyle = rgba('#ffffff', 0.18);
+      c.fillRect(3, 9, 26, 2);
+      c.fillStyle = rgba(accent(2), 0.9);
+      c.fillRect(1.5, 17, 29, 1.4);
+      ellipse(c, 6, 11, 5, 3.4, shade(accent(1), 0.1));
+      ellipse(c, 5, 10, 2.4, 1.4, rgba('#ffffff', 0.2));
+      return true;
+    }
+    case 'milestone': {
+      // A cylindrical milestone on a square base, cut with lines of letters.
+      const stone = '#cfc3a6';
+      c.fillStyle = shade(stone, -0.18);
+      c.fillRect(8, 25, 16, 5);
+      const g = c.createLinearGradient(10, 0, 22, 0);
+      g.addColorStop(0, shade(stone, 0.18));
+      g.addColorStop(1, shade(stone, -0.3));
+      c.fillStyle = g;
+      c.fillRect(10.5, 1, 11, 25);
+      ellipse(c, 16, 1, 5.5, 2, shade(stone, 0.2));
+      c.strokeStyle = rgba('#4a3c28', 0.7);
+      c.lineWidth = 0.7;
+      for (let i = 0; i < 5; i++) {
+        c.beginPath();
+        c.moveTo(12.5, 6 + i * 3.4);
+        c.lineTo(19.5 - (i % 2) * 2, 6 + i * 3.4);
+        c.stroke();
+      }
+      ellipse(c, 13, 22, 2, 1.4, rgba('#7a8a4c', 0.6));
+      return true;
+    }
+    case 'lampstand': {
+      // A tall bronze lampstand on three feet, with a lit clay lamp on top.
+      const bronze = '#8a6a3a';
+      c.strokeStyle = shade(bronze, -0.2);
+      c.lineWidth = 1.3;
+      c.beginPath();
+      c.moveTo(16, 26);
+      c.lineTo(10, 30);
+      c.moveTo(16, 26);
+      c.lineTo(22, 30);
+      c.moveTo(16, 26);
+      c.lineTo(16, 30);
+      c.stroke();
+      const g = c.createLinearGradient(15, 0, 17.5, 0);
+      g.addColorStop(0, shade(bronze, 0.35));
+      g.addColorStop(1, shade(bronze, -0.3));
+      c.fillStyle = g;
+      c.fillRect(15, -10, 2.4, 36);
+      ellipse(c, 16.2, 6, 2, 1, shade(bronze, 0.2));
+      ellipse(c, 16.2, -10.5, 5, 1.6, shade(bronze, 0.1));
+      ellipse(c, 16.2, -12, 4.2, 2, CLAY);
+      ellipse(c, 20.2, -12.5, 1.4, 2.2, '#f7c653');
+      ellipse(c, 20.2, -13.3, 0.7, 1.2, '#fff1b8');
+      return true;
+    }
+    case 'fountain': {
+      // A public fountain: a stone basin fed by a spout set in a back slab.
+      const stone = shade(look.building.face, -0.04);
+      c.fillStyle = shade(stone, -0.1);
+      c.fillRect(6, -6, 20, 14);
+      c.fillStyle = rgba('#ffffff', 0.3);
+      c.fillRect(6, -6, 20, 1.2);
+      ellipse(c, 16, 1, 3.4, 3, shade(stone, -0.3));
+      c.fillStyle = stone;
+      c.fillRect(1, 9, 30, 19);
+      c.fillStyle = shade(stone, 0.15);
+      c.fillRect(1, 9, 30, 2.4);
+      c.fillStyle = shade(stone, -0.28);
+      c.fillRect(1, 25.5, 30, 2.5);
+      const w = c.createLinearGradient(0, 12, 0, 25);
+      w.addColorStop(0, '#5f9fae');
+      w.addColorStop(1, '#2f6f86');
+      c.fillStyle = w;
+      c.fillRect(3.5, 12.5, 25, 12);
+      // The falling stream and its ripples.
+      c.fillStyle = rgba('#d8f0f2', 0.8);
+      c.fillRect(15.2, 2, 1.6, 12);
+      c.strokeStyle = rgba('#d8f0f2', 0.7);
+      c.lineWidth = 0.7;
+      c.beginPath();
+      c.ellipse(16, 15, 4, 1.4, 0, 0, Math.PI * 2);
+      c.ellipse(16, 15, 7, 2.4, 0, 0.3, Math.PI - 0.3);
+      c.stroke();
+      return true;
+    }
+    case 'mast':
+      paintMastFoot(c, seed);
+      return true;
+    case 'nets': {
+      // Nets hung to dry between two poles: cork floats along the head rope,
+      // stone sinkers along the foot, and a mended patch.
+      c.fillStyle = WOOD_DARK;
+      c.fillRect(1.5, -6, 2.4, 34);
+      c.fillRect(28.1, -6, 2.4, 34);
+      const top = (x: number): number => -3 + Math.sin((x / 32) * Math.PI) * 3;
+      c.save();
+      c.fillStyle = rgba('#d8ccad', 0.35);
+      c.beginPath();
+      c.moveTo(3, top(3));
+      for (let x = 3; x <= 29; x += 2) c.lineTo(x, top(x));
+      c.lineTo(29, 22);
+      c.quadraticCurveTo(16, 26, 3, 22);
+      c.closePath();
+      c.fill();
+      // The mesh, kept inside the hanging net.
+      c.clip();
+      c.strokeStyle = rgba('#e6dcc0', 0.85);
+      c.lineWidth = 0.45;
+      for (let i = -8; i < 14; i++) {
+        c.beginPath();
+        c.moveTo(3 + i * 3, top(3));
+        c.lineTo(3 + i * 3 + 22, 22);
+        c.moveTo(3 + i * 3 + 22, top(3));
+        c.lineTo(3 + i * 3, 22);
+        c.stroke();
+      }
+      c.restore();
+      c.strokeStyle = ROPE_COLOR;
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(2, top(2));
+      for (let x = 2; x <= 30; x += 2) c.lineTo(x, top(x));
+      c.stroke();
+      for (let x = 5; x < 29; x += 4.5) ellipse(c, x, top(x) + 0.8, 1.6, 1.1, '#b07a3a');
+      for (let x = 6; x < 28; x += 5) ellipse(c, x, 22.5 + Math.sin(x) * 0.8, 1.3, 1.2, '#5a554c');
+      if (r() < 0.6) {
+        c.fillStyle = rgba(accent(1), 0.55);
+        c.fillRect(11 + r() * 8, 6 + r() * 6, 5, 4);
+      }
+      return true;
+    }
+    case 'rack': {
+      // A drying rack: two trestles and poles hung with split fish.
+      c.fillStyle = WOOD_DARK;
+      for (const x of [2, 28]) {
+        c.beginPath();
+        c.moveTo(x - 1.5, 28);
+        c.lineTo(x + 0.5, 0);
+        c.lineTo(x + 2.5, 28);
+        c.lineTo(x + 1.2, 28);
+        c.lineTo(x + 0.5, 6);
+        c.lineTo(x - 0.2, 28);
+        c.closePath();
+        c.fill();
+      }
+      for (const y of [2, 13]) {
+        c.fillStyle = WOOD;
+        c.fillRect(0, y, 32, 2);
+        for (let i = 0; i < 6; i++) {
+          const fx = 3 + i * 4.8 + r() * 0.8;
+          const len = 7 + r() * 2;
+          const fish = mix('#c9b89a', '#8f8a7e', r());
+          ellipse(c, fx, y + 2 + len / 2, 1.9, len / 2, fish);
+          ellipse(c, fx - 0.5, y + 2 + len / 2 - 1, 0.7, len / 2 - 1.5, rgba('#ffffff', 0.35));
+          c.fillStyle = shade(fish, -0.35);
+          c.beginPath();
+          c.moveTo(fx - 1.6, y + 2 + len);
+          c.lineTo(fx + 1.6, y + 2 + len);
+          c.lineTo(fx, y + len - 0.5);
+          c.closePath();
+          c.fill();
+        }
+      }
+      ellipse(c, 16, 28, 12, 1.6, rgba('#8a7a5a', 0.4));
       return true;
     }
     default:

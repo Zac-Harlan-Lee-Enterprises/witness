@@ -15,6 +15,7 @@ export default tseslint.config(
       'test-results',
       '.logs',
       '.pids',
+      '.claude/worktrees',
     ],
   },
   js.configs.recommended,

@@ -45,6 +45,8 @@ export async function continueDialogue(page: Page): Promise<void> {
 }
 
 export async function choose(page: Page, text: string | RegExp): Promise<void> {
+  // The conversation may still be opening, e.g. while a pre-rendered place loads.
+  await dialogueBox(page).waitFor({ state: 'visible', timeout: 60_000 });
   await continueDialogue(page);
   await dialogueBox(page).locator('.choice').filter({ hasText: text }).first().click();
 }
@@ -52,6 +54,16 @@ export async function choose(page: Page, text: string | RegExp): Promise<void> {
 export async function endDialogue(page: Page): Promise<void> {
   await continueDialogue(page);
   await expect(dialogueBox(page)).toHaveCount(0);
+}
+
+/**
+ * Close the narration a place opens with on arrival. It starts once the place
+ * has loaded, after the HUD already names it (a pre-rendered place takes a
+ * few seconds to load): wait for it rather than finding no dialogue yet.
+ */
+export async function endArrivalNarration(page: Page): Promise<void> {
+  await expect(dialogueBox(page)).toBeVisible({ timeout: 30_000 });
+  await endDialogue(page);
 }
 
 /** Use the accessible “Go to…” list. */
@@ -75,4 +87,18 @@ export async function snap(page: Page, name: string): Promise<void> {
   if (!process.env.E2E_SHOTS) return;
   await page.waitForTimeout(300);
   await page.screenshot({ path: `test-results/shots/${name}.png` });
+}
+
+/**
+ * Start a new game of one chapter from chapter select. Each chapter card is
+ * labelled by its title, so tests stay unambiguous as chapters are added.
+ */
+export async function newGame(
+  page: Page,
+  title: string | RegExp = 'The Road to Jericho',
+): Promise<void> {
+  await page
+    .getByRole('listitem', { name: title })
+    .getByRole('button', { name: 'New game' })
+    .click();
 }

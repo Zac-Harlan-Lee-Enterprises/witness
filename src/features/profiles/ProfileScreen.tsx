@@ -51,7 +51,7 @@ export function ProfileScreen({
                     className="profile-card__select"
                     onClick={() => onSelect(p)}
                   >
-                    <Portrait appearance={PLAYER_APPEARANCES[p.look]} size={56} />
+                    <Portrait appearance={PLAYER_APPEARANCES[p.look]} size={64} />
                     <span className="profile-card__name">{p.displayName}</span>
                     <span className="profile-card__meta">
                       {p.completedChapters.length > 0
@@ -180,7 +180,7 @@ function NewProfileForm({
               checked={look === l}
               onChange={() => setLook(l)}
             />
-            <Portrait appearance={PLAYER_APPEARANCES[l]} size={56} />
+            <Portrait appearance={PLAYER_APPEARANCES[l]} size={72} />
             <span>Look {i + 1}</span>
           </label>
         ))}

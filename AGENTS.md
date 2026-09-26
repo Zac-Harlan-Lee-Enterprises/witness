@@ -1,6 +1,6 @@
 # AGENTS.md
 
-> **Read this first.** Single entry point for any AI agent (Claude, Copilot, Cursor…) or new developer working on **Witness: A Journey Through Scripture** — a local-first Christian narrative adventure (React + Phaser 3 + TypeScript PWA). Vertical slice: **Chapter 1, The Road to Jericho**.
+> **Read this first.** Single entry point for any AI agent (Claude, Copilot, Cursor…) or new developer working on **Witness: A Journey Through Scripture** — a local-first Christian narrative adventure (React + Phaser 3 + TypeScript PWA). Four chapters: **1 The Road to Jericho**, **2 A Storm on Galilee**, **3 A Journey to Bethlehem**, **4 A Letter from Paul** (`src/content/chapters/`), every place pre-rendered in 3D (`tools/art/`).
 
 ---
 
@@ -110,6 +110,7 @@ Data flow: **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 | `VITE_CONTENT_MODE` | `preview` (default; label unreviewed content) or `strict` |
 | `VITE_CAMERA_FRAMING` | `close` (default: used only in places whose art is sharp enough, standard elsewhere) or `standard` everywhere |
 | `VITE_ART_LIGHTING` | Review builds only: force pre-rendered places to `day` or `late` light (default follows the story clock) |
+| `VITE_FORCE_WEATHER` | Review builds only: show `clear`, `wind`, `rain` or `storm` everywhere, whatever the story says (default follows the story) |
 | `CI` | Set by CI; relaxes local-only sweep checks (git hooks, branch protection) |
 
 Everything `VITE_*` is compiled into the public bundle — never put a secret in one.
@@ -135,6 +136,7 @@ Everything `VITE_*` is compiled into the public bundle — never put a secret in
 | Regenerate PWA icons | `npm run icons` |
 | Re-export art data after changing characters/maps | `npm run art:data` |
 | Re-render the market / people (needs Blender 5.2+, `BLENDER=` to override) | `npm run art:market` · `npm run art:people` |
+| Weather and atmosphere captures (review only) | `VITE_FORCE_WEATHER=storm E2E_SHOTS=1 WEATHER_SHOTS=storm E2E_GPU=1 npx playwright test e2e/weather-art.spec.ts --project=desktop-chromium` |
 | Market art captures / performance (review only) | `E2E_SHOTS=1 ART_SHOTS=<set> npx playwright test e2e/market-art.spec.ts --project=desktop-chromium` · `PERF_MARKET=1 PERF_LABEL=<label> npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium` |
 | Drift sweep | `bash quality-sweep.sh` |
 

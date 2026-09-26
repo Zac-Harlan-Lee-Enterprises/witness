@@ -16,6 +16,16 @@ describe('footsteps', () => {
     expect(footstepSurface('wall')).toBe('earth');
   });
 
+  it('cover the ground of every chapter, not just Jericho', () => {
+    expect(footstepSurface('deck')).toBe('wood');
+    expect(footstepSurface('jetty')).toBe('stone');
+    expect(footstepSurface('shingle')).toBe('gravel');
+    expect(footstepSurface('straw')).toBe('mat');
+    expect(footstepSurface('mosaic')).toBe('stone');
+    expect(footstepSurface('roman-road')).toBe('stone');
+    expect(footstepSurface('bridge')).toBe('stone');
+  });
+
   it('play when the world reports a footfall, for the tile it landed on', async () => {
     const h = await createHarness();
     const p = new Player(h);

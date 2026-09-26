@@ -1313,8 +1313,8 @@ legend {
     gap: 0.3rem;
   }
   .dialogue__portrait .portrait {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
   }
   .toasts {
     top: auto;
@@ -1519,6 +1519,16 @@ legend {
   display: block;
   border-radius: 12px;
 }
+/* Rendered portraits: fixed size, and the warm stone of their backdrop
+   underneath while the image decodes, so nothing jumps or flashes. */
+.portrait--rendered {
+  display: block;
+  flex: none;
+  object-fit: cover;
+  border-radius: 12px;
+  background: radial-gradient(circle at 60% 35%, #c8ae86, #8c7253);
+  box-shadow: inset 0 0 0 1px rgb(44 29 18 / 0.25);
+}
 /* The speaker's name on a label, like the tag on a scroll. */
 .dialogue__header {
   margin-bottom: 0.2rem;
@@ -1609,11 +1619,11 @@ legend {
     margin: 0;
   }
   .dialogue__portrait .portrait {
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
   }
   .dialogue__header {
-    margin-left: 4.1rem;
+    margin-left: 4.6rem;
     min-height: 1.8rem;
   }
 }
