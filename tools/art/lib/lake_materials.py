@@ -208,15 +208,23 @@ def planks(color="#7c6650", name="deck-planks", along="X", width=0.15, length=1.
         comb = n.new("ShaderNodeCombineXYZ")
         n.link(sep, a, comb, "X")
         n.link(sep, b, comb, "Y")
+        # Each plank row's butt joints fall where they happen to (a random
+        # shift per row), not in a regular stagger that reads as tiling.
+        row = n.math("FLOOR", (n.math("DIVIDE", (sep, b), width), "Value"))
+        rnd = n.new("ShaderNodeTexWhiteNoise", _noise_dimensions="1D", W=(row, "Value"))
+        shift = n.math("MULTIPLY", (rnd, "Value"), length)
+        xs = n.math("ADD", (sep, a), (shift, "Value"))
+        comb2 = n.new("ShaderNodeCombineXYZ", X=(xs, "Value"))
+        n.link(sep, b, comb2, "Y")
         brick = n.new(
             "ShaderNodeTexBrick",
-            Vector=(comb, "Vector"),
+            Vector=(comb2, "Vector"),
             Color1=(1.0, 1.0, 1.0, 1.0),
             Color2=(0.0, 0.0, 0.0, 1.0),
             Mortar=(0.0, 0.0, 0.0, 1.0),
             Scale=1.0,
             **{"Mortar Size": 0.006, "Mortar Smooth": 0.3, "Bias": 0.0, "Brick Width": length, "Row Height": width},
-            _offset=0.37,
+            _offset=0.0,
             _offset_frequency=1,
             _squash_frequency=1,
         )
@@ -233,7 +241,8 @@ def planks(color="#7c6650", name="deck-planks", along="X", width=0.15, length=1.
         wear = n.new("ShaderNodeMapRange", Value=(big, "Fac"), **{"From Min": 0.4, "From Max": 0.7, "To Min": 0.0, "To Max": worn})
         col = (n.mix((wear, "Result"), col, _toward(color, "#b9ad98", 0.6)), 2)
         # Seams: pitch-dark caulking.
-        seam = n.math("SUBTRACT", 1.0, (brick, "Fac"))
+        # The brick texture's Fac is 1 in the mortar: the seams.
+        seam = n.math("MULTIPLY", (brick, "Fac"), 1.0)
         sm = n.math("MULTIPLY", (seam, "Value"), 0.7)
         col = (n.mix((sm, "Value"), col, "#2e2218"), 2)
         # Treenails: small dark round pegs in rows.
@@ -241,7 +250,7 @@ def planks(color="#7c6650", name="deck-planks", along="X", width=0.15, length=1.
         n.link(comb, "Vector", pegs_v, 0)
         pegs_v.inputs[1].default_value = (1.0 / 0.42, 1.0 / width, 1.0)
         peg = n.new("ShaderNodeTexVoronoi", Scale=1.0, Vector=(pegs_v, "Vector"), Randomness=0.0)
-        pm = n.new("ShaderNodeMapRange", Value=(peg, "Distance"), **{"From Min": 0.05, "From Max": 0.09, "To Min": 0.75, "To Max": 0.0})
+        pm = n.new("ShaderNodeMapRange", Value=(peg, "Distance"), **{"From Min": 0.035, "From Max": 0.07, "To Min": 0.45, "To Max": 0.0})
         col = (n.mix((pm, "Result"), col, "#2a1e14"), 2)
         ao = n.new("ShaderNodeAmbientOcclusion", Distance=0.2, _samples=8, _only_local=False)
         gr = n.new("ShaderNodeMapRange", Value=(ao, "AO"), **{"From Min": 0.3, "From Max": 0.95, "To Min": 0.55, "To Max": 0.0})
@@ -250,9 +259,12 @@ def planks(color="#7c6650", name="deck-planks", along="X", width=0.15, length=1.
         if wet:
             col = (n.mix(wet, col, "#000000", "MULTIPLY"), 2)
             col[0].inputs[0].default_value = wet * 0.45
-        h = n.math("SUBTRACT", (grain, "Fac"), (seam, "Value"))
+        # Seams sunk only a little: a deep groove catches the light on its
+        # far side and prints a bright line along every plank.
+        sd = n.math("MULTIPLY", (seam, "Value"), 0.35)
+        h = n.math("SUBTRACT", (grain, "Fac"), (sd, "Value"))
         h = n.math("SUBTRACT", (h, "Value"), (pm, "Result"))
-        bump = n.bump((h, "Value"), strength=0.35, distance=0.006)
+        bump = n.bump((h, "Value"), strength=0.3, distance=0.004)
         n.bsdf(**{"Base Color": col, "Roughness": rough, "Specular IOR Level": 0.32, "Normal": (bump, "Normal")})
         return n.mat
 
