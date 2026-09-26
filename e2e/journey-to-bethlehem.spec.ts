@@ -3,6 +3,7 @@ import {
   choose,
   continueDialogue,
   createProfile,
+  endArrivalNarration,
   endDialogue,
   expectScene,
   goTo,
@@ -77,7 +78,7 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   // The crowded village.
   await goTo(page, 'Go to the lane');
   await expectScene(page, 'The lanes of Bethlehem');
-  await endDialogue(page);
+  await endArrivalNarration(page);
   await snap(page, 'bethlehem-04-lanes');
   await goTo(page, 'Talk to Hagit');
   await choose(page, 'Is your house full of guests too?');
@@ -86,7 +87,7 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await goTo(page, 'Take Heap of clean straw');
   await goTo(page, /Go to the east gate/);
   await expectScene(page, 'The fold below Bethlehem');
-  await endDialogue(page);
+  await endArrivalNarration(page);
 
   // The lost lamb: read the signs, then argue for the gully (deduction).
   await goTo(page, 'Talk to Cousin Yonatan');

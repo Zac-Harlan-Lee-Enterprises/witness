@@ -48,12 +48,15 @@ from kit_mudbrick import MudbrickKit
 from kit_plants import PlantsKit
 from kit_props import PropsKit
 from kit_roman import RomanKit
+from kit_village import VillageKit
 
 # Mirrors TILE_KINDS in src/domain/world.ts: which kinds block movement.
 SOLID = {
     "wall", "roof", "water", "well", "olive", "palm", "rock", "cliff", "hill", "bush", "stall", "table",
     "jars", "cairn", "fence", "oven", "crate", "sacks", "basket", "loom", "cart", "tent", "trough",
     "crops", "reeds", "fig", "cloth", "void",
+    # Chapter 3 (kit_village.py)
+    "manger", "sheepfold", "terrace", "sheep", "hay", "campfire",
     # Chapter 4 (kit_roman.py)
     "tile-roof", "column", "vat", "amphorae", "couch", "milestone", "travertine", "garden", "lampstand",
     "fountain",
@@ -236,9 +239,11 @@ def tile_builder(kind):
     return "tile_" + kind.replace("-", "_")
 
 
-class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
+class Place(LakeKit, VillageKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, MudbrickKit, InteriorKit):
     """Builds a whole place. Kits supply the tile builders; this class reads
-    the map, shapes the terrain and dispatches."""
+    the map, shapes the terrain and dispatches. (LakeKit comes first, for
+    Galilee's places, then VillageKit, for the Judean hill village of
+    Chapter 3; each hands everything else on to the kits after it.)"""
 
     def __init__(self, scene_data, seed=11):
         self.data = scene_data
@@ -255,6 +260,10 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
         # Volumes (dust in a sun shaft), in the ground layer only.
         self.volumes = []
         self.exposure = 0.0
+        # Extra exposure (EV) per lighting variant (a room lit only by lamps).
+        self.variant_exposure = {}
+        # Fires and lamps the game makes flicker: (kind, x, y, radius, lights[, strength]), game units.
+        self.flicker = []
         self.col_ground = common.collection("ground")
         self.heights = None
         self._materials()
@@ -298,6 +307,16 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
         # A region's own stone and ground (Galilee: basalt), and per-light changes.
         self.regional_materials()
 
+    def light_spots(self, variant):
+        """The fires and lamps burning in a lighting variant, for the game to
+        make flicker: kind ('hearth' or 'lamp'), centre and radius in game units,
+        and, where an entry gives one (a sixth item), how strong its pool is."""
+        return [
+            {"kind": k, "x": round(x, 1), "y": round(y, 1), "radius": round(r, 1), **({"strength": s[0]} if s else {})}
+            for k, x, y, r, vs, *s in self.flicker
+            if variant in vs
+        ]
+
     # ── heights ─────────────────────────────────────────────────────────────
     def H(self, x, y):
         """Terrain height (tiles) under map point (x, y)."""
@@ -315,7 +334,7 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
         missing = [k for k in m.kinds() if not hasattr(self, tile_builder(k))]
         if missing:
             raise SystemExit(f"No builder for tile kinds {missing} in {m.id}: add Place.tile_<kind> (tools/art/lib)")
-        self.heights = terrain.heights(self)
+        self.heights = self.shape_heights(terrain.heights(self))
         self._ground()
         self._structures()
         for k in m.kinds():
@@ -325,8 +344,11 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
         return self
 
     # ── ground ──────────────────────────────────────────────────────────────
+    # (ground_spec, layer_look, shape_heights, ground_rock and shape_mask are
+    # hooks with defaults in VillageKit, which every place has: the village
+    # gives its places their own ground; the rest keep their style's.)
     def ground_layer_of(self, kind):
-        g = GROUND[self.style]
+        g = self.ground_spec()
         if kind in g.get("kinds", {}):
             return g["kinds"][kind]
         return None
@@ -334,7 +356,7 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
     def _masks(self, px=16):
         """Per-layer masks from the map (warped edges), as RGB images."""
         m = self.map
-        g = GROUND[self.style]
+        g = self.ground_spec()
         names = g["layers"]
         W, Hh = m.w * px, m.h * px
         warp = (value_noise(W, Hh, 10, 3) - 0.5) * 7 + (value_noise(W, Hh, 3, 4) - 0.5) * 2.5
@@ -379,6 +401,9 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
 
     def _shape_mask(self, name, mask, W, Hh, px):
         """Soften and break up a layer's mask so layers blend like real ground."""
+        shaped = self.shape_mask(name, mask, W, Hh, px)
+        if shaped is not None:
+            return shaped
         if name in ("scrub", "grass", "wscrub"):
             return mask * np.clip(value_noise(W, Hh, 6, 9) * 1.5, 0, 1)
         if name == "path":
@@ -430,19 +455,14 @@ class Place(LakeKit, RomanKit, GroundKit, MasonryKit, PropsKit, PlantsKit, Mudbr
 
     def _ground(self):
         m = self.map
-        if self.style == "city" and self.heights is None:
+        if self.style == "city" and self.heights is None and not self.village:
             return self._ground_city()
         if self.style == "lake":
             return self.lake_ground()
         names, images = self._masks()
-        layers = [dict(getattr(self, "looks", {}).get(n) or LAYER_LOOKS[n]) for n in names]
+        layers = [dict(self.layer_look(n)) for n in names]
         self._extra_masks(names, images)
-        rock = None
-        red = None
-        if self.style == "wilderness":
-            rock = {"color": "#cbbfa6", "strata": "#a99b82", "dust": "#d6c6a2", "red": "#ad7a60"}
-            red = self._red_mask()
-        macro = 0.22 if self.style == "wilderness" else 0.1
+        rock, red, macro = self.ground_rock()
         mat = M.ground_surface(f"ground-{m.id}", images, layers, rock=rock, red_mask=red, macro=macro)
         g = terrain.mesh(self, mat, self.col_ground)
         self.ground_objects.append(g)

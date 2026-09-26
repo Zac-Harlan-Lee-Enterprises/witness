@@ -29,11 +29,11 @@ Standing sheet layout (frames FRAME_W x FRAME_H game units, feet at FOOT_Y):
     row 4:    turning in-betweens: down-left, down-right, up-left, up-right
 Lighting variants: day, late (the sun of the places), night (the moon),
 indoor (a lamp and a window, for rooms), overcast (soft skylight under rain
-cloud) and lamp (lampstands at lamp-lighting). A place with pre-rendered art
-says which it needs (its manifest's peopleLight, else its variants). People
-are seen from a slightly lower camera than the world (faces read) with
-height still 1:1 on screen; shadows lie on the ground and use the world
-camera.
+cloud) and lamp (lampstands at lamp-lighting; a house lit by its lamps at
+night). A place with pre-rendered art says which it needs (its manifest's
+peopleLight, or each set's own, else its variants). People are seen from a slightly lower camera than the
+world (faces read) with height still 1:1 on screen; shadows lie on the
+ground and use the world camera.
 """
 import argparse
 import json
@@ -67,23 +67,10 @@ REST_TILT = 45.0
 REST_W = 84
 REST_H = 96
 REST_Y = 60
-SHADOW_BOX = {
-    "day": (-64, -42, 20, 12),
-    "late": (-12, -66, 150, 14),
-    # The moon in the south-east: shadows reach up and to the left.
-    "night": (-70, -64, 22, 12),
-    "indoor": (-28, -18, 28, 12),
-    "overcast": (-30, -20, 26, 12),
-    "lamp": (-30, -20, 30, 14),
-}
-REST_SHADOW_BOX = {
-    "day": (-70, -46, 48, 36),
-    "late": (-40, -50, 110, 36),
-    "night": (-78, -66, 48, 36),
-    "indoor": (-46, -40, 46, 36),
-    "overcast": (-48, -40, 48, 36),
-    "lamp": (-48, -40, 48, 36),
-}
+SHADOW_BOX = {"day": (-64, -42, 20, 12), "late": (-12, -66, 150, 14), "indoor": (-28, -18, 28, 12), "overcast": (-30, -20, 26, 12), "lamp": (-30, -20, 30, 14), "night": (-44, -66, 20, 12)}
+REST_SHADOW_BOX = {"day": (-70, -46, 48, 36), "late": (-40, -50, 110, 36), "indoor": (-46, -40, 46, 36), "overcast": (-48, -40, 48, 36), "lamp": (-48, -40, 48, 36), "night": (-56, -72, 48, 36)}
+# Lights after dark: a lamp carried at the belt burns in these.
+DARK = {"night", "lamp"}
 SHADOW_PPU = 1.0
 DIRECTIONS = [("down", 0.0), ("left", -90.0), ("right", 90.0), ("up", 180.0)]
 # Lying: the row names where the head is.
@@ -145,15 +132,21 @@ def rag_hex(color):
 
 def scene_lights(s):
     """The lights people are seen in at a place: as its pre-rendered art
-    says (its manifest's peopleLight, or the light of each of its
-    variants), else indoor for a room and day and late outdoors."""
+    says (its manifest's peopleLight, else each set's own peopleLight or
+    the set's name), else as its light plan will (lighting.PLACE_LIGHTS:
+    so people can be rendered before or beside their place)."""
     path = os.path.join(HERE, "..", "..", "public", "art", s["id"], "manifest.json")
     if os.path.exists(path):
         art = json.load(open(path))
         if art.get("peopleLight"):
             return [art["peopleLight"]]
-        return sorted(art["variants"])
-    return ["indoor"] if s["kind"] == "indoor" else ["day", "late"]
+        return sorted({v.get("peopleLight", name) for name, v in art["variants"].items()})
+    plan, light = lighting.plan_for(s["id"], s["kind"] == "indoor")
+    if isinstance(light, str):
+        return [light]
+    if isinstance(light, dict):
+        return sorted({light.get(name, name) for name in plan})
+    return sorted(plan)
 
 
 def plan(data, scenes):
@@ -228,9 +221,21 @@ def shadow_grey(alpha):
     return np.dstack([rgb, np.ones_like(a)])
 
 
-def render_frame(scene, path):
+def render_frame(scene, path, tries=6):
+    """Render one frame and load it, retrying after a pause if the GPU could
+    not finish it (out of memory while other jobs share it)."""
+    import time
+
     scene.render.filepath = path
-    bpy.ops.render.render(write_still=True)
+    for attempt in range(tries):
+        try:
+            bpy.ops.render.render(write_still=True)
+            break
+        except RuntimeError as error:
+            if attempt == tries - 1 or "Command buffer" not in str(error):
+                raise
+            print("RENDER RETRY", attempt + 1, os.path.basename(path), flush=True)
+            time.sleep(20 * (attempt + 1))
     return imageio.load(path)
 
 
@@ -238,8 +243,9 @@ def render(job, a, manifest, tmp):
     scene = common.reset(a.samples)
     build_marks = set(job.marks) | ({job.overlay} if job.overlay else set())
     app = dict(job.appearance)
-    if job.pose != "stand":
-        # At rest the hands are empty (and Menashe's jar was broken on the road).
+    if job.pose != "stand" and app.get("carry") != "lamb":
+        # At rest the hands are empty (and Menashe's jar was broken on the road);
+        # a newborn lamb stays in the lap.
         app["carry"] = "none"
     person = people.Person(app, marks=build_marks, rag=job.rag or "#3e6b73", name=job.pid)
     bpy.ops.mesh.primitive_plane_add(size=24.0, location=(0, 0, 0))
@@ -281,6 +287,7 @@ def render(job, a, manifest, tmp):
     todo = [v for v in job.variants if v not in entry["sheets"]]
     for variant in todo:
         lighting.setup(scene, variant)
+        # Exposed as the places in that light are (at night, the eye adapts).
         scene.view_settings.exposure = -1.4 + lighting.ev(variant)
         # 1. The person (no ground), from the figure camera. An overlay shows
         #    only its mark; the body is a holdout, hiding what it hides.
@@ -291,6 +298,8 @@ def render(job, a, manifest, tmp):
         for part in mark_parts:
             part.obj.visible_camera = True
             part.obj.hide_render = job.overlay is not None and part.mark != job.overlay
+            if part.obj.get("night_only") and variant not in DARK:
+                part.obj.hide_render = True
         view.setup_figure_camera(scene, foot - fh_u / 2, fw, fh, a.ppu, tilt_deg=REST_TILT if rest else 32.0)
         sheet = np.zeros((fh * n_rows, fw * n_cols, 4), dtype=np.float32)
 

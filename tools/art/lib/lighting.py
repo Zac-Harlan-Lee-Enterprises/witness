@@ -14,13 +14,16 @@ below; see build_place.py):
     are soft pools under things rather than shapes.
   - `dusk`: lamp-lighting. The sun has set; a deep blue sky still glows
     faintly, and the place's own lamps light the room.
-  - `night`: moonlight. A weak, cool moon in the south-east (so the fronts
-    the camera sees are lit and shadows reach up and to the left), a deep
-    blue sky, and whatever lamps and fires the place lights after dark.
-  - `lamplight`: a room at night, lit by its own lamps and embers; the
-    moon through the door is faint beside them.
+  - `night`: a bright moon high in the south-south-east, a cool, dim key
+    with soft shadows, under a clear night sky (deep blue, darker at the
+    zenith, with stars that show only in water). The place's own fires and
+    lamps, lit only at night, are what the eye goes to. Exposed brighter
+    (`ev`), as the eye adapts; the game grades it gently on top.
+  - `lamplight`: a room at night (Chapter 2), lit by its own lamps and
+    embers; the moon through the door is faint beside them.
 And one more light for people: `lamp` (people at lamp-lighting, lit by
-lampstands, with the last blue of the sky above).
+lampstands, with the last blue of the sky above; also people in a house
+lit by its lamps at night).
 """
 import math
 
@@ -75,22 +78,25 @@ LIGHTS = {
         "ev": 0.0,
     },
     "night": {
-        "azimuth": math.radians(-48.0),  # south-east
-        "elevation": math.radians(38.0),
-        "strength": 0.34,
-        "color": "#a9bddf",
+        "azimuth": math.radians(-66.0),  # the moon, south-south-east
+        "elevation": math.radians(46.0),
+        "strength": 1.1,
+        "color": "#98aeea",
         "angle": math.radians(0.6),
-        "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
-        "sky_strength": 1.0,
-        # Baked brighter than it will look: the game darkens and cools a
-        # place after dark (src/game/systems/lighting.ts, grade.ts).
-        "ev": 4.2,
+        "sky_strength": 0.7,
+        # A clear night sky with stars (night_world).
+        "stars": True,
+        # The shade mask records all the light there is: the moon, the
+        # fires and the lamps (in a room, the lamps: its dark corners dim people).
+        "shade": "all",
+        "room_shade_floor": 0.4,
+        "ev": 2.2,
     },
     "lamplight": {
-        "azimuth": math.radians(-48.0),
-        "elevation": math.radians(38.0),
+        "azimuth": math.radians(-66.0),  # the same moon as `night`, faint beside the lamps
+        "elevation": math.radians(46.0),
         "strength": 0.1,
-        "color": "#a9bddf",
+        "color": "#98aeea",
         "angle": math.radians(0.6),
         "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
         "sky_strength": 1.0,
@@ -127,7 +133,7 @@ def ev(name):
 #         "overcast", "lamp" or a light added beside them; None lights them
 #         by the sun of each set.
 # The people job renders exactly those lights for everyone seen there
-# (build_people.py reads each place's manifest: render places first).
+# (build_people.py reads each place's manifest, or this plan while it has none).
 PLACE_LIGHTS = {
     # Chapter 4. The Laodicea road is walked from mid-morning as the rain
     # sweeps down the valley (hours 11-14, always the morning set): rain
@@ -136,20 +142,30 @@ PLACE_LIGHTS = {
     # The gathering at Philemon's house is at lamp-lighting (hour 18), and only then.
     "philemon-house": ({"day": "dusk"}, "lamp"),
     # Chapter 2. The story begins at hour 16 and runs past midnight. The
-    # shore: loading the boat in the afternoon, putting out at 18 (the
-    # later-day set, which the game tints for sunset), coming back to it at
-    # 2 a.m. (hour 26) under the moon.
+    # shore: loading the boat in the afternoon (the later-day set), the
+    # boats putting out at sunset and the homecoming at 2 a.m. (hour 26)
+    # under the moon (the night set, from 18:00).
     "capernaum-shore": ({"late": "late", "night": "night"}, None),
-    # The lake is crossed from sunset (18) into the night: one moonlit set.
+    # The lake is crossed from sunset into the night: one moonlit set.
     "open-lake": ({"night": "night"}, None),
-    # Shelomit's house in the afternoon, and by lamplight at night; people
-    # there are lit for the room either way.
-    "shelomit-house": ({"late": "late", "night": "lamplight"}, "indoor"),
+    # Shelomit's house in the afternoon, and by its lamps at night.
+    "shelomit-house": ({"late": "late", "night": "lamplight"}, {"late": "indoor", "night": "lamp"}),
+    # Chapter 3. Bethlehem is seen from mid-afternoon into the night; a place's
+    # "night" set is shown from 18:00 until 05:00 (select.ts isNightHour).
+    # Its people light may be given per set: {set: people light}.
+    # Tamar's house by day, and at night lit by its lamps and the oven.
+    "tamar-house": ({"day": "day", "night": "night"}, {"day": "indoor", "night": "lamp"}),
+    # The lanes and the fold: first seen after 15:00 (their "day" set is
+    # rendered in the later-day sun), then after dark by the moon, fires and lamps.
+    "bethlehem-lanes": ({"day": "late", "night": "night"}, {"day": "late", "night": "night"}),
+    "shepherds-fields": ({"day": "late", "night": "night"}, {"day": "late", "night": "night"}),
 }
 
 
 def plan_for(scene_id, room):
-    """({set: light}, people light) for a place (see PLACE_LIGHTS)."""
+    """({set: light}, people light) for a place (see PLACE_LIGHTS). The
+    people light is one for the whole place, None (each set's sun), or
+    {set: people light}."""
     if scene_id in PLACE_LIGHTS:
         plan, people = PLACE_LIGHTS[scene_id]
         return dict(plan), people
@@ -206,6 +222,67 @@ def setup_indoor(scene):
     out = nt.nodes.new("ShaderNodeOutputWorld")
     nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
     return None
+
+
+def night_world(scene, strength):
+    """A clear night sky: deep blue, darker overhead and a little paler at
+    the horizon, with stars (small bright points of varied brightness) and
+    a faint band of the Milky Way. It lights the scene only as a dim cool
+    fill; the stars show in water, wet stone and glazed pots."""
+    world = bpy.data.worlds.get("Night") or bpy.data.worlds.new("Night")
+    scene.world = world
+    world.use_nodes = True
+    nt = world.node_tree
+    nt.nodes.clear()
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Generated"], sep.inputs["Vector"])
+    # Height of the direction above the horizon: Generated is the view direction.
+    grad = nt.nodes.new("ShaderNodeValToRGB")
+    grad.color_ramp.elements[0].position = 0.0
+    grad.color_ramp.elements[0].color = hex_rgb("#22335a")
+    grad.color_ramp.elements[1].position = 0.55
+    grad.color_ramp.elements[1].color = hex_rgb("#0a1328")
+    zc = nt.nodes.new("ShaderNodeMath")
+    zc.operation = "MAXIMUM"
+    zc.inputs[1].default_value = 0.0
+    nt.links.new(sep.outputs["Z"], zc.inputs[0])
+    nt.links.new(zc.outputs[0], grad.inputs["Fac"])
+    # Stars: the centres of fine Voronoi cells, only the brightest few.
+    vor = nt.nodes.new("ShaderNodeTexVoronoi")
+    vor.inputs["Scale"].default_value = 260.0
+    nt.links.new(tc.outputs["Generated"], vor.inputs["Vector"])
+    star = nt.nodes.new("ShaderNodeMapRange")
+    star.inputs["From Min"].default_value = 0.06
+    star.inputs["From Max"].default_value = 0.0
+    star.inputs["To Min"].default_value = 0.0
+    star.inputs["To Max"].default_value = 1.0
+    nt.links.new(vor.outputs["Distance"], star.inputs["Value"])
+    bright = nt.nodes.new("ShaderNodeMapRange")
+    bright.inputs["From Min"].default_value = 0.82
+    bright.inputs["From Max"].default_value = 1.0
+    bright.inputs["To Min"].default_value = 0.0
+    bright.inputs["To Max"].default_value = 40.0
+    nt.links.new(vor.outputs["Color"], bright.inputs["Value"])
+    stars = nt.nodes.new("ShaderNodeMath")
+    stars.operation = "MULTIPLY"
+    nt.links.new(star.outputs["Result"], stars.inputs[0])
+    nt.links.new(bright.outputs["Result"], stars.inputs[1])
+    add = nt.nodes.new("ShaderNodeMix")
+    add.data_type = "RGBA"
+    add.blend_type = "ADD"
+    add.inputs[0].default_value = 1.0
+    nt.links.new(grad.outputs["Color"], add.inputs[6])
+    comb = nt.nodes.new("ShaderNodeCombineColor")
+    for k in ("Red", "Green", "Blue"):
+        nt.links.new(stars.outputs[0], comb.inputs[k])
+    nt.links.new(comb.outputs[0], add.inputs[7])
+    bg = nt.nodes.new("ShaderNodeBackground")
+    bg.inputs["Strength"].default_value = strength
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    nt.links.new(add.outputs[2], bg.inputs["Color"])
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+    return world
 
 
 def setup_lamp(scene):
@@ -295,6 +372,9 @@ def setup(scene, name):
     scene.collection.objects.link(sun)
     to_sun = sun_vector(name)
     sun.rotation_euler = to_sun.to_track_quat("Z", "Y").to_euler()
+    if s.get("stars"):
+        night_world(scene, s["sky_strength"])
+        return sun
 
     world = bpy.data.worlds.get("Sky") or bpy.data.worlds.new("Sky")
     scene.world = world

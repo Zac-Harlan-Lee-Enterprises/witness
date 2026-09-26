@@ -102,7 +102,9 @@ export function sunForWater(
   let x: number;
   let y: number;
   if (variant === 'day') [x, y] = [0.92, 0.38];
-  else if (variant !== 'painted') [x, y] = [-0.92, 0.38];
+  else if (variant === 'late') [x, y] = [-0.92, 0.38];
+  // A night bake's moon stands in the south-south-east.
+  else if (variant === 'night') [x, y] = [0.41, 0.91];
   else {
     // Painted art: light from the upper left, swinging with the hour.
     const t = Math.min(1, Math.max(0, (h - 6) / 12));

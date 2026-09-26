@@ -60,6 +60,11 @@ export interface AmbientDeps {
   crowd: readonly RenderedFigure[];
   /** The place is pre-rendered: leave out painted extras (pigeons) that would clash. */
   prerendered: boolean;
+  /**
+   * Its art is a night bake: the lamplight at its doors is in the art (only
+   * where a lamp burns), so none is painted at every door.
+   */
+  bakedNight?: boolean;
   /** Pre-rendered trees that sway (origin already at the foot of the trunk). */
   trees: readonly Phaser.GameObjects.Image[];
   /** Water is drawn live by a shader (fx/water-surface.ts): no painted glints. */
@@ -101,6 +106,7 @@ export class AmbientLife {
     seed: number;
     radius: number;
     kind: LightSpot['kind'] | 'doorway';
+    strength: number;
   }> = [];
   private readonly swayers: Swayer[] = [];
   private wind = 0;
@@ -149,6 +155,7 @@ export class AmbientLife {
         seed: light.x * 0.37 + light.y,
         radius: light.radius,
         kind: light.kind,
+        strength: light.strength ?? 1,
       });
     }
     this.lightPools();
@@ -164,7 +171,7 @@ export class AmbientLife {
    */
   private buildDoorways(): void {
     const { model } = this.d;
-    if (model.kind === 'indoor') return;
+    if (model.kind === 'indoor' || this.d.bakedNight) return;
     const { grid } = model;
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
@@ -178,7 +185,14 @@ export class AmbientLife {
           .setBlendMode(Phaser.BlendModes.ADD)
           .setVisible(false);
         this.objects.push(image);
-        this.flickers.push({ image, base: 0, seed: x * 3.1 + y, radius: 34, kind: 'doorway' });
+        this.flickers.push({
+          image,
+          base: 0,
+          seed: x * 3.1 + y,
+          radius: 34,
+          kind: 'doorway',
+          strength: 1,
+        });
       }
     }
   }
@@ -191,10 +205,10 @@ export class AmbientLife {
         f.base = this.night ? 0.55 : 0;
       } else if (this.night) {
         f.image.setTexture(FX.pool).setScale((f.radius * 2.3) / 256);
-        f.base = hearth ? 0.85 : 0.7;
+        f.base = (hearth ? 0.85 : 0.7) * f.strength;
       } else {
         f.image.setTexture(TEX.glow).setScale((f.radius / 80) * INV);
-        f.base = hearth ? 0.55 : 0.4;
+        f.base = (hearth ? 0.55 : 0.4) * f.strength;
       }
       f.image.setAlpha(f.base);
     }

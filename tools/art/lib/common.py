@@ -19,9 +19,9 @@ def reset(samples=64):
     scene.render.engine = "CYCLES"
     prefs = bpy.context.preferences.addons["cycles"].preferences
     try:
-        # WITNESS_CYCLES_DEVICE=CPU renders on the CPU (when the GPU is busy
-        # or short of memory).
-        if os.environ.get("WITNESS_CYCLES_DEVICE", "").upper() == "CPU":
+        # ART_DEVICE=CPU (or WITNESS_CYCLES_DEVICE=CPU) renders on the CPU
+        # (small jobs while the GPU is busy, or short of memory).
+        if "CPU" in (os.environ.get("ART_DEVICE", ""), os.environ.get("WITNESS_CYCLES_DEVICE", "").upper()):
             raise RuntimeError("CPU asked for")
         prefs.compute_device_type = "METAL"
         prefs.refresh_devices()

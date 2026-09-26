@@ -223,8 +223,17 @@ def _distance(mask, K):
     return d / K
 
 
-# Lights (lighting.LIGHTS) in which the lamps and fires a place has are lit.
-NIGHT_LIGHTS = ("night", "lamplight")
+# The lights (lighting.LIGHTS) in which a place's lamps burn, and those of
+# the day: a thing tagged with them (obj["variants"], build_place.py) exists
+# only in those lights (a flame after dark, a dark wick by day).
+AFTER_DARK = "night,lamplight"
+BY_DAY = "day,late"
+
+
+def only(obj, lights):
+    """This thing (or light) exists only in these lights."""
+    obj["variants"] = lights
+    return obj
 
 
 class LakeKit(BoatsMixin, HousesMixin):
@@ -232,11 +241,6 @@ class LakeKit(BoatsMixin, HousesMixin):
     def regional_materials(self):
         """Materials for the lakeside style, and basalt for a Galilee room."""
         self.galilee = self.data.get("chapter") in GALILEE or self.style == "lake"
-        self.night_lights = []
-        self.day_lights = []
-        # (object, {"day": material, "night": material}): a flame that burns
-        # only after dark, a sunbeam's dust only by day.
-        self.variant_materials = []
         if not self.galilee:
             return
         self.basalt = L.basalt("#55514c", "basalt", dust=0.55)
@@ -261,22 +265,23 @@ class LakeKit(BoatsMixin, HousesMixin):
             self.wall_stone = L.basalt("#3e3b37", "wall-basalt", dust=0.15, lichen=0.0)
             self.wall_cut = L.basalt("#34322f", "wall-basalt-cut", dust=0.0, lichen=0.0)
 
-    def set_light(self, light):
-        """Change what a light (a key of lighting.LIGHTS, from the place's
-        light plan) changes here: lamps and fires that burn only after dark,
-        and daylight that comes in through a door only by day."""
-        night = light in NIGHT_LIGHTS
-        for light_obj, energy in getattr(self, "night_lights", []):
-            light_obj.data.energy = energy if night else 0.0
-        for light_obj, energy in getattr(self, "day_lights", []):
-            light_obj.data.energy = 0.0 if night else energy
-        for obj, mats in getattr(self, "variant_materials", []):
-            mat = mats.get("night" if night else "day")
-            if mat is not None:
-                obj.data.materials.clear()
-                obj.data.materials.append(mat)
-        if self.style == "home":
-            self._room_light(night)
+    def layer_look(self, name):
+        """A ground layer's look: a Galilee room's own (earth and basalt),
+        else as the kits after this one say."""
+        own = getattr(self, "looks", {}).get(name)
+        return own if own is not None else super().layer_look(name)
+
+    def lamp_flame(self, name, at, size, power, light_at=None, radius=30.0):
+        """A small oil lamp's flame at `at` that burns only after dark: a dark
+        wick by day, a flame and its light by night, a pool the game makes
+        flicker. Returns the (wick, flame) objects for the lamp's sprite."""
+        rx, rz = size
+        wick = only(self._ellipsoid(f"{name}-wick", at, (rx, rx, rz * 0.5), M.plain("#2a2018", 0.9), 8, 6), BY_DAY)
+        flame = only(self._ellipsoid(f"{name}-flame", at, (rx, rx, rz), M.emissive("#ffc070", 36.0), 8, 6), AFTER_DARK)
+        where = light_at if light_at is not None else at + Vector((0.0, -0.05, 0.07))
+        only(self.add_light(f"{name}-light", "POINT", where, power, "#ffae5c", radius=0.035), AFTER_DARK)
+        self.flicker.append(("lamp", at.x * 32, (-at.y - at.z) * 32, radius, AFTER_DARK.split(",")))
+        return [wick, flame]
 
     # ── heights ─────────────────────────────────────────────────────────────
     def lake_heights(self):
@@ -1390,8 +1395,6 @@ class LakeKit(BoatsMixin, HousesMixin):
         body = self._ellipsoid(f"{name}-lamp", c + Vector((0, 0, 0.03)), (0.075, 0.055, 0.03), M.terracotta("#b2714a", 0.1), 16, 8)
         nozzle = self._ellipsoid(f"{name}-nozzle", c + Vector((0.075, 0, 0.035)), (0.035, 0.026, 0.02), M.terracotta("#a8683f", 0.1), 10, 6)
         flame = self._ellipsoid(f"{name}-flame", c + Vector((0.095, 0, 0.085)), (0.014, 0.014, 0.036), M.emissive("#ffc070", 40.0), 8, 6)
-        light = self.add_light(f"{name}-light", "POINT", c + Vector((0.095, -0.05, 0.14)), 0.0, "#ffae5c", radius=0.03)
-        self.night_lights.append((light, 18.0))
         return [body, nozzle, flame]
 
     def entity_vessels(self, name, x, y, e=None):
@@ -1469,26 +1472,30 @@ class LakeKit(BoatsMixin, HousesMixin):
             c = self.P(x0 + 0.35, y + 0.42, 0.445)
             objs = [self._ellipsoid("table-lamp", c + Vector((0, 0, 0.028)), (0.07, 0.05, 0.028), M.terracotta("#b2714a", 0.1), 16, 8)]
             objs.append(self._ellipsoid("table-lamp-nozzle", c + Vector((0.068, 0, 0.032)), (0.034, 0.025, 0.018), M.terracotta("#a8683f", 0.1), 10, 6))
-            flame = self._ellipsoid("table-lamp-flame", c + Vector((0.088, 0, 0.078)), (0.013, 0.013, 0.034), M.plain("#2a2018", 0.9), 8, 6)
-            objs.append(flame)
-            self.variant_materials.append((flame, {"day": M.plain("#2a2018", 0.9), "night": M.emissive("#ffc070", 30.0)}))
-            light = self.add_light("table-lamp-light", "POINT", c + Vector((0.088, -0.05, 0.13)), 0.0, "#ffae5c", radius=0.035)
-            self.night_lights.append((light, 16.0))
+            objs += self.lamp_flame("table-lamp", c + Vector((0.088, 0, 0.078)), (0.013, 0.034), 16.0, c + Vector((0.088, -0.05, 0.13)), radius=40.0)
             self.sprite("table-lamp", y + 0.92, objs, [(x0, y)])
+        self._room_after_dark()
 
-    def _room_light(self, night):
+    def _room_after_dark(self):
         """A room at night: no daylight in at the door, only a little
         moonlight; the lamps and the oven's embers light it, and the bounce
         of daylight off the floor and walls becomes a dim, warm lamp-bounce.
         (The moon's strength and the exposure are the `lamplight` light's.)"""
-        for light in self.lights:
-            if "base_energy" not in light:
-                light["base_energy"] = light.data.energy
-                light["base_color"] = list(light.data.color)
-            base = light["base_energy"]
+        for light in list(self.lights):
             if light.name == "door-daylight":
-                light.data.energy = 9.0 if night else base
-                light.data.color = (0.62, 0.72, 0.92) if night else tuple(light["base_color"])
+                night = self.add_light("door-moonlight", light.data.type, light.location.copy(), 9.0, "#9eb8eb")
             elif light.name in ("room-fill", "front-bounce"):
-                light.data.energy = base * (0.1 if night else 1.0)
-                light.data.color = (1.0, 0.72, 0.45) if night else tuple(light["base_color"])
+                night = self.add_light(f"{light.name}-lamps", light.data.type, light.location.copy(), light.data.energy * 0.1, "#ffb873")
+            else:
+                continue
+            only(light, BY_DAY)
+            night.rotation_euler = light.rotation_euler.copy()
+            if light.data.type == "AREA":
+                night.data.shape = light.data.shape
+                night.data.size = light.data.size
+                if light.data.shape in ("RECTANGLE", "ELLIPSE"):
+                    night.data.size_y = light.data.size_y
+            only(night, AFTER_DARK)
+        # The dust glowing in the sunbeams is there only while the sun is.
+        for shaft in self.volumes:
+            only(shaft, BY_DAY)

@@ -43,6 +43,32 @@ const TileSchema = z.object({
 });
 export type ArtTile = z.infer<typeof TileSchema>;
 
+/**
+ * A fire or lamp burning in a set's light (its glow is baked into the art),
+ * which the game makes flicker: its kind, centre and radius in game units,
+ * and how strong its flickering pool is.
+ */
+const LightSpotSchema = z.object({
+  kind: z.enum(['hearth', 'lamp']),
+  x: z.number(),
+  y: z.number(),
+  radius: z.number().positive(),
+  strength: z.number().min(0).max(1).default(0.5),
+});
+
+/** Morning, later day, and (from dusk) night: the sets a place's art may have. */
+export const LIGHTING_VARIANTS = ['day', 'late', 'night'] as const;
+export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
+
+/**
+ * How people are lit: by the sun of the place's variant, indoors (a lamp and
+ * a window), under rain cloud (soft light from the whole sky), at
+ * lamp-lighting (lampstands, the last blue of the evening; also a house lit
+ * by its lamps at night), or by the moon.
+ */
+export const PEOPLE_LIGHTS = ['day', 'late', 'indoor', 'overcast', 'lamp', 'night'] as const;
+export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
+
 const VariantSchema = z.object({
   /** The ground, in tiles of at most MAX_ART_TEXTURE px (one, for a small place). */
   ground: z.array(TileSchema).min(1),
@@ -52,24 +78,15 @@ const VariantSchema = z.object({
   /** The same pages at half resolution (phones, reduced effects), if built. */
   pagesLow: z.array(z.string().min(1)).optional(),
   sprites: z.array(SpriteSchema),
+  /** Fires and lamps burning in this set's light (made to flicker). */
+  lights: z.array(LightSpotSchema).default([]),
+  /**
+   * How people are lit in this set, where a place's sets differ (a house by
+   * day and by its lamps at night): overrides the place's peopleLight.
+   */
+  peopleLight: z.enum(PEOPLE_LIGHTS).optional(),
 });
 export type ArtVariant = z.infer<typeof VariantSchema>;
-
-/**
- * Sets of a place's art, keyed by when in the story they are shown: the
- * morning, the later day (from 15:00) and the night (19:00 to 05:00). A
- * place has the sets its story shows (at least one).
- */
-export const LIGHTING_VARIANTS = ['day', 'late', 'night'] as const;
-export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
-
-/**
- * How people are lit: by the sun of the place's variant, indoors (a lamp and
- * a window), under rain cloud (soft light from the whole sky), or at
- * lamp-lighting (lampstands, the last blue of the evening).
- */
-export const PEOPLE_LIGHTS = ['day', 'late', 'night', 'indoor', 'overcast', 'lamp'] as const;
-export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
 
 export const PlaceArtSchema = z.object({
   version: z.literal(1),
@@ -86,8 +103,10 @@ export const PlaceArtSchema = z.object({
     .object({
       day: VariantSchema.optional(),
       late: VariantSchema.optional(),
+      /** Shown from dusk until before dawn (select.ts isNightHour). */
       night: VariantSchema.optional(),
     })
+    // A place has the sets its story shows: the open lake only a night set.
     .refine((v) => LIGHTING_VARIANTS.some((k) => v[k] !== undefined), {
       message: 'a place needs at least one set',
     }),
@@ -127,10 +146,10 @@ const PersonSheetSchema = z.object({
   sheets: z.object({
     day: z.string().min(1).optional(),
     late: z.string().min(1).optional(),
-    night: z.string().min(1).optional(),
     indoor: z.string().min(1).optional(),
     overcast: z.string().min(1).optional(),
     lamp: z.string().min(1).optional(),
+    night: z.string().min(1).optional(),
   }),
   frameWidth: z.number().int().positive(),
   frameHeight: z.number().int().positive(),
@@ -145,10 +164,10 @@ const PersonSheetSchema = z.object({
     .object({
       day: ShadowSheetSchema.optional(),
       late: ShadowSheetSchema.optional(),
-      night: ShadowSheetSchema.optional(),
       indoor: ShadowSheetSchema.optional(),
       overcast: ShadowSheetSchema.optional(),
       lamp: ShadowSheetSchema.optional(),
+      night: ShadowSheetSchema.optional(),
     })
     .default({}),
   /**

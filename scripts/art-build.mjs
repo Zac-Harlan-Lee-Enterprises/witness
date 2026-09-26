@@ -37,6 +37,10 @@ const PLACES = [
   'shelomit-house',
   'capernaum-shore',
   'open-lake',
+  // Chapter 3: A Journey to Bethlehem
+  'tamar-house',
+  'bethlehem-lanes',
+  'shepherds-fields',
   // Chapter 4: A Letter from Paul
   'ammia-workshop',
   'colossae-street',
@@ -44,9 +48,16 @@ const PLACES = [
   'philemon-house',
 ];
 
-/** Samples per place: rooms need more (their light is mostly bounced). */
+/**
+ * Samples per place: rooms need more (their light is mostly bounced), and so
+ * do the fields at night (a moon, a fire, and a great deal of grass). The
+ * lights each place is rendered in are its light plan (PLACE_LIGHTS in
+ * tools/art/lib/lighting.py).
+ */
 const SAMPLES = {
   'miriam-house': '512',
+  'tamar-house': '512',
+  'shepherds-fields': '160',
   'shelomit-house': '512',
   'ammia-workshop': '512',
   'philemon-house': '640',

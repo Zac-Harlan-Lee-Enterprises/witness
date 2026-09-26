@@ -11,10 +11,19 @@ import {
   parsePeopleArt,
   parsePlaceArt,
   type ArtTile,
+  type ArtVariant,
+  type LightingVariant,
   type PeopleArt,
   type PeopleLight,
+  type PlaceArt,
 } from '@/game/prerendered/manifest';
-import { appearanceKey, PLACE_ART, PLACES_WITH_ART, pickSheets } from '@/game/prerendered/select';
+import {
+  appearanceKey,
+  peopleLightFor,
+  PLACE_ART,
+  PLACES_WITH_ART,
+  pickSheets,
+} from '@/game/prerendered/select';
 
 const ROOT = join(__dirname, '..', '..');
 const ART = join(ROOT, 'public', 'art');
@@ -67,6 +76,14 @@ function subsets(lists: ReadonlyArray<readonly LookMark[]>): LookMark[][] {
   let out: LookMark[][] = [[]];
   for (const l of lists) out = out.flatMap((s) => [s, [...new Set([...s, ...l])]]);
   return out;
+}
+
+/** Each set of a place's art (day, later day, night) it has, with its name. */
+function setsOf(art: PlaceArt): Array<[LightingVariant, ArtVariant]> {
+  return LIGHTING_VARIANTS.flatMap((name) => {
+    const v = art.variants[name];
+    return v ? [[name, v] as [LightingVariant, ArtVariant]] : [];
+  });
 }
 
 interface AssetEntry {
@@ -143,14 +160,20 @@ describe('pre-rendered places', () => {
       if (!scene) return;
       const grid = parseLayout(scene);
       expect(art.tiles).toEqual({ w: grid.width, h: grid.height });
-      // Rooms light people with their own light (by day, or by lamps);
-      // outdoors the sun of the variant does, or rain cloud.
-      expect(
-        art.peopleLight === 'indoor' || art.peopleLight === 'lamp',
-        'rooms light people with their own light',
-      ).toBe(scene.kind === 'indoor');
-      for (const v of LIGHTING_VARIANTS.map((k) => art.variants[k])) {
-        if (!v) continue;
+      for (const [name, v] of setsOf(art)) {
+        // Rooms light people with their own light (by day, or by lamps), in
+        // every set; outdoors the sun (or moon) of the set does, or rain cloud.
+        const light = peopleLightFor(name, art.peopleLight, v.peopleLight);
+        expect(
+          light === 'indoor' || light === 'lamp',
+          `${name}: rooms light people with their own light (${light})`,
+        ).toBe(scene.kind === 'indoor');
+        // The fires and lamps made to flicker are inside the place.
+        for (const l of v.lights)
+          expect(
+            l.x >= 0 && l.x <= grid.width * 32 && l.y >= 0 && l.y <= grid.height * 32,
+            `${name}: ${l.kind} light at ${l.x},${l.y}`,
+          ).toBe(true);
         for (const f of [
           ...[...v.ground, ...v.groundLow].map((t) => t.file),
           v.shade,
@@ -180,8 +203,7 @@ describe('pre-rendered places', () => {
     it(`${sceneId}: every texture fits any GPU, and the ground's tiles cover the whole place`, () => {
       const { dir, art } = read();
       if (!art) return;
-      for (const v of LIGHTING_VARIANTS.map((k) => art.variants[k])) {
-        if (!v) continue;
+      for (const [, v] of setsOf(art)) {
         for (const f of [...v.pages, ...(v.pagesLow ?? [])]) {
           const size = webpSize(join(dir, f));
           expect(Math.max(size.w, size.h), f).toBeLessThanOrEqual(MAX_ART_TEXTURE);
@@ -205,8 +227,7 @@ describe('pre-rendered places', () => {
     it(`${sceneId}: every story prop is pre-rendered (none is painted over the art)`, () => {
       const { art } = read();
       if (!art || !scene) return;
-      for (const v of LIGHTING_VARIANTS.map((k) => art.variants[k])) {
-        if (!v) continue;
+      for (const [, v] of setsOf(art)) {
         const ids = new Set(v.sprites.map((s) => s.id));
         const missing = scene.entities
           .filter((e) => !e.characterId && e.sprite && e.sprite !== 'none')
@@ -287,16 +308,19 @@ describe('pre-rendered people', () => {
     const found = sceneOf(id);
     if (!found) continue;
     const { chapter, scene } = found;
-    // The lights people are seen in there: the place's own, else the sun of each variant.
+    // The lights people are seen in there, in each of its sets: the set's
+    // own, else the place's, else the sun of the set.
     const manifest = join(ART, id, 'manifest.json');
     const art = existsSync(manifest)
       ? parsePlaceArt(JSON.parse(readFileSync(manifest, 'utf8'))).art
       : null;
-    const lights: readonly PeopleLight[] = art?.peopleLight
-      ? [art.peopleLight]
-      : art
-        ? LIGHTING_VARIANTS.filter((k) => art.variants[k])
-        : [scene.kind === 'indoor' ? 'indoor' : 'day'];
+    const lights: PeopleLight[] = art
+      ? [
+          ...new Set(
+            setsOf(art).map(([name, v]) => peopleLightFor(name, art.peopleLight, v.peopleLight)),
+          ),
+        ]
+      : [scene.kind === 'indoor' ? 'indoor' : 'day'];
 
     it(`${id}: everyone who appears has sheets for every pose and story mark they can show`, () => {
       const missing: string[] = [];

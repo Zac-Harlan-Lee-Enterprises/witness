@@ -34,6 +34,10 @@ export const PLACES_WITH_ART = [
   'shelomit-house',
   'capernaum-shore',
   'open-lake',
+  // Chapter 3: A Journey to Bethlehem
+  'tamar-house',
+  'bethlehem-lanes',
+  'shepherds-fields',
   // Chapter 4: A Letter from Paul
   'ammia-workshop',
   'colossae-street',
@@ -54,8 +58,11 @@ export function artPathFor(sceneId: string): string | null {
 
 /** Later-day light from mid-afternoon; the morning light otherwise. */
 export const LATE_FROM_HOUR = 15;
-/** The night set from seven in the evening until five in the morning (the clock runs past midnight: 26 is 2 a.m.). */
-export const NIGHT_FROM_HOUR = 19;
+/**
+ * A place's night set, where it has one, from dusk until before dawn (the
+ * story clock runs past midnight: 26 is 2 a.m.).
+ */
+export const NIGHT_FROM_HOUR = 18;
 export const NIGHT_UNTIL_HOUR = 5;
 
 export function isNightHour(hour: number | null): boolean {
@@ -86,14 +93,29 @@ export function firstVariant(art: Pick<PlaceArt, 'variants'>): ArtVariant | unde
 }
 
 /**
- * How people are lit in a place: as the place says (a room's own light, rain
- * cloud, lamp-lighting), else by the place's sun.
+ * The set a place already drawn should change to as the story clock moves
+ * on (the sun sets while you are in the fields), or null to stay as it is.
+ */
+export function relightTo(
+  loaded: LightingVariant,
+  hour: number | null,
+  available: readonly LightingVariant[],
+): LightingVariant | null {
+  const wanted = variantFor(hour, available);
+  return wanted === loaded ? null : wanted;
+}
+
+/**
+ * How people are lit in a place: as its set says (a house by day and by its
+ * lamps at night), else as the place says (a room's own light, rain cloud,
+ * lamp-lighting), else by the place's sun.
  */
 export function peopleLightFor(
   variant: LightingVariant,
   place: PlaceArt['peopleLight'],
+  set?: ArtVariant['peopleLight'],
 ): PeopleLight {
-  return place ?? variant;
+  return set ?? place ?? variant;
 }
 
 /**
@@ -143,6 +165,8 @@ const OVERLAY_ORDER: readonly LookMark[] = [
   'cloak-roll',
   'water-skin',
   'letter-case',
+  // A lamb carried across the shoulders (Chapter 3), under a lamp held up.
+  'carrying-lamb',
   'lamp',
   'bandaged',
   'rag-bandaged',

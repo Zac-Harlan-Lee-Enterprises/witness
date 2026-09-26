@@ -116,12 +116,24 @@ class HousesMixin:
         # inside, and its light spills from the doorway.
         if doors and x0 <= m.w / 2 <= x1:
             dx = doors[0]
-            light = self.add_light(f"{name}-inside-lamp", "POINT", P(dx + 0.5, gy - 0.12, 0.95), 0.0, "#ffa856", radius=0.1)
-            self.night_lights.append((light, 7.0))
+            import kit_lake
+
+            at = P(dx + 0.5, gy - 0.12, 0.95)
+            kit_lake.only(self.add_light(f"{name}-inside-lamp", "POINT", at, 7.0, "#ffa856", radius=0.1), kit_lake.AFTER_DARK)
+            self.flicker.append(("lamp", at.x * 32, (-at.y - at.z) * 32, 36.0, kit_lake.AFTER_DARK.split(",")))
             dark = next((o for o in objs if o.name == f"{name}-door{dx}-dark"), None)
             if dark is not None:
-                glow = M.emissive("#b8662a", 0.5)
-                self.variant_materials.append((dark, {"day": self.dark, "night": glow}))
+                # The doorway's dark inside, glowing warm after dark.
+                glow = dark.copy()
+                glow.data = dark.data.copy()
+                glow.name = f"{dark.name}-lit"
+                glow.data.materials.clear()
+                glow.data.materials.append(M.emissive("#b8662a", 0.5))
+                for c in dark.users_collection:
+                    c.objects.link(glow)
+                kit_lake.only(dark, kit_lake.BY_DAY)
+                kit_lake.only(glow, kit_lake.AFTER_DARK)
+                objs.append(glow)
         self.sprite(name, gy, objs, sorted(cells))
 
     def _fieldstone_face(self, name, x0, x1, gy, height, openings, P, rng):

@@ -559,11 +559,7 @@ class BoatsMixin:
         _, sheer, _ = self.hull_shape(0.05, L, B)
         at = xf @ Vector((-L / 2 + 0.5, 0.0, sheer + 0.05))
         body = self._ellipsoid(f"{name}-lamp", at, (0.07, 0.05, 0.03), M.terracotta("#b2714a", 0.1), 14, 8)
-        flame = self._ellipsoid(f"{name}-flame", at + Vector((0.06, 0, 0.05)), (0.014, 0.014, 0.034), M.emissive("#ffc070", 40.0), 8, 6)
-        light = self.add_light(f"{name}-lamplight", "POINT", at + Vector((0.06, -0.05, 0.12)), 0.0, "#ffae5c", radius=0.04)
-        self.night_lights.append((light, 5.0))
-        self.variant_materials.append((flame, {"day": M.plain("#2a2018", 0.9), "night": M.emissive("#ffc070", 40.0)}))
-        return [body, flame]
+        return [body] + self.lamp_flame(name, at + Vector((0.06, 0, 0.05)), (0.014, 0.034), 5.0, at + Vector((0.06, -0.05, 0.12)), radius=24.0)
 
     def _awning(self, name, L, B, xf):
         """A shade of cloth rigged on poles over the middle of the boat, so no
@@ -795,13 +791,10 @@ class BoatsMixin:
         # A lamp hung from the sternpost, lit after dark.
         lx, ly = o["xa"] + 0.35, cy + 0.25
         lamp = self._ellipsoid("stern-lamp", self._at0(lx, ly, 1.45), (0.08, 0.06, 0.035), M.terracotta("#b2714a", 0.1), 14, 8)
-        flame = self._ellipsoid("stern-lamp-flame", self._at0(lx + 0.07, ly, 1.5), (0.015, 0.015, 0.038), M.plain("#2a2018", 0.9), 8, 6)
-        self.variant_materials.append((flame, {"day": M.plain("#2a2018", 0.9), "night": M.emissive("#ffc070", 36.0)}))
+        flame = self.lamp_flame("stern-lamp", self._at0(lx + 0.07, ly, 1.5), (0.015, 0.038), 30.0, self._at0(lx + 0.07, ly - 0.08, 1.58), radius=60.0)
         cord = self._branch("stern-lamp-cord", self._at0(lx, ly, 1.48), self._at0(o["xa"] + 0.1, cy, rail_z + 1.0), 0.006, 0.006, LM.rope("#7a6a50", "lamp-cord"), 4, bow=0.0)
-        for ob in (lamp, flame, cord):
+        for ob in [lamp, *flame, cord]:
             put(int(cy), ob)
-        light = self.add_light("stern-lamp-light", "POINT", self._at0(lx + 0.07, ly - 0.08, 1.58), 0.0, "#ffae5c", radius=0.04)
-        self.night_lights.append((light, 30.0))
         # The helmsman's deck at the stern: a raised platform of planks.
         self._stern_platform(o, rail_z, put)
         # Oars out, two a side, and the steering oar.

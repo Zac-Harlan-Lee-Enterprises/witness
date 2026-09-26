@@ -41,8 +41,15 @@ import type { Viewport } from '../phaser/viewport';
 import { CanopyFader } from '../prerendered/canopy';
 import { prepareArt, type FigureBook } from '../prerendered/figures';
 import type { PlaceTextures } from '../prerendered/loader';
-import type { ArtSprite } from '../prerendered/manifest';
-import { depthRow, firstVariant, sampleShade, shadeTint, turnPath } from '../prerendered/select';
+import { LIGHTING_VARIANTS, type ArtSprite } from '../prerendered/manifest';
+import {
+  depthRow,
+  firstVariant,
+  relightTo,
+  sampleShade,
+  shadeTint,
+  turnPath,
+} from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
@@ -57,7 +64,7 @@ import {
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
 import { gradeFor } from '../systems/grade';
-import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
+import { gradeColors, lightingFor, overBakedArt, type Lighting } from '../systems/lighting';
 import { departed } from '../systems/life';
 import {
   chosenLevel,
@@ -251,20 +258,32 @@ export class WorldScene extends Phaser.Scene {
    * people who will be shown. Anything missing falls back to painting.
    */
   async prepare(model: WorldSceneModel): Promise<void> {
+    this.loads++;
+    try {
+      const art = await this.loadArt(model);
+      this.place = art.place;
+      this.book = art.book;
+      this.compactArt();
+    } finally {
+      this.loads--;
+    }
+  }
+
+  /** Scene loads in progress (a relight never races one). */
+  private loads = 0;
+
+  private loadArt(model: WorldSceneModel): ReturnType<typeof prepareArt> {
     const vp = this.opts.viewport;
     // The art's resolution is chosen for the canvas pixels it will cover.
     const zoom = zoomFor(vp.cssWidth, vp.cssHeight, framingFor(this.opts.framing, 3)) * vp.ratio;
     const forced = this.opts.artLighting;
-    const hour = forced === 'late' ? 24 : forced === 'day' ? 8 : model.lighting.hour;
-    const art = await prepareArt(
+    const hour = forced === 'late' ? 16 : forced === 'day' ? 8 : model.lighting.hour;
+    return prepareArt(
       this,
       model,
       { hour, zoom, lowPower: this.quality.lowPower },
       this.opts.logger,
     );
-    this.place = art.place;
-    this.book = art.book;
-    this.compactArt();
   }
 
   /**
@@ -541,6 +560,58 @@ export class WorldScene extends Phaser.Scene {
   setLighting(lighting: WorldLighting): void {
     this.lighting = lighting;
     this.applyLighting();
+    void this.relight();
+  }
+
+  private relighting = false;
+
+  /**
+   * The story clock has moved a pre-rendered place into another light its
+   * art has (the sun sets while you carry the lamb back to the fold): load
+   * that light and rebuild the place around everyone where they stand, fading
+   * through, keeping the conversation going.
+   */
+  private async relight(): Promise<void> {
+    const place = this.place;
+    const model = this.model;
+    if (this.relighting || this.opts.artLighting !== 'auto' || !place || !model) return;
+    if (place.art.scene !== model.sceneId) return;
+    const available = LIGHTING_VARIANTS.filter((v) => place.art.variants[v] !== undefined);
+    if (!relightTo(place.variant, this.lighting.hour, available)) return;
+    this.relighting = true;
+    const generation = this.generation;
+    // A clock that moves on leaving a place is followed at once by the next
+    // place loading: wait a moment, and never race a scene load.
+    const settled = (): boolean => generation === this.generation && this.loads === 0;
+    try {
+      await new Promise<void>((resolve) => this.time.delayedCall(800, () => resolve()));
+      if (!settled() || !this.model) return;
+      const current = this.model;
+      const here: WorldSceneModel = {
+        ...current,
+        lighting: this.lighting,
+        weather: this.weatherNow,
+        player: {
+          ...current.player,
+          x: Math.floor(this.player.x),
+          y: Math.floor(this.player.y),
+          facing: this.player.facing,
+          marks: this.playerMarks,
+        },
+      };
+      const art = await this.loadArt(here);
+      // Moved on to another place meanwhile: leave that place alone. (If the
+      // new light could not be loaded, the place stays in the one it has.)
+      if (!settled() || this.model?.sceneId !== here.sceneId || !art.place) return;
+      this.place = art.place;
+      this.book = art.book;
+      this.compactArt();
+      const conversation = this.conversation;
+      this.buildScene({ ...here, entities: this.model.entities });
+      if (conversation) this.setConversation(conversation);
+    } finally {
+      this.relighting = false;
+    }
   }
 
   setConversation(conversation: WorldConversation | null): void {
@@ -1034,7 +1105,14 @@ export class WorldScene extends Phaser.Scene {
    */
   private buildFromArt(place: PlaceTextures): void {
     const v = place.art.variants[place.variant] ?? firstVariant(place.art);
-    this.lightSpots = [];
+    // The fires and lamps baked into this light flicker (their glow is in the art).
+    this.lightSpots = (v?.lights ?? []).map((l) => ({
+      kind: l.kind,
+      x: l.x,
+      y: l.y,
+      radius: l.radius,
+      strength: l.strength,
+    }));
     this.canopyFader = new CanopyFader(place.art.ppu, () => this.reducedMotion);
     if (!v) return;
     for (const tile of place.ground)
@@ -1140,6 +1218,7 @@ export class WorldScene extends Phaser.Scene {
       cast: this.cast,
       crowd: this.book?.crowd() ?? [],
       prerendered: this.place?.art.scene === model.sceneId,
+      bakedNight: this.place?.art.scene === model.sceneId && this.place.variant === 'night',
       trees: this.trees,
       liveWater: (this.water?.count ?? 0) > 0,
     });
@@ -1200,9 +1279,10 @@ export class WorldScene extends Phaser.Scene {
 
   /** The place's own light: warmer at home and in Jericho, harsher on the open road. */
   private withMood(l: Lighting): Lighting {
-    // Pre-rendered places carry their own light; keep only what time of day adds.
-    if (this.place?.art.scene === this.model?.sceneId && !l.night)
-      return { ...l, alpha: l.alpha * 0.35, vignette: Math.min(l.vignette, 0.2) };
+    // Pre-rendered places carry their own light (a night bake its moon, fires
+    // and lamps); keep only what time of day adds.
+    const place = this.place?.art.scene === this.model?.sceneId ? this.place : null;
+    if (place && (place.variant === 'night' || !l.night)) return overBakedArt(l, place.variant);
     const mood = this.model?.mood;
     if (mood === 'home') return { ...l, vignette: Math.max(l.vignette, 0.62) };
     if (mood === 'wilderness') return { ...l, vignette: Math.min(l.vignette, 0.24) };

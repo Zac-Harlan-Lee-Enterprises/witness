@@ -162,6 +162,9 @@ describe('water', () => {
     expect(sunForWater(9, 'day').x).toBeGreaterThan(0);
     expect(sunForWater(16, 'late').x).toBeLessThan(0);
     expect(sunForWater(22, 'painted').height).toBe(0);
+    // A night bake's moon is in the south-south-east; still no glints at night.
+    expect(sunForWater(22, 'night').y).toBeGreaterThan(0);
+    expect(sunForWater(22, 'night').height).toBe(0);
     expect(sunForWater(12, 'painted').height).toBeGreaterThan(sunForWater(7, 'painted').height);
     const s = sunForWater(10, 'painted');
     expect(Math.hypot(s.x, s.y)).toBeCloseTo(1, 5);
