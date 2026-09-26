@@ -112,7 +112,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
       say(
         'who',
         'ammia',
-        'The one who carried the case is Tychicus. He came from Paul. And the young man beside him — that’s Onesimus. He’s from Philemon’s household. He has been with Paul.',
+        'The one who carried the case is Tychicus. He came from Paul. And the man beside him — that’s Onesimus. He’s from Philemon’s household. He has been with Paul.',
         { next: 'who2' },
       ),
       say(
@@ -189,7 +189,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
       retold(
         'r11',
         'rec-para-philemon',
-        'Perhaps, Paul says, they were parted for a while so that Philemon could have him back for good — and not only as a slave any more, but as a brother he loves.',
+        'Perhaps, Paul says, they were parted for a while so that Philemon could have him back for good — not as a slave any longer, but as something more than a slave: a brother he loves.',
         'r12',
       ),
       retold(
@@ -240,7 +240,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
       say(
         'together2',
         'ammia',
-        'Did you hear that? Paul offered to pay whatever that young man owed. Out of his own pocket, from a prison.',
+        'Did you hear that? Paul offered to pay whatever Onesimus owed. Out of his own pocket, from a prison.',
         {
           branches: [
             { when: debt('my-account'), next: 't-account' },
@@ -285,7 +285,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
       say(
         'carried',
         'ammia',
-        'Paul offered to pay whatever that young man owed, out of his own pocket. And Kallias offers to work off his. Tomorrow, then. I’ll put the madder to soak.',
+        'Paul offered to pay whatever Onesimus owed, out of his own pocket. And Kallias offers to work off his. Tomorrow, then. I’ll put the madder to soak.',
         { next: 'final' },
       ),
       say(

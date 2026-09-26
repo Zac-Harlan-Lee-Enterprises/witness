@@ -114,7 +114,7 @@ export const RECORDS: ChapterInput['records'] = [
     body:
       'Paul, a prisoner, writes with Timothy to Philemon, to Apphia and Archippus, and to the assembly that meets in Philemon’s house, wishing them grace and peace. He thanks God for Philemon’s love and faith, and says Philemon has refreshed the hearts of God’s people.\n\n' +
       'Paul says he could order Philemon to do what is right, but he would rather appeal to him out of love, as an old man and a prisoner. He appeals for Onesimus, who became like a son to him while he was in chains. Onesimus’s name means useful; once he was useless to Philemon, Paul says, but now he is useful to them both. Paul is sending him back — it is like sending his own heart. He would have liked to keep him, but would do nothing without Philemon’s free agreement.\n\n' +
-      'Perhaps, Paul says, they were parted for a while so that Philemon might have him back for good: not only as a slave any more, but as a dear brother. He asks Philemon to welcome Onesimus as he would welcome Paul. If Onesimus has wronged him or owes him anything, Paul will pay it — and he writes that promise in his own hand. He is confident Philemon will do even more than he asks, and asks him to get a guest room ready, hoping to be given back to them through their prayers. Epaphras, Mark, Aristarchus, Demas and Luke send greetings.',
+      'Perhaps, Paul says, they were parted for a while so that Philemon might have him back for good — not as a slave any longer, but as something more than a slave: a dear brother. He asks Philemon to welcome Onesimus as he would welcome Paul. If Onesimus has wronged him or owes him anything, Paul will pay it — and he writes that promise in his own hand. He is confident Philemon will do even more than he asks, and asks him to get a guest room ready, hoping to be given back to them through their prayers. Epaphras, Mark, Aristarchus, Demas and Luke send greetings.',
     governance: draft({
       confidence: 'not-applicable',
       sourced: true,
@@ -130,7 +130,7 @@ export const RECORDS: ChapterInput['records'] = [
     checkedAgainstTranslation: 'WEB',
     sources: ['src-lp-web-col04'],
     body:
-      'Paul writes that Tychicus, a dear brother and faithful helper, will tell the Colossians all his news. He is sending him to find out how they are and to encourage them, together with Onesimus, a faithful and dear brother who is one of their own. Aristarchus, Mark, Jesus called Justus, Epaphras, Luke and Demas send greetings; Epaphras, also one of them, prays hard for them and works for the believers in Laodicea and Hierapolis.\n\n' +
+      'Paul writes that Tychicus, a dear brother and faithful helper, will tell the Colossians all his news. He is sending him to find out how they are and to encourage them, together with Onesimus, a faithful and dear brother who is one of their own. Aristarchus, Mark, Jesus called Justus, Epaphras, Luke and Demas send greetings; Epaphras, also one of them, prays hard for them and cares deeply for the believers in Laodicea and Hierapolis.\n\n' +
       'Paul asks them to greet the believers in Laodicea, and Nymphas and the assembly in that house. When the letter has been read among them, they are to have it read in the assembly at Laodicea too, and to read the letter from Laodicea. They are to tell Archippus to complete the work he was given. Paul signs off with a greeting in his own hand and asks them to remember his chains.',
     governance: draft({
       confidence: 'not-applicable',
