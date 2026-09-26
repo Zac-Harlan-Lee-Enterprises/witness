@@ -107,6 +107,27 @@ describe('GameSession + controllers', () => {
     expect(h.world.lighting).toEqual({ hour: 21, lamp: true });
   });
 
+  it('goes where you chose in "Go to…" even if you chose it while the place was still loading', async () => {
+    const h = await createHarness();
+    const p = new Player(h);
+    await p.choose('c-yes');
+    await p.choose('c-go');
+    await p.finish();
+    h.world.holdLoads = true;
+    await p.exit('house-door');
+    // The story is already in the market, but the world still shows the house.
+    expect(h.ui.getState().transitioning).toBe(true);
+    expect(h.world.currentScene).toBe('miriam-house');
+    h.ui.openOverlay('goto');
+    h.controller.travelTo('shimon');
+    expect(h.ui.getState().overlay).toBeNull();
+    expect(h.world.travels).toEqual([]);
+    h.world.releaseLoads();
+    await flush();
+    expect(h.world.currentScene).toBe('jerusalem-market');
+    expect(h.world.travels).toEqual(['shimon']);
+  });
+
   it('tells the player when a destination cannot be reached yet', async () => {
     const h = await createHarness();
     h.controller.handleWorldEvent({ type: 'unreachable', targetId: 'anywhere' });

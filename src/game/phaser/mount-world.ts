@@ -3,6 +3,7 @@ import type { VirtualInput } from '@/application/input';
 import type { WorldListener, WorldPort } from '@/application/ports';
 import type { Logger } from '@/shared/logger';
 import { WorldScene } from '../scenes/world-scene';
+import type { Framing } from '../systems/camera';
 
 /**
  * The Phaser adapter. This module (and everything under src/game) is loaded
@@ -15,6 +16,10 @@ export interface MountWorldOptions {
   input: VirtualInput;
   onEvent: WorldListener;
   logger: Logger;
+  /** Camera framing where the art allows it (default "close"; painted places stay standard). */
+  framing?: Framing;
+  /** Force a lighting variant for pre-rendered places (review builds). */
+  artLighting?: 'auto' | 'day' | 'late';
 }
 
 export function mountWorld(options: MountWorldOptions): Promise<WorldPort> {
@@ -24,6 +29,8 @@ export function mountWorld(options: MountWorldOptions): Promise<WorldPort> {
       input: options.input,
       onEvent: options.onEvent,
       logger: options.logger,
+      framing: options.framing ?? 'close',
+      artLighting: options.artLighting ?? 'auto',
       onReady: () => {
         const canvas = game?.canvas;
         if (canvas) {
@@ -61,9 +68,11 @@ export function mountWorld(options: MountWorldOptions): Promise<WorldPort> {
 function createPort(scene: WorldScene, destroy: () => void): WorldPort {
   return {
     loadScene: async (model) => {
+      await scene.prepare(model);
       scene.buildScene(model);
     },
     updateEntities: (entities) => scene.updateEntities(entities),
+    setPlayerMarks: (marks) => scene.setPlayerMarks(marks),
     travelTo: (targetId, instant) => scene.travelTo(targetId, instant),
     setControlsEnabled: (enabled) => scene.setControlsEnabled(enabled),
     setMotion: (options) => scene.setMotion(options),

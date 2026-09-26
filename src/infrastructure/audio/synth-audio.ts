@@ -1,8 +1,9 @@
-import type { AmbienceId, AudioPort, MusicId, SfxId } from '@/application/ports';
+import type { AmbienceId, AudioPort, FootstepSurface, MusicId, SfxId } from '@/application/ports';
 import type { GameSettings } from '@/domain/settings';
 import type { Logger } from '@/shared/logger';
 import {
   AMBIENCE,
+  FOOTSTEPS,
   MUSIC,
   nextPhrase,
   scheduleAmbience,
@@ -110,6 +111,22 @@ export class SynthAudio implements AudioPort {
     if (!ctx || !out || ctx.state !== 'running') return;
     const t = ctx.currentTime;
     SFX[id].forEach((tone) => this.play(tone, t, out));
+  }
+
+  playFootstep(surface: FootstepSurface): void {
+    const ctx = this.ctx;
+    const out = this.channels.get('effects');
+    if (!ctx || !out || ctx.state !== 'running') return;
+    const t = ctx.currentTime;
+    // A little variation so steps never sound mechanical.
+    const pitch = 0.9 + this.random() * 0.2;
+    FOOTSTEPS[surface].forEach((tone) =>
+      this.play(
+        { ...tone, freq: tone.freq * pitch, gain: tone.gain * (0.8 + this.random() * 0.3) },
+        t,
+        out,
+      ),
+    );
   }
 
   setAmbience(id: AmbienceId): void {
@@ -298,6 +315,17 @@ export class SynthAudio implements AudioPort {
       src.stop(when + tone.dur + 0.05);
       return;
     }
+    if (tone.kind === 'knock') {
+      // A short thud whose pitch falls quickly, like a heel on the ground.
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(tone.freq * 1.6, when);
+      osc.frequency.exponentialRampToValueAtTime(tone.freq, when + tone.dur * 0.6);
+      osc.connect(gain);
+      osc.start(when);
+      osc.stop(when + tone.dur + 0.05);
+      return;
+    }
     // Pluck: a triangle with a quieter octave; bell: inharmonic sine partials.
     const partials =
       tone.kind === 'pluck'
@@ -371,6 +399,7 @@ export class SilentAudio implements AudioPort {
     return false;
   }
   playSfx(): void {}
+  playFootstep(_surface: FootstepSurface): void {}
   setAmbience(): void {}
   setMusic(): void {}
   applySettings(): void {}

@@ -88,7 +88,9 @@ Data flow: **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 | `src/application/game-controller.ts` | Boundary between world, story and UI |
 | `src/application/ports.ts` | Every interface infrastructure/Phaser implements |
 | `src/app/services.ts` | Composition root (the only place concrete classes are chosen) |
-| `src/game/scenes/world-scene.ts` | The single Phaser scene (rendering, movement, travel) |
+| `src/game/scenes/world-scene.ts` | The single Phaser scene (rendering, movement, travel; composites pre-rendered places) |
+| `src/game/prerendered/` | Loading and rules for pre-rendered art (manifests, variants, sorting, shade) |
+| `tools/art/` | Offline Blender pipeline: procedural market, people, lighting, export ([guide](docs/art/technical-art-guide.md)) |
 | `src/content/chapters/road-to-jericho/` | Chapter 1 content (scenes, dialogue, quests, puzzles, records) |
 | `src/content/scripture/translations.ts` | Translation registry — **sensitive** (enabling Bible text) |
 | `tests/support/harness.ts` | Headless game harness + scripted `Player` for tests |
@@ -106,6 +108,8 @@ Data flow: **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 | `VITE_BASE_PATH` | Deploy under a sub-path, e.g. `/witness/` for GitHub Pages |
 | `VITE_GAME_TITLE`, `VITE_GAME_SHORT_TITLE` | Configurable working title |
 | `VITE_CONTENT_MODE` | `preview` (default; label unreviewed content) or `strict` |
+| `VITE_CAMERA_FRAMING` | `close` (default: used only in places whose art is sharp enough, standard elsewhere) or `standard` everywhere |
+| `VITE_ART_LIGHTING` | Review builds only: force pre-rendered places to `day` or `late` light (default follows the story clock) |
 | `CI` | Set by CI; relaxes local-only sweep checks (git hooks, branch protection) |
 
 Everything `VITE_*` is compiled into the public bundle — never put a secret in one.
@@ -129,6 +133,9 @@ Everything `VITE_*` is compiled into the public bundle — never put a secret in
 | Production build + sizes | `npm run build` · `npm run perf:bundle` |
 | Dead code | `npm run deadcode` |
 | Regenerate PWA icons | `npm run icons` |
+| Re-export art data after changing characters/maps | `npm run art:data` |
+| Re-render the market / people (needs Blender 5.2+, `BLENDER=` to override) | `npm run art:market` · `npm run art:people` |
+| Market art captures / performance (review only) | `E2E_SHOTS=1 ART_SHOTS=<set> npx playwright test e2e/market-art.spec.ts --project=desktop-chromium` · `PERF_MARKET=1 PERF_LABEL=<label> npx playwright test e2e/market-perf.spec.ts --project=desktop-chromium` |
 | Drift sweep | `bash quality-sweep.sh` |
 
 ---

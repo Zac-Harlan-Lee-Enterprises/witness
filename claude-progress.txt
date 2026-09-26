@@ -106,3 +106,25 @@ UPDATE 2026-09-25: The owner (Zac Harlan) committed the guarded files (32bbe91, 
          and builds. Still open for the owner: the deploy-pages VITE_BASE_PATH change and the
          other items put on hold; WEB translation proofreading; editorial approval; pushing and
          running harden-github.sh.
+
+--- 2026-09-25  Claude Opus 5.5 — grounded realism, pre-rendered market slice, choices in the world ---
+DONE   : Choices shown in the world (entity `looks`, chapter `playerLooks`: Menashe sits up on
+         the road after you send help; at the inn he is bandaged / wrapped in your cloak / resting,
+         with the pack donkey or broom showing how he got there; carried gear shows on the player).
+         Footsteps by surface. New Canvas people painter. Pre-rendered market (ADR-0014): offline
+         Blender pipeline in tools/art (market from the tile map, people from appearance data,
+         morning + later-day light, game camera), Phaser compositing with depth by ground line,
+         baked shadows, shade tint, turning frames, close framing where art allows, painted fallback.
+         Fixed: Go-to chosen while a place loads was dropped (now runs after load); talk symbol
+         covered seated heads; untinted cloth sheen greyed every dye (re-rendered all art).
+         Report (private artifact): https://claude.ai/artifact/VfV4yfWFZxy42Qe114ywpt
+         Commits 890366c (art + pipeline) and 2d5b174 (code, tests, docs) on feat/grounded-realism.
+TESTS  : Vitest 304 → 335. Playwright 23 passed + 1 intentional skip. Headless perf (not real
+         devices): market 36–37 fps vs 41–42 painted; texture memory 94 MB vs 21 MB; precache
+         2.3 → 5.2 MB. quality-sweep clean except main branch protection (not yet applied).
+NEXT   : Review the PR from feat/grounded-realism, then, after it lands, run
+         `REQUIRED_REVIEWS=0 bash harden-github.sh Zac-Harlan-Lee-Enterprises/witness`. Next
+         engineering step for the art: GPU-compressed textures (KTX2/Basis) to cut market texture
+         memory (docs/art/prototype-report.md §8), then measure on a real mid-range Android phone.
+BLOCKED: Owner: apply branch protection; decide on the deploy-pages VITE_BASE_PATH change (on hold);
+         editorial approval of content records. No LICENSE file in the repo yet.

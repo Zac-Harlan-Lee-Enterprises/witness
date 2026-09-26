@@ -9,6 +9,16 @@ import { createHarness, flush, Player, type Harness } from '../support/harness';
  * the deterministic proof that every major branch can be completed.
  */
 
+/** How someone is currently shown in the (fake) world. */
+function shown(h: Harness, id: string) {
+  return h.world.entities.find((e) => e.id === id);
+}
+
+/** What the player visibly carries now (last update sent to the world). */
+function playerMarks(h: Harness): string[] {
+  return h.world.playerMarks.at(-1) ?? h.world.scenes.at(-1)?.player.marks ?? [];
+}
+
 async function opening(p: Player): Promise<void> {
   expect(p.dialogueView?.dialogueId).toBe('d-opening');
   await p.choose('c-yes');
@@ -163,6 +173,8 @@ describe('Road to Jericho — full playthroughs', () => {
 
     await packAndLeave(p, { remedy: 1, 'water-skin': 1, linen: 1, oil: 1, bread: 1 });
     expect(h.state().inventory.cloak).toBeUndefined(); // left at home
+    // What you packed shows: a water skin at your hip, no rolled cloak or lamp.
+    expect(playerMarks(h)).toEqual(['water-skin']);
 
     await forkAndRidge(p);
     await investigate(p);
@@ -183,8 +195,18 @@ describe('Road to Jericho — full playthroughs', () => {
     await p.choose('thanks');
     await p.finish();
     expect(h.world.entities.some((e) => e.id === 'menashe-inn')).toBe(true);
+    // Choices show in the world: your linen on his wounds, resting once cared for,
+    // and Malik's pack donkey in the yard.
+    expect(shown(h, 'menashe-inn')?.marks).toEqual(['bandaged']);
+    expect(shown(h, 'menashe-inn')?.pose).toBe('lie');
+    expect(shown(h, 'pack-donkey')).toBeDefined();
+    expect(shown(h, 'inn-donkey')).toBeDefined();
+    expect(shown(h, 'broom')).toBeUndefined();
+    // Natan is feverish on his mat until the remedy comes.
+    expect(shown(h, 'natan')?.pose).toBe('lie');
 
     await finishInJericho(p);
+    expect(shown(h, 'natan')?.pose).toBe('sit');
     expect(h.state().flags['remedy-on-time']).toBe(true);
     expect(h.state().quests['q-remedy']?.outcomeId).toBe('on-time');
 
@@ -215,10 +237,15 @@ describe('Road to Jericho — full playthroughs', () => {
 
     await p.step(1, 10);
     await p.finish();
+    expect(shown(h, 'inn-donkey')).toBeDefined();
+    expect(shown(h, 'bedroll')).toBeUndefined();
     await p.interact('salome');
     await p.choose('tell');
     await p.finish();
     expect(h.state().flags['asher-sent']).toBe(true);
+    // Asher has taken the donkey up the road; a mat is laid out ready.
+    expect(shown(h, 'inn-donkey')).toBeUndefined();
+    expect(shown(h, 'bedroll')).toBeDefined();
     await finishInJericho(p);
     const summary = buildChapterSummary(h.chapter, h.state());
     expect(summary.consequences).toContain(
@@ -252,6 +279,7 @@ describe('Road to Jericho — full playthroughs', () => {
 
     // No lamp packed.
     await packAndLeave(p, { remedy: 1, 'water-skin': 1, oil: 1, cloak: 1 });
+    expect(playerMarks(h)).toEqual(['water-skin', 'cloak-roll']);
     await forkAndRidge(p);
     await investigate(p);
     await p.interact('menashe-road');
@@ -259,12 +287,18 @@ describe('Road to Jericho — full playthroughs', () => {
     await p.choose('give'); // cloak
     await p.finish();
     expect(p.scene()).toBe('jericho');
+    // No linen: you tore strips from your own tunic, and gave him your cloak.
+    expect(playerMarks(h)).toEqual(['torn-hem']);
+    expect(shown(h, 'menashe-inn')?.marks).toEqual(['rag-bandaged', 'wrapped-in-cloak']);
+    expect(shown(h, 'menashe-inn')?.pose).toBe('sit');
 
     await p.step(1, 10);
     await p.advance();
     expect(p.dialogueView?.dialogueId).toBe('d-salome');
     await p.choose('work');
     await p.finish();
+    expect(shown(h, 'broom')).toBeDefined();
+    expect(shown(h, 'menashe-inn')?.pose).toBe('lie');
     expect(h.state().counters.hour).toBeGreaterThanOrEqual(18);
     expect(h.world.entities.some((e) => e.id === 'night')).toBe(true);
     await p.interact('night');
@@ -291,11 +325,17 @@ describe('Road to Jericho — full playthroughs', () => {
     await packAndLeave(p, { remedy: 1, 'water-skin': 1, bread: 1, lamp: 1 });
     await forkAndRidge(p);
     await investigate(p);
+    expect(shown(h, 'menashe-road')?.pose).toBe('lie');
     await p.interact('menashe-road');
     await p.choose('send-help');
     await p.finish();
     expect(h.state().inventory['water-skin']).toBeUndefined();
     expect(h.state().inventory.bread).toBeUndefined();
+    // He sits up to wait, with what you left him beside him.
+    expect(shown(h, 'menashe-road')?.pose).toBe('sit');
+    expect(shown(h, 'left-water')).toBeDefined();
+    expect(shown(h, 'left-bread')).toBeDefined();
+    expect(playerMarks(h)).toEqual(['lamp']);
     await p.exit('to-jericho');
     await p.step(1, 10);
     await p.finish();

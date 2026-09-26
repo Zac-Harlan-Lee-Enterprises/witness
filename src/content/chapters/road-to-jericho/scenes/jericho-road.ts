@@ -287,8 +287,48 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
       y: 17,
       facing: 'up',
       pose: 'lie',
+      // Left with water and food while you go for help, he sits up to wait.
+      looks: [
+        {
+          when: { type: 'choiceMade', choice: 'choice-traveler', option: 'send-help' },
+          pose: 'sit',
+          facing: 'right',
+        },
+      ],
       visibleWhen: { type: 'not', condition: { type: 'flag', flag: 'menashe-with-you' } },
       interaction: { verb: 'talk', dialogue: 'd-menashe-road' },
+    },
+    {
+      id: 'left-water',
+      kind: 'feature',
+      label: 'Your water skin, beside him',
+      sprite: 'waterskin',
+      x: 44,
+      y: 18,
+      solid: false,
+      visibleWhen: {
+        type: 'all',
+        of: [
+          { type: 'flag', flag: 'left-water' },
+          { type: 'not', condition: { type: 'flag', flag: 'menashe-with-you' } },
+        ],
+      },
+    },
+    {
+      id: 'left-bread',
+      kind: 'feature',
+      label: 'Your bread and dates, beside him',
+      sprite: 'bread-cloth',
+      x: 43,
+      y: 18,
+      solid: false,
+      visibleWhen: {
+        type: 'all',
+        of: [
+          { type: 'flag', flag: 'left-bread' },
+          { type: 'not', condition: { type: 'flag', flag: 'menashe-with-you' } },
+        ],
+      },
     },
   ],
   exits: [

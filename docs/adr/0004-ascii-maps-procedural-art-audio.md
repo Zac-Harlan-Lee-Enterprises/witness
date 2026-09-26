@@ -1,7 +1,7 @@
 # ADR-0004: ASCII tile maps and procedurally generated original art and audio (no binary assets to license)
 
 - **Status:** Accepted
-- **Related:** [src/domain/world.ts](../../src/domain/world.ts) (`TILE_KINDS`, `parseLayout`), [src/game/art/scene-painter.ts](../../src/game/art/scene-painter.ts), [src/game/art/props.ts](../../src/game/art/props.ts), [src/game/art/characters.ts](../../src/game/art/characters.ts), [src/features/common/Portrait.tsx](../../src/features/common/Portrait.tsx), [src/infrastructure/audio/synth-audio.ts](../../src/infrastructure/audio/synth-audio.ts), [scripts/generate-icons.mjs](../../scripts/generate-icons.mjs)
+- **Related:** [src/domain/world.ts](../../src/domain/world.ts) (`TILE_KINDS`, `parseLayout`), [src/game/art/scene-painter.ts](../../src/game/art/scene-painter.ts), [src/game/art/props.ts](../../src/game/art/props.ts), [src/game/art/people/](../../src/game/art/people/), [src/features/common/Portrait.tsx](../../src/features/common/Portrait.tsx), [src/infrastructure/audio/synth-audio.ts](../../src/infrastructure/audio/synth-audio.ts), [scripts/generate-icons.mjs](../../scripts/generate-icons.mjs)
 
 ## Context
 

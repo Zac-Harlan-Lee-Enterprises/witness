@@ -9,7 +9,7 @@ import { ClueSchema, JournalEntrySchema } from './journal';
 import { PuzzleSchema } from './puzzles';
 import { QuestSchema } from './quests';
 import { FlagValueSchema } from './state/game-state';
-import { SceneSchema } from './world';
+import { PlayerLookSchema, SceneSchema } from './world';
 
 /**
  * A chapter is a self-contained bundle of content. Adding Chapter 2 means
@@ -86,6 +86,8 @@ export const ChapterSchema = z.object({
   lightItem: z.string().optional(),
   /** Counter shown to the player as time of day (hours, 0–24+). */
   timeCounter: z.string().optional(),
+  /** How the story shows on the player (gear carried, a torn hem…). */
+  playerLooks: z.array(PlayerLookSchema).default([]),
   mainQuest: z.string().min(1),
   characters: z.array(CharacterSchema),
   items: z.array(ItemSchema),

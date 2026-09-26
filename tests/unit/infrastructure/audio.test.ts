@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { AmbienceId, SfxId } from '@/application/ports';
+import type { AmbienceId, FootstepSurface, SfxId } from '@/application/ports';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import {
   AMBIENCE,
+  FOOTSTEPS,
   MUSIC,
   nextPhrase,
   scheduleAmbience,
@@ -32,6 +33,16 @@ describe('sound design', () => {
     for (const id of ids) expect(SFX[id].length).toBeGreaterThan(0);
     expect(SFX.discover.some((t) => t.kind === 'bell')).toBe(true);
     expect(SFX.discover).not.toEqual(SFX.journal);
+  });
+
+  it('gives every surface its own quiet footstep', () => {
+    const surfaces: FootstepSurface[] = ['stone', 'gravel', 'sand', 'earth', 'grass', 'mud', 'mat'];
+    for (const s of surfaces) {
+      expect(FOOTSTEPS[s].length).toBeGreaterThan(0);
+      for (const t of FOOTSTEPS[s]) expect(t.gain).toBeLessThan(0.15);
+    }
+    expect(FOOTSTEPS.stone).not.toEqual(FOOTSTEPS.sand);
+    expect(FOOTSTEPS.stone.some((t) => t.kind === 'knock')).toBe(true);
   });
 
   it('fills each place with its own sounds', () => {
@@ -121,6 +132,9 @@ describe('SynthAudio', () => {
     audio.setMusic('journey');
     expect(captions.some((c) => /Birdsong/.test(c))).toBe(true);
     expect(captions.some((c) => /drum/.test(c))).toBe(true);
+    const before = made.length;
+    audio.playFootstep('stone');
+    expect(made.length).toBeGreaterThan(before);
     audio.dispose();
   });
 });

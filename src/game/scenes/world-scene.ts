@@ -16,15 +16,36 @@ import {
   type Blocked,
   type Tile,
 } from '@/domain/navigation';
+import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
+import type { LookMark } from '@/domain/world';
 import { inRect } from '@/domain/world';
 import type { Logger } from '@/shared/logger';
-import { FRAME, frameName } from '../art/characters';
+import { lookFor, shadowOffset } from '../art/direction';
 import { ART_SCALE, TILE } from '../art/paint';
+import { headTop, isFootfall, walkColumn, WALK_CYCLE_TILES } from '../art/people/rig';
+import { frameName } from '../art/people/sheet';
+import { loadPeople, loadPerson, loadPlace, type PlaceTextures } from '../prerendered/loader';
+import type { ArtSprite, LightingVariant, PeopleArt, PersonSheet } from '../prerendered/manifest';
+import {
+  artPathFor,
+  depthRow,
+  sampleShade,
+  shadeTint,
+  sheetFor,
+  turnPath,
+} from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
-import { conversationCentre, stepLookAhead, zoomFor, type Vec } from '../systems/camera';
+import {
+  conversationCentre,
+  framingFor,
+  stepLookAhead,
+  zoomFor,
+  type Framing,
+  type Vec,
+} from '../systems/camera';
 import { moveWithCollision, normalise } from '../systems/collision';
 import { pickFocus } from '../systems/focus';
 import { gradeColors, lightingFor, type Lighting } from '../systems/lighting';
@@ -36,7 +57,20 @@ import {
   stepQuality,
   type QualityState,
 } from '../systems/quality';
-import { Actors, ensureCharacterTexture } from './actors';
+import {
+  Actors,
+  addCastShadow,
+  addRenderedFigure,
+  ensureFigureTexture,
+  FEET_BELOW_CENTRE,
+  SEAT_BELOW_CENTRE,
+  RENDERED_SHADOW_ALPHA,
+  STAND_ORIGIN_Y,
+  TURN_STEP_MS,
+  turnFrame,
+  type RenderedFigure,
+  type ShadowCast,
+} from './actors';
 import { AmbientLife } from './ambient';
 import { Feedback } from './feedback';
 import { makeSharedTextures, TEX } from './textures';
@@ -56,12 +90,15 @@ export interface WorldSceneOptions {
   onEvent: WorldListener;
   logger: Logger;
   onReady: () => void;
+  framing: Framing;
+  /** Force a lighting variant for pre-rendered places ('auto': follow the story clock). */
+  artLighting: 'auto' | 'day' | 'late';
 }
 
 const INV = 1 / ART_SCALE;
-const WALK_CYCLE = [FRAME.stepA, FRAME.stand, FRAME.stepB, FRAME.stand];
 const DEPTH = {
   ground: 0,
+  shadows: 5,
   actors: 10,
   canopy: 100_000,
   fx: 100_500,
@@ -69,6 +106,8 @@ const DEPTH = {
   marker: 102_000,
 };
 const depthFor = (y: number): number => DEPTH.actors + y * 100;
+/** Gap above a head for the symbol over a person (its pointer hangs 2.5 units below the anchor's top). */
+const MARK_CLEARANCE = 4;
 
 export class WorldScene extends Phaser.Scene {
   private model: WorldSceneModel | null = null;
@@ -89,9 +128,31 @@ export class WorldScene extends Phaser.Scene {
     y: number;
     facing: Direction;
     sprite: Phaser.GameObjects.Sprite | null;
-    walk: number;
+    shadow: Phaser.GameObjects.Sprite | null;
+    /** Tiles walked, which drives the walk cycle (so feet keep pace with the ground). */
+    walked: number;
+    column: number;
     moving: boolean;
-  } = { x: 0, y: 0, facing: 'down', sprite: null, walk: 0, moving: false };
+  } = {
+    x: 0,
+    y: 0,
+    facing: 'down',
+    sprite: null,
+    shadow: null,
+    walked: 0,
+    column: 0,
+    moving: false,
+  };
+  private playerMarks: WorldSceneModel['player']['marks'] = [];
+  private cast: ShadowCast | null = null;
+  /** Pre-rendered art for the place being shown (null: it is painted). */
+  private place: PlaceTextures | null = null;
+  private peopleArt: PeopleArt | null = null;
+  private figures = new Map<string, RenderedFigure>();
+  private entitySprites = new Map<string, ArtSprite>();
+  private playerFigure: RenderedFigure | null = null;
+  private playerTurn: { frames: string[]; next: number } = { frames: [], next: 0 };
+  private playerLight = 1;
   private focusId: string | null = null;
   /** Colour grade + vignette in one multiply layer (texture redrawn only when the light changes). */
   private light: Phaser.GameObjects.Image | null = null;
@@ -123,6 +184,67 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ── WorldPort operations (called via the adapter) ───────────────────────
+  /**
+   * Load pre-rendered art for the place, if it has any, before building it:
+   * the ground and sprite atlases for the time of day, and sheets for the
+   * people who will be shown. Anything missing falls back to painting.
+   */
+  async prepare(model: WorldSceneModel): Promise<void> {
+    this.place = null;
+    this.figures = new Map();
+    const path = artPathFor(model.sceneId);
+    if (!path) return;
+    const zoom = zoomFor(this.scale.width, this.scale.height, framingFor(this.opts.framing, 3));
+    const forced = this.opts.artLighting;
+    const hour = forced === 'late' ? 24 : forced === 'day' ? 8 : model.lighting.hour;
+    const place = await loadPlace(
+      this,
+      model.sceneId,
+      path,
+      { hour, zoom, lowPower: this.quality.lowPower },
+      this.opts.logger,
+    );
+    if (!place) return;
+    const people = await loadPeople(this, this.opts.logger);
+    this.peopleArt = people;
+    if (people) {
+      const wanted = new Set<string>();
+      const want = (a: Appearance | null, marks: readonly LookMark[]): void => {
+        const id = a ? sheetFor(people, a, marks) : null;
+        if (id) wanted.add(id);
+      };
+      model.entities.forEach((e) => want(e.appearance, e.marks));
+      want(model.player.appearance, model.player.marks);
+      Object.keys(people)
+        .filter((id) => id.startsWith('crowd-'))
+        .forEach((id) => wanted.add(id));
+      for (const id of wanted) {
+        const sheet = people[id];
+        const tex = sheet ? await loadPerson(this, people, id, place.variant) : null;
+        if (sheet && tex) this.figures.set(id, figureOf(sheet, tex, place.variant));
+      }
+    }
+    this.place = place;
+  }
+
+  /** Close framing only where the place's art has the resolution for it. */
+  private framing(): Framing {
+    const place = this.place?.art.scene === this.model?.sceneId ? this.place : null;
+    return framingFor(this.opts.framing, place ? place.art.ppu : ART_SCALE);
+  }
+
+  private figureFor(appearance: Appearance, marks: readonly LookMark[]): RenderedFigure | null {
+    const id = sheetFor(this.peopleArt, appearance, marks);
+    return id ? (this.figures.get(id) ?? null) : null;
+  }
+
+  private sunAt = (x: number, y: number): number => {
+    const p = this.place;
+    const m = this.model;
+    if (!p?.shade || !m) return 1;
+    return sampleShade(p.shade, x, y, m.grid.width * TILE, m.grid.height * TILE);
+  };
+
   buildScene(model: WorldSceneModel): void {
     this.clear();
     this.generation++;
@@ -130,28 +252,24 @@ export class WorldScene extends Phaser.Scene {
     this.lighting = model.lighting;
     const still = this.reducedMotion;
 
-    const painted = paintScene(model.grid, model.baseTile, model.mood, model.kind === 'indoor');
-    this.lightSpots = painted.lights;
-    const groundKey = `ground-${this.generation}`;
-    this.textures.addCanvas(groundKey, painted.ground);
-    this.sceneTextures.push(groundKey);
-    this.layers.push(
-      this.add.image(0, 0, groundKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.ground),
-    );
-    painted.canopies.forEach((piece, i) => {
-      const key = `canopy-${this.generation}-${i}`;
-      this.textures.addCanvas(key, piece.canvas);
-      this.sceneTextures.push(key);
-      const image = this.add
-        .image(piece.x, piece.y, key)
-        .setOrigin(0, 0)
-        .setScale(INV)
-        .setDepth(DEPTH.canopy);
-      this.layers.push(image);
-      this.canopies.push({ image, piece });
-    });
+    const place = this.place?.art.scene === model.sceneId ? this.place : null;
+    this.entitySprites = new Map();
+    if (place) this.buildFromArt(place);
+    else this.paintPlace(model);
+    // Visible to diagnostics and tests: how this place is being drawn.
+    this.game.canvas.dataset.art = place ? `prerendered:${place.variant}` : 'painted';
 
-    this.actors = new Actors(this, depthFor, () => this.reducedMotion);
+    this.cast = castFor(model);
+    this.actors = new Actors(
+      this,
+      depthFor,
+      () => this.reducedMotion,
+      model.player.appearance.robe,
+      this.cast,
+      DEPTH.shadows,
+      (view) => (view.appearance ? this.figureFor(view.appearance, view.marks) : null),
+      place ? this.sunAt : null,
+    );
     this.feedback = new Feedback(
       this,
       { ground: DEPTH.ground, marker: DEPTH.marker },
@@ -160,18 +278,18 @@ export class WorldScene extends Phaser.Scene {
     this.rebuildBlocked(model.entities);
     model.entities.forEach((e) => this.addEntity(e));
 
-    const pKey = ensureCharacterTexture(this, model.player.appearance);
+    this.playerMarks = model.player.marks;
     this.player = {
       x: model.player.x + 0.5,
       y: model.player.y + 0.5,
       facing: model.player.facing,
-      sprite: this.add
-        .sprite(0, 0, pKey, frameName(model.player.facing, 0))
-        .setOrigin(0.5, 1)
-        .setScale(INV),
-      walk: 0,
+      sprite: null,
+      shadow: null,
+      walked: 0,
+      column: 0,
       moving: false,
     };
+    this.makePlayerSprite();
     this.placePlayer();
     this.lastTile = { x: Math.floor(this.player.x), y: Math.floor(this.player.y) };
     this.insideExit = this.exitAt(this.lastTile.x, this.lastTile.y);
@@ -195,6 +313,7 @@ export class WorldScene extends Phaser.Scene {
       cam.setZoom(zoom * 1.06);
       this.tweens.add({ targets: cam, zoom, duration: 900, ease: 'Sine.easeOut' });
     }
+    this.game.canvas.dataset.textureMb = textureMegabytes(this.textures).toFixed(1);
     this.opts.onEvent({ type: 'sceneReady', sceneId: model.sceneId });
   }
 
@@ -220,6 +339,44 @@ export class WorldScene extends Phaser.Scene {
     if (actors) departed(actors.ids(), entities).forEach((id) => actors.remove(id));
     this.feedback?.syncClues(entities);
     this.rebuildBlocked(entities);
+  }
+
+  setPlayerMarks(marks: WorldSceneModel['player']['marks']): void {
+    this.playerMarks = marks;
+    if (!this.player.sprite || !this.model) return;
+    this.makePlayerSprite();
+  }
+
+  /** The player's sprite and shadow: pre-rendered if there's a sheet, painted otherwise. */
+  private makePlayerSprite(): void {
+    const model = this.model;
+    if (!model) return;
+    const frame = this.player.sprite?.frame.name ?? frameName(this.player.facing, 0);
+    this.player.sprite?.destroy();
+    this.player.shadow?.destroy();
+    const fig = this.figureFor(model.player.appearance, this.playerMarks);
+    this.playerFigure = fig;
+    if (fig) {
+      const made = addRenderedFigure(this, fig, frame, DEPTH.shadows);
+      this.player.sprite = made.sprite;
+      this.player.shadow = made.shadow;
+    } else {
+      const key = this.playerTexture();
+      this.player.sprite = this.add
+        .sprite(0, 0, key, frame)
+        .setOrigin(0.5, STAND_ORIGIN_Y)
+        .setScale(INV);
+      this.player.shadow = this.cast
+        ? addCastShadow(this, key, frame, this.cast, STAND_ORIGIN_Y, DEPTH.shadows)
+        : null;
+    }
+    this.placePlayer();
+  }
+
+  private playerTexture(): string {
+    const appearance = this.model?.player.appearance;
+    if (!appearance) return '__MISSING';
+    return ensureFigureTexture(this, appearance, this.playerMarks, appearance.robe);
   }
 
   travelTo(targetId: string, instant: boolean): void {
@@ -329,11 +486,31 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.player.moving = moving;
-    this.player.walk = moving ? this.player.walk + dt : 0;
-    const walkFrame =
-      WALK_CYCLE[Math.floor(this.player.walk / 0.12) % WALK_CYCLE.length] ?? FRAME.stand;
-    const frame = this.actors?.playerFrame(time, this.mover(), walkFrame) ?? walkFrame;
-    this.player.sprite.setFrame(frameName(this.player.facing, frame));
+    if (moving) this.player.walked += this.tilesPerSecond * dt;
+    else this.player.walked = 0;
+    const walkCol = walkColumn(this.player.walked, WALK_CYCLE_TILES.player);
+    const frame = this.actors?.playerFrame(time, this.mover(), walkCol) ?? walkCol;
+    if (moving && frame !== this.player.column && isFootfall(frame)) this.footfall();
+    this.player.column = frame;
+    let name = frameName(this.player.facing, frame);
+    if (this.playerTurn.frames.length > 0) {
+      if (moving) this.playerTurn.frames = [];
+      else {
+        if (time >= this.playerTurn.next) {
+          this.playerTurn.frames.shift();
+          this.playerTurn.next = time + TURN_STEP_MS;
+        }
+        name = this.playerTurn.frames[0] ?? name;
+      }
+    }
+    this.player.sprite.setFrame(name);
+    this.player.shadow?.setFrame(name);
+    if (this.playerFigure && this.place) {
+      const target = this.sunAt(this.player.sprite.x, this.player.sprite.y);
+      this.playerLight += (target - this.playerLight) * 0.2;
+      this.player.sprite.setTint(shadeTint(this.playerLight));
+      this.player.shadow?.setAlpha(RENDERED_SHADOW_ALPHA * this.playerLight);
+    }
     this.placePlayer();
     if (moving) this.afterStep(false);
 
@@ -386,7 +563,7 @@ export class WorldScene extends Phaser.Scene {
     if (!model || !cam) return;
     const w = this.scale.width;
     const h = this.scale.height;
-    cam.setZoom(zoomFor(w, h));
+    cam.setZoom(zoomFor(w, h, this.framing()));
     const mapW = model.grid.width * TILE;
     const mapH = model.grid.height * TILE;
     const viewW = w / cam.zoom;
@@ -431,13 +608,24 @@ export class WorldScene extends Phaser.Scene {
     return true;
   }
 
+  /** Turn the player; a rendered player passes through in-between poses. */
+  private facePlayer(facing: Direction): void {
+    if (facing === this.player.facing) return;
+    if (this.playerFigure && !this.reducedMotion) {
+      this.playerTurn = {
+        frames: turnPath(this.player.facing, facing).map(turnFrame),
+        next: this.time.now + TURN_STEP_MS,
+      };
+    }
+    this.player.facing = facing;
+  }
+
   private finishTravel(target: { id: string; kind: 'entity' | 'exit' | 'tile' }): void {
     if (target.kind === 'entity') {
       const entity = this.model?.entities.find((e) => e.id === target.id);
       if (entity) {
         const here = { x: Math.floor(this.player.x), y: Math.floor(this.player.y) };
-        if (here.x !== entity.x || here.y !== entity.y)
-          this.player.facing = facingToward(here, entity);
+        if (here.x !== entity.x || here.y !== entity.y) this.facePlayer(facingToward(here, entity));
         this.placePlayer();
         this.actors?.faceNow(entity.id, this.mover());
       }
@@ -495,14 +683,24 @@ export class WorldScene extends Phaser.Scene {
   private placePlayer(): void {
     const s = this.player.sprite;
     if (!s) return;
-    s.setPosition(this.player.x * TILE, this.player.y * TILE + 12);
+    s.setPosition(this.player.x * TILE, this.player.y * TILE + FEET_BELOW_CENTRE);
     s.setDepth(depthFor(this.player.y));
-    this.lampGlow?.setPosition(s.x, s.y - 18);
+    this.player.shadow?.setPosition(s.x, s.y);
+    this.lampGlow?.setPosition(s.x, s.y - 22);
+  }
+
+  /** A foot touched the ground: report the tile so the right footstep can sound. */
+  private footfall(): void {
+    this.opts.onEvent({
+      type: 'footstep',
+      x: Math.floor(this.player.x),
+      y: Math.floor(this.player.y),
+    });
   }
 
   private playerAnchor(): { x: number; y: number; top: number } | null {
     const s = this.player.sprite;
-    return s ? { x: s.x, y: s.y, top: 40 } : null;
+    return s ? { x: s.x, y: s.y, top: 50 } : null;
   }
 
   /** Where something stands (feet) and how tall it is, in world units. */
@@ -510,7 +708,15 @@ export class WorldScene extends Phaser.Scene {
     const actor = this.actors?.sprite(id);
     if (actor) {
       const view = this.model?.entities.find((e) => e.id === id);
-      const top = view?.pose === 'lie' ? 18 : view?.pose === 'sit' ? 30 : 42;
+      const pose = view?.pose ?? 'stand';
+      const rest = pose === 'stand' ? FEET_BELOW_CENTRE : SEAT_BELOW_CENTRE;
+      const top =
+        pose === 'lie'
+          ? 16
+          : TILE / 2 -
+            rest +
+            headTop(view?.appearance?.build ?? 'adult', pose === 'sit') +
+            MARK_CLEARANCE;
       return { x: actor.x, y: view ? (view.y + 1) * TILE : actor.y, top };
     }
     const prop = this.props.get(id);
@@ -524,6 +730,11 @@ export class WorldScene extends Phaser.Scene {
       this.actors?.add(e);
       return;
     }
+    const art = this.entitySprites.get(e.id);
+    if (art && this.place) {
+      this.props.set(e.id, { view: e, image: this.artImage(this.place, art) });
+      return;
+    }
     const key = this.ensurePropTexture(e.sprite ?? (e.kind === 'clue' ? 'marker' : 'sign'));
     const image = this.add
       .image((e.x + 0.5) * TILE, (e.y + 1) * TILE, key)
@@ -531,6 +742,66 @@ export class WorldScene extends Phaser.Scene {
       .setScale(INV)
       .setDepth(depthFor(e.y + 0.5));
     this.props.set(e.id, { view: e, image });
+  }
+
+  /** Paint the place procedurally (places without pre-rendered art). */
+  private paintPlace(model: WorldSceneModel): void {
+    const painted = paintScene(model.grid, model.baseTile, model.mood, model.kind === 'indoor');
+    this.lightSpots = painted.lights;
+    const groundKey = `ground-${this.generation}`;
+    this.textures.addCanvas(groundKey, painted.ground);
+    this.sceneTextures.push(groundKey);
+    this.layers.push(
+      this.add.image(0, 0, groundKey).setOrigin(0, 0).setScale(INV).setDepth(DEPTH.ground),
+    );
+    painted.canopies.forEach((piece, i) => {
+      const key = `canopy-${this.generation}-${i}`;
+      this.textures.addCanvas(key, piece.canvas);
+      this.sceneTextures.push(key);
+      const image = this.add
+        .image(piece.x, piece.y, key)
+        .setOrigin(0, 0)
+        .setScale(INV)
+        .setDepth(DEPTH.canopy);
+      this.layers.push(image);
+      this.canopies.push({ image, piece });
+    });
+  }
+
+  /**
+   * Composite a place from its pre-rendered layers: the ground (with every
+   * shadow baked in), then each standing thing as a sprite sorted against
+   * people by the line it stands on.
+   */
+  private buildFromArt(place: PlaceTextures): void {
+    const v = place.art.variants[place.variant] ?? place.art.variants.day;
+    this.lightSpots = [];
+    this.layers.push(
+      this.add
+        .image(0, 0, place.ground)
+        .setOrigin(0, 0)
+        .setScale(1 / place.groundPpu)
+        .setDepth(DEPTH.ground),
+    );
+    for (const sprite of v.sprites) {
+      if (sprite.id.startsWith('entity:')) {
+        this.entitySprites.set(sprite.id.slice('entity:'.length), sprite);
+        continue;
+      }
+      this.layers.push(this.artImage(place, sprite));
+    }
+  }
+
+  private artImage(place: PlaceTextures, sprite: ArtSprite): Phaser.GameObjects.Image {
+    const page = place.pages[sprite.page] ?? place.pages[0] ?? '';
+    const tex = this.textures.get(page);
+    const frame = `sprite:${sprite.id}`;
+    if (!tex.has(frame)) tex.add(frame, 0, sprite.u, sprite.v, sprite.w, sprite.h);
+    return this.add
+      .image(sprite.x, sprite.y, page, frame)
+      .setOrigin(0, 0)
+      .setScale(1 / place.art.ppu)
+      .setDepth(depthFor(depthRow(sprite.base)));
   }
 
   private ensurePropTexture(name: string): string {
@@ -569,9 +840,14 @@ export class WorldScene extends Phaser.Scene {
       blocked: () => this.blocked,
       player: () => ({ x: this.player.x, y: this.player.y }),
       depthFor,
-      depths: { ground: DEPTH.ground, fx: DEPTH.fx, light: DEPTH.light },
+      depths: { ground: DEPTH.ground, shadows: DEPTH.shadows, fx: DEPTH.fx, light: DEPTH.light },
       reducedMotion: this.reducedMotion,
       lowPower: this.quality.lowPower,
+      cast: this.cast,
+      crowd: [...this.figures.entries()]
+        .filter(([id]) => id.startsWith('crowd-'))
+        .map(([, f]) => f),
+      prerendered: this.place?.art.scene === model.sceneId,
     });
   }
 
@@ -596,6 +872,9 @@ export class WorldScene extends Phaser.Scene {
 
   /** The place's own light: warmer at home and in Jericho, harsher on the open road. */
   private withMood(l: Lighting): Lighting {
+    // Pre-rendered places carry their own light; keep only what time of day adds.
+    if (this.place?.art.scene === this.model?.sceneId && !l.night)
+      return { ...l, alpha: l.alpha * 0.35, vignette: Math.min(l.vignette, 0.2) };
     const mood = this.model?.mood;
     if (mood === 'home') return { ...l, vignette: Math.max(l.vignette, 0.62) };
     if (mood === 'wilderness') return { ...l, vignette: Math.min(l.vignette, 0.24) };
@@ -693,6 +972,8 @@ export class WorldScene extends Phaser.Scene {
     this.canopies = [];
     this.player.sprite?.destroy();
     this.player.sprite = null;
+    this.player.shadow?.destroy();
+    this.player.shadow = null;
     this.light?.destroy();
     this.light = null;
     this.lampGlow?.destroy();
@@ -703,4 +984,53 @@ export class WorldScene extends Phaser.Scene {
     });
     this.sceneTextures = [];
   }
+}
+
+/** The sun's shadow for people outdoors (indoors, light comes from windows and the hearth). */
+function castFor(model: WorldSceneModel): ShadowCast | null {
+  if (model.kind === 'indoor') return null;
+  const look = lookFor(model.mood);
+  const height = 54;
+  const { dx, dy } = shadowOffset(look, height);
+  return {
+    dx,
+    dy,
+    height,
+    alpha: look.shadow.alpha * 0.75,
+    color: parseInt(look.shadow.color.slice(1), 16),
+  };
+}
+
+function figureOf(
+  sheet: PersonSheet,
+  tex: { key: string; shadow: string },
+  variant: LightingVariant,
+): RenderedFigure {
+  const shadow = sheet.shadows[variant] ?? sheet.shadows.day;
+  return {
+    key: tex.key,
+    shadowKey: tex.shadow,
+    ppu: sheet.ppu,
+    originX: sheet.originX,
+    originY: sheet.originY,
+    frameWidth: sheet.frameWidth,
+    frameHeight: sheet.frameHeight,
+    turns: sheet.turns,
+    shadow: {
+      ppu: shadow.ppu,
+      originX: shadow.originX,
+      originY: shadow.originY,
+      frameWidth: shadow.frameWidth,
+      frameHeight: shadow.frameHeight,
+    },
+  };
+}
+
+/** Approximate GPU memory of every loaded texture (RGBA, uncompressed), in MB. */
+function textureMegabytes(textures: Phaser.Textures.TextureManager): number {
+  let bytes = 0;
+  for (const key of textures.getTextureKeys()) {
+    for (const src of textures.get(key).source) bytes += src.width * src.height * 4;
+  }
+  return bytes / (1024 * 1024);
 }

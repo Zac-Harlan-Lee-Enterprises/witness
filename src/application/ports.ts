@@ -5,7 +5,7 @@ import type { ScriptureRef, Translation } from '@/domain/scripture';
 import type { GameSettings } from '@/domain/settings';
 import type { GuideAnswer } from '@/domain/guide-policy';
 import type { Direction } from '@/domain/state/game-state';
-import type { Entity, Exit, Scene, TileGrid } from '@/domain/world';
+import type { Entity, Exit, LookMark, Scene, TileGrid } from '@/domain/world';
 import type { Appearance } from '@/domain/characters';
 
 /**
@@ -74,7 +74,10 @@ export interface WorldEntityView {
   interactive: boolean;
   /** What interacting does (shown as a small symbol over the focused thing). */
   verb: NonNullable<Entity['interaction']>['verb'] | null;
+  /** Pose and facing after the entity's looks are applied. */
   pose: Entity['pose'];
+  /** Visible marks of what has happened (bandages, a borrowed cloak…). */
+  marks: LookMark[];
 }
 
 /** Art direction of a place: palette, materials, light and ambient life. */
@@ -98,7 +101,14 @@ export interface WorldSceneModel {
   baseTile: TileGrid['tiles'][number][number];
   entities: WorldEntityView[];
   exits: Array<Pick<Exit, 'id' | 'label' | 'x' | 'y' | 'w' | 'h'>>;
-  player: { x: number; y: number; facing: Direction; appearance: Appearance };
+  player: {
+    x: number;
+    y: number;
+    facing: Direction;
+    appearance: Appearance;
+    /** What the player visibly carries or has given away. */
+    marks: LookMark[];
+  };
 }
 
 export type WorldEvent =
@@ -108,11 +118,15 @@ export type WorldEvent =
   | { type: 'playerMoved'; x: number; y: number; facing: Direction }
   | { type: 'arrived'; targetId: string }
   | { type: 'unreachable'; targetId: string }
-  | { type: 'sceneReady'; sceneId: string };
+  | { type: 'sceneReady'; sceneId: string }
+  /** The player's foot touched the ground on this tile (for footstep sounds). */
+  | { type: 'footstep'; x: number; y: number };
 
 export interface WorldPort {
   loadScene(model: WorldSceneModel): Promise<void>;
   updateEntities(entities: WorldEntityView[]): void;
+  /** Redraw the player when what they visibly carry changes. */
+  setPlayerMarks(marks: LookMark[]): void;
   /** Walk (or jump, if instant) to a target entity/exit id, then report `arrived`. */
   travelTo(targetId: string, instant: boolean): void;
   setControlsEnabled(enabled: boolean): void;
@@ -150,10 +164,14 @@ export type MusicId = 'home' | 'journey' | 'tension' | 'reflection' | 'none';
 export type SfxId =
   'interact' | 'item' | 'journal' | 'discover' | 'quest' | 'solved' | 'error' | 'page' | 'door';
 
+/** What a footstep sounds like: the surface underfoot. */
+export type FootstepSurface = 'stone' | 'gravel' | 'sand' | 'earth' | 'grass' | 'mud' | 'mat';
+
 export interface AudioPort {
   /** Must be called from a user gesture to satisfy autoplay policies. */
   unlock(): Promise<boolean>;
   playSfx(id: SfxId): void;
+  playFootstep(surface: FootstepSurface): void;
   setAmbience(id: AmbienceId): void;
   setMusic(id: MusicId): void;
   applySettings(settings: GameSettings): void;

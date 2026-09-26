@@ -298,6 +298,8 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
     }
   });
 
+  chapter.playerLooks.forEach((look, i) => checkCondition(`player look ${i}`, look.when));
+
   // Scenes
   chapter.scenes.forEach((s) => {
     const where = `scene ${s.id}`;
@@ -319,6 +321,9 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
       if (e.characterId && !ids.characters.has(e.characterId))
         add(eWhere, `unknown character '${e.characterId}'`);
       checkCondition(eWhere, e.visibleWhen);
+      e.looks.forEach((look, i) => checkCondition(`${eWhere} look ${i}`, look.when));
+      if (e.looks.length > 0 && !e.characterId)
+        add(eWhere, 'looks change how a person appears, but this entity has no character');
       if (e.interaction) {
         if (e.interaction.dialogue && !ids.dialogues.has(e.interaction.dialogue))
           add(eWhere, `unknown dialogue '${e.interaction.dialogue}'`);

@@ -1,7 +1,7 @@
 # ADR-0013: One art-direction system for every place, painted once per scene
 
 - **Status:** Accepted
-- **Related:** [src/game/art/direction.ts](../../src/game/art/direction.ts), [src/game/art/scene-painter.ts](../../src/game/art/scene-painter.ts), [site.ts](../../src/game/art/site.ts), [terrain.ts](../../src/game/art/terrain.ts), [architecture.ts](../../src/game/art/architecture.ts), [nature.ts](../../src/game/art/nature.ts), [furnishings.ts](../../src/game/art/furnishings.ts), [shading.ts](../../src/game/art/shading.ts), [characters.ts](../../src/game/art/characters.ts), [src/game/scenes/](../../src/game/scenes/), [src/game/systems/camera.ts](../../src/game/systems/camera.ts), [src/game/systems/life.ts](../../src/game/systems/life.ts), [ADR-0004](0004-ascii-maps-procedural-art-audio.md), [docs/game-design.md §4](../game-design.md)
+- **Related:** [src/game/art/direction.ts](../../src/game/art/direction.ts), [src/game/art/scene-painter.ts](../../src/game/art/scene-painter.ts), [site.ts](../../src/game/art/site.ts), [terrain.ts](../../src/game/art/terrain.ts), [architecture.ts](../../src/game/art/architecture.ts), [nature.ts](../../src/game/art/nature.ts), [furnishings.ts](../../src/game/art/furnishings.ts), [shading.ts](../../src/game/art/shading.ts), [people/](../../src/game/art/people/), [src/game/scenes/](../../src/game/scenes/), [src/game/systems/camera.ts](../../src/game/systems/camera.ts), [src/game/systems/life.ts](../../src/game/systems/life.ts), [ADR-0004](0004-ascii-maps-procedural-art-audio.md), [docs/game-design.md §4](../game-design.md)
 
 ## Context
 
