@@ -15,6 +15,8 @@ mesh is as smooth as the maths, not as coarse as the grid.
 Units are centimetres while sculpting; `mesh()` converts to metres.
 """
 import math
+import os
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
@@ -270,7 +272,7 @@ class FieldGrid:
         self.n = n
         ax = [self.lo[i] + np.arange(n[i], dtype=F) * voxel for i in range(3)]
         G = np.stack(np.meshgrid(*ax, indexing="ij"), -1).reshape(-1, 3)
-        self.d = _eval(shape, G, chunk).reshape(n)
+        self.d = _eval(shape, G).reshape(n)
         self.g = np.stack(np.gradient(self.d, voxel), -1).astype(F)
 
     def _interp(self, arr, P):
@@ -338,7 +340,7 @@ def sample(shape, lo, hi, voxel, coarse=None, chunk=600_000):
     cn = np.ceil((hi - lo) / coarse).astype(int) + 1
     ax = [lo[i] + np.arange(cn[i], dtype=F) * coarse for i in range(3)]
     C = np.stack(np.meshgrid(*ax, indexing="ij"), -1).reshape(-1, 3)
-    cd = _eval(shape, C, chunk).reshape(cn)
+    cd = _eval(shape, C).reshape(cn)
     # Fine grid: coarse values repeated, exact values in the band around the surface.
     n = (cn - 1) * f + 1
     fine = np.repeat(np.repeat(np.repeat(cd, f, 0), f, 1), f, 2)[: n[0], : n[1], : n[2]].astype(F)
@@ -347,16 +349,30 @@ def sample(shape, lo, hi, voxel, coarse=None, chunk=600_000):
     # Offset by half a coarse cell so each coarse sample covers the fine cells around it.
     idx = np.nonzero(bandf)
     P = np.stack([lo[i] + (idx[i].astype(F) - f // 2) * voxel for i in range(3)], -1)
-    fine[idx] = _eval(shape, P, chunk)
+    fine[idx] = _eval(shape, P)
     # The unrepeated shift: fine index i is at lo + (i - f//2) * voxel.
     origin = lo - (f // 2) * voxel
     return fine, origin
 
 
-def _eval(shape, P, chunk):
+THREADS = max(1, min(8, (os.cpu_count() or 2) - 2))
+
+
+def _eval(shape, P, chunk=150_000):
+    """shape(P) in chunks, on several threads (numpy releases the GIL for
+    the array arithmetic that fields are made of)."""
     out = np.empty(len(P), F)
-    for i in range(0, len(P), chunk):
+    starts = list(range(0, len(P), chunk))
+
+    def one(i):
         out[i : i + chunk] = shape(P[i : i + chunk].astype(F))
+
+    if len(starts) <= 1 or THREADS == 1:
+        for i in starts:
+            one(i)
+    else:
+        with ThreadPoolExecutor(THREADS) as pool:
+            list(pool.map(one, starts))
     return out
 
 
@@ -366,7 +382,7 @@ def gradient(shape, P, h=0.01):
     for i in range(3):
         e = np.zeros(3, F)
         e[i] = h
-        g[:, i] = (shape(P + e) - shape(P - e)) / (2 * h)
+        g[:, i] = (_eval(shape, P + e) - _eval(shape, P - e)) / (2 * h)
     return g
 
 
@@ -384,7 +400,7 @@ def polygonize(shape, lo, hi, voxel, project_steps=3):
     # gradient), never more than a voxel and a half per step, and not where
     # the field has no usable gradient (at the edge of the sampled box).
     for _ in range(project_steps):
-        d = shape(V)
+        d = _eval(shape, V)
         gr = gradient(shape, V, voxel * 0.25)
         gl2 = np.einsum("ij,ij->i", gr, gr)
         ok = (gl2 > 0.05) & (np.abs(d) < voxel * 3)

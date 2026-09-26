@@ -70,7 +70,7 @@ class Eyes:
         self.col = col
         self.objects = []
         R = head.eye_r
-        iris_mat = PM.eye_inner(params.iris, params.seed)
+        iris_mat = PM.eye_inner(params.iris, params.seed, params.iris_kind, params.age_t)
         wet = PM.cornea()
         for sx in (-1, 1):
             c = Vector(head.eye_centre(sx).tolist()) * CM
@@ -92,7 +92,7 @@ class Eyes:
         head = self.head
         mat = PM.tear()
         for sx in (-1, 1):
-            for upper, rad in ((False, 0.032), (True, 0.022)):
+            for upper, rad in ((False, 0.028),):
                 pts = [Vector(head.lid_point(sx, u, upper=upper, out=0.01).tolist()) * CM for u in np.linspace(-0.97, 0.97, 40)]
                 self.objects.append(_tube(f"tear{sx}{upper}", pts, rad * CM, self.col, mat))
 

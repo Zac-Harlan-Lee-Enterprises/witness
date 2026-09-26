@@ -6,7 +6,8 @@
  *   npm run art:data      # export characters and maps for Blender
  *   npm run art:market    # render public/art/jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people    # render public/art/people (≈ 30 min)
- *   npm run art:portraits # render public/art/portraits (≈ 25 min for 16 people)
+ *   npm run art:portrait-data  # export everyone who speaks, in every chapter
+ *   npm run art:portraits # render public/art/portraits (≈ 2 min a person)
  *   npm run art:portraits -- --who miriam player:look-1   # just some people
  */
 import { spawnSync } from 'node:child_process';
@@ -65,8 +66,9 @@ const jobs = {
     '--who',
     ...PEOPLE,
   ],
-  // Everyone in tools/art/data/chapter.json (characters and player looks)
-  // unless --who is given; the manifest is bundled by src/features/portraits.
+  // Everyone in tools/art/data/portrait-people.json (every character who
+  // speaks in any chapter, and the player looks) unless --who is given; the
+  // manifest is bundled by src/features/portraits.
   portraits: [
     'tools/art/build_portraits.py',
     '--out',
