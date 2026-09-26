@@ -824,6 +824,13 @@ const PAINTERS: Record<string, Painter> = {
   },
   /** Invisible: for interactive spots on tiles that already draw themselves (wells, cairns). */
   none: () => undefined,
+  /**
+   * A boat's sail, set or taken in as the story goes: pre-rendered with the
+   * boat (tools/art/lib/lake_boats.py). A painted boat draws its own mast and
+   * sail (boats.ts), so in a painted place these draw nothing.
+   */
+  'sail-set': () => undefined,
+  'sail-furled': () => undefined,
 };
 
 /** Whether a sprite name has a painter (content tests use this to catch typos). */

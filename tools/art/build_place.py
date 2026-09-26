@@ -361,7 +361,7 @@ def main():
     def render_sprite(sp, variant):
         """One standing thing, cropped: (crop, screen left, top) or None."""
         mine = set(sp.objects)
-        extra = {catcher_for(p, sp)} if sp.conditional else set()
+        extra = {catcher_for(p, sp)} if sp.conditional and sp.shadow else set()
         others_conditional = conditional - mine
         x0, y0, x1, y1 = screen_rect(sp.objects)
         for cat in extra:

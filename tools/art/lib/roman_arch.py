@@ -355,7 +355,7 @@ class RomanArchitecture:
                 objs.append(self._obj(f"{name}-iron{k}", nails, self._mat("iron"), smooth=True))
         return objs
 
-    def _window(self, name, x0, x1, y_face, z0, z1, kind="grille"):
+    def _roman_window(self, name, x0, x1, y_face, z0, z1, kind="grille"):
         """A small window: a stone sill and a wooden grille (or a pair of
         shutters standing half open)."""
         objs = []

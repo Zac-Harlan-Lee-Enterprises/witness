@@ -329,4 +329,28 @@ TESTS  : Vitest 608 -> 619 (selection rules, low sheets and fallback, content te
 NEXT   : Look at the phone captures on a real phone (Chrome remote debugging, a mid-range Android) and, if the
          ground reads too soft, try the full ground at RGB 5-6-5 on phones (+12-19 MB a place) or re-encode the
          low grounds from the full tiles at WebP q92 (build_place.py writes them at q84).
+
+--- 2026-09-26  Claude Opus 5.5 (art-polish agent) — known art gaps fixed (fix/art-polish) ---
+DONE   : Fields at night: a separate, dimmer night fire (55 W, higher and wider), dimmer night flames and
+         embers and sooty ring stones (kit_village _by_light); night set re-rendered. Capernaum: later-day
+         set +0.3 EV (variant_exposure); the middle house's lit door opens into a lamplit room with a spill
+         onto the lane (lake_houses _lit_room); both sets re-rendered. Open lake: the other boats' yards and
+         sails are story sprites (sail-set / sail-furled on storm-broke), taken in for the storm; Sprite
+         shadow=False; night set re-rendered. Philemon's house: Kallias (8,6), Zenon (13,6), Tychicus (14,5)
+         off the column lines; the far-row sorting cheat removed; the house's columns fade (like canopies)
+         while the player stands behind one (beside Ammia is behind one); columns, fountain re-rendered.
+         Colossae fountain: clear falling water whitened by air, a splash, a sheet over the lip, clear basin
+         water (roman_materials falling_water, basin_water, wet_stone). Own pass: Ammia's vats' stoke-holes
+         (flat white slabs) are coals with a small light, ash, flicker. Pipeline bug found: kit helpers
+         shadowed one another in Place's MRO (_tube broke every Roman place, _block the masonry walls,
+         _window Chapter 1's houses); renamed, and a content test guards it.
+TESTS  : Vitest 608 → 612 (helper clashes; nobody behind a column; the columns fade for the player; sails
+         follow the storm). typecheck, lint, prettier, knip, content:validate clean. e2e on 4432/5432:
+         chapter, storm-on-galilee, journey-to-bethlehem, letter-from-paul, smoke: 12 passed, 1 skipped.
+         Captures (desktop, all four chapters) before and after; the storm capture spec's race fixed.
+         Beware: Playwright reuses a running preview server (reuseExistingServer), which serves the old
+         dist; stop it before capturing new art, or the "after" shows the old art.
+NEXT   : Merge fix/art-polish after review. Then: moon shadows of the boats' set sails are gone from the
+         lake's ground (sails are conditional now); if wanted, bake them into the set-sail sprites' own
+         shadow on a water-surface catcher (build_place catcher_for at the water height).
 BLOCKED: none.

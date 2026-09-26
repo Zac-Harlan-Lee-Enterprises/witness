@@ -228,6 +228,69 @@ def river_water(tint="#4e5a4c", name="river"):
     return cached(("river", tint, name), build)
 
 
+def falling_water(air=0.35, name=None):
+    """Water falling from a spout or thrown up by a jet: clear and glassy,
+    whitened by the air it carries in streaks along the fall (noise
+    stretched along world Z), so it catches the light as a bright glinting
+    rope rather than a dark line. `air`: how white it is (a thin, fast jet
+    little; splashes and falls breaking up a lot)."""
+
+    def build():
+        n = Nodes(name or f"falling-water-{air}")
+        obj = n.coords()
+        stretch = n.new("ShaderNodeVectorMath", _operation="MULTIPLY")
+        n.link(obj[0], obj[1], stretch, 0)
+        stretch.inputs[1].default_value = (7.0, 7.0, 0.8)
+        streak = n.noise(9.0, 4.0, 0.6, (stretch, "Vector"))
+        whiten = n.new("ShaderNodeMapRange", Value=(streak, "Fac"), **{"From Min": 0.35, "From Max": 0.7, "To Min": 0.0, "To Max": 1.0})
+        a = n.math("MULTIPLY", (whiten, "Result"), air * 1.6, clamp=True)
+        ripple = n.noise(40.0, 3.0, 0.5, (stretch, "Vector"))
+        bump = n.bump((ripple, "Fac"), strength=0.25, distance=0.004)
+        glass = n.new("ShaderNodeBsdfPrincipled", **{"Base Color": hex_rgb("#e4efec"), "Roughness": 0.03, "IOR": 1.33, "Transmission Weight": 1.0, "Specular IOR Level": 0.6, "Normal": (bump, "Normal")})
+        white = n.new("ShaderNodeBsdfPrincipled", **{"Base Color": hex_rgb("#eef3f2"), "Roughness": 0.35, "IOR": 1.33, "Subsurface Weight": 0.3, "Subsurface Radius": (0.3, 0.35, 0.4), "Subsurface Scale": 0.01, "Normal": (bump, "Normal")})
+        mix = n.new("ShaderNodeMixShader")
+        n.link(a, "Value", mix, "Fac")
+        n.link(glass, "BSDF", mix, 1)
+        n.link(white, "BSDF", mix, 2)
+        n.link(mix, "Shader", n.out, "Surface")
+        return n.mat
+
+    return cached(("falling-water", air, name), build)
+
+
+def basin_water(tint="#a9c8c0", name=None):
+    """Clear water standing in a stone basin: the basin's floor shows
+    through it, a little green, under a glossy surface stirred by rings
+    spreading from where the water falls in (bump only)."""
+
+    def build():
+        n = Nodes(name or f"basin-water-{tint}")
+        obj = n.coords()
+        rip = n.noise(14.0, 3.0, 0.5, obj)
+        rings = n.new("ShaderNodeTexWave", Vector=obj, Scale=9.0, Distortion=1.5, Detail=2.0, _wave_type="RINGS")
+        h = n.math("ADD", (rip, "Fac"), (n.math("MULTIPLY", (rings, "Fac"), 0.6), "Value"))
+        bump = n.bump((h, "Value"), strength=0.08, distance=0.004)
+        n.bsdf(**{"Base Color": hex_rgb(tint), "Roughness": 0.02, "IOR": 1.33, "Transmission Weight": 1.0, "Specular IOR Level": 0.55, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("basin-water", tint, name), build)
+
+
+def wet_stone(color="#8e8a80", name="wet-stone"):
+    """A film of water running over stone: dark and glossy (the stone's
+    colour, deepened), rippled a little along the flow."""
+
+    def build():
+        n = Nodes(name)
+        obj = n.coords()
+        rip = n.noise(30.0, 3.0, 0.5, obj)
+        bump = n.bump((rip, "Fac"), strength=0.05, distance=0.003)
+        n.bsdf(**{"Base Color": hex_rgb(color), "Roughness": 0.05, "Coat Weight": 0.8, "Coat Roughness": 0.03, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("wet-stone", color, name), build)
+
+
 def puddle():
     """Rain water standing in a hollow: a dark mirror, a little silty."""
 

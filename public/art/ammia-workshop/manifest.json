@@ -493,6 +493,43 @@
      "u": 1146,
      "v": 0
     }
+   ],
+   "lights": [
+    {
+     "kind": "hearth",
+     "x": 304.0,
+     "y": 160.0,
+     "radius": 20.0,
+     "strength": 0.35
+    },
+    {
+     "kind": "hearth",
+     "x": 400.0,
+     "y": 160.0,
+     "radius": 20.0,
+     "strength": 0.35
+    },
+    {
+     "kind": "hearth",
+     "x": 496.0,
+     "y": 160.0,
+     "radius": 20.0,
+     "strength": 0.35
+    },
+    {
+     "kind": "hearth",
+     "x": 304.0,
+     "y": 224.0,
+     "radius": 20.0,
+     "strength": 0.35
+    },
+    {
+     "kind": "hearth",
+     "x": 400.0,
+     "y": 224.0,
+     "radius": 20.0,
+     "strength": 0.35
+    }
    ]
   }
  },

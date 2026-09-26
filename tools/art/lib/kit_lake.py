@@ -247,6 +247,11 @@ class LakeKit(BoatsMixin, HousesMixin):
         self.basalt_dressed = L.basalt("#4e4a45", "basalt-dressed", dust=0.4, lichen=0.12)
         self.mortar = L.mud_mortar()
         if self.style == "lake":
+            # A town of black basalt under a low afternoon sun reads dim, as
+            # if dusk had come early: the later-day set is exposed 0.3 EV
+            # brighter (a camera metering for the dark stone), still a late
+            # afternoon (long shadows, warm light).
+            self.variant_exposure["late"] = 0.3
             # Stone builders shared with other places use `limestone` and
             # `paving`: here they are basalt.
             self.limestone = L.basalt("#4e4a45", "basalt-fieldstone", dust=0.5, lichen=0.3)
@@ -765,14 +770,14 @@ class LakeKit(BoatsMixin, HousesMixin):
                 r = rng.random()
                 if axis == "x":
                     xa, xb = (at - out, at + 0.35) if sign < 0 else (at - 0.35, at + out)
-                    self._block(bm, layer, xa, xb, p + 0.012, p + ln - 0.012, z - hgt + 0.012, z, r)
+                    self._jetty_block(bm, layer, xa, xb, p + 0.012, p + ln - 0.012, z - hgt + 0.012, z, r)
                 else:
-                    self._block(bm, layer, p + 0.012, p + ln - 0.012, at - 0.35, at + out, z - hgt + 0.012, z, r)
+                    self._jetty_block(bm, layer, p + 0.012, p + ln - 0.012, at - 0.35, at + out, z - hgt + 0.012, z, r)
                 p += ln
             z -= hgt
             course += 1
 
-    def _block(self, bm, layer, x0, x1, y0, y1, z0, z1, r):
+    def _jetty_block(self, bm, layer, x0, x1, y0, y1, z0, z1, r):
         """A box between map x0..x1, y0..y1 and heights z0..z1 (absolute),
         sheared to the view."""
         c = [self._at(x, y, z, Z_JETTY) for z in (z0, z1) for y in (y0, y1) for x in (x0, x1)]
@@ -1331,7 +1336,7 @@ class LakeKit(BoatsMixin, HousesMixin):
         mat = L.rope("#9c8660", "coil-rope")
         objs = [self._coil(f"{name}-coil", c, 0.24, mat, self.rng, turns=6)]
         end = [c + Vector((0.24, 0.0, 0.03)), c + Vector((0.38, -0.12, 0.012)), c + Vector((0.46, -0.2, 0.012))]
-        objs.append(self._tube(f"{name}-end", end, 0.016, mat, seg=6))
+        objs.append(self._lake_tube(f"{name}-end", end, 0.016, mat, seg=6))
         return (objs, y * 32.0, True) if self._flat(e) else objs
 
     def entity_oar(self, name, x, y, e=None):
@@ -1379,7 +1384,7 @@ class LakeKit(BoatsMixin, HousesMixin):
             for k in range(14):
                 t = k / 13
                 pts.append(self.P(x + 0.5 + 0.3 * math.sin(t * 4), y - 0.4 + t * 1.6, 0.02))
-        return [self._tube(f"{name}-rope", pts, 0.02, mat, seg=6)], y * 32.0, True
+        return [self._lake_tube(f"{name}-rope", pts, 0.02, mat, seg=6)], y * 32.0, True
 
     def entity_fish_basket(self, name, x, y, e=None):
         """A basket of the day's catch."""
@@ -1452,7 +1457,7 @@ class LakeKit(BoatsMixin, HousesMixin):
         cord_mat = L.rope("#8c7a58", "fish-cord")
         xa, xb = 6.4, 9.6
         pts = [self.P(xa + (xb - xa) * t / 12, back + 0.06, 1.95 - 0.18 * math.sin(math.pi * t / 12)) for t in range(13)]
-        self.to_ground(self._tube("fish-cord", pts, 0.008, cord_mat, seg=5))
+        self.to_ground(self._lake_tube("fish-cord", pts, 0.008, cord_mat, seg=5))
         for k in range(11):
             t = (k + 0.5) / 11
             p = pts[0].lerp(pts[-1], t)

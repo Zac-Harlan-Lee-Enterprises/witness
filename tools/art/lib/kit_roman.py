@@ -81,24 +81,20 @@ class RomanKit(RomanGeometry, RomanArchitecture, RomanProps, RomanTown, RomanVal
         behind), or the ring of a peristyle garden in a house. The house is
         seen in cutaway, like its walls: its roof and the beams that carried
         it are cut away, so the columns stand to their capitals and nobody
-        at the gathering is lost behind a beam. One sprite per column.
-
-        The ring's far side (its north row) stands between the camera and
-        the room beyond it, where the gathering is: its columns are sorted
-        behind anyone standing up to two rows north of them, so people
-        there are drawn in front of the shafts rather than cut in half by
-        them (a deliberate cheat; anyone south of the row still sorts true)."""
+        at the gathering is lost behind a beam. One sprite per column, sorted
+        true: the content keeps people off the line just north of a column
+        (tests/content/letter-from-paul.test.ts), where it would hide their
+        legs as it truly would; and in a house the columns fade like a
+        canopy while the player stands behind one (the player can stand
+        anywhere, and would be cut in half by the shaft)."""
         if self.style == "city":
             self._stoas()
             return
         painted = ("#8e2e1e", 1.05) if self.style == "home" else None
-        cols = self.map.tiles("column")
-        far = min(y for _x, y in cols) if cols else 0
-        for x, y in cols:
+        for x, y in self.map.tiles("column"):
             name = f"column-{x}-{y}"
             objs, _top = self._ionic_column(name, x + 0.5, y + 0.5, 2.2, r=0.15, painted=painted, cut_top=True)
-            base = y - 1.3 if (y == far and self.style == "home") else y + 0.72
-            self.sprite(name, base, objs, [(x, y)])
+            self.sprite(name, y + 0.72, objs, [(x, y)], fade=self.style == "home")
 
     def _stoas(self):
         m = self.map

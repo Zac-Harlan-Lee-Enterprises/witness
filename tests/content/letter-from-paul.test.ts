@@ -297,6 +297,19 @@ describe('A Letter from Paul art support', () => {
     expect(nextColumn(walled, 0, 0, 1, 0)).toBeNull();
   });
 
+  it('stands nobody at the gathering just behind a column, where it would hide their legs', () => {
+    // The colonnade sorts true (no cheat in the art): someone one or two rows
+    // north of a column, in line with it, would be drawn behind its shaft.
+    const house = chapter.scenes.find((s) => s.id === 'philemon-house');
+    if (!house) throw new Error('missing scene');
+    const grid = parseLayout(house);
+    const hidden = house.entities
+      .filter((e) => e.characterId)
+      .filter((e) => [1, 2].some((d) => grid.tiles[e.y + d]?.[e.x] === 'column'))
+      .map((e) => `${e.id} at ${e.x},${e.y}`);
+    expect(hidden).toEqual([]);
+  });
+
   it('lights the gathering with its lampstands', () => {
     const house = chapter.scenes.find((s) => s.id === 'philemon-house');
     if (!house) throw new Error('missing scene');

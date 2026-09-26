@@ -213,9 +213,9 @@ class BoatsMixin:
             hb, sheer, _ = self.hull_shape(u, L, B)
             sheer *= freeboard / 0.55
             pts.append(xf @ Vector((-L / 2 + u * L, side * (hb + 0.01), sheer + 0.01)))
-        return self._tube(name, pts, r, mat)
+        return self._lake_tube(name, pts, r, mat)
 
-    def _tube(self, name, pts, r, mat, seg=8, taper=None):
+    def _lake_tube(self, name, pts, r, mat, seg=8, taper=None):
         bm = bmesh.new()
         rings = []
         for i, p in enumerate(pts):
@@ -235,9 +235,10 @@ class BoatsMixin:
         _loft(bm, rings, closed=True)
         return common.mesh_object(name, bm, mat, None)
 
-    def _boat_parts(self, name, L, B, xf, afloat, rig, rng, gear=True, lamp=False, teacher=False):
+    def _boat_parts(self, name, L, B, xf, afloat, rig, rng, gear=True, lamp=False, teacher=False, yard=True):
         """Every part of one boat, as (above, below): the objects above the
-        waterline (its sprite) and those below it (ground, afloat only)."""
+        waterline (its sprite) and those below it (ground, afloat only).
+        `yard`: False when the story shows its yard and sail (_yard)."""
         L_HULL = LM.hull_paint("#5c4634", name="hull-outside")
         inner = LM.planks("#806850", "hull-inside", along="X", width=0.16, length=2.2, worn=0.2)
         hull = self._hull_mesh(f"{name}-hull", L, B, xf, L_HULL, inner)
@@ -259,7 +260,7 @@ class BoatsMixin:
                 t = k / 8
                 x = (-L / 2 if end == 0 else L / 2) + (-1 if end == 0 else 1) * 0.12 * math.sin(t * math.pi / 2)
                 pts.append(xf @ Vector((x, 0.0, keel + (sheer + rise - keel) * t)))
-            above.append(self._tube(f"{name}-post{end}", pts, 0.05, timber))
+            above.append(self._lake_tube(f"{name}-post{end}", pts, 0.05, timber))
         # Frames (ribs) inside, thwarts across, the floorboards, the stern deck.
         fl = bmesh.new()
         for k in range(1, int(L / 0.42)):
@@ -274,7 +275,7 @@ class BoatsMixin:
                 y = -math.copysign(1.0, t) * (hb - 0.05) * math.sin(th) ** 0.72 if t else 0.0
                 z = keel + 0.05 + (sheer - 0.03 - keel - 0.05) * (1 - math.cos(th) ** 1.35)
                 pts.append(xf @ Vector((-L / 2 + u * L, y, z)))
-            above.append(self._tube(f"{name}-frame{k}", pts, 0.028, pale, seg=5))
+            above.append(self._lake_tube(f"{name}-frame{k}", pts, 0.028, pale, seg=5))
         _ = fl
         floor = bmesh.new()
         fu = floor.loops.layers.uv.new("UVMap")
@@ -317,7 +318,7 @@ class BoatsMixin:
             bench.matrix_world = Matrix.Identity(4)
             above.append(bench)
         if rig and L >= 4.0:
-            above += self._rig(name, L, B, xf, rig, rng, teacher=teacher)
+            above += self._rig(name, L, B, xf, rig, rng, teacher=teacher, yard=yard)
         if gear:
             above += self._boat_gear(name, L, B, xf, afloat, rng, rig == "lowered")
         if afloat and not teacher and rig != "lowered":
@@ -408,9 +409,11 @@ class BoatsMixin:
         base.name = name
         return base
 
-    def _rig(self, name, L, B, xf, rig, rng, teacher=False):
+    def _rig(self, name, L, B, xf, rig, rng, teacher=False, yard=True):
         """Mast, yard and sail: stepped and standing with the sail furled on
-        the yard (moored), or lowered along the boat (drawn up)."""
+        the yard (moored), or set (sailing), or lowered along the boat (drawn
+        up). With `yard` False, only the mast and its standing rigging: the
+        story shows the yard and sail (`_yard`, set or taken in)."""
         out = []
         spar = M.wood("#6a5238", 3.5)
         # Linen greyed and browned by years of sun and lake water.
@@ -419,7 +422,6 @@ class BoatsMixin:
         u_mast = 0.64
         hb, sheer, keel = self.hull_shape(u_mast, L, B)
         mast_h = min(7.2, 0.82 * L + 0.4)
-        yard = min(7.5, 0.86 * L)
         base = Vector((-L / 2 + u_mast * L, 0.0, keel + 0.2))
         if rig == "lowered":
             # Mast lying along the thwarts, yard beside it with the sail rolled on it.
@@ -433,25 +435,8 @@ class BoatsMixin:
             return out
         top = base + Vector((0, 0, mast_h))
         out.append(self._branch(f"{name}-mast", xf @ base, xf @ top, 0.075 * min(1.0, L / 8), 0.05 * min(1.0, L / 8), spar, 10, bow=0.0))
-        if rig == "moored":
-            # At rest: the yard lowered and lashed along the thwarts, the sail
-            # furled on it, the mast standing bare.
-            a2 = xf @ Vector((-L * 0.36, -0.12, sheer + 0.02))
-            b2 = xf @ Vector((L * 0.4, -0.08, sheer + 0.05))
-            out.append(self._branch(f"{name}-yard", a2, b2, 0.045, 0.04, spar, 8, bow=0.0))
-            out.append(self._furled(f"{name}-furl", a2 + Vector((0, 0, 0.1)), b2 + Vector((0, 0, 0.1)), sail, rng, r=0.13))
-        else:
-            # Under way: the yard up and braced round to the wind, the sail
-            # half brailed up beneath it.
-            yz = mast_h - 0.35
-            brace = math.radians(38.0)
-            d = Vector((math.sin(brace), math.cos(brace), 0.0))
-            c = base + Vector((0.08, 0.0, yz))
-            ya = xf @ (c + d * yard / 2)
-            yb = xf @ (c - d * yard / 2)
-            out.append(self._branch(f"{name}-yard", ya, yb, 0.045, 0.04, spar, 8, bow=-0.06))
-            fwd = (xf.to_3x3() @ Vector((1.0, 0.0, 0.0))).normalized()
-            out.append(self.square_sail(f"{name}-sail", (ya + yb) / 2 + Vector((0, 0, -0.06)), (ya - yb).normalized(), yard - 0.3, min(2.6, 0.4 * L), fwd, sail))
+        if yard:
+            out += self._yard(name, L, B, xf, "furled" if rig == "moored" else "set", rng)
         # Standing rigging: shrouds to both rails, a forestay, the halyard.
         mh = xf @ (base + Vector((0, 0, mast_h - 0.1)))
         for side in (1, -1):
@@ -463,6 +448,62 @@ class BoatsMixin:
         out.append(self._branch(f"{name}-halyard", mh, xf @ Vector((-L / 2 + 0.5, 0.0, sheer_s)), 0.007, 0.007, rope, 4, bow=0.0))
         _ = teacher
         return out
+
+    def _yard(self, name, L, B, xf, state, rng):
+        """A boat's yard and sail. `set`: under way, the yard up and braced
+        round to the wind, the sail half brailed up beneath it. `furled`: at
+        rest, or with the sail taken in against a squall: the yard lowered
+        and lashed along the thwarts, the sail furled on it, the mast bare."""
+        spar = M.wood("#6a5238", 3.5)
+        sail = LM.linen("#a89c82", "sail-linen-worn")
+        u_mast = 0.64
+        _hb, sheer, keel = self.hull_shape(u_mast, L, B)
+        mast_h = min(7.2, 0.82 * L + 0.4)
+        length = min(7.5, 0.86 * L)
+        base = Vector((-L / 2 + u_mast * L, 0.0, keel + 0.2))
+        if state == "furled":
+            a2 = xf @ Vector((-L * 0.36, -0.12, sheer + 0.02))
+            b2 = xf @ Vector((L * 0.4, -0.08, sheer + 0.05))
+            return [
+                self._branch(f"{name}-yard", a2, b2, 0.045, 0.04, spar, 8, bow=0.0),
+                self._furled(f"{name}-furl", a2 + Vector((0, 0, 0.1)), b2 + Vector((0, 0, 0.1)), sail, rng, r=0.13),
+            ]
+        yz = mast_h - 0.35
+        brace = math.radians(38.0)
+        d = Vector((math.sin(brace), math.cos(brace), 0.0))
+        c = base + Vector((0.08, 0.0, yz))
+        ya = xf @ (c + d * length / 2)
+        yb = xf @ (c - d * length / 2)
+        fwd = (xf.to_3x3() @ Vector((1.0, 0.0, 0.0))).normalized()
+        return [
+            self._branch(f"{name}-yard", ya, yb, 0.045, 0.04, spar, 8, bow=-0.06),
+            self.square_sail(f"{name}-sail", (ya + yb) / 2 + Vector((0, 0, -0.06)), (ya - yb).normalized(), length - 0.3, min(2.6, 0.4 * L), fwd, sail),
+        ]
+
+    def _story_sails(self, fp):
+        """The story's sail entities on a boat (sprites `sail-set` and
+        `sail-furled`, shown as the story goes): its yard and sail are theirs."""
+        tiles = set(map(tuple, fp["tiles"]))
+        return [e for e in self.map.entities if e.get("sprite") in ("sail-set", "sail-furled") and (e["x"], e["y"]) in tiles]
+
+    def entity_sail_set(self, name, x, y, e=None):
+        """The yard and sail of the boat under (x, y), set: shown until the squall."""
+        return self._story_yard(name, x, y, "set")
+
+    def entity_sail_furled(self, name, x, y, e=None):
+        """The yard and sail of the boat under (x, y), taken in: shown from the squall on."""
+        return self._story_yard(name, x, y, "furled")
+
+    def _story_yard(self, name, x, y, state):
+        rig = next((r for r in getattr(self, "_story_rigs", []) if (x, y) in r["tiles"]), None)
+        if rig is None:
+            return None
+        objs = self._yard(name, rig["L"], rig["B"], rig["xf"], state, common.rng(int(x * 131 + y * 17)))
+        for o in objs:
+            o["wl_z"] = rig["zb"]
+        # Sorted with its boat; no shadow of its own (it would fall on open
+        # water, whose terrain is the lake bed); faded like the boat's rig.
+        return objs, rig["south"] * 32.0, False, {"shadow": False, "fade": True}
 
     def _furled(self, name, a, b, mat, rng, r=0.14):
         """A sail gathered up on its yard: a long lumpy roll with the brails
@@ -523,7 +564,7 @@ class BoatsMixin:
             a = i / 24 * math.tau
             rr = r * (0.55 + 0.45 * (i / (turns * 24)))
             pts.append(at + Vector((math.cos(a) * rr, math.sin(a) * rr, 0.015 + 0.012 * math.sin(a * 0.5 + i * 0.01))))
-        return self._tube(name, pts, 0.014, mat, seg=5)
+        return self._lake_tube(name, pts, 0.014, mat, seg=5)
 
     def _net_heap(self, name, at, w, ln, rng):
         """A heap of wet net: a lumpy mound of folds, darker than dry net,
@@ -622,7 +663,10 @@ class BoatsMixin:
                 # Heeled a little onto its bilge.
                 xf = xf @ Matrix.Rotation(0.06 * (1 if rng.random() < 0.5 else -1), 4, "X")
             is_teacher = teacher is not None and fp is teacher
-            above, below = self._boat_parts(name, L, B, xf, fp["afloat"], rig, rng, gear=not is_teacher, lamp=fp["afloat"] and not is_teacher and bool(self.map.tiles("deck")), teacher=is_teacher)
+            # A boat whose sail the story sets and takes in (entity_sail_set,
+            # entity_sail_furled) is built without its yard and sail.
+            story = rig == "sailing" and bool(self._story_sails(fp))
+            above, below = self._boat_parts(name, L, B, xf, fp["afloat"], rig, rng, gear=not is_teacher, lamp=fp["afloat"] and not is_teacher and bool(self.map.tiles("deck")), teacher=is_teacher, yard=not story)
             for o in below:
                 self.to_ground(o)
             if fp["afloat"]:
@@ -636,6 +680,8 @@ class BoatsMixin:
             # The ground line: the south edge of the hull at the waterline.
             south = cy + (B / 2 if fp["horizontal"] else L / 2)
             self.sprite(name, south, above, fp["tiles"], fade=rig in ("sailing", "moored"))
+            if story:
+                self._story_rigs = getattr(self, "_story_rigs", []) + [{"tiles": set(map(tuple, fp["tiles"])), "L": L, "B": B, "xf": xf, "zb": zb, "south": south}]
 
     def _teacher_boat(self):
         """The boat the crowd listens to (people sitting on the beach facing
@@ -787,7 +833,7 @@ class BoatsMixin:
             for k in range(10):
                 t = k / 9
                 pts.append(self._at0(x + lean * math.sin(t * math.pi / 2) ** 2, cy, zw - 0.3 + (rail_z + rise - zw + 0.3) * t))
-            put(int(cy), self._tube(name, pts, 0.09, timber, seg=8, taper=lambda t: 1.0 - 0.35 * t))
+            put(int(cy), self._lake_tube(name, pts, 0.09, timber, seg=8, taper=lambda t: 1.0 - 0.35 * t))
         # A lamp hung from the sternpost, lit after dark.
         lx, ly = o["xa"] + 0.35, cy + 0.25
         lamp = self._ellipsoid("stern-lamp", self._at0(lx, ly, 1.45), (0.08, 0.06, 0.035), M.terracotta("#b2714a", 0.1), 14, 8)
@@ -849,7 +895,7 @@ class BoatsMixin:
         obj.data.materials.append(inside)
         obj["wl_z"] = zw
         pts = [self._at0(x, y - side * t_in / 2, rail_z + 0.02) for x, y in seg]
-        rail = self._tube(f"{name}-rail", pts, 0.07, timber, seg=8)
+        rail = self._lake_tube(f"{name}-rail", pts, 0.07, timber, seg=8)
         return [obj, rail]
 
     def _stern_platform(self, o, rail_z, put):
