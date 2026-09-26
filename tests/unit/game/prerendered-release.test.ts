@@ -1,6 +1,13 @@
 import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
-import { beginPlace, endPlace } from '@/game/prerendered/loader';
+import {
+  artVersion,
+  beginPlace,
+  endPlace,
+  placeTextureKeys,
+  releaseLater,
+  type PlaceTextures,
+} from '@/game/prerendered/loader';
 
 /** Just enough of a Phaser scene for the loader's texture release. */
 function fakeScene(keys: string[]) {
@@ -35,5 +42,45 @@ describe('releasing the last place’s art', () => {
     emit('postupdate');
     expect([...textures]).toEqual([]);
     emit('destroy');
+  });
+});
+
+describe('an abandoned relight', () => {
+  it('lets the textures of the light it loaded go, once nothing draws them', () => {
+    const { scene, textures, emit } = fakeScene([
+      'art:fields:night:ground0',
+      'art:fields:night:page0',
+      'art:fields:night:shade',
+    ]);
+    beginPlace(scene);
+    endPlace();
+    emit('postupdate');
+    const place = {
+      art: { scene: 'fields' },
+      variant: 'night',
+      ground: [{ key: 'art:fields:night:ground0', x: 0, y: 0 }],
+      pages: ['art:fields:night:page0'],
+    } as unknown as PlaceTextures;
+    expect(placeTextureKeys(place)).toEqual([
+      'art:fields:night:ground0',
+      'art:fields:night:page0',
+      'art:fields:night:shade',
+    ]);
+    textures.add('art:fields:night:ground0');
+    textures.add('art:fields:night:page0');
+    textures.add('art:fields:night:shade');
+    releaseLater(placeTextureKeys(place));
+    emit('postupdate');
+    expect([...textures]).toEqual([]);
+    emit('destroy');
+  });
+});
+
+describe('art versions (so cached art never mixes with a newer manifest)', () => {
+  it('is the same for the same manifest and changes with any change to it', () => {
+    const manifest = { scene: 'lake', variants: { night: { pages: ['p0.webp'] } } };
+    expect(artVersion(manifest)).toBe(artVersion(structuredClone(manifest)));
+    expect(artVersion({ ...manifest, scene: 'shore' })).not.toBe(artVersion(manifest));
+    expect(artVersion(manifest)).toMatch(/^[0-9a-z]+$/);
   });
 });

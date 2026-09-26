@@ -8,7 +8,6 @@ import {
   CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
   CACHED_ON_FIRST_USE_PLACES,
 } from './src/app/art-cache';
-import { artRevision } from './scripts/art-revision';
 
 /**
  * Static-host friendly build.
@@ -82,6 +81,8 @@ export default defineConfig(({ mode }) => {
           // before that, the game draws the morning set in their place
           // (src/game/prerendered/loader.ts). See docs/art/technical-art-guide.md §6.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
+          // The art's ?v= version isn't part of the precached file's identity.
+          ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
           globIgnores: [
             '**/art/**/*-late*.webp',
             // Later chapters' places are cached on first use (src/app/art-cache.ts).
@@ -90,12 +91,21 @@ export default defineConfig(({ mode }) => {
           ],
           runtimeCaching: [
             {
+              // Art manifests say which files make up a place (and version their
+              // URLs): fetched fresh when online, from the cache when offline.
+              urlPattern: ({ url }) =>
+                url.pathname.includes('/art/') && url.pathname.endsWith('.json'),
+              handler: 'NetworkFirst',
+              options: { cacheName: 'witness-art-manifests', networkTimeoutSeconds: 4 },
+            },
+            {
+              // Art files have fixed names; their URLs carry a version from their
+              // manifest (?v=, src/game/prerendered/loader.ts), so new art is fetched
+              // anew and never mixed with an older manifest. Old entries age out.
               urlPattern: ({ url }) => url.pathname.includes('/art/'),
               handler: 'CacheFirst',
               options: {
-                // Named after the art's content: new art means a fresh cache, never an
-                // old manifest cached beside newer pages (or the reverse).
-                cacheName: `witness-art-${artRevision(fileURLToPath(new URL('./public/art', import.meta.url)))}`,
+                cacheName: 'witness-art',
                 expiration: { maxEntries: ART_RUNTIME_CACHE_ENTRIES },
               },
             },

@@ -35,11 +35,6 @@ export interface PortraitImage {
   srcSet: string;
 }
 
-/**
- * The rendered portrait for someone, or null if there is none for how they
- * look now. `characterId` picks that person's own portrait when two people
- * share an appearance; players (and anyone else) are found by appearance.
- */
 /** For each manifest: appearance key → the first portrait id (sorted) rendered from it. */
 const byAppearance = new WeakMap<PortraitManifest, ReadonlyMap<string, string>>();
 
@@ -57,6 +52,11 @@ function appearanceIndex(entries: PortraitManifest): ReadonlyMap<string, string>
   return index;
 }
 
+/**
+ * The rendered portrait for someone, or null if there is none for how they
+ * look now. `characterId` picks that person's own portrait when two people
+ * share an appearance; players (and anyone else) are found by appearance.
+ */
 export function portraitImage(
   appearance: Appearance,
   characterId: string | null = null,

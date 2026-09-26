@@ -41,16 +41,9 @@ import {
 import type { Viewport } from '../phaser/viewport';
 import { CanopyFader } from '../prerendered/canopy';
 import { prepareArt, type FigureBook } from '../prerendered/figures';
-import type { PlaceTextures } from '../prerendered/loader';
-import { LIGHTING_VARIANTS, type ArtSprite } from '../prerendered/manifest';
-import {
-  depthRow,
-  firstVariant,
-  relightTo,
-  sampleShade,
-  shadeTint,
-  turnPath,
-} from '../prerendered/select';
+import { placeTextureKeys, releaseLater, type PlaceTextures } from '../prerendered/loader';
+import type { ArtSprite } from '../prerendered/manifest';
+import { depthRow, relightTo, sampleShade, shadeTint, turnPath } from '../prerendered/select';
 import { paintProp } from '../art/props';
 import { paintScene, type CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
@@ -269,6 +262,8 @@ export class WorldScene extends Phaser.Scene {
    */
   async prepare(model: WorldSceneModel): Promise<void> {
     this.loads++;
+    this.artEpoch++;
+    this.relightFailed = null;
     try {
       const art = await this.loadArt(model);
       this.place = art.place;
@@ -575,28 +570,48 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private relighting = false;
+  /** Scene loads started: a relight abandons if one starts while its light loads. */
+  private artEpoch = 0;
+  /** A light a place couldn't load (offline): not retried until the place changes. */
+  private relightFailed: string | null = null;
 
   /**
    * The story clock has moved a pre-rendered place into another light its
    * art has (the sun sets while you carry the lamb back to the fold): load
-   * that light and rebuild the place around everyone where they stand, fading
-   * through, keeping the conversation going.
+   * that light and rebuild the place around everyone where they are when it
+   * arrives, fading through, keeping the conversation and any walk going.
    */
   private async relight(): Promise<void> {
+    if (this.relighting || this.opts.artLighting !== 'auto' || this.loads > 0) return;
     const place = this.place;
     const model = this.model;
-    if (this.relighting || this.opts.artLighting !== 'auto' || !place || !model) return;
-    if (place.art.scene !== model.sceneId) return;
-    const available = LIGHTING_VARIANTS.filter((v) => place.art.variants[v] !== undefined);
-    if (!relightTo(place.variant, this.lighting.hour, available)) return;
+    if (!place || !model || place.art.scene !== model.sceneId) return;
+    const wanted = relightTo(place.variant, this.lighting.hour, place.available);
+    if (!wanted || this.relightFailed === `${model.sceneId}:${wanted}`) return;
     this.relighting = true;
-    const generation = this.generation;
-    // A clock that moves on leaving a place is followed at once by the next
-    // place loading: wait a moment, and never race a scene load.
-    const settled = (): boolean => generation === this.generation && this.loads === 0;
+    const epoch = this.artEpoch;
+    const stillHere = (): boolean =>
+      epoch === this.artEpoch &&
+      this.loads === 0 &&
+      this.model?.sceneId === model.sceneId &&
+      this.place?.art.scene === model.sceneId;
     try {
+      // A clock that moves on while leaving a place is followed at once by the
+      // next place loading: wait a moment, and never race a scene load.
       await new Promise<void>((resolve) => this.time.delayedCall(800, () => resolve()));
-      if (!settled() || !this.model) return;
+      if (!stillHere() || !this.model) return;
+      const art = await this.loadArt({ ...this.model, lighting: this.lighting });
+      if (!stillHere() || !art.place || art.place.variant !== wanted) {
+        // Moved on, or the wanted light couldn't be loaded (it fell back to a
+        // stand-in): keep the place as it is and let what was loaded go.
+        if (art.place && art.place !== this.place) releaseLater(placeTextureKeys(art.place));
+        if (stillHere()) this.relightFailed = `${model.sceneId}:${wanted}`;
+        return;
+      }
+      this.place = art.place;
+      this.book = art.book;
+      this.compactArt();
+      // Everyone as they are now, not as they were when the load began.
       const current = this.model;
       const here: WorldSceneModel = {
         ...current,
@@ -610,19 +625,21 @@ export class WorldScene extends Phaser.Scene {
           marks: this.playerMarks,
         },
       };
-      const art = await this.loadArt(here);
-      // Moved on to another place meanwhile: leave that place alone. (If the
-      // new light could not be loaded, the place stays in the one it has.)
-      if (!settled() || this.model?.sceneId !== here.sceneId || !art.place) return;
-      this.place = art.place;
-      this.book = art.book;
-      this.compactArt();
       const conversation = this.conversation;
-      this.buildScene({ ...here, entities: this.model.entities });
+      const path = this.path;
+      const pathTarget = this.pathTarget;
+      this.buildScene(here);
       if (conversation) this.setConversation(conversation);
+      // Keep walking where the player was going (the path is in tiles).
+      if (path && pathTarget && this.controlsEnabled) {
+        this.path = path;
+        this.pathTarget = pathTarget;
+      }
     } finally {
       this.relighting = false;
     }
+    // The clock may have moved on again while this light loaded.
+    void this.relight();
   }
 
   setConversation(conversation: WorldConversation | null): void {
@@ -1115,7 +1132,7 @@ export class WorldScene extends Phaser.Scene {
    * sway in the wind.
    */
   private buildFromArt(place: PlaceTextures): void {
-    const v = place.art.variants[place.variant] ?? firstVariant(place.art);
+    const v = place.art.variants[place.variant];
     // The fires and lamps baked into this light flicker (their glow is in the art).
     this.lightSpots = (v?.lights ?? []).map((l) => ({
       kind: l.kind,
@@ -1283,6 +1300,9 @@ export class WorldScene extends Phaser.Scene {
     // In low-power mode only light that means something (dusk, night, a storm) is drawn.
     const show = !this.quality.lowPower || lightMatters(l.alpha + sky.alpha);
     this.light.setVisible(show);
+    // Hidden (low power, light that means nothing): remember it's settled, so
+    // later frames can skip the work too.
+    if (!show) this.lightKey = 'hidden';
     if (show) {
       const key = [
         l.tint,

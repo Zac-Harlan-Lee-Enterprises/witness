@@ -12,7 +12,6 @@ import {
   type PlaceArt,
 } from './manifest';
 import {
-  firstVariant,
   pagesFor,
   PEOPLE_ART,
   peopleLightFor,
@@ -33,6 +32,8 @@ import {
 export interface PlaceTextures {
   art: PlaceArt;
   variant: LightingVariant;
+  /** The lighting sets this place's art has. */
+  available: readonly LightingVariant[];
   /** How people are lit here (their sheets' variant). */
   peopleLight: PeopleLight;
   /** Pixels per game unit of the loaded ground textures. */
@@ -46,6 +47,23 @@ export interface PlaceTextures {
 }
 
 const BASE = import.meta.env.BASE_URL;
+
+/**
+ * A short version for art files, from the manifest entry that describes them
+ * (FNV-1a over its JSON). Art files keep fixed names, so their URLs carry
+ * this: re-rendered art comes with a changed manifest, hence new URLs, and the
+ * cache-on-first-use cache never serves an old page with a new manifest. The
+ * service worker's precache ignores the parameter (vite.config.ts).
+ */
+export function artVersion(entry: unknown): string {
+  const text = JSON.stringify(entry) ?? '';
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
 const PLACE_PREFIX = 'art:';
 const PERSON_PREFIX = 'person:';
 
@@ -111,6 +129,20 @@ export function beginPlace(scene: Phaser.Scene): void {
   });
 }
 
+/** Every texture of a place's loaded set (its ground tiles, sprite pages and shade). */
+export function placeTextureKeys(place: PlaceTextures): string[] {
+  return [
+    ...place.ground.map((g) => g.key),
+    ...place.pages,
+    `${PLACE_PREFIX}${place.art.scene}:${place.variant}:shade`,
+  ];
+}
+
+/** Let these textures go once nothing draws them (e.g. a relight that was abandoned). */
+export function releaseLater(keys: Iterable<string>): void {
+  for (const key of keys) stale.add(key);
+}
+
 /**
  * The place's art has loaded (or failed): what it uses has been kept, so the
  * rest may go once nothing draws it. Releasing earlier would drop sheets the
@@ -174,6 +206,7 @@ export async function loadPlace(
   }
   const available = LIGHTING_VARIANTS.filter((v) => art.variants[v] !== undefined);
   const wanted = variantFor(options.hour, available);
+  const version = `?v=${artVersion(raw)}`;
   const low = wantsLowResolution(options.zoom, art.ppu, options.lowPower);
   const groundPpu = low ? art.ppu / 2 : art.ppu;
   // The later-day set is cached the first time it is used; offline before
@@ -181,7 +214,7 @@ export async function loadPlace(
   // (a place without a morning set: its first set).
   const standIn = available[0] ?? 'day';
   for (const variant of wanted === standIn ? [wanted] : [wanted, standIn]) {
-    const v = art.variants[variant] ?? firstVariant(art);
+    const v = art.variants[variant];
     if (!v) continue;
     const prefix = `art:${sceneId}:${variant}`;
     const tiles = low ? v.groundLow : v.ground;
@@ -196,12 +229,12 @@ export async function loadPlace(
     const failed = await images(scene, [
       ...tiles.map((tile, i): [string, string] => [
         ground[i]?.key ?? '',
-        `${BASE}${path}${tile.file}`,
+        `${BASE}${path}${tile.file}${version}`,
       ]),
-      [shadeKey, `${BASE}${path}${v.shade}`],
+      [shadeKey, `${BASE}${path}${v.shade}${version}`],
       ...sheets.files.map((file, i): [string, string] => [
         pages[i] as string,
-        `${BASE}${path}${file}`,
+        `${BASE}${path}${file}${version}`,
       ]),
     ]);
     if (failed.length > 0) {
@@ -211,6 +244,7 @@ export async function loadPlace(
     return {
       art,
       variant,
+      available,
       peopleLight: peopleLightFor(variant, art.peopleLight, v.peopleLight),
       groundPpu,
       ground,
@@ -297,8 +331,9 @@ async function attemptPersons(
     if (!file) continue;
     const shadow = pick(sheet.shadows, light)?.sheet ?? null;
     plan.push({ id, sheet, file, shadow });
-    files.push([`person:${file}`, `${BASE}${PEOPLE_ART}${file}`]);
-    if (shadow) files.push([`person:${shadow}`, `${BASE}${PEOPLE_ART}${shadow}`]);
+    const version = `?v=${artVersion(sheet)}`;
+    files.push([`person:${file}`, `${BASE}${PEOPLE_ART}${file}${version}`]);
+    if (shadow) files.push([`person:${shadow}`, `${BASE}${PEOPLE_ART}${shadow}${version}`]);
   }
   const failed = new Set(await images(scene, files));
   const out = new Map<string, PersonTextures>();
