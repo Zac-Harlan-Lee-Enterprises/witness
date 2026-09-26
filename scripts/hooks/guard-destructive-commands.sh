@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # guard-destructive-commands.sh — Claude Code PreToolUse hook (Layer 2 of 3).
 #
-# Why this exists even though .claude/settings.json already has a deny list:
-# deny rules are PREFIX matches against the command string. They do not see
-# inside compound commands. All of these slip past a `Bash(gh pr merge:*)` rule:
+# Scope (the owner's decision, 2026-09-25): agents work without approval
+# gates here. They may push (main included), open, approve and merge pull
+# requests, run workflows and change repo settings. This hook blocks only
+# UNRECOVERABLE accidents: force-push, history rewriting, bypassing the git
+# hooks, recursive deletes of home or root, and cloud deploys or package
+# publishing this project never does.
 #
-#     cd /repo && gh pr merge 42 --admin
-#     bash -c "gh pr merge 42"
-#     gh api -X PUT repos/o/r/pulls/42/merge
-#
-# This hook regex-scans the WHOLE command string, so placement and chaining do
-# not matter.
+# Why a hook as well as the settings deny list: deny rules are PREFIX matches
+# against the command string and miss compound commands such as
+# `cd /repo && git push --force`. This hook regex-scans the WHOLE command
+# string, so placement and chaining do not matter.
 #
 # HARD-WON RULES OF THIS FILE (each fixed a real bug — keep them):
 #   * Any regex containing & ; | must live in a VARIABLE. Unquoted, those
@@ -73,19 +74,24 @@ if [[ "${1:-}" == "--self-test" ]]; then
     fi
   }
   # Must block:
-  probe block 'cd /tmp && gh pr merge 1'
-  probe block 'gh pr review 7 --approve'
-  probe block 'git push origin main'
-  probe block 'git push origin HEAD:main'
   probe block 'git push origin +feature'
   probe block 'git push --force origin feat/x'
-  probe block 'gh api -X PATCH repos/o/r -f allow_auto_merge=true'
-  probe block 'gh api --method PUT repos/o/r/branches/main/protection'
+  probe block 'cd /repo && git push --force origin main'
+  probe block 'git reset --hard HEAD~3'
+  probe block 'rm -rf ~'
   probe block 'git commit -n -m msg'
   probe block 'git commit --no-verify -m msg'
   probe block 'gh pr merge 42 --admin'
   probe block 'terraform apply -auto-approve'
-  probe block 'gh workflow run deploy.yml'
+  # Must allow: the owner lets agents merge, push, deploy and configure.
+  probe allow 'cd /tmp && gh pr merge 1 --squash'
+  probe allow 'gh pr review 7 --approve'
+  probe allow 'git push origin main'
+  probe allow 'git push origin HEAD:main'
+  probe allow 'gh api -X PATCH repos/o/r -f allow_auto_merge=true'
+  probe allow 'gh api --method PUT repos/o/r/branches/main/protection'
+  probe allow 'gh api -X POST repos/o/r/pages -f build_type=workflow'
+  probe allow 'gh workflow run deploy-pages.yml --ref main'
   # Must allow (regressions for past false positives):
   probe allow 'git commit -m fix && git log --oneline -n 5'
   probe allow 'git commit -m "document the -n flag"'
@@ -103,9 +109,8 @@ if [[ "${1:-}" == "--self-test" ]]; then
   probe allow 'bash init.sh --stop'
   probe allow 'bash quality-sweep.sh'
   probe allow 'git push -u origin feat/road-to-jericho'
-  # …while releases and deploys stay human-triggered.
+  # Publishing a package is never part of this project.
   probe block 'npm publish'
-  probe block 'gh workflow run deploy-pages.yml'
   exit "$rc"
 fi
 
@@ -150,8 +155,8 @@ BLOCKED by scripts/hooks/guard-destructive-commands.sh
   Rule    : $1
   Why     : $2
 
-This is a human-only action. Do not attempt to work around it — do not retry
-with different syntax, do not edit this hook, do not edit .claude/settings.json.
+This can't be undone. Do not attempt to work around it — do not retry with
+different syntax, do not edit this hook, do not edit .claude/settings.json.
 
 What to do instead:
   $3
@@ -166,33 +171,7 @@ re_gh_admin='gh[[:space:]]+[^&;|]*--(admin|bypass)'
 re_no_verify='(git|gh)[[:space:]][^&;|]*--no-verify'
 
 # --------------------------------------------------------------------------
-# 1. Merging pull requests — the #1 reported incident
-# --------------------------------------------------------------------------
-if [[ "$noq" =~ gh[[:space:]]+pr[[:space:]]+merge ]]; then
-  block "no agent-initiated PR merges" \
-        "Merging is a human approval decision, not a code change." \
-        "Post the PR link and let a human click Merge."
-fi
-
-if [[ "$noq" =~ gh[[:space:]]+pr[[:space:]]+review.*--approve ]]; then
-  block "no agent-initiated PR approvals" \
-        "An agent approving its own work defeats the review gate entirely." \
-        "Summarize your review as a comment; a human approves."
-fi
-
-# Any MUTATING gh api call (read-only GET stays allowed). This covers repo
-# settings ('repos/<slug>' PATCH), merges, protection, environments — every
-# admin surface — regardless of -X vs --method spelling or flag position.
-# (A deny rule for only '--method PUT' misses the '-X PUT' spelling entirely.)
-if [[ "$noq" =~ gh[[:space:]]+api ]] && \
-   [[ "$noq" =~ (-X|--method)[[:space:]]+(PUT|POST|PATCH|DELETE) ]]; then
-  block "no mutating GitHub API calls" \
-        "PUT/POST/PATCH/DELETE via 'gh api' can merge PRs, change repo settings, or weaken protection." \
-        "Ask a human to perform this in the GitHub UI, or use a purpose-specific allowed command."
-fi
-
-# --------------------------------------------------------------------------
-# 2. Writing to protected branches (token-based — no substring matching)
+# 1. Force-pushing (token-based — no substring matching)
 # --------------------------------------------------------------------------
 if [[ "$norm" =~ git[[:space:]]+push ]]; then
   if [[ "$noq" =~ (--force|--force-with-lease)([[:space:]]|$) ]] || \
@@ -204,39 +183,17 @@ if [[ "$norm" =~ git[[:space:]]+push ]]; then
 
   # Examine each argument token after 'git push' (up to a command separator).
   push_args=$(printf '%s' "$norm" | sed 's/.*git[[:space:]]push//; s/[&;|].*$//')
-  refspec_seen=""
   for tok in $push_args; do
     case "$tok" in
       -*) continue ;;                      # flags
       origin|upstream) continue ;;         # remotes
     esac
-    refspec_seen="yes"
     if [[ "$tok" =~ ^\+ ]]; then
       block "no force-push via '+refspec'" \
             "'git push origin +branch' is a force-push in disguise." \
             "Push without the '+', or hand the branch to a human."
     fi
-    # Exact-match the destination branch: 'main', 'refs/heads/main',
-    # 'HEAD:main', 'src:refs/heads/main'. Never a substring of another name.
-    dest="${tok##*:}"                      # part after last ':' (or whole token)
-    dest="${dest#refs/heads/}"
-    if [[ "$dest" =~ ^$PROTECTED_BRANCHES_RE$ ]]; then
-      block "no direct push to protected branch '$dest'" \
-            "Protected branches change only through a reviewed pull request." \
-            "Push your feature branch, then 'gh pr create'."
-    fi
   done
-
-  # A BARE 'git push' while standing on a protected branch is the same
-  # accident — git resolves the target from HEAD.
-  if [[ -z "$refspec_seen" ]]; then
-    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-    if [[ "$branch" =~ ^$PROTECTED_BRANCHES_RE$ ]]; then
-      block "no bare push while checked out on '$branch'" \
-            "'git push' with no refspec pushes HEAD straight to the protected branch." \
-            "git switch -c feat/<slug>  # move the work to a branch first"
-    fi
-  fi
 fi
 
 if [[ "$noq" =~ git[[:space:]]+(reset[[:space:]]+--hard|filter-branch|update-ref|reflog[[:space:]]+delete) ]]; then
@@ -246,7 +203,7 @@ if [[ "$noq" =~ git[[:space:]]+(reset[[:space:]]+--hard|filter-branch|update-ref
 fi
 
 # --------------------------------------------------------------------------
-# 3. Bypassing the safety tooling
+# 2. Bypassing the git hooks
 # --------------------------------------------------------------------------
 # Scoped to the relevant command segment (no spanning across && / ; / |) and
 # evaluated on the quote-stripped string, so message/doc text never matches.
@@ -260,17 +217,17 @@ if [[ "$noq" =~ $re_no_verify ]] || \
 fi
 
 # --------------------------------------------------------------------------
-# 4. Deploying / publishing to a live environment
+# 3. Cloud deploys and package publishing (never part of this project; its
+#    one deploy, GitHub Pages, runs from CI and may be triggered freely)
 # --------------------------------------------------------------------------
 if [[ "$noq" =~ (az[[:space:]]+(webapp|functionapp|containerapp)[[:space:]]+(deploy|deployment|up)) ]] || \
    [[ "$noq" =~ (msdeploy|Publish-AzWebApp|az[[:space:]]+group[[:space:]]+delete) ]] || \
    [[ "$noq" =~ (terraform[[:space:]]+(apply|destroy)|pulumi[[:space:]]+(up|destroy)) ]] || \
    [[ "$noq" =~ (kubectl[[:space:]]+(apply|delete|rollout)|helm[[:space:]]+(install|upgrade|uninstall)) ]] || \
-   [[ "$noq" =~ (gh[[:space:]]+workflow[[:space:]]+(run|enable|disable)|gh[[:space:]]+release[[:space:]]+create) ]] || \
    [[ "$noq" =~ (npm[[:space:]]+publish|docker[[:space:]]+push|dotnet[[:space:]]+nuget[[:space:]]+push) ]]; then
-  block "no agent-initiated deploys or releases" \
-        "Deploying is an operational decision with blast radius outside this repo." \
-        "Prepare the change, then ask a human to trigger the deploy."
+  block "no cloud deploys or package publishing" \
+        "This project has no cloud infrastructure or packages; such a command is a mistake with blast radius outside this repo." \
+        "Check the command. The site deploys through GitHub Pages."
 fi
 
 # dotnet publish is fine locally; blocked when it targets a server/share.
@@ -282,7 +239,7 @@ if [[ "$noq" =~ dotnet[[:space:]]+publish ]] && \
 fi
 
 # --------------------------------------------------------------------------
-# 5. Touching a non-local database
+# 4. Touching a non-local database
 # --------------------------------------------------------------------------
 if [[ "$noq" =~ (sqlcmd|Invoke-Sqlcmd|bcp|osql) ]] || \
    [[ "$noq" =~ dotnet[[:space:]]+ef[[:space:]]+database ]]; then
@@ -295,7 +252,7 @@ if [[ "$noq" =~ (sqlcmd|Invoke-Sqlcmd|bcp|osql) ]] || \
 fi
 
 # --------------------------------------------------------------------------
-# 6. Blunt filesystem destruction
+# 5. Blunt filesystem destruction
 # --------------------------------------------------------------------------
 if [[ "$noq" =~ rm[[:space:]]+(-[a-zA-Z]*[rR][a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*[rR])[[:space:]]+(/|~|\$HOME|\*) ]] || \
    [[ "$noq" =~ git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*x ]]; then

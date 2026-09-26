@@ -92,7 +92,7 @@ Data flow: **Phaser world ⇄ `WorldPort`/`WorldEvent` ⇄ `GameController` ⇄ 
 | `src/game/prerendered/` | Loading and rules for pre-rendered art (manifests, variants, sorting, shade) |
 | `tools/art/` | Offline Blender pipeline: procedural market, people, lighting, export ([guide](docs/art/technical-art-guide.md)) |
 | `src/content/chapters/road-to-jericho/` | Chapter 1 content (scenes, dialogue, quests, puzzles, records) |
-| `src/content/scripture/translations.ts` | Translation registry — **sensitive** (enabling Bible text) |
+| `src/content/scripture/translations.ts` | Translation registry — enabling Bible text is a human editorial decision |
 | `tests/support/harness.ts` | Headless game harness + scripted `Player` for tests |
 | `tests/integration/playthrough.test.ts` | Full chapter playthroughs on every branch |
 | `e2e/chapter.spec.ts` | Browser end-to-end: new profile → chapter summary |
@@ -142,13 +142,11 @@ Everything `VITE_*` is compiled into the public bundle — never put a secret in
 
 ## 🛡 Guardrails
 
-**Sensitive paths (human approval required)** — authoritative list: `SENSITIVE_PATH_PATTERNS` in `scripts/lib/policy.sh`:
-`.github/`, `infra/`, `deploy/`, `cdk/`, `terraform/`, `.claude/settings.json`, `scripts/hooks/`, `scripts/lib/`, `CODEOWNERS`, `src/content/scripture/translations.ts`.
-Editing them prompts in Claude Code (ask rules); committing them requires a `SECURITY-REVIEW: <approver>` trailer (`scripts/hooks/commit-msg`). **Agents must never add that trailer themselves.**
+**No approval gates** (the owner's decision, 2026-09-25). Agents push (including to `main`), open, approve and merge pull requests, run workflows and change GitHub settings without asking. Prefer a pull request so CI runs before the merge; the site deploys itself once CI passes on `main` (`.github/workflows/deploy-pages.yml`, pinned to `main` and to the commit CI tested — [tests/architecture/deploy-workflow.test.ts](tests/architecture/deploy-workflow.test.ts)). Server-side branch protection (`harden-github.sh`) is optional.
 
-**Actions** — `.claude/settings.json` denies PR merges/reviews, releases, workflow dispatch, mutating `gh api`, force-push, hard reset, `npm publish`, S3/CloudFront/CDK/Terraform deploys; `git push` always asks. `scripts/hooks/guard-destructive-commands.sh` backs this up (`--self-test` proves it blocks and allows correctly). Deployment (`.github/workflows/deploy-pages.yml`) is automatic when CI passes on `main` (a merged PR), pinned to `main` and to the commit CI tested ([tests/architecture/deploy-workflow.test.ts](tests/architecture/deploy-workflow.test.ts)). Server-side protection: `harden-github.sh` (run by a human after the repo is on GitHub).
+**Still blocked, because it can't be undone:** force-push, `git reset --hard`, `filter-branch`/`update-ref`, `git clean -fdx`, skipping git hooks (`--no-verify`), recursive deletes of home or root, deleting the repo, `npm publish` and cloud deploys, and reading secret files. `.claude/settings.json` denies them and `scripts/hooks/guard-destructive-commands.sh` backs it up (`--self-test` proves it blocks and allows correctly).
 
-**Hooks** (installed by `init.sh`): `pre-commit` (debug artifacts, secrets, JSON, and — path-gated — typecheck, architecture tests, lint, prettier, content validation), `commit-msg` (sensitive-path trailer), `pre-push` (no direct pushes to `main`). Never use `--no-verify`.
+**Hooks** (installed by `init.sh`): `pre-commit` (debug artifacts, secrets, JSON, and — path-gated — typecheck, architecture tests, lint, prettier, content validation), `pre-push` (no force-push, no deleting `main`). Never use `--no-verify`.
 
 **Content integrity** — never invent Bible verses, citations or historical claims; never mark content `approved` (only named humans do); keep Scripture text behind the provider (placeholder by default). See [docs/content-governance.md](docs/content-governance.md).
 

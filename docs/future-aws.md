@@ -43,7 +43,7 @@ The type makes `uncertainty` and `category` mandatory, but `checkGuideAnswer` do
 - **Reflection text is walled off.** The same test fails if any file under `src/infrastructure/` or any analytics file accesses `.reflection`.
 - **Concrete classes are chosen only in `src/app/services.ts`.** Gameplay and UI code talk to ports and must not change when a cloud implementation is added.
 - **`VITE_*` variables are public.** They are compiled into the bundle, so no secret or AWS credential may ever be one. A browser client can only hold short-lived user tokens.
-- **Guardrails.** `infra/`, `deploy/`, `cdk/`, `terraform/` and `.github/` are sensitive paths (`SENSITIVE_PATH_PATTERNS` in `scripts/lib/policy.sh`) that need human approval. `.claude/settings.json` denies `aws s3 sync/rm`, `aws cloudfront create-invalidation`, `cdk deploy` and `terraform apply/destroy` for agents. Any infrastructure-as-code for the proposals below would live under those rules.
+- **Guardrails.** The repo runs without approval gates. `.claude/settings.json` and the guard hook block `aws s3 rm`, `terraform apply/destroy` and similar cloud changes for agents; revisit that before adding any infrastructure-as-code for the proposals below.
 
 ## 2. Proposed architecture (PROPOSED — not built)
 

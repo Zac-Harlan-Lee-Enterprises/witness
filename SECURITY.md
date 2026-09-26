@@ -33,18 +33,16 @@ open a public issue for a vulnerability.
 Remember: every `VITE_*` variable is compiled into the public JavaScript
 bundle. Never put a key, token or password in one (`quality-sweep.sh` checks).
 
-## Sensitive paths (human approval required)
+## Editorial decisions
 
-The authoritative list is `SENSITIVE_PATH_PATTERNS` in
-`scripts/lib/policy.sh`. Editing those files prompts for approval in Claude
-Code, and committing them requires a `SECURITY-REVIEW: <approver>` commit
-trailer (enforced by `scripts/hooks/commit-msg`). That list includes
-`src/content/scripture/translations.ts`, because enabling displayed Bible text
-is an editorial decision a named person must own.
+Enabling displayed Bible text (`src/content/scripture/translations.ts`) and
+approving educational content are editorial decisions a named person must own
+(see [docs/content-governance.md](docs/content-governance.md)). Tests assert
+that no record approves itself and that the translation is off by default.
 
 ## Agent-generated changes
 
-AI agents working in this repo follow [AGENTS.md](AGENTS.md). Agents must never
-add a `SECURITY-REVIEW:` trailer on their own authority, never disable hooks
-(`--no-verify`), and never deploy — deployment workflows are manual and
-main-only.
+AI agents working in this repo follow [AGENTS.md](AGENTS.md). The owner runs
+it without approval gates: agents may push, merge pull requests and run
+workflows, and the site deploys automatically once CI passes on `main`.
+Agents never disable hooks (`--no-verify`), force-push or rewrite history.

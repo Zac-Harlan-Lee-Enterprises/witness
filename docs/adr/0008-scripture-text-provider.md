@@ -14,7 +14,7 @@ The game retells and connects to the Bible. Presenting invented or altered verse
   `[SCRIPTURE TEXT REQUIRES APPROVED TRANSLATION — Luke 10:25-37]`
   and `ContentBlock` invites the player to read the passage in their own Bible.
 - **The stored text is present but disabled.** [translations.ts](../../src/content/scripture/translations.ts) registers the World English Bible (`license: 'public-domain'`, with a note that the name is a trademark and altered text must not use it) with `approvedForDisplay: false`, plus the stored passage for Luke 10:25–37. The file's header records that the text was copied from eBible.org. Turning it on is an **editorial decision**: a named reviewer proofreads the stored verses, sets `approvedForDisplay: true`, and records their name in [content-governance.md](../content-governance.md).
-- `src/content/scripture/translations.ts` is a **sensitive path** (`SENSITIVE_PATH_PATTERNS` in `scripts/lib/policy.sh`). Editing it prompts for approval, and committing it needs a `SECURITY-REVIEW` trailer that agents must never add themselves.
+- Enabling `src/content/scripture/translations.ts` for display is an editorial decision a named human makes ([content-governance.md](../content-governance.md)). It was originally also a sensitive path needing a `SECURITY-REVIEW` trailer; that approval gate was removed on 2026-09-25.
 
 ## Consequences
 

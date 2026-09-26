@@ -35,7 +35,7 @@ Ordered by dependency: human gates first, then platform confidence, then new con
 |---|---|---|
 | Make the first commit and push to GitHub. Then run `REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>` (solo maintainer) and limit the `github-pages` environment to `main`. | Maintainer | Registry `github-branch-protection` |
 | Editorial review of all 31 educational records (Scripture references, paraphrases, history, reconstruction, interpretation) by a named pastor, teacher or historian. Record the approvals. | Content editors | Registry `content-editorially-approved`; [content-governance.md](content-governance.md) |
-| Proofread the stored WEB Luke 10:25–37 against eBible.org, set `approvedForDisplay: true`, and record the approver (sensitive path, needs a `SECURITY-REVIEW` trailer) | Content editor | Registry `scripture-translation-approved` |
+| Proofread the stored WEB Luke 10:25–37 against eBible.org, set `approvedForDisplay: true`, and record the approver in the commit | Content editor | Registry `scripture-translation-approved` |
 | **Decide what strict content mode means, then implement it.** Today `VITE_CONTENT_MODE=strict` only hides the "Awaiting editorial review" label. Either make strict mode run `content:publish-check` and fail, or hide unapproved records. Add `content:publish-check` to the deploy workflow for public releases. | Developer + product owner | [risks.md R15](risks.md) |
 | Sensitivity review of the Samaritan and priest/Levite material, ideally with Jewish and Samaritan-informed reviewers | Content editors | [risks.md R5](risks.md) |
 
@@ -296,7 +296,7 @@ Evidence: `road-to-jericho.test.ts`, `governance.test.ts`, [`validate-content.ts
 Evidence: `governance.test.ts`, [`content-records.ts`](../src/domain/content-records.ts).
 
 #### US-30 Turn on an approved Bible translation 🟡 Partial
-- **Given** the stored WEB passage, **when** an editor proofreads it and sets `approvedForDisplay: true` with a `SECURITY-REVIEW` trailer, **then** players see the verse text instead of the placeholder.
+- **Given** the stored WEB passage, **when** an editor proofreads it and sets `approvedForDisplay: true` and records their name, **then** players see the verse text instead of the placeholder.
 - The process is documented and the code path is tested. The human step is outstanding.
 
 Evidence: `scripture.test.ts`, [content-governance.md §3](content-governance.md#3-scripture-text).

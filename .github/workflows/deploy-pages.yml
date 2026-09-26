@@ -1,9 +1,8 @@
 # Deploy to GitHub Pages — automatic on main, only after CI passes.
 #
-# Merging a pull request into main is the decision to publish: branch
-# protection (harden-github.sh) requires the PR and the `build-and-test`
-# check. When CI finishes on a push to main, this workflow deploys that exact
-# commit if CI succeeded; a failed or cancelled CI run deploys nothing.
+# Merging (or pushing) to main is the decision to publish. When CI finishes on
+# a push to main, this workflow deploys that exact commit if CI succeeded; a
+# failed or cancelled CI run deploys nothing.
 # It can also be re-run by hand from the Actions tab on main.
 #
 # Guards (workflow_run runs with this repo's permissions, so be strict):

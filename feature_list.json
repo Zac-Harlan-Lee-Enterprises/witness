@@ -20,7 +20,7 @@
   {
     "id": "guardrails-block",
     "category": "quality",
-    "description": "The PreToolUse guard blocks destructive/deploy commands and allows routine work — verified by its two-directional self-test (never an inline probe).",
+    "description": "The PreToolUse guard blocks only unrecoverable commands (force-push, history rewrites, hook bypass, recursive deletes of home or root, cloud deploys, npm publish) and allows everything else, including merges, pushes to main and workflow runs — verified by its two-directional self-test (never an inline probe).",
     "verification": "bash scripts/hooks/guard-destructive-commands.sh --self-test",
     "priority": 1,
     "hermetic": true,
@@ -281,7 +281,7 @@
   {
     "id": "scripture-translation-approved",
     "category": "functional",
-    "description": "HUMAN: a named editor proofreads the stored WEB text of Luke 10:25-37 against ebible.org and sets approvedForDisplay: true (sensitive path; needs a SECURITY-REVIEW trailer).",
+    "description": "HUMAN: a named editor proofreads the stored WEB text of Luke 10:25-37 against ebible.org and sets approvedForDisplay: true (recording their name in the commit and the approval log).",
     "verification": "npx --no-install tsx -e \"import { TRANSLATIONS } from './src/content/scripture/translations.ts'; process.exit(TRANSLATIONS.some((t) => t.approvedForDisplay) ? 0 : 1)\"",
     "priority": 7,
     "hermetic": true,
@@ -299,7 +299,7 @@
   {
     "id": "github-branch-protection",
     "category": "quality",
-    "description": "HUMAN: after pushing to GitHub, apply server-side protection (REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo> for a solo maintainer) so main changes only via PRs with green CI.",
+    "description": "OPTIONAL (the owner runs without approval gates): server-side protection so main changes only via PRs with green CI (REQUIRED_REVIEWS=0 bash harden-github.sh <owner>/<repo>).",
     "verification": "gh api \"repos/$(git remote get-url origin | sed -E 's#.*github\\.com[:/]([^/]+/[^/.]+)(\\.git)?#\\1#')/branches/main/protection\" | jq -e '.enforce_admins.enabled == true'",
     "priority": 7,
     "hermetic": false,

@@ -114,38 +114,23 @@ fi
 rm -f .sweep-knip.log
 
 echo "── Action guardrails ──────────────────────────────────────────────"
+# No approval gates (the owner's decision, 2026-09-25); only commands that
+# can't be undone stay blocked, in settings and in the guard hook.
 if [[ -f .claude/settings.json ]] && command -v jq >/dev/null 2>&1; then
-  jq -e '.permissions.deny | index("Bash(gh pr merge:*)")' .claude/settings.json >/dev/null 2>&1 \
-    && ok ".claude/settings.json denies PR merge" || fail ".claude/settings.json does not deny 'Bash(gh pr merge:*)'"
-  jq -e '.permissions.ask | index("Bash(git push *)")' .claude/settings.json >/dev/null 2>&1 \
-    && ok "'git push' requires confirmation" || fail "No ask rule for 'Bash(git push *)'"
-  jq -e '.permissions.disableBypassPermissionsMode == "disable"' .claude/settings.json >/dev/null 2>&1 \
-    && ok "bypass-permissions mode disabled" || fail "permissions.disableBypassPermissionsMode is not 'disable'"
-  # Every sensitive path in policy.sh must have an Edit rule (ask or deny).
-  if [[ -n "${SENSITIVE_PATH_PATTERNS+x}" ]]; then
-    rules=$(jq -r '((.permissions.ask // []) + (.permissions.deny // []))[] | select(startswith("Edit("))' .claude/settings.json)
-    covered=1
-    for pat in "${SENSITIVE_PATH_PATTERNS[@]}"; do
-      frag=$(printf '%s' "$pat" | sed 's/^\^//; s/\$$//; s/\\//g; s:/$::; s/\.\*//g')
-      if ! printf '%s\n' "$rules" | grep -qF "$frag"; then
-        fail "sensitive path '$frag' (policy.sh) has no Edit rule in .claude/settings.json"
-        covered=0
-      fi
-    done
-    (( covered )) && ok "settings.json Edit rules cover every sensitive path in policy.sh"
-  fi
+  jq -e '.permissions.deny | index("Bash(git push --force:*)")' .claude/settings.json >/dev/null 2>&1 \
+    && ok ".claude/settings.json denies force-push" || fail ".claude/settings.json does not deny 'Bash(git push --force:*)'"
 else
-  fail "No .claude/settings.json — agents run with no command-level guardrails"
+  fail "No .claude/settings.json — nothing blocks unrecoverable commands"
 fi
 
 GUARD=scripts/hooks/guard-destructive-commands.sh
 if [[ -x "$GUARD" ]] && bash "$GUARD" --self-test >/dev/null 2>&1; then
-  ok "PreToolUse guard self-test passes (blocks destructive, allows benign)"
+  ok "PreToolUse guard self-test passes (blocks unrecoverable commands, allows the rest)"
 else
   fail "guard self-test FAILED — run: bash $GUARD --self-test"
 fi
 
-for h in pre-commit commit-msg pre-push; do
+for h in pre-commit pre-push; do
   if [[ -x "$(git rev-parse --git-path hooks 2>/dev/null)/$h" ]]; then
     ok "git hook installed: $h"
   elif [[ -n "$IN_CI" ]]; then
@@ -155,20 +140,15 @@ for h in pre-commit commit-msg pre-push; do
   fi
 done
 
-if [[ -f "$HOME/.claude/settings.json" ]] && command -v jq >/dev/null 2>&1; then
-  [[ "$(jq -r '.permissions.disableBypassPermissionsMode // ""' "$HOME/.claude/settings.json")" == "disable" ]] \
-    || warn "User settings still allow --dangerously-skip-permissions (the project file disables it here)"
-fi
-
 if [[ -n "$IN_CI" ]]; then
   warn "Skipping branch-protection check in CI (needs an admin token; run locally)"
 elif command -v gh >/dev/null 2>&1 && git remote get-url origin >/dev/null 2>&1; then
   slug=$(git remote get-url origin | sed -E 's#.*github\.com[:/]([^/]+/[^/.]+)(\.git)?#\1#')
   if ! prot=$(gh api "repos/$slug/branches/main/protection" 2>/dev/null); then prot=""; fi
   if [[ -z "$prot" ]]; then
-    fail "main is NOT protected on GitHub → REQUIRED_REVIEWS=0 bash harden-github.sh $slug  (solo) or bash harden-github.sh $slug"
+    warn "main is not protected on GitHub (optional: REQUIRED_REVIEWS=0 bash harden-github.sh $slug)"
   elif ! printf '%s' "$prot" | jq -e '.enforce_admins.enabled == true' >/dev/null 2>&1; then
-    fail "main is protected but enforce_admins is OFF"
+    warn "main is protected but enforce_admins is off"
   else
     ok "main is protected and admins cannot bypass"
   fi
