@@ -265,6 +265,22 @@ function paintTileRoof(ctx: Ctx, site: Site, look: Look, tx: number, ty: number)
   }
 }
 
+/** Columns this far apart (in tiles) or closer still carry one beam between them. */
+const COLONNADE_SPAN = 3;
+
+/**
+ * The next column along a row (dx = 1) or down a column (dy = 1) within a
+ * colonnade's span, with nothing built in between; null if there is none.
+ */
+export function nextColumn(site: Site, x: number, y: number, dx: 0 | 1, dy: 0 | 1): number | null {
+  for (let step = 1; step <= COLONNADE_SPAN; step++) {
+    const k = site.kindAt(x + dx * step, y + dy * step);
+    if (k === 'column') return step;
+    if (isBuilding(k) || k === 'void') return null;
+  }
+  return null;
+}
+
 /**
  * The beam (architrave) carried from column to column along a colonnade,
  * drawn over the tops of the columns so a row reads as one portico.
@@ -275,22 +291,25 @@ export function paintColonnadeBeams(ctx: Ctx, site: Site, look: Look): void {
     if (site.kindAt(x, y) !== 'column') return;
     const top = y * TILE - 30;
     const X = x * TILE + 16;
-    if (site.kindAt(x + 1, y) === 'column') {
+    const across = nextColumn(site, x, y, 1, 0);
+    if (across !== null) {
+      const w = across * TILE;
       ctx.fillStyle = rgba(look.shadow.color, 0.3);
-      ctx.fillRect(X, top + 6, TILE, 2);
+      ctx.fillRect(X, top + 6, w, 2);
       ctx.fillStyle = stone;
-      ctx.fillRect(X, top, TILE, 6);
+      ctx.fillRect(X, top, w, 6);
       ctx.fillStyle = rgba('#ffffff', 0.35);
-      ctx.fillRect(X, top, TILE, 1.2);
+      ctx.fillRect(X, top, w, 1.2);
       ctx.fillStyle = rgba(shade(look.building.face, -0.5), 0.35);
-      ctx.fillRect(X, top + 3.4, TILE, 0.6);
+      ctx.fillRect(X, top + 3.4, w, 0.6);
     }
-    if (site.kindAt(x, y + 1) === 'column') {
+    const down = nextColumn(site, x, y, 0, 1);
+    if (down !== null) {
       // A colonnade running north–south: its beam is seen end-on, along the side.
       ctx.fillStyle = stone;
-      ctx.fillRect(X - 3, top + 4, 6, TILE);
+      ctx.fillRect(X - 3, top + 4, 6, down * TILE);
       ctx.fillStyle = rgba('#ffffff', 0.3);
-      ctx.fillRect(X - 3, top + 4, 1.2, TILE);
+      ctx.fillRect(X - 3, top + 4, 1.2, down * TILE);
     }
   });
 }
