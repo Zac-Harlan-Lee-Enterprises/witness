@@ -386,6 +386,80 @@ def linen(color="#ddd2b8", name="sail-linen", patches=True):
     return cached(("linen", color, name, patches), build)
 
 
+def rush_mat(color="#a88c5c", binding="#6e5a3c", name="rush-mat"):
+    """A plaited rush mat (UV: 0..1 across it, `size` in metres as the
+    object's 'mat_w'/'mat_h'): strips a finger wide plaited over-and-under
+    in a checker of both directions, each strip its own tone, a darker bound
+    border, and wear where people sit (paler, flattened) and at its edges."""
+
+    def build():
+        n = Nodes(name)
+        uv = n.new("ShaderNodeUVMap")
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=(uv, "UV"))
+        mw = n.new("ShaderNodeAttribute", _attribute_name="mat_w", _attribute_type="OBJECT")
+        mh = n.new("ShaderNodeAttribute", _attribute_name="mat_h", _attribute_type="OBJECT")
+        # Metres across and along the mat.
+        u = n.math("MULTIPLY", (sep, "X"), (mw, "Fac"))
+        v = n.math("MULTIPLY", (sep, "Y"), (mh, "Fac"))
+        strip = 0.022
+        su = n.math("DIVIDE", (u, "Value"), strip)
+        sv = n.math("DIVIDE", (v, "Value"), strip)
+        # Plaited in blocks of three strips: which direction lies on top.
+        bu = n.math("FLOOR", (n.math("DIVIDE", (su, "Value"), 3.0), "Value"))
+        bv = n.math("FLOOR", (n.math("DIVIDE", (sv, "Value"), 3.0), "Value"))
+        par = n.math("FLOORED_MODULO", (n.math("ADD", (bu, "Value"), (bv, "Value")), "Value"), 2.0)
+        # Within a strip: rounded across its width, a seam between strips.
+        fu = n.math("FRACT", (su, "Value"))
+        fv = n.math("FRACT", (sv, "Value"))
+        ru = n.math("SINE", (n.math("MULTIPLY", (fu, "Value"), 3.14159), "Value"))
+        rv = n.math("SINE", (n.math("MULTIPLY", (fv, "Value"), 3.14159), "Value"))
+        height = n.new("ShaderNodeMix", _data_type="FLOAT", Factor=(par, "Value"))
+        n.link(ru, "Value", height, 2)
+        n.link(rv, "Value", height, 3)
+        # Each strip its own tone (a random per strip index).
+        idu = n.math("FLOOR", (su, "Value"))
+        idv = n.math("FLOOR", (sv, "Value"))
+        idx = n.new("ShaderNodeMix", _data_type="FLOAT", Factor=(par, "Value"))
+        n.link(idv, "Value", idx, 2)
+        n.link(idu, "Value", idx, 3)
+        hsh = n.new("ShaderNodeTexWhiteNoise", _noise_dimensions="1D", W=(idx, 0))
+        tone = n.ramp((hsh, "Value"), [(0.0, shade(color, -0.22)), (0.5, color), (1.0, _toward(color, "#c8b07a", 0.5))])
+        # Fibre along each strip.
+        along = n.new("ShaderNodeMix", _data_type="FLOAT", Factor=(par, "Value"))
+        n.link(sv, "Value", along, 2)
+        n.link(su, "Value", along, 3)
+        fib = n.new("ShaderNodeTexNoise", Scale=1.0, Detail=3.0, Roughness=0.6, _noise_dimensions="2D")
+        fvec = n.new("ShaderNodeCombineXYZ", X=(along, 0), Y=(idx, 0))
+        fsc = n.new("ShaderNodeVectorMath", _operation="MULTIPLY", Vector=(fvec, "Vector"))
+        fsc.inputs[1].default_value = (0.9, 40.0, 1.0)
+        n.link(fsc, "Vector", fib, "Vector")
+        col = (n.mix((fib, "Fac"), (tone, "Color"), shade(color, -0.35), "MULTIPLY"), 2)
+        col[0].inputs[0].default_value = 0.35
+        # Seams between strips are dark.
+        seam = n.new("ShaderNodeMapRange", Value=(height, 0), **{"From Min": 0.0, "From Max": 0.35, "To Min": 0.55, "To Max": 0.0})
+        col = (n.mix((seam, "Result"), col, "#2a2014"), 2)
+        # The bound border: 4 cm of darker twisted binding.
+        du = n.math("MINIMUM", (u, "Value"), (n.math("SUBTRACT", (mw, "Fac"), (u, "Value")), "Value"))
+        dv = n.math("MINIMUM", (v, "Value"), (n.math("SUBTRACT", (mh, "Fac"), (v, "Value")), "Value"))
+        edge = n.math("MINIMUM", (du, "Value"), (dv, "Value"))
+        border = n.new("ShaderNodeMapRange", Value=(edge, "Value"), **{"From Min": 0.045, "From Max": 0.035, "To Min": 0.0, "To Max": 1.0})
+        col = (n.mix((border, "Result"), col, binding), 2)
+        # Worn where people sit and at the edges: paler, flattened, dusty.
+        obj = n.coords()
+        wear = n.noise(1.6, 3.0, 0.5, obj)
+        wr = n.new("ShaderNodeMapRange", Value=(wear, "Fac"), **{"From Min": 0.5, "From Max": 0.68, "To Min": 0.0, "To Max": 0.35})
+        col = (n.mix((wr, "Result"), col, "#b8a47e"), 2)
+        dirt = n.noise(7.0, 4.0, 0.6, obj)
+        dr = n.new("ShaderNodeMapRange", Value=(dirt, "Fac"), **{"From Min": 0.55, "From Max": 0.75, "To Min": 0.0, "To Max": 0.3})
+        col = (n.mix((dr, "Result"), col, "#3a2e22", "MULTIPLY"), 2)
+        hb = n.math("MULTIPLY", (height, 0), (n.math("SUBTRACT", 1.0, (wr, "Result")), "Value"))
+        bump = n.bump((hb, "Value"), strength=0.55, distance=0.004)
+        n.bsdf(**{"Base Color": col, "Roughness": 0.78, "Sheen Weight": 0.2, "Sheen Tint": col, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("rush_mat", color, binding, name), build)
+
+
 def rope(color="#a88f68", name="rope", wet=0.0):
     """Twisted rope of palm fibre or flax: strands spiralling along it
     (object X), fuzzy, darker where wet."""

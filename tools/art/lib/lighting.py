@@ -83,8 +83,8 @@ LIGHTS = {
         "sky": {"zenith": "#0c1834", "horizon": "#233553", "ground": "#233553"},
         "sky_strength": 1.0,
         # Baked brighter than it will look: the game darkens and cools a
-        # place after dark (src/game/systems/grade.ts).
-        "ev": 3.5,
+        # place after dark (src/game/systems/lighting.ts, grade.ts).
+        "ev": 4.2,
     },
     "lamplight": {
         "azimuth": math.radians(-48.0),
@@ -97,8 +97,9 @@ LIGHTS = {
         # The shade mask records the lamps' light on the floor.
         "shade": "lamps",
         "shade_floor": 0.4,
-        # Over a room's own step (kit_interior): exposed for its lamps.
-        "ev": 0.3,
+        # Over a room's own step (kit_interior): exposed for its lamps, and
+        # brighter than it will look (the game darkens a room at night).
+        "ev": 0.8,
     },
 }
 

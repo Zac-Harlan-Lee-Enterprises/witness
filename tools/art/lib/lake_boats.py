@@ -413,7 +413,8 @@ class BoatsMixin:
         the yard (moored), or lowered along the boat (drawn up)."""
         out = []
         spar = M.wood("#6a5238", 3.5)
-        sail = LM.linen("#c4b89c", "sail-linen-worn")
+        # Linen greyed and browned by years of sun and lake water.
+        sail = LM.linen("#a89c82", "sail-linen-worn")
         rope = LM.rope("#9c8660", "rig-rope")
         u_mast = 0.64
         hb, sheer, keel = self.hull_shape(u_mast, L, B)
@@ -912,7 +913,7 @@ class BoatsMixin:
         mx = sum(c[0] for c in cells) / len(cells) + 0.5
         my = sum(c[1] for c in cells) / len(cells) + 0.5
         spar = M.wood("#6a5238", 3.5)
-        sail = LM.linen("#dcd1b6", "sail-linen")
+        sail = LM.linen("#bdb196", "sail-linen")
         rope = LM.rope("#9c8660", "rig-rope")
         mast_h = 7.4
         objs = [self._branch("mast", self._at0(mx, my, -0.05), self._at0(mx, my, mast_h), 0.13, 0.08, spar, 12, bow=0.0)]

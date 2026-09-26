@@ -637,7 +637,8 @@ class LakeKit(BoatsMixin, HousesMixin):
         out["cobbles"] = cob
         # The same stones in dusty basalt, flattened: a floor's cobbles.
         flr = col("floorstones")
-        fmat = L.basalt("#5a5650", "floor-basalt", dust=0.55, lichen=0.0)
+        # Worn smooth and dark by feet, a little dust in the hollows.
+        fmat = L.basalt("#3c3833", "floor-basalt", dust=0.08, lichen=0.0)
         for o in list(cob.objects):
             c = o.copy()
             c.data = o.data.copy()
@@ -1159,6 +1160,63 @@ class LakeKit(BoatsMixin, HousesMixin):
                     o.data.materials.append(L.salt())
             self.sprite(name, y + 0.9, objs, [(x, y)])
 
+    def tile_mat(self):
+        """Mats: in a Galilee room one plaited rush mat over each block of
+        mat tiles, lying a little unevenly on the cobbled floor, its bound
+        edges curling up where it has been rolled; elsewhere as before."""
+        if not getattr(self, "galilee", False) or self.style != "home":
+            return super().tile_mat()
+        m = self.map
+        cells = set(m.tiles("mat"))
+        seen = set()
+        for c in sorted(cells):
+            if c in seen:
+                continue
+            block, todo = [], [c]
+            while todo:
+                t = todo.pop()
+                if t in seen or t not in cells:
+                    continue
+                seen.add(t)
+                block.append(t)
+                todo += [(t[0] + 1, t[1]), (t[0] - 1, t[1]), (t[0], t[1] + 1), (t[0], t[1] - 1)]
+            x0 = min(x for x, _ in block)
+            x1 = max(x for x, _ in block) + 1
+            y0 = min(y for _, y in block)
+            y1 = max(y for _, y in block) + 1
+            w, h = x1 - x0 - 0.3, y1 - y0 - 0.25
+            cx, cy = (x0 + x1) / 2 + 0.04, (y0 + y1) / 2
+            nx, ny = 36, 24
+            bm = bmesh.new()
+            uvl = bm.loops.layers.uv.new("UVMap")
+            rng = self.rng
+            ph = rng.random() * 6.0
+            verts = []
+            for j in range(ny + 1):
+                row = []
+                for i in range(nx + 1):
+                    s_, t_ = i / nx, j / ny
+                    # Lies over the cobbles: a slow unevenness, and the ends
+                    # curl up a little where it has been rolled.
+                    z = 0.012 + 0.006 * math.sin(s_ * 5.1 + ph) * math.sin(t_ * 4.3 + ph * 0.7)
+                    z += 0.03 * max(0.0, 0.12 - s_) / 0.12 + 0.02 * max(0.0, s_ - 0.9) / 0.1
+                    # A slight skew: it was not laid square.
+                    x = cx - w / 2 + s_ * w + 0.04 * (t_ - 0.5)
+                    y = cy - h / 2 + t_ * h
+                    row.append(bm.verts.new(self.P(x, y, z)))
+                verts.append(row)
+            for j in range(ny):
+                for i in range(nx):
+                    f = bm.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
+                    for loop, (a_, b_) in zip(f.loops, ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))):
+                        loop[uvl].uv = (a_ / nx, b_ / ny)
+            o = common.mesh_object(f"rush-mat-{x0}-{y0}", bm, L.rush_mat(), None)
+            o["mat_w"] = w
+            o["mat_h"] = h
+            common.add_modifier(o, "SOLIDIFY", thickness=0.008, offset=-1.0)
+            common.bake_modifiers(o)
+            self.to_ground(o)
+
     def tile_trough(self):
         """Troughs: the salter's brine tubs on the lakeside, wide and shallow,
         of wood hooped with rope, fish lying in the brine; elsewhere as before."""
@@ -1377,13 +1435,18 @@ class LakeKit(BoatsMixin, HousesMixin):
         super().dress_home()
         if not getattr(self, "galilee", False):
             return
+        # Dark basalt and smoked mud plaster give back less light than
+        # limestone and lime: the eye opens a little further.
+        self.exposure += 0.35
         m = self.map
         rng = self.rng
         lib = self._lake_library()
         floor = m.tiles("floor")
-        em = self.emitter("floor-cobbles", floor, 2, lambda x0, y0: (x0 * 3.7 + y0 * 5.3) % 1.0 < 0.55, z=-0.012)
+        # Set close in the beaten earth, their tops worn flat, over most of
+        # the floor (bare earth by the oven and in a few worn patches).
+        em = self.emitter("floor-cobbles", floor, 2, lambda x0, y0: (x0 * 3.7 + y0 * 5.3) % 1.0 < 0.8, z=-0.03)
         em["wet_z"] = -5.0
-        scatter.scatter(em, lib["floorstones"], 9.0, (0.07, 0.13), seed=161, rotate_z_only=True, pick=True)
+        scatter.scatter(em, lib["floorstones"], 26.0, (0.09, 0.15), seed=161, rotate_z_only=True, pick=True)
         back = min((y for y in range(m.h) if any(m.kind(x, y) == "floor" for x in range(m.w))), default=2)
         # A cord along the back wall, small fish split and hung on it.
         cord_mat = L.rope("#8c7a58", "fish-cord")
