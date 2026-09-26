@@ -635,18 +635,6 @@ class LakeKit(BoatsMixin, HousesMixin):
                 c.objects.unlink(o)
             cob.objects.link(o)
         out["cobbles"] = cob
-        # The same stones in dusty basalt, flattened: a floor's cobbles.
-        flr = col("floorstones")
-        # Worn smooth and dark by feet, a little dust in the hollows.
-        fmat = L.basalt("#3c3833", "floor-basalt", dust=0.08, lichen=0.0)
-        for o in list(cob.objects):
-            c = o.copy()
-            c.data = o.data.copy()
-            c.data.materials.clear()
-            c.data.materials.append(fmat)
-            c.data.transform(Matrix.Scale(0.55, 4, Vector((0, 0, 1))))
-            flr.objects.link(c)
-        out["floorstones"] = flr
         sh = col("shells")
         smat = L.shell()
         for t in range(3):
@@ -1440,13 +1428,22 @@ class LakeKit(BoatsMixin, HousesMixin):
         self.exposure += 0.35
         m = self.map
         rng = self.rng
-        lib = self._lake_library()
-        floor = m.tiles("floor")
-        # Set close in the beaten earth, their tops worn flat, over most of
-        # the floor (bare earth by the oven and in a few worn patches).
-        em = self.emitter("floor-cobbles", floor, 2, lambda x0, y0: (x0 * 3.7 + y0 * 5.3) % 1.0 < 0.8, z=-0.03)
-        em["wet_z"] = -5.0
-        scatter.scatter(em, lib["floorstones"], 26.0, (0.09, 0.15), seed=161, rotate_z_only=True, pick=True)
+        # Basalt cobbles set close in the beaten earth over the floor (bare
+        # earth in worn patches), laid as a surface just over the floor and
+        # under whatever stands on it (not the oven's hearth).
+        inside = [(x, y) for y in range(m.h) for x in range(m.w) if m.kind(x, y) not in ("wall", "door", "void", "oven")]
+        bm = bmesh.new()
+        # Fine enough to follow the floor's own unevenness, and a little over
+        # it, so none of the floor beneath shows through.
+        k = 6
+        for x, y in inside:
+            g = [[bm.verts.new(self.P(x + i / k, y + j / k, 0.012)) for i in range(k + 1)] for j in range(k + 1)]
+            for j in range(k):
+                for i in range(k):
+                    bm.faces.new((g[j][i], g[j][i + 1], g[j + 1][i + 1], g[j + 1][i]))
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+        cob = common.mesh_object("floor-cobbles", bm, L.cobble_floor(), None, smooth=False)
+        self.to_ground(cob)
         back = min((y for y in range(m.h) if any(m.kind(x, y) == "floor" for x in range(m.w))), default=2)
         # A cord along the back wall, small fish split and hung on it.
         cord_mat = L.rope("#8c7a58", "fish-cord")

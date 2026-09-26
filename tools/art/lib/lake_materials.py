@@ -398,6 +398,73 @@ def linen(color="#ddd2b8", name="sail-linen", patches=True):
     return cached(("linen", color, name, patches), build)
 
 
+def cobble_floor(earth="#5c4a3a", stone="#34312d", name="cobble-floor"):
+    """A house floor of basalt cobbles packed in beaten earth, seen from
+    above: rounded stones a hand to two hands across, set close, each its
+    own tone, their tops worn smooth and a little glossy; earth between
+    them, and bare earth where the stones have gone (in worn patches).
+    Object coordinates in metres."""
+
+    def build():
+        n = Nodes(name)
+        obj = n.coords()
+        # Stones: Voronoi cells, warped a little so they are not polygons.
+        warp = n.noise(5.0, 3.0, 0.55, obj)
+        wv = n.new("ShaderNodeVectorMath", _operation="MULTIPLY_ADD", Vector=(warp, "Color"))
+        wv.inputs[1].default_value = (0.07, 0.07, 0.0)
+        n.link(obj[0], obj[1], wv, 2)
+        cells = n.new("ShaderNodeTexVoronoi", Scale=4.6, Randomness=0.9, Vector=(wv, "Vector"))
+        edge = n.new("ShaderNodeTexVoronoi", Scale=4.6, Randomness=0.9, Vector=(wv, "Vector"), _feature="DISTANCE_TO_EDGE")
+        sepc0 = n.new("ShaderNodeSeparateColor", Color=(cells, "Color"))
+        # A stone is a rounded lump about its cell's centre, of its own size
+        # (so the gaps between stones vary), never past the cell's edge.
+        radius = n.math("MULTIPLY_ADD", (sepc0, "Blue"), 0.22)
+        radius.inputs[2].default_value = 0.44
+        inside = n.math("SUBTRACT", (radius, "Value"), (cells, "Distance"))
+        body = n.new("ShaderNodeMapRange", Value=(inside, "Value"), **{"From Min": 0.0, "From Max": 0.12, "To Min": 0.0, "To Max": 1.0})
+        body.clamp = True
+        clear = n.new("ShaderNodeMapRange", Value=(edge, "Distance"), **{"From Min": 0.03, "From Max": 0.09, "To Min": 0.0, "To Max": 1.0})
+        clear.clamp = True
+        rim = n.math("MULTIPLY", (body, "Result"), (clear, "Result"))
+        # Rounded (the earth creeps up its sides).
+        dome = n.math("SQRT", (rim, "Value"))
+        # Worn patches of bare earth (stones gone or buried), and single
+        # stones missing here and there.
+        patch = n.noise(0.9, 3.0, 0.55, obj)
+        pm = n.new("ShaderNodeMapRange", Value=(patch, "Fac"), **{"From Min": 0.56, "From Max": 0.62, "To Min": 1.0, "To Max": 0.0})
+        sepc = n.new("ShaderNodeSeparateColor", Color=(cells, "Color"))
+        gone = n.new("ShaderNodeMapRange", Value=(sepc, "Green"), **{"From Min": 0.9, "From Max": 0.91, "To Min": 1.0, "To Max": 0.0})
+        keep = n.math("MULTIPLY", (pm, "Result"), (gone, "Result"))
+        is_stone = n.math("MULTIPLY", (dome, "Value"), (keep, "Value"))
+        # Each stone its own tone: dark basalt, a few grey or brown.
+        tone = n.ramp((sepc, "Red"), [(0.0, shade(stone, -0.18)), (0.45, stone), (0.75, shade(stone, 0.1)), (0.9, _toward(stone, "#5e5044", 0.4)), (1.0, shade(stone, -0.08))])
+        pits = n.new("ShaderNodeTexVoronoi", Scale=180.0, Vector=obj)
+        pv = n.new("ShaderNodeMapRange", Value=(pits, "Distance"), **{"From Min": 0.0, "From Max": 0.1, "To Min": 0.45, "To Max": 0.0})
+        stone_col = (n.mix((pv, "Result"), (tone, "Color"), shade(stone, -0.5)), 2)
+        # Dust in the stones' low sides, the tops polished by feet.
+        dust = n.math("SUBTRACT", 1.0, (dome, "Value"))
+        dm = n.math("MULTIPLY", (dust, "Value"), 0.25)
+        stone_col = (n.mix((dm, "Value"), stone_col, earth), 2)
+        # The earth: grit, mottling, crumbs of straw.
+        big = n.noise(2.5, 4.0, 0.6, obj)
+        ec = (n.mix((big, "Fac"), shade(earth, -0.14), shade(earth, 0.08)), 2)
+        grit = n.new("ShaderNodeTexVoronoi", Scale=90.0, Vector=obj)
+        gm = n.new("ShaderNodeMapRange", Value=(grit, "Distance"), **{"From Min": 0.0, "From Max": 0.12, "To Min": 0.4, "To Max": 0.0})
+        ec = (n.mix((gm, "Result"), ec, shade(earth, -0.4)), 2)
+        col = (n.mix((is_stone, "Value"), ec, stone_col), 2)
+        rough = n.new("ShaderNodeMapRange", Value=(is_stone, "Value"), **{"From Min": 0.0, "From Max": 1.0, "To Min": 0.95, "To Max": 0.62})
+        fine = n.noise(60.0, 4.0, 0.6, obj)
+        fm = n.math("MULTIPLY", (fine, "Fac"), 0.08)
+        h = n.math("ADD", (is_stone, "Value"), (fm, "Value"))
+        pvm = n.math("MULTIPLY", (pv, "Result"), 0.2)
+        h = n.math("SUBTRACT", (h, "Value"), (pvm, "Value"))
+        bump = n.bump((h, "Value"), strength=0.4, distance=0.012)
+        n.bsdf(**{"Base Color": col, "Roughness": (rough, "Result"), "Specular IOR Level": 0.4, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("cobble_floor", earth, stone, name), build)
+
+
 def rush_mat(color="#a88c5c", binding="#6e5a3c", name="rush-mat"):
     """A plaited rush mat (UV: 0..1 across it, `size` in metres as the
     object's 'mat_w'/'mat_h'): strips a finger wide plaited over-and-under
