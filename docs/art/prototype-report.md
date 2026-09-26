@@ -164,4 +164,4 @@ The pipeline now builds any place from its scene data, and every place in Chapte
 
 Review captures of every place at desktop, tablet and phone sizes: `E2E_SHOTS=1 ART_SHOTS=<set> npx playwright test e2e/place-art.spec.ts --project=desktop-chromium`.
 
-Still to do: GPU-compressed textures (§8, item 1); half-resolution people sheets for phones (people are now most of a phone's texture memory); the market re-rendered with the newer kit (it predates tiled grounds and holdouts, and was only upgraded in place); and measurements on real phones.
+Still to do: GPU-compressed textures (§8, item 1); the market re-rendered with the newer kit (it predates tiled grounds and holdouts, and was only upgraded in place); and measurements on real phones. (Half-resolution people sheets for phones are done: phones now load the low set and low people, 31–41% of the texture memory they held; see [performance §2c](../performance.md#2c-phones-half-resolution-places-and-people).)

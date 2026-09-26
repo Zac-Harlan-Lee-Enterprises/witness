@@ -28,6 +28,7 @@ import { frameName } from '../art/people/sheet';
 import { FX, makeFxTextures } from '../fx/fx-textures';
 import { POST_FX_KEY, WorldPostFX } from '../fx/post-fx';
 import { compactTexture } from '../phaser/compact-textures';
+import { readDeviceClass } from '../phaser/device';
 import { textureMegabytes } from '../phaser/texture-memory';
 import { WaterSurface } from '../fx/water-surface';
 import { WeatherLayer } from '../fx/weather-layer';
@@ -279,17 +280,21 @@ export class WorldScene extends Phaser.Scene {
 
   private loadArt(model: WorldSceneModel): ReturnType<typeof prepareArt> {
     const vp = this.opts.viewport;
-    // The art's resolution is chosen for the canvas pixels it will cover.
+    // The art's resolution is chosen for the canvas pixels it will cover, and
+    // for the device (phones and low-memory devices load the half-resolution art).
     const zoom = zoomFor(vp.cssWidth, vp.cssHeight, framingFor(this.opts.framing, 3)) * vp.ratio;
     const forced = this.opts.artLighting;
     const hour = forced === 'late' ? 16 : forced === 'day' ? 8 : model.lighting.hour;
     return prepareArt(
       this,
       model,
-      { hour, zoom, lowPower: this.quality.lowPower },
+      { hour, zoom, lowPower: this.quality.lowPower, device: this.device },
       this.opts.logger,
     );
   }
+
+  /** The device, read once (see phaser/device.ts). */
+  private readonly device = readDeviceClass();
 
   /**
    * Smaller GPU formats for art that doesn't need RGBA: people's multiplied
@@ -298,8 +303,7 @@ export class WorldScene extends Phaser.Scene {
    */
   private compactArt(): void {
     const compactGround = wantsCompactGround({
-      coarsePointer: window.matchMedia?.('(pointer: coarse)').matches ?? false,
-      deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      ...this.device,
       lowPower: this.quality.lowPower,
     });
     if (this.place && compactGround)
@@ -345,6 +349,9 @@ export class WorldScene extends Phaser.Scene {
     // Visible to diagnostics and tests: how this place is being drawn.
     this.game.canvas.dataset.art = place ? `prerendered:${place.variant}` : 'painted';
     this.game.canvas.dataset.artPpu = String(place ? place.groundPpu : ART_SCALE);
+    // The resolution of the pre-rendered people loaded here (e.g. "1.5"; "1.5,3" if some fell back).
+    const people = place ? (this.book?.resolutions() ?? []) : [];
+    this.game.canvas.dataset.peoplePpu = people.length > 0 ? people.join(',') : 'none';
 
     this.cast = castFor(model);
     this.actors = new Actors(

@@ -3,12 +3,14 @@ import type { Appearance } from '@/domain/characters';
 import type { Direction } from '@/domain/state/game-state';
 import type { LookMark, Pose } from '@/domain/world';
 import { naturalColor } from '@/shared/color';
+import { isLowMemory, isPhone, type DeviceClass } from '../systems/resolution';
 import type {
   ArtSprite,
   ArtVariant,
   LightingVariant,
   PeopleArt,
   PeopleLight,
+  PersonSheet,
   PlaceArt,
 } from './manifest';
 
@@ -119,14 +121,48 @@ export function peopleLightFor(
 }
 
 /**
- * Half-resolution art when the view is small enough that it barely shows
- * (below two-thirds of the full set's resolution: phones), saving about
- * three quarters of the texture memory, or when the device has asked for
- * simpler effects. (No texture is bigger than MAX_ART_TEXTURE, so the GPU's
- * own limit never forces it.)
+ * Whether to load the half-resolution art (a place's low set and people's
+ * low sheets: a quarter of the texture memory) rather than the full:
+ *
+ * - on phones and devices short of memory (`isPhone`, `isLowMemory`),
+ *   whatever the zoom. The high-DPI canvas makes a phone's view zoom as high
+ *   as a desktop's, but its screen is small: at the close framing a Pixel 7
+ *   shows 1.75 CSS px per game unit, so a half-resolution texel (1.5 per
+ *   unit) is about one CSS pixel, and the full set's extra detail is finer
+ *   than that. Its memory is not: the full set and full people took
+ *   45–80 MB of textures a place on the phone, in memory the GPU shares with
+ *   the rest of the phone;
+ * - when the device asked for simpler effects (`lowPower`);
+ * - on any view that shows less than two-thirds of the full set's pixels
+ *   (`zoom`: canvas pixels per game unit).
+ *
+ * Desktops and tablets keep the full art. (No texture is bigger than
+ * MAX_ART_TEXTURE, so the GPU's own limit never forces the low set.)
  */
-export function wantsLowResolution(zoom: number, ppu: number, lowPower: boolean): boolean {
-  return lowPower || zoom < (ppu * 2) / 3;
+export function wantsLowResolution(view: {
+  zoom: number;
+  /** Pixels per game unit of the full art. */
+  ppu: number;
+  lowPower: boolean;
+  device: DeviceClass;
+}): boolean {
+  return (
+    view.lowPower ||
+    isPhone(view.device) ||
+    isLowMemory(view.device) ||
+    view.zoom < (view.ppu * 2) / 3
+  );
+}
+
+/** A person's sheets at one resolution: their files, shadows and frame metrics. */
+export type SheetSet = Pick<
+  PersonSheet,
+  'ppu' | 'frameWidth' | 'frameHeight' | 'originX' | 'originY' | 'sheets' | 'shadows'
+>;
+
+/** A person's low-resolution sheets when wanted and made, else the full ones. */
+export function sheetSet(sheet: PersonSheet, low: boolean): SheetSet {
+  return low && sheet.low ? sheet.low : sheet;
 }
 
 /** Where a ground tile goes in the world (game units), from its pixel offset and the ground's ppu. */

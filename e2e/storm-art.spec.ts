@@ -12,6 +12,7 @@ import {
   setFastSettings,
   waitForWorld,
 } from './support';
+import { artDetails } from './world-probe';
 
 /**
  * Art captures of every place in Chapter 2 at fixed moments (not a
@@ -86,7 +87,11 @@ for (const vp of VIEWPORTS) {
         await page.waitForTimeout(settle);
         n++;
         await page.screenshot({ path: `${prefix}-${String(n).padStart(2, '0')}-${name}.png` });
-        info.push(`${String(n).padStart(2, '0')}-${name}\t${await canvasInfo(page)}`);
+        info.push(
+          `${String(n).padStart(2, '0')}-${name}\t${await canvasInfo(page)}\t${await artDetails(page)}`,
+        );
+        // Written after every shot, so a run that stops early keeps what it measured.
+        writeFileSync(`${prefix}-art.txt`, info.join('\n') + '\n');
       };
       const art = page.locator('.viewport canvas');
 
