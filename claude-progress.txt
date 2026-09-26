@@ -143,3 +143,22 @@ NEXT   : Check the live site https://zac-harlan-lee-enterprises.github.io/witnes
          (gh run list --workflow deploy-pages.yml). Then the art roadmap: KTX2/Basis textures to cut
          market texture memory (docs/art/prototype-report.md §8).
 BLOCKED: none. Content editorial approval and enabling Bible text remain human decisions by rule.
+
+--- 2026-09-26  Claude Opus 5.5 — rendering engine: high-DPI, weather, water, post-processing, memory ---
+DONE   : ADR-0015. Canvas renders at device pixels (≤2×, ≤6 MP; Viewport + Phaser NONE scale mode).
+         Weather drawn and story-driven (rain, splashes, puddles, ripples, sheets, dust, grit,
+         chaff, cloud shadows, swaying trees/palms, lightning ≤3 flashes/s, wet-ground grade);
+         live water shader (swells, glints, rain rings, storm foam); one post-processing pass
+         (grade, half-res bloom, flash, heat shimmer, dither); lamplit interiors and doorway
+         light at night. Quality levels full → lite → crisp → low; software GL starts lite at 1×.
+         Memory: Phaser pre/post FX targets disabled, unused screen targets shrunk, last place's
+         art released, shadow sheets as LUMINANCE, 16-bit ground on touch/low-memory devices.
+         Fixed: Canvas fallback drew the light layer over the whole world (pre-existing).
+         New setting: Simpler visual effects. Review switch VITE_FORCE_WEATHER.
+TESTS  : Vitest 341 → 394. New e2e: high-dpi, rendering (story storm, reduced motion),
+         canvas-renderer. Market GPU memory 177.6 → 72.5 MB (desktop), 95 → 58.8 MB (phone at 2×).
+         GPU 60 fps in every view incl. 2× and storms (M3 Pro; see docs/performance.md §2b).
+NEXT   : Measure on a real mid-range Android phone and an older iPad (docs/performance.md §5):
+         `PERF_MARKET=1` numbers are emulation only. Then GPU-compressed textures for the market
+         art (per-format KTX from tools/art, loaded with Phaser's multi-format `load.texture`).
+BLOCKED: Thunder/rain sound needs an application-layer cue (AudioPort) — not a world change.
