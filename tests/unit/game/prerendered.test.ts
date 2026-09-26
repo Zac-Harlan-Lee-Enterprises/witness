@@ -128,6 +128,33 @@ describe('pre-rendered place art', () => {
     expect(room.art?.peopleLight).toBe('indoor');
   });
 
+  it('lights people as a place asks: under rain cloud, or at lamp-lighting', () => {
+    expect(peopleLightFor('day', 'overcast')).toBe('overcast');
+    expect(peopleLightFor('day', 'lamp')).toBe('lamp');
+    for (const light of ['overcast', 'lamp'] as const) {
+      const place = parsePlaceArt({
+        version: 1,
+        scene: 'lycus-road',
+        tiles: { w: 46, h: 28 },
+        ppu: 3,
+        peopleLight: light,
+        variants: { day: variant },
+      });
+      expect(place.error).toBeNull();
+      expect(place.art?.peopleLight).toBe(light);
+    }
+    expect(
+      parsePlaceArt({
+        version: 1,
+        scene: 'x',
+        tiles: { w: 1, h: 1 },
+        ppu: 3,
+        peopleLight: 'moonlight',
+        variants: { day: variant },
+      }).art,
+    ).toBeNull();
+  });
+
   it('loads half-resolution art on small views and in low-power mode', () => {
     expect(wantsLowResolution(3, 3, false)).toBe(false); // desktop, close framing
     expect(wantsLowResolution(2.75, 3, false)).toBe(false); // tablet
@@ -180,7 +207,11 @@ describe('pre-rendered people', () => {
   });
   const rag = naturalColor(player.robe).toLowerCase();
   const people = parsePeopleArt({
-    'player-look-1': sheet({}),
+    'player-look-1': sheet({ sheets: { day: 'x.webp', overcast: 'o.webp', lamp: 'l.webp' } }),
+    'player-look-1@letter-case': sheet({
+      overlay: { mark: 'letter-case', of: 'player-look-1' },
+      shadows: undefined,
+    }),
     'player-look-1+torn-hem': sheet({ marks: ['torn-hem'] }),
     'player-look-1@water-skin': sheet({
       overlay: { mark: 'water-skin', of: 'player-look-1' },
@@ -208,6 +239,20 @@ describe('pre-rendered people', () => {
       base: 'player-look-1',
       overlays: ['player-look-1@water-skin', 'player-look-1@lamp'],
     });
+  });
+
+  it('draws the letter case at the hip over the rolled cloak, under a lamp', () => {
+    expect(pickSheets(people, player, ['letter-case'])).toEqual({
+      base: 'player-look-1',
+      overlays: ['player-look-1@letter-case'],
+    });
+    expect(pickSheets(people, player, ['lamp', 'letter-case', 'water-skin'])?.overlays).toEqual([
+      'player-look-1@water-skin',
+      'player-look-1@letter-case',
+      'player-look-1@lamp',
+    ]);
+    expect(people?.['player-look-1']?.sheets.overcast).toBe('o.webp');
+    expect(people?.['player-look-1']?.sheets.lamp).toBe('l.webp');
   });
 
   it('uses the torn-hem sheet for a torn hem, with the same overlays', () => {

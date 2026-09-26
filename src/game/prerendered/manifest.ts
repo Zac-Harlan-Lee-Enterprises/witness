@@ -58,8 +58,12 @@ export type ArtVariant = z.infer<typeof VariantSchema>;
 export const LIGHTING_VARIANTS = ['day', 'late'] as const;
 export type LightingVariant = (typeof LIGHTING_VARIANTS)[number];
 
-/** How people are lit: by the sun of the place's variant, or indoors (a lamp and a window). */
-export const PEOPLE_LIGHTS = ['day', 'late', 'indoor'] as const;
+/**
+ * How people are lit: by the sun of the place's variant, indoors (a lamp and
+ * a window), under rain cloud (soft light from the whole sky), or at
+ * lamp-lighting (lampstands, the last blue of the evening).
+ */
+export const PEOPLE_LIGHTS = ['day', 'late', 'indoor', 'overcast', 'lamp'] as const;
 export type PeopleLight = (typeof PEOPLE_LIGHTS)[number];
 
 export const PlaceArtSchema = z.object({
@@ -67,8 +71,12 @@ export const PlaceArtSchema = z.object({
   scene: z.string().min(1),
   tiles: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   ppu: z.number().positive(),
-  /** Rooms light people with their own lamp and window (people sheets' 'indoor' variant). */
-  peopleLight: z.enum(['indoor']).optional(),
+  /**
+   * How people are lit here when not by the sun of the variant: rooms by
+   * their own lamp and window ('indoor'), a road under rain cloud
+   * ('overcast'), a house at lamp-lighting ('lamp').
+   */
+  peopleLight: z.enum(['indoor', 'overcast', 'lamp']).optional(),
   variants: z.object({ day: VariantSchema, late: VariantSchema.optional() }),
 });
 export type PlaceArt = z.infer<typeof PlaceArtSchema>;
@@ -107,6 +115,8 @@ const PersonSheetSchema = z.object({
     day: z.string().min(1).optional(),
     late: z.string().min(1).optional(),
     indoor: z.string().min(1).optional(),
+    overcast: z.string().min(1).optional(),
+    lamp: z.string().min(1).optional(),
   }),
   frameWidth: z.number().int().positive(),
   frameHeight: z.number().int().positive(),
@@ -122,6 +132,8 @@ const PersonSheetSchema = z.object({
       day: ShadowSheetSchema.optional(),
       late: ShadowSheetSchema.optional(),
       indoor: ShadowSheetSchema.optional(),
+      overcast: ShadowSheetSchema.optional(),
+      lamp: ShadowSheetSchema.optional(),
     })
     .default({}),
   /**

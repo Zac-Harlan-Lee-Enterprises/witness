@@ -219,9 +219,20 @@ export async function loadPeople(scene: Phaser.Scene, logger: Logger): Promise<P
   return people;
 }
 
-/** A sheet in a light: the light asked for, else the morning's (or any there is). */
+/**
+ * A sheet in a light: the light asked for, else the nearest there is (a
+ * room's for lamp-lighting), else the morning's (or any there is).
+ */
 function pick<T>(byLight: Partial<Record<PeopleLight, T>>, light: PeopleLight): T | undefined {
-  return byLight[light] ?? byLight.day ?? byLight.late ?? byLight.indoor;
+  return (
+    byLight[light] ??
+    (light === 'lamp' ? byLight.indoor : undefined) ??
+    byLight.day ??
+    byLight.late ??
+    byLight.indoor ??
+    byLight.overcast ??
+    byLight.lamp
+  );
 }
 
 export interface PersonTextures {
