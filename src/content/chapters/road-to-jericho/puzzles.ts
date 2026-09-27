@@ -115,7 +115,7 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     type: 'measuring',
     title: 'An Honest Measure',
     intro:
-      'Ezer says Menashe’s jar held less than the 4 measures he paid for. To test it fairly, mark exactly 4 measures in Ezer’s big crock using water from the trough — then pour in the oil and compare. The crock holds 5; the pitcher holds 3. Neither has marks in between.',
+      'Ezer says Menashe’s jar held less than the 4 measures he paid for. Oil is too precious to slosh about, so the test is done with water from the trough: get exactly 4 measures of water into Ezer’s big crock, and he will scratch a mark at the waterline. The water then goes back into the trough, and Menashe’s oil is poured into the crock to see whether it reaches the mark. Any water you don’t need, you pour back into the trough. The crock holds 5; the pitcher holds 3. Neither has marks in between.',
     sourceLabel: 'the water trough',
     unit: 'measures',
     vessels: [
@@ -134,11 +134,11 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       },
       {
         tier: 3,
-        text: 'Full method: fill the crock → pour into the pitcher → empty the pitcher → pour the crock’s 2 into the pitcher → fill the crock again → pour into the pitcher until it’s full (it only takes 1). The crock now holds 4.',
+        text: 'Full method: fill the crock → pour into the pitcher → pour the pitcher back into the trough → pour the crock’s 2 into the pitcher → fill the crock again → pour into the pitcher until it’s full (it only takes 1). The crock now holds 4.',
       },
     ],
     explanation:
-      'You marked exactly 4 measures with a 5-measure crock and a 3-measure pitcher. When Menashe’s oil reached the same mark, everyone could see the jar was honest.',
+      'You measured exactly 4 measures of water with a 5-measure crock and a 3-measure pitcher, and every spare drop went back into the trough. Ezer scratched a mark at the waterline and tipped the water back too. When Menashe’s oil reached the same mark, everyone could see the jar was honest.',
     recordIds: ['rec-hist-measures'],
     onSolved: [{ type: 'setFlag', flag: 'measure-proved', value: true }],
   },

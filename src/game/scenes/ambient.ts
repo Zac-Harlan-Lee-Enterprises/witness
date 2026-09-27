@@ -8,6 +8,7 @@ import { FRAME, walkColumn, WALK_CYCLE_TILES } from '../art/people/rig';
 import { frameName } from '../art/people/sheet';
 import type { CanopyPiece } from '../art/scene-painter';
 import type { LightSpot } from '../art/site';
+import { hawkGlide } from '../systems/flight';
 import { crowdSize, crowdSpots, passerBy, startles } from '../systems/life';
 import {
   addCastShadow,
@@ -552,25 +553,21 @@ export class AmbientLife {
     this.hawkIn -= dt;
     if (this.hawkIn > 0) return;
     this.hawkIn = 18 + this.r() * 14;
-    const cam = this.d.scene.cameras.main;
-    const view = cam.worldView;
     const fromLeft = this.r() > 0.5;
+    // Head first, the way it travels (the texture is drawn nose-up).
+    const glide = hawkGlide(this.d.scene.cameras.main.worldView, fromLeft, this.r());
     const shadow = this.d.scene.add
-      .image(
-        fromLeft ? view.x - 40 : view.right + 40,
-        view.y + view.height * (0.2 + this.r() * 0.4),
-        TEX.hawk,
-      )
+      .image(glide.from.x, glide.from.y, TEX.hawk)
       .setScale(INV * 1.2)
+      .setRotation(glide.rotation)
       .setAlpha(0.22)
-      .setFlipX(!fromLeft)
       .setDepth(this.d.depths.ground + 2);
     this.objects.push(shadow);
     this.tweens.push(
       this.d.scene.tweens.add({
         targets: shadow,
-        x: fromLeft ? view.right + 60 : view.x - 60,
-        y: shadow.y + view.height * 0.3,
+        x: glide.to.x,
+        y: glide.to.y,
         duration: 6500,
         onComplete: () => shadow.destroy(),
       }),
