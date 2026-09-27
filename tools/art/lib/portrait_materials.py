@@ -457,8 +457,10 @@ def hair(hexcol, grey=0.0, name="hair"):
     def build():
         n = Nodes(f"{name}-{hexcol}-{grey:.2f}")
         info = n.new("ShaderNodeHairInfo")
-        mel = melanin_of(hexcol)
-        red = redness_of(hexcol)
+        # (A touch darker and less red than the colour alone gives: under the
+        # warm key light, dark brown hair otherwise read as auburn.)
+        mel = min(0.995, melanin_of(hexcol) + 0.035)
+        red = redness_of(hexcol) * 0.75
         # Each strand is either pigmented or white, in proportion to `grey`.
         white = n.math("LESS_THAN", (info, "Random"), grey)
         m = n.new("ShaderNodeMapRange", Value=(white, "Value"), **{"From Min": 0.0, "From Max": 1.0, "To Min": mel, "To Max": 0.06})
