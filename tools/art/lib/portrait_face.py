@@ -50,8 +50,9 @@ EXPRESSION_UNITS = {
     },
     "worried": {
         # Inner brows up and drawn together, lips pressed, corners down.
-        "eyebrows-{s}-inner-up": 1.0,
-        "eyebrows-{s}-down": 0.35,
+        # (Past the unit's full strength: under a beard, the brows must say it.)
+        "eyebrows-{s}-inner-up": 1.35,
+        "eyebrows-{s}-down": 0.3,
         "mouth-compression": 0.4,
         "mouth-depression": 0.3,
         "eye-{s}-opened-up": 0.2,
@@ -59,10 +60,10 @@ EXPRESSION_UNITS = {
     "sad": {
         # Inner brows up, lids heavy, the mouth's corners pulled down, the
         # chin raised a little against the lower lip; looking down.
-        "eyebrows-{s}-inner-up": 1.0,
+        "eyebrows-{s}-inner-up": 1.35,
         "mouth-depression": 0.9,
         "mouth-compression": 0.25,
-        "eye-{s}-closure": 0.3,
+        "eye-{s}-closure": 0.4,
         "neck-platysma": 0.15,
     },
     "angry": {
@@ -87,7 +88,7 @@ EXPRESSION_UNITS = {
     "afraid": {
         # Brows up and together, eyes wide, the lips stretched back, the
         # neck taut.
-        "eyebrows-{s}-inner-up": 1.0,
+        "eyebrows-{s}-inner-up": 1.25,
         "eyebrows-{s}-up": 0.6,
         "eye-{s}-opened-up": 1.0,
         "mouth-retraction": 0.7,
