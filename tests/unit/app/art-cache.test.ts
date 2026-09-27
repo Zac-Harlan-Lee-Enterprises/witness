@@ -5,6 +5,7 @@ import {
   ART_RUNTIME_CACHE_ENTRIES,
   CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
   CACHED_ON_FIRST_USE_PLACES,
+  CACHED_ON_FIRST_USE_PORTRAITS,
 } from '@/app/art-cache';
 import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
 import { LETTER_FROM_PAUL } from '@/content/chapters/letter-from-paul';
@@ -42,5 +43,29 @@ describe('offline caching of pre-rendered art', () => {
 
   it('keeps room for several chapters of art in the runtime cache', () => {
     expect(ART_RUNTIME_CACHE_ENTRIES).toBeGreaterThanOrEqual(1000);
+  });
+
+  it('precaches every neutral portrait and caches the other expressions on first use', () => {
+    const glob = (pattern: string, path: string) =>
+      new RegExp(
+        `^${pattern
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+          .replace(/\*\*\//g, '(?:.*/)?')
+          .replace(/\*\*/g, '.*')
+          .replace(/(?<!\.)\*/g, '[^/]*')}$`,
+      ).test(path);
+    expect(glob(CACHED_ON_FIRST_USE_PORTRAITS, 'art/portraits/angry/ezer-512.webp')).toBe(true);
+    expect(glob(CACHED_ON_FIRST_USE_PORTRAITS, 'art/portraits/ezer-512.webp')).toBe(false);
+    const config = readFileSync(join(__dirname, '../../../vite.config.ts'), 'utf8');
+    expect(config).toContain('CACHED_ON_FIRST_USE_PORTRAITS,\n          ]');
+    // Room in the runtime cache for every expression rendered, besides the places.
+    const manifest = JSON.parse(
+      readFileSync(
+        join(__dirname, '../../../src/features/portraits/portrait-manifest.json'),
+        'utf8',
+      ),
+    ) as Record<string, { expressions?: string[] }>;
+    const files = Object.values(manifest).reduce((n, e) => n + (e.expressions?.length ?? 0) * 3, 0);
+    expect(files).toBeLessThan(ART_RUNTIME_CACHE_ENTRIES / 3);
   });
 });

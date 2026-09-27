@@ -31,5 +31,15 @@ export const CACHED_ON_FIRST_USE_PLACES = [
  */
 export const CACHED_ON_FIRST_USE_PEOPLE_LIGHTS = ['overcast', 'lamp', 'night'] as const;
 
-/** Art files kept by the cache-on-first-use cache: room for every chapter's places, people and light variants. */
-export const ART_RUNTIME_CACHE_ENTRIES = 1000;
+/**
+ * Portraits: every person's neutral portrait is precached (the look picker,
+ * chapter select and every first line need them), but the other
+ * expressions (in folders under art/portraits/, one per expression) are
+ * cached the first time a conversation that uses them opens (the dialogue
+ * box preloads them then). Offline before that, the neutral portrait is
+ * shown in their place.
+ */
+export const CACHED_ON_FIRST_USE_PORTRAITS = '**/art/portraits/*/**';
+
+/** Art files kept by the cache-on-first-use cache: room for every chapter's places, people, light variants and portrait expressions. */
+export const ART_RUNTIME_CACHE_ENTRIES = 1500;

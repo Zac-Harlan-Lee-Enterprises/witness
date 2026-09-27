@@ -7,6 +7,7 @@ import {
   ART_RUNTIME_CACHE_ENTRIES,
   CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
   CACHED_ON_FIRST_USE_PLACES,
+  CACHED_ON_FIRST_USE_PORTRAITS,
 } from './src/app/art-cache';
 
 /**
@@ -88,6 +89,8 @@ export default defineConfig(({ mode }) => {
             // Later chapters' places are cached on first use (src/app/art-cache.ts).
             ...CACHED_ON_FIRST_USE_PLACES.map((id) => `**/art/${id}/**`),
             ...CACHED_ON_FIRST_USE_PEOPLE_LIGHTS.map((light) => `**/art/people/*-${light}*.webp`),
+            // Portraits other than neutral (art/portraits/<expression>/).
+            CACHED_ON_FIRST_USE_PORTRAITS,
           ],
           runtimeCaching: [
             {
