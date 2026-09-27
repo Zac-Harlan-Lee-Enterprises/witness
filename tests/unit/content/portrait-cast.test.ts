@@ -91,8 +91,16 @@ describe('portrait cast (who gets a rendered portrait)', () => {
       ],
     );
     expect(speakerExpressions(ch).get('ezer')).toEqual(['glad', 'angry', 'surprised', 'afraid']);
-    expect(portraitCast([ch]).sitters[0]?.expressions).toEqual(['angry']);
-    expect([...HELD_BACK_EXPRESSIONS].sort()).toEqual(['afraid', 'glad', 'surprised']);
+    const held = new Set<Expression>(['glad', 'surprised', 'afraid']);
+    expect(portraitCast([ch], held).sitters[0]?.expressions).toEqual(['angry']);
+    // Nothing is held back now: every expression is rendered.
+    expect([...HELD_BACK_EXPRESSIONS]).toEqual([]);
+    expect(portraitCast([ch]).sitters[0]?.expressions).toEqual([
+      'glad',
+      'angry',
+      'surprised',
+      'afraid',
+    ]);
   });
 
   it('casts everyone who speaks, and leaves out those who never do', () => {

@@ -39,16 +39,14 @@ export interface SkippedSitter {
 }
 
 /**
- * Expressions whose portraits are held back until they are reworked: the
- * first MakeHuman renders of them read as strained grins (glad) and
- * denture-like open mouths (surprised, afraid). Lines keep these
- * annotations, and their speakers show their neutral portrait meanwhile.
+ * Expressions whose portraits are held back (none now): an expression that
+ * doesn't yet read well can be listed here while it is reworked. Lines keep
+ * their annotations, no portrait is rendered for it, and its speakers show
+ * their neutral portrait meanwhile. (Glad, surprised and afraid were held
+ * back from the first MakeHuman renders, a strained grin and denture-like
+ * open mouths, until they were reworked.)
  */
-export const HELD_BACK_EXPRESSIONS: ReadonlySet<Expression> = new Set([
-  'glad',
-  'surprised',
-  'afraid',
-]);
+export const HELD_BACK_EXPRESSIONS: ReadonlySet<Expression> = new Set<Expression>();
 
 /** How many dialogue lines each speaker has in a chapter. */
 export function speakerLines(chapter: Chapter): Map<string, number> {
@@ -73,7 +71,10 @@ export function speakerExpressions(chapter: Chapter): Map<string, Expression[]> 
   );
 }
 
-export function portraitCast(chapters: readonly Chapter[]): {
+export function portraitCast(
+  chapters: readonly Chapter[],
+  heldBack: ReadonlySet<Expression> = HELD_BACK_EXPRESSIONS,
+): {
   sitters: PortraitSitter[];
   skipped: SkippedSitter[];
 } {
@@ -105,9 +106,7 @@ export function portraitCast(chapters: readonly Chapter[]): {
         chapterId: chapter.id,
         chapterNumber: chapter.number,
         lines: spoken,
-        expressions: (expressions.get(character.id) ?? []).filter(
-          (e) => !HELD_BACK_EXPRESSIONS.has(e),
-        ),
+        expressions: (expressions.get(character.id) ?? []).filter((e) => !heldBack.has(e)),
         character,
       });
     }
