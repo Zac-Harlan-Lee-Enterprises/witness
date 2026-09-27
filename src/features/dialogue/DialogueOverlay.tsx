@@ -218,7 +218,7 @@ function DialogueBox({
                     <span className="choice__number" aria-hidden="true">
                       {i + 1}
                     </span>
-                    {c.text}
+                    <span className="choice__text">{c.text}</span>
                   </button>
                   {!c.available && (
                     <p id={`why-${c.id}`} className="choice__why">
