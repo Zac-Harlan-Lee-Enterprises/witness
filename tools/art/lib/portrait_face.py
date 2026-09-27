@@ -101,18 +101,20 @@ EXPRESSION_UNITS = {
         "mouth/mouth-upperlip-height-incr": 0.35,
     },
     "afraid": {
-        # Inner brows up and drawn together, the upper lids raised and the
-        # lower ones tense, the lips stretched sideways and a little apart
-        # (not a gaping mouth), the neck taut.
-        "eyebrows-{s}-inner-up": 1.35,
-        "eyebrows-{s}-up": 0.65,
-        "eyebrows-{s}-down": 0.15,
-        "eye-{s}-opened-up": 0.6,
-        "eye-{s}-slit": 0.2,
-        "mouth-retraction": 0.6,
+        # Carried by the brows and eyes (a beard hides the mouth): the inner
+        # brows pulled up hard and drawn together, bunching the middle of the
+        # forehead; the upper lids raised to show a sliver of white above the
+        # iris; the lower lids tense; the lips stretched sideways and barely
+        # apart; the neck taut. More intense than worried at a glance.
+        "eyebrows-{s}-inner-up": 1.6,
+        "eyebrows-{s}-up": 0.55,
+        "eyebrows-{s}-down": 0.35,
+        "eye-{s}-opened-up": 0.95,
+        "eye-{s}-slit": 0.3,
+        "mouth-retraction": 0.7,
         "mouth-open": 0.08,
         "mouth/mouth-upperlip-height-incr": 0.2,
-        "neck-platysma": 0.5,
+        "neck-platysma": 0.6,
     },
 }
 
@@ -126,7 +128,11 @@ CHILD_MIXES = {
         "cheek/{lr}-cheek-trans-up": 0.35,
         "cheek/{lr}-cheek-volume-incr": 0.55,
         "mouth/mouth-laugh-lines-in": 0.3,
-        "mouth-compression": 0.12,
+        # (No pout: a child's full lower lip, pushed up by the smile, read
+        # as sulking; it is thinned and drawn back a little instead.)
+        "mouth/mouth-lowerlip-volume-decr": 0.35,
+        "mouth/mouth-lowerlip-ext-up": 0.2,
+        "mouth-retraction": 0.12,
         "eye-{s}-slit": 0.55,
         "eyebrows-{s}-extern-up": 0.1,
     },
