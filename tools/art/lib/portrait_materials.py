@@ -2,10 +2,13 @@
 node trees (no image textures). Colours come from the person's appearance
 data (sRGB hex) and are converted to linear.
 
-Skin reads the per-vertex maps written by portrait_skin.py (albedo, rough,
-oil, pores, lines, freckle, stubble, lip, scar) and adds what is too fine
-for vertices: mottling, freckles and age spots, the dots of a shaved
-beard, pores and the fine criss-cross grain of skin, lines on the lips.
+Skin reads the per-vertex maps written by portrait_mhskin.py (albedo, rough,
+oil, pores, lines, freckle, stubble, lip, scar, thin, the rest position and
+the depth of each family of wrinkles) and adds what is too fine for
+vertices: mottling, freckles and age spots, the dots of a shaved beard,
+pores and the fine criss-cross grain of skin, lines on the lips, and the
+wrinkles themselves, all drawn on the skin's rest position so they stay on
+the skin whatever the expression.
 """
 import math
 import random
@@ -55,12 +58,28 @@ def _scale(n, vec, fac):
 
 
 # ── Skin ───────────────────────────────────────────────────────────────────
-def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
-    """Skin for one person. `detail` scales the fine relief (1 adult)."""
+def _rest_coords(n):
+    """The skin's rest position (the `rest` map, cm) in metres: patterns
+    drawn on it stay on the skin whatever the expression."""
+    a = _attr(n, "rest")
+    return (n.new("ShaderNodeVectorMath", _operation="SCALE", Vector=(a, "Vector"), Scale=0.01), "Vector")
+
+
+def _groove(n, phase, sharp):
+    """1 in a narrow groove where sin(phase) peaks, 0 elsewhere."""
+    sn = n.math("SINE", phase)
+    pos = n.math("MAXIMUM", (sn, "Value"), 0.0)
+    return n.math("POWER", (pos, "Value"), float(sharp))
+
+
+def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1.9)):
+    """Skin for one person. `detail` scales the fine relief (1 adult);
+    `canthus` is (|x|, z) in cm of the outer corners of the eyes, where
+    crow's feet fan from."""
 
     def build():
         n = Nodes(f"skin-{key}")
-        obj = n.coords("Object")
+        obj = _rest_coords(n)
         alb = _attr(n, "albedo")
         rough = _attr(n, "rough")
         oil = _attr(n, "oil")
@@ -70,6 +89,8 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
         stubble = _attr(n, "stubble")
         lip = _attr(n, "lip")
         scar = _attr(n, "scar")
+        thin = _attr(n, "thin")
+        mouth = _attr(n, "mouth")
 
         # ── Colour: the regional map, mottled at three scales ──────────────
         blotch = n.noise(26.0, 4.0, 0.6, obj)
@@ -107,7 +128,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
         scol = n.mix((sd2, "Value"), col, (0.02, 0.018, 0.018, 1.0))
         col = (scol, 2)
 
-        # ── Relief: pores, skin grain, fine lines, lip lines, stubble ──────
+        # ── Relief (bump, in metres): pores, grain, fine lines, stubble, scars ─
         vor = n.new("ShaderNodeTexVoronoi", Scale=1500.0 * M, Vector=obj, _feature="F1")
         pit = _range(n, (vor, "Distance"), 0.0, 0.55, -1.0, 0.0)
         vor2 = n.new("ShaderNodeTexVoronoi", Scale=3300.0 * M, Vector=obj, _feature="F1")
@@ -122,18 +143,55 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
         wav = n.new("ShaderNodeTexWave", Scale=380.0, Distortion=16.0, Detail=4.0, Vector=obj, _wave_type="BANDS", _bands_direction="DIAGONAL")
         h_wav = n.math("MULTIPLY", (wav, "Fac"), (lines, "Fac"))
         h_wav = n.math("MULTIPLY", (h_wav, "Value"), 0.35)
-        # Lips: fine vertical lines.
-        lw = n.new("ShaderNodeTexWave", Scale=900.0, Distortion=3.0, Detail=2.0, Vector=obj, _wave_type="BANDS", _bands_direction="X")
-        h_lip = n.math("MULTIPLY", (lw, "Fac"), (lip, "Fac"))
-        h_lip = n.math("MULTIPLY", (h_lip, "Value"), 1.5)
         uneven = n.noise(240.0, 4.0, 0.6, obj)
         h_un = n.math("MULTIPLY", (uneven, "Fac"), 1.2)
         h_st = n.math("MULTIPLY", (sd, "Value"), 0.6)
         h_sc = n.math("MULTIPLY", (scar, "Fac"), 1.5)
         h = h_pores
-        for part in (h_net, h_wav, h_lip, h_un, h_st, h_sc):
+        for part in (h_net, h_wav, h_un, h_st, h_sc):
             h = n.math("ADD", (h, "Value"), (part, "Value"))
-        bump = n.bump((h, "Value"), strength=(0.44 - 0.18 * child) * detail, distance=0.00025)
+        # About a tenth of a millimetre per unit.
+        disp = n.math("MULTIPLY", (h, "Value"), 0.0001 * detail * (1 - 0.4 * child))
+        # Lip lines: narrow grooves across the red, irregularly spaced, deeper with age.
+        lw = n.new("ShaderNodeTexWave", Scale=400.0, Distortion=6.0, Detail=3.0, Vector=obj, _wave_type="BANDS", _bands_direction="X")
+        inv = n.math("SUBTRACT", 1.0, (lw, "Fac"))
+        line = n.math("POWER", (inv, "Value"), 6.0)
+        h_lip = n.math("MULTIPLY", (line, "Value"), (lip, "Fac"))
+        h_lip = n.math("MULTIPLY", (h_lip, "Value"), -0.00006 * (0.6 + 0.8 * age) * (1 - 0.7 * child))
+        disp = n.math("ADD", (disp, "Value"), (h_lip, "Value"))
+
+        # ── Wrinkles: grooves drawn on the rest position, as deep as the
+        # person's age and sun allow and the expression bunches the skin
+        # (the wf, wc, wg, wu maps). ────────────────────────────────────────
+        sep = n.new("ShaderNodeSeparateXYZ", Vector=obj)
+        wob = n.noise(60.0, 2.0, 0.5, obj)
+        wobble = _range(n, (wob, "Fac"), 0.3, 0.7, -1.2, 1.2)
+        # Forehead: horizontal lines about a centimetre apart, a little wavy.
+        fz = n.math("MULTIPLY", (sep, "Z"), 2 * math.pi / 0.0105)
+        fz = n.math("ADD", (fz, "Value"), wobble)
+        g_f = _groove(n, (fz, "Value"), 10)
+        # Between the brows: two or three upright furrows.
+        gx = n.math("MULTIPLY", (sep, "X"), 2 * math.pi / 0.0075)
+        gx = n.math("ADD", (gx, "Value"), (n.math("MULTIPLY", wobble, 0.4), "Value"))
+        g_g = _groove(n, (gx, "Value"), 12)
+        # Crow's feet: fanning out from the outer corner of each eye.
+        ax = n.math("ABSOLUTE", (sep, "X"))
+        dx = n.math("SUBTRACT", (ax, "Value"), canthus[0] * 0.01)
+        dz = n.math("SUBTRACT", (sep, "Z"), canthus[1] * 0.01)
+        ang = n.math("ARCTAN2", (dz, "Value"), (dx, "Value"))
+        ca = n.math("MULTIPLY", (ang, "Value"), 11.0)
+        ca = n.math("ADD", (ca, "Value"), (n.math("MULTIPLY", wobble, 0.5), "Value"))
+        g_c = _groove(n, (ca, "Value"), 8)
+        # Under the eyes: fine, close lines.
+        uz = n.math("MULTIPLY", (sep, "Z"), 2 * math.pi / 0.0032)
+        uz = n.math("ADD", (uz, "Value"), (n.math("MULTIPLY", wobble, 1.5), "Value"))
+        g_u = _groove(n, (uz, "Value"), 6)
+        for g, amap, depth in ((g_f, "wf", 0.00026), (g_g, "wg", 0.00022), (g_c, "wc", 0.0002), (g_u, "wu", 0.00008)):
+            a = _attr(n, amap)
+            dd = n.math("MULTIPLY", (g, "Value"), (a, "Fac"))
+            dd = n.math("MULTIPLY", (dd, "Value"), -depth * (1 - 0.8 * child))
+            disp = n.math("ADD", (disp, "Value"), (dd, "Value"))
+        bump = n.bump((disp, "Value"), strength=1.0, distance=1.0)
         # Broader unevenness of the surface (millimetre bumps), for the coat.
         cn = n.noise(90.0, 3.0, 0.5, obj)
         cbump = n.bump((cn, "Fac"), strength=0.12 * detail, distance=0.0004, normal=(bump, "Normal"))
@@ -145,39 +203,92 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0):
         rn2 = n.noise(190.0, 3.0, 0.6, obj)
         rv2 = _range(n, (rn2, "Fac"), 0.3, 0.7, -0.06, 0.06)
         rr = n.math("ADD", (rr, "Value"), rv2)
-        rp = n.math("MULTIPLY", (pit[0], pit[1]), -0.1)
+        rp = n.math("MULTIPLY", (pit[0], pit[1]), -0.16)
         rr = n.math("ADD", (rr, "Value"), (rp, "Value"))
         on = n.noise(35.0, 3.0, 0.6, obj)
         ov = _range(n, (on, "Fac"), 0.35, 0.65, 0.55, 1.15)
         coat = n.math("MULTIPLY", (oil, "Fac"), (ov[0], ov[1]))
         coat = n.math("MULTIPLY", (coat, "Value"), 0.34)
-        coat_r = _range(n, (lip, "Fac"), 0.0, 1.0, 0.3, 0.12)
+        # Scattering: the measured mean free paths of skin (about 3.7 mm in
+        # red, 1.4 in green, 0.7 in blue), shorter in darker skin (melanin
+        # absorbs near the surface), and little in thin tissue and the mouth.
+        sss_w = _range(n, (thin, "Fac"), 0.0, 1.0, sss, sss * 0.3)
         _principled(
             n,
             "RANDOM_WALK_SKIN",
             **{
                 "Base Color": col,
                 "Roughness": (rr, "Value"),
-                "Subsurface Weight": sss,
-                "Subsurface Radius": (1.0, 0.45, 0.25),
-                "Subsurface Scale": 0.0022 * (1 - 0.35 * dark),
+                "Subsurface Weight": sss_w,
+                "Subsurface Radius": (1.0, 0.37, 0.19),
+                "Subsurface Scale": 0.003 * (1 - 0.45 * dark) * (1 - 0.2 * child),
                 "Subsurface IOR": 1.4,
                 "Subsurface Anisotropy": 0.8,
                 "Specular IOR Level": 0.5,
                 "IOR": 1.4,
                 "Coat Weight": (coat, "Value"),
-                "Coat Roughness": coat_r,
+                "Coat Roughness": 0.3,
                 "Coat IOR": 1.45,
-                "Sheen Weight": 0.22 + 0.06 * child,
+                "Sheen Weight": 0.2 + 0.06 * child,
                 "Sheen Roughness": 0.35,
                 "Sheen Tint": (1.0, 0.94, 0.88, 1.0),
                 "Normal": (bump, "Normal"),
                 "Coat Normal": (cbump, "Normal"),
             },
         )
+        _ = mouth
         return n.mat
 
-    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2)), build)
+    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2), round(age, 2), canthus), build)
+
+
+def teeth(age=0.0, child=0.0):
+    """Enamel: off-white, a little translucent at the edges, wet."""
+
+    def build():
+        n = Nodes(f"teeth-{age:.2f}")
+        obj = n.coords("Object")
+        base = _lin("#e2d6bf" if age < 0.4 else "#cdbb97")
+        nz = n.noise(900.0, 3.0, 0.5, obj)
+        col = n.mix(_range(n, (nz, "Fac"), 0.3, 0.7, 0.0, 0.25), base, tuple(c * 0.85 for c in base[:3]) + (1.0,))
+        n.bsdf(
+            **{
+                "Base Color": (col, 2),
+                "Roughness": 0.22,
+                "Subsurface Weight": 0.35,
+                "Subsurface Radius": (1.0, 0.85, 0.6),
+                "Subsurface Scale": 0.0008,
+                "Specular IOR Level": 0.5,
+                "Coat Weight": 0.5,
+                "Coat Roughness": 0.08,
+            }
+        )
+        return n.mat
+
+    return cached(("teeth", round(age, 1), round(child, 1)), build)
+
+
+def gum(skin_hex):
+    def build():
+        n = Nodes(f"gum-{skin_hex}")
+        base = _lin(skin_hex)
+        pink = (min(1.0, base[0] * 1.3 + 0.08), base[1] * 0.55 + 0.01, base[2] * 0.6 + 0.01, 1.0)
+        n.bsdf(**{"Base Color": pink, "Roughness": 0.3, "Subsurface Weight": 0.5, "Subsurface Radius": (1.0, 0.3, 0.2), "Subsurface Scale": 0.0015, "Coat Weight": 0.7, "Coat Roughness": 0.08})
+        return n.mat
+
+    return cached(("gum", skin_hex), build)
+
+
+def tongue():
+    def build():
+        n = Nodes("tongue")
+        obj = n.coords("Object")
+        pap = n.new("ShaderNodeTexVoronoi", Scale=2200.0, Vector=obj, _feature="F1")
+        bump = n.bump((pap, "Distance"), strength=0.2, distance=0.0003)
+        n.bsdf(**{"Base Color": _lin("#a4524a"), "Roughness": 0.35, "Subsurface Weight": 0.5, "Subsurface Radius": (1.0, 0.3, 0.2), "Subsurface Scale": 0.002, "Coat Weight": 0.6, "Coat Roughness": 0.12, "Normal": (bump, "Normal")})
+        return n.mat
+
+    return cached(("tongue",), build)
 
 
 def clay():
@@ -192,7 +303,7 @@ def clay():
 
 
 # ── Eyes ───────────────────────────────────────────────────────────────────
-def eye_inner(iris_hex, seed, kind="brown", age=0.0):
+def eye_inner(iris_hex, seed, kind="brown", age=0.0, iris_r=0.6):
     """Sclera (warm, not white: a little yellow, pinker and greyer toward the
     corners, with faint vessels) and iris (radial fibres and crypts, a ring
     round the pupil, a dark ring at the edge). Hazel eyes are greener at the
@@ -212,7 +323,6 @@ def eye_inner(iris_hex, seed, kind="brown", age=0.0):
         n.link(cmb, "Vector", rho, "Vector")
         ang = n.math("ARCTAN2", (z, "Value"), (x, "Value"))
         front = n.new("ShaderNodeMapRange", Value=(y, "Value"), **{"From Min": 0.95, "From Max": 1.0, "To Min": 0.0, "To Max": 1.0})
-        iris_r = 0.6
         rn = n.math("DIVIDE", (rho, "Value"), iris_r)
         # Fibres: noise stretched along the radius; crypts: darker pits.
         pol = n.new("ShaderNodeCombineXYZ", X=(ang, "Value"), Y=(rn, "Value"))
@@ -255,7 +365,7 @@ def eye_inner(iris_hex, seed, kind="brown", age=0.0):
         vmask = n.new("ShaderNodeMapRange", Value=(veins, "Fac"), **{"From Min": 0.72, "From Max": 1.0, "To Min": 0.0, "To Max": 0.5})
         edge = n.new("ShaderNodeMapRange", Value=(y, "Value"), **{"From Min": 0.2, "From Max": 1.0, "To Min": 1.0, "To Max": 0.0})
         vm = n.math("MULTIPLY", (vmask, "Result"), (edge, "Result"))
-        white_hex = "#b1a08c" if age < 0.4 else "#a99476"
+        white_hex = "#a3927f" if age < 0.4 else "#9c8a70"
         white = n.mix((edge, "Result"), _lin(white_hex), _lin("#8c7063"))
         scl = n.mix((vm, "Value"), (white, 2), _lin("#9c4038"))
         # Iris region: inside the limbus, on the front.
@@ -276,7 +386,7 @@ def eye_inner(iris_hex, seed, kind="brown", age=0.0):
         )
         return n.mat
 
-    return cached(("eye", iris_hex, seed, kind, round(age, 1)), build)
+    return cached(("eye", iris_hex, seed, kind, round(age, 1), round(iris_r, 3)), build)
 
 
 def cornea():
@@ -296,7 +406,8 @@ def cornea():
 def tear():
     def build():
         n = Nodes("tear")
-        n.bsdf(**{"Base Color": (0.8, 0.6, 0.55, 1), "Roughness": 0.05, "Transmission Weight": 0.85, "IOR": 1.33, "Specular IOR Level": 0.6})
+        # Clear water: a coloured, partly opaque meniscus lit up orange.
+        n.bsdf(**{"Base Color": (1.0, 1.0, 1.0, 1), "Roughness": 0.03, "Transmission Weight": 1.0, "IOR": 1.33, "Specular IOR Level": 0.5})
         return n.mat
 
     return cached(("tear",), build)

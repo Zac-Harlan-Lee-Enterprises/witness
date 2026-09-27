@@ -8,10 +8,8 @@
  *   node scripts/art-build.mjs places              # render every place in PLACES (below)
  *   npm run art:market                             # = place jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people                             # every person those places need (only what is missing)
- *   node scripts/art-build.mjs people-low          # half-resolution people sheets for phones (no rendering)
- *   node scripts/art-build.mjs people-shadows      # cast shadows that fade out past their box, not at it (no rendering)
  *   npm run art:portrait-data                      # export everyone who speaks, in every chapter
- *   npm run art:portraits                          # render public/art/portraits (≈ 2 min a person)
+ *   npm run art:portraits                          # render public/art/portraits (≈ 75 s a person, one Blender each)
  *   npm run art:portraits -- --who miriam player:look-1   # just some people
  *   node scripts/art-build.mjs probe <scene-id> x0 y0 x1 y1 [ppu]   # a quick beauty render for review
  *
@@ -19,7 +17,7 @@
  * (for example --variants day, --samples 32, --only menashe~sit, --who miriam).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 
 const CANDIDATES = [
   process.env.BLENDER,
@@ -117,13 +115,6 @@ const jobs = {
       ...rest,
     ],
   ],
-  // Half-resolution people sheets (phones) from the packed sheets, without
-  // rendering (only people whose low sheets are missing or out of date;
-  // --force redoes all). The people job makes them too, for what it renders.
-  'people-low': () => [['tools/art/downsample_people.py', 'public/art/people', ...rest]],
-  // A fading margin for cast-shadow frames whose shadow reaches their box's
-  // edge (no rendering; new renders get it as they are made).
-  'people-shadows': () => [['tools/art/shadow_margins.py', 'public/art/people', ...rest]],
   // Bring older renders up to date (tiled grounds, half-resolution pages) without rendering.
   upgrade: () => [
     [
@@ -133,17 +124,28 @@ const jobs = {
   ],
   // Everyone in tools/art/data/portrait-people.json (every character who
   // speaks in any chapter, and the player looks) unless --who is given; the
-  // manifest is bundled by src/features/portraits.
-  portraits: () => [
-    [
+  // manifest is bundled by src/features/portraits. Everyone is rendered in a
+  // Blender of their own: a displaced head is millions of micro-polygons, and
+  // over a run of 43 in one process memory piled up until meshing a head
+  // took 17 minutes instead of 20 seconds.
+  portraits: () => {
+    const job = (who) => [
       'tools/art/build_portraits.py',
       '--out',
       'public/art/portraits',
       '--manifest',
       'src/features/portraits/portrait-manifest.json',
+      ...who,
       ...rest,
-    ],
-  ],
+    ];
+    if (rest.includes('--who') || rest.includes('--reencode')) return [job([])];
+    const data = JSON.parse(readFileSync('tools/art/data/portrait-people.json', 'utf8'));
+    const everyone = [
+      ...data.characters.map((c) => c.id),
+      ...data.players.map((p) => `player:${p.id}`),
+    ];
+    return everyone.map((id) => job(['--who', id]));
+  },
   probe: () => {
     const [id, x0, y0, x1, y1, ppu = '1.5', ...extra] = rest;
     mkdirSync('test-results/art-probes', { recursive: true });

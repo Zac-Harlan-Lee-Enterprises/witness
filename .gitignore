@@ -43,3 +43,6 @@ __pycache__/
 
 # Agent worktrees (Claude Code)
 .claude/worktrees/
+
+# MakeHuman data for the portrait build (npm run art:fetch-makehuman); CC0, never committed
+tools/art/.cache/

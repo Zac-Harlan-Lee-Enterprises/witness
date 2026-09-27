@@ -94,6 +94,7 @@ class Clothes:
         # The head as a field (in practice a sampled grid: the head is costly to evaluate).
         self.head_shape = head_shape or head.shape
         self.parts = {}  # name -> (shape, material key, box lo, box hi, voxel)
+        self.under_cloth = []  # what is worn, for the wrap's tail to lie on
         # Where hair may not go (positive inside cloth), or None.
         self.obstacle = None
         self._tunic()
@@ -123,11 +124,14 @@ class Clothes:
         """The opening round the neck: a cylinder above a tilted neckline."""
         head = self.head
         nr = head._neck_radius()
-        axis = np.array([0.0, 1.2 * head.s], F)
+        axis = np.array([0.0, head.neck_axis_y], F)
         slope = (back_z - front_z) / 12.0
 
         def f(p):
-            q = np.hypot(p[:, 0] - axis[0], (p[:, 1] - axis[1]) * 1.05) - (nr + extra)
+            # (Third pass: reaching further forward, so the opening takes in
+            # the whole throat: cloth laid over the body's neck, which begins
+            # under the chin, poked through the front of it as a thin slit.)
+            q = np.hypot(p[:, 0] - axis[0], (p[:, 1] - axis[1]) * 0.85) - (nr + extra)
             line = front_z + (p[:, 1] + 6.0) * slope
             return np.maximum(q, line - p[:, 2])
 
@@ -143,8 +147,10 @@ class Clothes:
         body = head.body()
         folds = drape_folds(P.seed + 1, amp=0.5, count=8, top=-14.0)
         creases = drape_folds(P.seed + 11, amp=0.14, count=6, spread=(1.0, 2.5), top=-16.0, sway=0.15)
-        front_z = (-17.5 - 0.8 * (1 - P.masc)) * s * head.body_z
-        hole = self._neck_hole(0.9, front_z, -13.5 * s * head.body_z)
+        # The neckline just above the notch between the collarbones.
+        notch = head.notch_z
+        front_z = notch + 0.7 - 0.8 * (1 - P.masc)
+        hole = self._neck_hole(0.9, front_z, notch + 4.5 * s)
         slit_len = 0.0 if P.sex == "f" else (4.5 + 2.0 * ((P.seed >> 3) % 7) / 6.0) * s
         slit_w = 0.8 * s
 
@@ -163,14 +169,20 @@ class Clothes:
             hem = np.exp(-((opening(p) / 0.55) ** 2))
             return body(p) - 0.45 - folds(p) - creases(p) - 0.12 * hem
 
+        top = notch + 6.0 * s  # nothing of the tunic above the shoulders (under the jaw)
+
         def cloth_f(p):
             d = outer_f(p)
             hem = np.exp(-((opening(p) / 0.55) ** 2))
-            return np.maximum(d, -d - (0.34 + 0.26 * hem))
+            return np.maximum(np.maximum(d, -d - (0.34 + 0.26 * hem)), p[:, 2] - top)
 
         cloth = S.Fn(cloth_f, ((-30, -16, -45), (30, 18, -5)))
         cut = S.Subtract(cloth, S.Fn(opening, ((-12, -12, front_z - slit_len - 3), (12, 12, 20))), 0.22)
         self.parts["tunic"] = (cut, "tunic", (-24, -14, -27), (24, 16, -8), 0.13)
+        # The tunic as cut, for the tail to lie on. (Laid on its uncut outer
+        # surface, which spans the neck opening, the tail floated over a dark
+        # gap there.)
+        self.under_cloth.append(cut)
 
     def _mantle(self):
         head = self.head
@@ -182,7 +194,7 @@ class Clothes:
 
         outer = S.Fn(outer_f, ((-31, -17, -45), (31, 19, -5)))
         cloth = shell(outer, 0.46)
-        hole = self._neck_hole(1.6, -16.0 * head.s * head.body_z, -11.5 * head.s * head.body_z)
+        hole = self._neck_hole(1.6, head.notch_z + 2.2 * head.s, head.notch_z + 6.2 * head.s)
 
         def front_f(p):
             # Open down the front, widening toward the chest.
@@ -190,7 +202,9 @@ class Clothes:
             return np.maximum(np.abs(p[:, 0]) - half, p[:, 1] + 1.0)
 
         opening = S.Fn(front_f, ((-20, -20, -45), (20, 0, -5)))
-        self.parts["mantle"] = (S.Subtract(S.Subtract(cloth, hole, 0.3), opening, 0.6), "mantle", (-25, -15, -27), (25, 17, -8), 0.15)
+        mantle = S.Subtract(S.Subtract(cloth, hole, 0.3), opening, 0.6)
+        self.parts["mantle"] = (mantle, "mantle", (-25, -15, -27), (25, 17, -8), 0.15)
+        self.under_cloth.append(mantle)
 
     # ── Head coverings ─────────────────────────────────────────────────────
     def _hair_volume(self, base, top_extra):
@@ -221,9 +235,9 @@ class Clothes:
         drape = S.Offset(body, 1.4 if kind != "scarf" else 1.2)
         low = -40.0
         if kind == "scarf":
-            curtain = S.RoundCone((0, 2.0 * s, 8.0 * s), (0, 2.3 * s, -20.0 * s), 6.4 * s, 10.0 * s)
+            curtain = S.RoundCone((0, 2.0 * s, 8.0 * s), (0, 2.3 * s, -20.0 * s), 6.4 * s + 0.8 * P.veil_full, 10.0 * s + P.veil_full)
         else:
-            curtain = S.RoundCone((0, 2.2 * s, 8.0 * s), (0, 2.6 * s, -20.0 * s), 6.8 * s, 10.8 * s)
+            curtain = S.RoundCone((0, 2.2 * s, 8.0 * s), (0, 2.6 * s, -20.0 * s), 6.8 * s + P.veil_full, 10.8 * s + 1.2 * P.veil_full)
         cover = S.Union([env, curtain], 3.5)
         cover = S.Union([cover, S.Clip(drape, (-40, -40, low), (40, 40, 0))], 2.5)
         # Folds: long, deep ones falling from the head, finer creases between.
@@ -232,8 +246,9 @@ class Clothes:
         # The opening for the face, as an angle round the head, so the hem
         # follows the cloth: an arch over the brow, edges hanging in front of
         # the ears, and open down the front onto the chest.
-        top_z = 9.1 * s if kind != "hood" else 8.6 * s
-        face = 57.0 if kind != "scarf" else 54.0
+        # (Third pass: each person's sits a little differently.)
+        top_z = (9.1 + P.veil_back) * s if kind != "hood" else (8.6 + 0.5 * P.veil_back) * s
+        face = (57.0 if kind != "scarf" else 54.0) + P.veil_open
         zc = 1.0 * s
 
         def open_f(p):
@@ -368,63 +383,121 @@ class Clothes:
         return q.astype(F), az.astype(F)
 
     def _band_uv(self, V):
-        """Per vertex: (along, across) in cm on the top-most turn under it."""
+        """Per vertex: (along, across) in cm on the top-most turn under it,
+        or along the tail."""
         uv = np.zeros((len(V), 3), F)
         for b in self.bands:
             q, az = self._band_coords(b, V)
             inside = np.abs(q) < 1.02
             uv[inside, 0] = az[inside] * 9.0
             uv[inside, 1] = q[inside] * b["w"] / 2
+        if getattr(self, "_tail_geo", None) is not None:
+            on, along, across = self._tail_uv(V)
+            uv[on, 0] = along[on] + 50.0
+            uv[on, 1] = across[on]
         return uv
 
     def _tail(self, rng):
-        """The end of the cloth, falling from behind one ear onto the neck and
-        shoulder: a strip lying on the body, with folds along it."""
+        """The end of the cloth, falling from behind one ear down the neck to
+        the shoulder. (Third pass: it was a flat strap glued to the neck.)
+        It leaves the turns gathered into a few pleats, then fans out as it
+        falls, the pleats spreading with it; it hangs a little free of the
+        neck, its hemmed edges roll and lift, and the weave runs along it."""
         head = self.head
         s = head.s
         z = head.body_z
         sx = -1.0  # on the side the camera sees (the person's right)
-        lying_on = S.Union([self.head_shape, head.body()], 0.8)
         pts = np.array(
             [
-                (sx * 5.2 * s, 6.4 * s, 5.0 * s),
-                (sx * 6.2 * s, 6.2 * s, 0.0),
-                (sx * 6.4 * s, 5.2 * s, -6.5 * s * z),
-                (sx * 8.0 * s, 4.0 * s, -13.0 * s * z),
-                (sx * 11.0 * s, 3.4 * s, -18.0 * s * z),
+                # Out from under the turns behind the ear, down the side of
+                # the neck, and forward over the collarbone, where it is seen
+                # face-on (on the back of the neck it read as a strap, edge-on).
+                (sx * 5.4 * s, 6.2 * s, 5.0 * s),
+                (sx * 6.4 * s, 4.6 * s, -0.5 * s),
+                (sx * 6.2 * s, 2.2 * s, -6.5 * s * z),
+                (sx * 7.2 * s, -0.6 * s, -12.5 * s * z),
+                (sx * 10.5 * s, -2.6 * s, -18.5 * s * z),
             ],
             F,
         )
         seg = np.diff(pts, axis=0)
         L = np.linalg.norm(seg, axis=1)
         cum = np.concatenate([[0], np.cumsum(L)])
-        total = float(cum[-1])
-        ph = rng.uniform(0, 2 * math.pi, 3)
+        self._tail_geo = {
+            "pts": pts,
+            "seg": seg,
+            "L": L,
+            "cum": cum,
+            "total": float(cum[-1]),
+            "ph": rng.uniform(0, 2 * math.pi, 4),
+            "lying_on": S.Union([self.head_shape, head.body()] + self.under_cloth, 0.8),
+        }
+        total = self._tail_geo["total"]
 
         def f(p):
-            best = np.full(len(p), 1e3, F)
-            t_at = np.zeros(len(p), F)
-            for i in range(len(seg)):
-                d = p - pts[i]
-                t = np.clip((d @ seg[i]) / (L[i] ** 2), 0, 1)
-                c = pts[i] + t[:, None] * seg[i]
-                dist = np.linalg.norm(p - c, axis=1)
-                m = dist < best
-                best[m] = dist[m]
-                t_at[m] = (cum[i] + t[m] * L[i]) / total
-            # Across the strip: distance from its middle line along the body.
-            e = lying_on(p)
-            across = np.sqrt(np.maximum(best * best - e * e, 0))
-            width = (2.4 + 0.8 * np.clip(t_at * 2, 0, 1)) * s
-            fold = 0.3 * np.sin(across * 2.2 + ph[0] + 5.0 * t_at) * np.clip(t_at * 4, 0, 1)
-            lift = 0.45 + fold + 0.25 * (across / width) ** 2
-            dx = np.abs(e - lift) - 0.2
-            dy = across - width
+            t_at, across, e = self._tail_coords(p)
+            w, lift, half = self._tail_profile(t_at, across)
+            dx = np.abs(e - lift) - half
+            dy = np.abs(across) - w
             end = (t_at - 0.999) * total
-            box = np.minimum(np.maximum(dx, dy), 0) + np.hypot(np.maximum(dx, 0), np.maximum(dy, 0)) - 0.06
+            box = np.minimum(np.maximum(dx, dy), 0) + np.hypot(np.maximum(dx, 0), np.maximum(dy, 0)) - 0.05
             return np.maximum(box, end)
 
-        return S.Fn(f, (pts.min(0) - 4.0, pts.max(0) + 4.0))
+        return S.Fn(f, (pts.min(0) - 4.5, pts.max(0) + 4.5))
+
+    def _tail_coords(self, p):
+        """(how far along the tail 0-1, signed distance across it in cm,
+        height above the body in cm) for points p."""
+        g = self._tail_geo
+        pts, seg, L, cum = g["pts"], g["seg"], g["L"], g["cum"]
+        best = np.full(len(p), 1e3, F)
+        t_at = np.zeros(len(p), F)
+        sign = np.ones(len(p), F)
+        # Outward from the neck, roughly: to tell one side of the tail from the other.
+        out = np.stack([p[:, 0], p[:, 1] - 1.2, np.zeros(len(p), F)], 1)
+        out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-6)
+        for i in range(len(seg)):
+            d = p - pts[i]
+            t = np.clip((d @ seg[i]) / (L[i] ** 2), 0, 1)
+            c = pts[i] + t[:, None] * seg[i]
+            r = p - c
+            dist = np.linalg.norm(r, axis=1)
+            m = dist < best
+            best[m] = dist[m]
+            t_at[m] = (cum[i] + t[m] * L[i]) / g["total"]
+            side = np.cross(np.broadcast_to(seg[i] / L[i], out.shape), out)
+            sign[m] = np.where((r[m] * side[m]).sum(1) >= 0, 1.0, -1.0)
+        e = g["lying_on"](p)
+        across = np.sqrt(np.maximum(best * best - e * e, 0)) * sign
+        return t_at, across.astype(F), e
+
+    def _tail_profile(self, t_at, across):
+        """(half-width, height of the middle of the cloth above the body,
+        half its thickness) along and across the tail."""
+        s = self.head.s
+        ph = self._tail_geo["ph"]
+        spread = _smoothstep(t_at / 0.4)
+        w = (0.75 + 2.25 * spread) * s
+        # How far from the middle of the tail, 0 .. 1. (Only the distance: the
+        # side a point is on flips where the nearest part of the path changes,
+        # and folds that depended on it tore the cloth along that line.)
+        q = np.abs(across) / np.maximum(w, 0.3)
+        # Pleats: the same few folds across the width, so they are bunched
+        # where the cloth is gathered and spread where it fans out.
+        pleat = (0.14 + 0.3 * _smoothstep(t_at / 0.55)) * np.sin(q * math.pi * 1.75 + ph[0] + 1.6 * t_at)
+        pleat += 0.06 * np.sin(q * math.pi * 3.6 + ph[1] + 3.0 * t_at)
+        lift = 0.35 + 0.3 * t_at + pleat + 0.3 * q * q + 0.1 * np.sin(ph[2] + 6.0 * t_at) * q
+        # A hem along each edge, rolled over: thicker, standing a little proud.
+        hem = np.exp(-(((w - np.abs(across)) / 0.28) ** 2))
+        half = 0.16 + 0.12 * hem
+        return w, lift + 0.06 * hem, half
+
+    def _tail_uv(self, V):
+        """Which vertices are on the tail, and their (along, across) in cm."""
+        t_at, across, e = self._tail_coords(V)
+        w, lift, half = self._tail_profile(t_at, across)
+        on = (np.abs(e - lift) < half + 0.25) & (np.abs(across) < w + 0.3) & (t_at > 0.0)
+        return on, t_at * self._tail_geo["total"], across
 
     def _cord(self):
         """Two twisted wool cords round a man's head cloth, holding it on."""
