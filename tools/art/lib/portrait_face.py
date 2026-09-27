@@ -120,21 +120,43 @@ EXPRESSION_UNITS = {
 
 # A child's face for an expression, where it differs from a grown-up's.
 CHILD_MIXES = {
-    # A child's smile is rounder and brighter: fuller cheeks, the corners
-    # lifted more than pulled, the lips closed.
+    # A child's smile: the corners lifted and the mouth a little wider, the
+    # cheeks up, the lips closed. A child's full lower lip is the trouble:
+    # pushed up by the smile it read as a pout, and seen three-quarter on,
+    # its outer end hanging below the near corner made a hook that read as
+    # a crooked smirk. So the lower lip is thinned, its height reduced and
+    # its outer ends raised to meet the corners (MakeHuman's lower-lip
+    # "ext-down" target raises them; "ext-up" lowers them), and the cheeks
+    # are filled only a little (fuller, they puffed out).
     "glad": {
-        "mouth-corner-puller": 0.4,
-        "mouth/mouth-angles-up": 0.9,
+        "mouth-corner-puller": 0.45,
+        "mouth/mouth-angles-up": 0.8,
+        "mouth/mouth-scale-horiz-incr": 0.2,
         "cheek/{lr}-cheek-trans-up": 0.35,
-        "cheek/{lr}-cheek-volume-incr": 0.55,
-        "mouth/mouth-laugh-lines-in": 0.3,
-        # (No pout: a child's full lower lip, pushed up by the smile, read
-        # as sulking; it is thinned and drawn back a little instead.)
-        "mouth/mouth-lowerlip-volume-decr": 0.35,
-        "mouth/mouth-lowerlip-ext-up": 0.2,
-        "mouth-retraction": 0.12,
+        "cheek/{lr}-cheek-volume-incr": 0.3,
+        "mouth/mouth-laugh-lines-in": 0.25,
+        "mouth/mouth-lowerlip-volume-decr": 0.7,
+        "mouth/mouth-lowerlip-height-decr": 0.4,
+        "mouth/mouth-lowerlip-ext-down": 1.0,
         "eye-{s}-slit": 0.55,
         "eyebrows-{s}-extern-up": 0.1,
+    },
+    # A frightened child: eyes wide under raised, drawn brows, and the
+    # mouth's corners pulled down with the lips a little apart (close to
+    # tears). The grown-up's lips stretched sideways, on a child's round
+    # cheeks seen three-quarter on, read as a crooked grin.
+    "afraid": {
+        "eyebrows-{s}-inner-up": 1.9,
+        "eyebrows-{s}-up": 0.5,
+        "eyebrows-{s}-down": 0.4,
+        "eye-{s}-opened-up": 0.9,
+        "eye-{s}-slit": 0.25,
+        "mouth-retraction": 0.25,
+        "mouth-depression": 0.4,
+        "mouth-open": 0.12,
+        "mouth/mouth-angles-down": 0.4,
+        "mouth/mouth-lowerlip-ext-down": 0.2,
+        "neck-platysma": 0.3,
     },
 }
 
