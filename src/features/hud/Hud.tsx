@@ -44,6 +44,9 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
   const objective = currentObjective(state, chapter.quests);
   const hour = chapter.timeCounter ? state.counters[chapter.timeCounter] : undefined;
   const newEntries = unseenCount(state);
+  const { notices, applyUpdate } = useServices();
+  // A new version waits in the pause menu (ADR-0006); the Menu button says so.
+  const updateReady = useStore(notices).updateAvailable && applyUpdate !== null;
   const keys = {
     journal: useKey('journal'),
     satchel: useKey('satchel'),
@@ -105,6 +108,7 @@ export function Hud({ runtime }: { runtime: GameRuntimeLike }) {
           label="Menu"
           icon="menu"
           shortcut={keys.pause}
+          note={updateReady ? 'a new version is ready' : undefined}
           onClick={() => ui.toggleOverlay('pause')}
         />
       </nav>
@@ -117,6 +121,7 @@ function HudButton({
   icon,
   shortcut,
   badge,
+  note,
   secondary,
   onClick,
 }: {
@@ -124,6 +129,8 @@ function HudButton({
   icon: IconName;
   shortcut: KeyHint;
   badge?: number;
+  /** Something waiting behind the button, shown as a dot and read out after its name. */
+  note?: string;
   /** Also reachable from the pause menu; hidden on small screens with large text. */
   secondary?: boolean;
   onClick: () => void;
@@ -142,6 +149,12 @@ function HudButton({
           {badge} <span className="visually-hidden">new</span>
         </span>
       ) : null}
+      {note && (
+        <span className="hud-button__badge hud-button__badge--dot">
+          <span aria-hidden="true">•</span>
+          <span className="visually-hidden">, {note}</span>
+        </span>
+      )}
       {shortcut.label && (
         <kbd className="hud-button__key" aria-hidden="true">
           {shortcut.label}

@@ -5,6 +5,7 @@ import { currentObjective } from '@/domain/quests';
 import { SAVE_SLOTS, type SaveSlot } from '@/domain/save';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
+import { useServices } from '../common/services';
 import type { GameRuntimeLike } from '../game/types';
 
 const MANUAL_SLOTS = SAVE_SLOTS.filter((s): s is Exclude<SaveSlot, 'auto'> => s !== 'auto');
@@ -26,6 +27,8 @@ export function PauseMenu({
   const objective = currentObjective(state, chapter.quests);
   const hour = chapter.timeCounter ? state.counters[chapter.timeCounter] : undefined;
   const newEntries = unseenCount(state);
+  const { notices, applyUpdate } = useServices();
+  const updateReady = useStore(notices).updateAvailable;
   const close = () => runtime.ui.closeOverlay();
   return (
     <Modal title="Paused" onClose={close}>
@@ -46,6 +49,25 @@ export function PauseMenu({
           </p>
         )}
       </div>
+      {updateReady && applyUpdate && (
+        // The swap is the player's choice, after an autosave (ADR-0006).
+        <p className="notice">
+          A new version of the game is ready.{' '}
+          <button
+            type="button"
+            className="button button--small"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              runtime.autosaver.flush();
+              await runtime.saveTo('auto');
+              await applyUpdate();
+            }}
+          >
+            Save and update
+          </button>
+        </p>
+      )}
       <nav className="menu" aria-label="Pause menu">
         <button type="button" className="button button--primary" onClick={close}>
           Resume

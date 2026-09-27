@@ -579,6 +579,9 @@ legend {
   color: var(--color-accent-text);
   padding: 0 0.35em;
 }
+.hud-button__badge--dot {
+  min-width: 0;
+}
 .interaction-prompt {
   position: absolute;
   left: 50%;
