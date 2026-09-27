@@ -77,15 +77,15 @@ describe('portraitImage', () => {
   };
 
   it("prefers the speaker's own portrait when two people look alike", () => {
-    expect(portraitImage(LOOK_1, 'ezer', twins)?.id).toBe('ezer');
-    expect(portraitImage(LOOK_1, 'anna', twins)?.id).toBe('anna');
+    expect(portraitImage(LOOK_1, 'ezer', 'neutral', twins)?.id).toBe('ezer');
+    expect(portraitImage(LOOK_1, 'anna', 'neutral', twins)?.id).toBe('anna');
     // Anyone else who looks the same (e.g. the player) gets a stable choice.
-    expect(portraitImage(LOOK_1, null, twins)?.id).toBe('anna');
+    expect(portraitImage(LOOK_1, null, 'neutral', twins)?.id).toBe('anna');
   });
 
   it("does not use someone's portrait once their appearance has changed", () => {
     const stale: PortraitManifest = { ezer: { appearance: 'something-else', kind: 'character' } };
-    expect(portraitImage(LOOK_1, 'ezer', stale)).toBeNull();
+    expect(portraitImage(LOOK_1, 'ezer', 'neutral', stale)).toBeNull();
   });
 
   it('preloads the portraits of everyone who may speak, and skips people without one', () => {
@@ -109,7 +109,7 @@ describe('portraitImage', () => {
   });
 
   it('serves the images under the site base path (GitHub Pages)', () => {
-    const art = portraitImage(LOOK_1, 'ezer', twins, '/witness/');
+    const art = portraitImage(LOOK_1, 'ezer', 'neutral', twins, '/witness/');
     expect(art?.src).toBe('/witness/art/portraits/ezer-256.webp');
     expect(art?.srcSet).toContain('/witness/art/portraits/ezer-128.webp 128w');
   });

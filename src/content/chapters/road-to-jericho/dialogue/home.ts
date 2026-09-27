@@ -20,13 +20,14 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         { next: 'n2' },
       ),
       say('n2', 'miriam', '{player}! Good, you’re up. Come here — I need your help today.', {
+        expression: 'glad',
         next: 'n3',
       }),
       say(
         'n3',
         'miriam',
         'My friend Rivka sent word from Jericho. Her son Natan has a fever that won’t go away.',
-        { next: 'n4' },
+        { expression: 'worried', next: 'n4' },
       ),
       say(
         'n4',
@@ -45,12 +46,15 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'All the way. It’s a long day’s walk — downhill the whole way, which your legs will feel tomorrow.',
         { next: 'n6' },
       ),
-      say('n5b', 'miriam', 'That’s my brave one. Listen carefully, then.', { next: 'n6' }),
+      say('n5b', 'miriam', 'That’s my brave one. Listen carefully, then.', {
+        expression: 'glad',
+        next: 'n6',
+      }),
       say(
         'n6',
         'miriam',
         'The road down to Jericho has a reputation. Robbers. Don’t go blindly — ask travelers in the market what they know.',
-        { next: 'n7' },
+        { expression: 'worried', next: 'n7' },
       ),
       say(
         'n7',
@@ -138,6 +142,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'miriam',
         'Packed and ready. Go carefully, {player}. Keep your eyes open on the road — and your heart too.',
         {
+          expression: 'worried',
           choices: [
             opt('will', 'I will.'),
             opt('worried', 'Are you worried?', 'bye2', { once: true }),
@@ -148,7 +153,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'bye2',
         'miriam',
         'A little. That’s what aunts are for. But I also know you. You’ll think before you act.',
-        { next: 'bye' },
+        { expression: 'glad', next: 'bye' },
       ),
     ],
   },

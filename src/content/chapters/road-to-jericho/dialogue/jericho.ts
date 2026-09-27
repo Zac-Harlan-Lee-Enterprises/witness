@@ -69,6 +69,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'salome',
         'Welcome, traveler. Water for your feet? Rest in the shade as long as you like.',
         {
+          expression: 'glad',
           choices: [
             opt('far', 'How far is it to Jericho?', 'general2', { once: true }),
             opt('news', 'Any news of the man who was hurt on the road?', 'news', {
@@ -91,7 +92,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'arrange',
         'salome',
         'Oh, the poor man! Robbed on the road? Bring him in, bring him in.',
-        { next: 'arrange2' },
+        { expression: 'worried', next: 'arrange2' },
       ),
       say(
         'arrange2',
@@ -163,6 +164,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'salome',
         'Miriam’s family? She set my husband’s broken arm years ago. Your promise is good here.',
         {
+          expression: 'glad',
           effects: [{ type: 'adjustTrust', character: 'salome', delta: 1 }],
           next: 'done',
         },
@@ -184,6 +186,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
 
       // Came ahead to send help
       say('send', 'salome', 'You look like you ran the whole way. What’s wrong?', {
+        expression: 'worried',
         choices: [
           opt(
             'tell',
@@ -200,6 +203,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         ],
       }),
       say('send2', 'salome', 'Asher! Take the donkey and a water jar — up the road, quickly!', {
+        expression: 'worried',
         next: 'send3',
       }),
       say(
@@ -214,6 +218,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'salome',
         'Welcome, traveler. You look pale. Did something happen on the road?',
         {
+          expression: 'worried',
           choices: [
             opt('tell', 'A man was lying hurt below the bend. I didn’t stop.', 'hurry2', {
               effects: [
@@ -229,12 +234,14 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('hurry2', 'salome', 'Then we’ll help him now. Asher! The donkey — quickly!', {
+        expression: 'worried',
         next: 'hurry2b',
       }),
       say(
         'hurry2b',
         'salome',
         'Being afraid on that road is nothing to be ashamed of. And telling someone was a good next step.',
+        { expression: 'glad' },
       ),
       say('hurry3', 'salome', 'Hm. Rest a while, then.'),
     ],
@@ -249,13 +256,13 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'mi1',
         'menashe',
         'Salome says I’ll walk again in a few days. I’d still be lying up on that road if you hadn’t come.',
-        { next: 'mi2' },
+        { expression: 'glad', next: 'mi2' },
       ),
       say(
         'cloak',
         'menashe',
         'Your cloak — I’ll bring it back to you in Jerusalem, I promise. With a flask of my best oil.',
-        { next: 'mi2' },
+        { expression: 'glad', next: 'mi2' },
       ),
       say('mi2', 'menashe', 'You’re still here? Don’t you have a remedy to deliver?', {
         choices: [
@@ -267,7 +274,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'mi3',
         'menashe',
         'I will. When I’m back on my feet I’ll go home to Samaria and tell my family that a young Judean stopped for me on the Jericho road. They won’t believe it.',
-        { next: 'mi2' },
+        { expression: 'glad', next: 'mi2' },
       ),
     ],
   },
@@ -280,12 +287,13 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'm1',
         'malik',
         'My donkeys have carried spices, cloth, and once a very rude goat. A robbed Samaritan is an easy load.',
-        { next: 'm2' },
+        { expression: 'glad', next: 'm2' },
       ),
       say(
         'm2',
         'malik',
         'You did a brave thing on that road, little one. Now go — Rivka is waiting.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -327,6 +335,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
     start: 'day',
     nodes: [
       say('day', 'rivka', 'Miriam’s {player}? Oh, thank God you’re here. Come in, come in!', {
+        expression: 'glad',
         effects: [{ type: 'setFlag', flag: 'remedy-on-time', value: true }],
         next: 'deliver',
       }),
@@ -335,11 +344,13 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'rivka',
         'Who’s there with a lamp at this hour — oh! Miriam’s {player}! You walked in the dark?',
         {
+          expression: 'surprised',
           effects: [{ type: 'setFlag', flag: 'remedy-lamplight', value: true }],
           next: 'deliver',
         },
       ),
       say('dawn', 'rivka', 'Miriam’s {player}! At first light! I was starting to worry.', {
+        expression: 'glad',
         effects: [{ type: 'setFlag', flag: 'remedy-morning', value: true }],
         next: 'deliver',
       }),
@@ -356,13 +367,13 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'natan-day',
         'rivka',
         'Natan’s fever is still hanging on. I’ll prepare this for him right away. Miriam thinks of everything.',
-        { next: 'road' },
+        { expression: 'worried', next: 'road' },
       ),
       say(
         'natan-dawn',
         'rivka',
         'Natan slept badly, poor thing, but he’s no worse. I’ll prepare this for him right away.',
-        { next: 'road' },
+        { expression: 'worried', next: 'road' },
       ),
       say(
         'road',
@@ -386,7 +397,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'told-helped',
         'rivka',
         'And you stopped for him? On that road? Miriam raised you well.',
-        { next: 'yair' },
+        { expression: 'glad', next: 'yair' },
       ),
       say('told-sent', 'rivka', 'And you found a way to get help to him. Good.', { next: 'yair' }),
       say(
@@ -410,6 +421,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'after',
         'rivka',
         'Natan is already asking for bread. That’s a good sign. Rest here as long as you like.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -477,7 +489,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'y6',
         'yair',
         'That’s what everyone around me whispered! Nobody expected the Samaritan to be the one who stopped.',
-        { next: 'y7' },
+        { expression: 'surprised', next: 'y7' },
       ),
       say(
         'y7',
@@ -538,7 +550,9 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
           choices: [opt('ok', 'The road is dangerous — but I made it.')],
         },
       ),
-      say('after', 'natan', 'Mama says the medicine tastes terrible. That means it works, right?'),
+      say('after', 'natan', 'Mama says the medicine tastes terrible. That means it works, right?', {
+        expression: 'glad',
+      }),
     ],
   },
 ];

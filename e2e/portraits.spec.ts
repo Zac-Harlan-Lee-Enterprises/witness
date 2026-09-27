@@ -40,6 +40,15 @@ test('rendered portraits load in the look picker, chapter select and conversatio
   await expect(page.locator('#dialogue-speaker')).toContainText('Aunt Miriam');
   const portrait = box.locator('.dialogue__portrait img.portrait');
   await expect(portrait).toHaveAttribute('data-portrait', 'miriam');
+  // Her first line is glad, a face held back for now (HELD_BACK_EXPRESSIONS):
+  // her neutral portrait stands in. Her next line is worried, from its own file.
+  await expect(portrait).toHaveAttribute('data-expression', 'neutral');
+  await expectLoaded(portrait);
+  await expect(portrait).toHaveAttribute('src', /\/art\/portraits\/miriam-256\.webp$/);
+  if (await box.getByRole('button', { name: 'Show all text' }).isVisible())
+    await box.getByRole('button', { name: 'Show all text' }).click();
+  await box.getByRole('button', { name: 'Continue' }).click();
+  await expect(portrait).toHaveAttribute('data-expression', 'worried');
   await expectLoaded(portrait);
   expect(failed).toEqual([]);
 });

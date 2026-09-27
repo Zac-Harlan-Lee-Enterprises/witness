@@ -20,6 +20,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'malik',
         'Peace to you, young traveler! Malik — trader in spices, cloth and useful advice. Are you buying, or asking?',
         {
+          expression: 'glad',
           choices: [
             opt('road', 'I’m walking to Jericho today. What’s the road like?', 'road1', {
               once: true,
@@ -60,6 +61,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'malik',
         'Ha! A careful one. Very well — my people will keep their eyes open for a young traveler with a satchel. Out there, travelers must look after each other.',
         {
+          expression: 'glad',
           effects: [
             { type: 'recordChoice', choice: 'choice-malik', option: 'asked' },
             { type: 'setFlag', flag: 'malik-watching', value: true },
@@ -165,6 +167,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'tobiah',
         'Jericho? Easy! Take the wadi. It’s the fastest way down — everyone knows that.',
         {
+          expression: 'glad',
           effects: [{ type: 'discoverClue', clue: 'clue-wadi-fastest' }],
           choices: [
             opt('walked', 'Have you walked the wadi yourself?', 't2', { once: true }),
@@ -177,6 +180,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'tobiah',
         'Me? Well… no. I drive my cart. Carts stay on the main road, obviously. But I’ve HEARD it’s fastest!',
         {
+          expression: 'surprised',
           effects: [{ type: 'setFlag', flag: 'tobiah-admitted', value: true }],
           next: 't3',
         },
@@ -192,6 +196,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
     start: 'h1',
     nodes: [
       say('h1', 'hadassah', 'Linen! Fine linen, clean and strong! Oh — hello, dear. Buying?', {
+        expression: 'glad',
         choices: [
           opt('use', 'What could I use linen for on a journey?', 'h2', { once: true }),
           opt('buy', 'I’ll buy some linen strips.', 'h3', {
@@ -222,7 +227,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'h3',
         'hadassah',
         'There you are. May you never need them for anything worse than bread.',
-        { next: 'h1' },
+        { expression: 'glad', next: 'h1' },
       ),
       say(
         'h4',
@@ -271,6 +276,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'ezer',
         'Cheated! I paid for four measures of oil, and that jar didn’t hold four. I measured it myself!',
         {
+          expression: 'angry',
           effects: [
             { type: 'startQuest', quest: 'q-honest-measure' },
             { type: 'setFlag', flag: 'heard-ezer', value: true },
@@ -279,6 +285,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('e2', 'ezer', 'Well? Are you going to stand there, or say something?', {
+        expression: 'angry',
         choices: [
           opt('how', 'How did you measure it?', 'e3', { once: true }),
           opt('mistake', 'Could it have been a mistake?', 'e4', { once: true }),
@@ -290,7 +297,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'e3',
         'ezer',
         'I poured it into my big crock. It holds five measures. The oil didn’t come near the top!',
-        { next: 'e3b' },
+        { expression: 'angry', next: 'e3b' },
       ),
       say(
         'e3b',
@@ -305,7 +312,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'e4',
         'ezer',
         'A mistake? Hmph. Maybe. But he’s a Samaritan. How would I know he’s honest?',
-        { next: 'e2' },
+        { expression: 'angry', next: 'e2' },
       ),
       say(
         'e5',
@@ -336,6 +343,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         { next: 'reveal3' },
       ),
       say('reveal3', 'ezer', '…It’s a full measure. I was wrong.', {
+        expression: 'sad',
         choices: [
           opt('tell', 'Maybe you could tell him that yourself.', 'reveal4'),
           opt('mistakes', 'Everyone makes mistakes.', 'reveal4'),
@@ -354,14 +362,13 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'reveal5',
         'menashe',
         'Thank you, friend. Here — a small flask of my oil for your journey. The road is long.',
-        {
-          effects: [{ type: 'giveItem', item: 'oil' }],
-        },
+        { expression: 'glad', effects: [{ type: 'giveItem', item: 'oil' }] },
       ),
       say(
         'after',
         'ezer',
         'Next time I’ll measure before I shout. Tell Menashe his oil is welcome at my bakery.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -381,6 +388,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'menashe',
         'Please — I’m not trying to cheat anyone. Four measures, fair and full. I filled that jar myself.',
         {
+          expression: 'worried',
           effects: [
             { type: 'setFlag', flag: 'heard-menashe', value: true },
             { type: 'startQuest', quest: 'q-honest-measure' },
@@ -402,7 +410,7 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'm3',
         'menashe',
         'From near Shechem, in Samaria. I bring oil south to Jerusalem, then on down to Jericho. Not everyone here is glad to see a Samaritan.',
-        { next: 'm2' },
+        { expression: 'sad', next: 'm2' },
       ),
       say(
         'm4',
@@ -425,9 +433,13 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('m4b', 'menashe', 'Thank you. You’re the first customer who’s smiled at me today.', {
+        expression: 'glad',
         next: 'm2',
       }),
-      say('m5', 'menashe', 'Prove it? How? Ezer won’t believe anything I say.', { next: 'm6' }),
+      say('m5', 'menashe', 'Prove it? How? Ezer won’t believe anything I say.', {
+        expression: 'worried',
+        next: 'm6',
+      }),
       say(
         'm6',
         'narrator',
@@ -438,12 +450,13 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'waiting',
         'menashe',
         'Any luck with Ezer? I’d rather settle this than lose a customer — and my good name.',
-        { next: 'm2' },
+        { expression: 'worried', next: 'm2' },
       ),
       say(
         'thanks',
         'menashe',
         'Thanks to you, Ezer shook my hand. I won’t forget that. Go safely on the road, friend.',
+        { expression: 'glad' },
       ),
     ],
   },

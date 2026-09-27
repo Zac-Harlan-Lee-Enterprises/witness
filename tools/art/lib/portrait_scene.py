@@ -37,7 +37,7 @@ def _area(name, loc, target, size, energy, color, size_y=None, shape="DISK"):
 
 
 class Studio:
-    def __init__(self, scene, focus, turn_deg=22.0, frame_cm=31.0, centre=(0.0, 0.0, -1.2), size=512, samples=256):
+    def __init__(self, scene, focus, turn_deg=22.0, frame_cm=31.0, centre=(0.0, 0.0, -1.2), size=512, samples=256, elev_cm=3.5, roll_deg=0.0):
         self.scene = scene
         r = scene.render
         r.resolution_x = size
@@ -55,7 +55,7 @@ class Studio:
         scene.cycles_curves.subdivisions = 2
         scene.view_settings.view_transform = "AgX"
         scene.view_settings.look = "AgX - Medium High Contrast"
-        scene.view_settings.exposure = 0.2
+        scene.view_settings.exposure = -0.1
         # Camera: 85 mm on full frame, far enough back to frame head and shoulders.
         cam_data = bpy.data.cameras.new("PortraitCam")
         cam_data.lens = 85.0
@@ -66,8 +66,11 @@ class Studio:
         c = Vector(centre) * CM
         cam = bpy.data.objects.new("PortraitCam", cam_data)
         scene.collection.objects.link(cam)
-        cam.location = c + Vector((math.sin(a) * dist, -math.cos(a) * dist, 0.035))
+        cam.location = c + Vector((math.sin(a) * dist, -math.cos(a) * dist, elev_cm * CM))
         _look(cam, c)
+        if roll_deg:
+            # A slight tilt of the head (the out-of-focus wall hides that it is the camera).
+            cam.rotation_euler.rotate_axis("Z", math.radians(roll_deg))
         cam_data.dof.use_dof = True
         cam_data.dof.focus_distance = (Vector(focus) - cam.location).length
         cam_data.dof.aperture_fstop = 3.2
@@ -75,6 +78,8 @@ class Studio:
         scene.camera = cam
         self.camera = cam
         self.distance = dist
+        self.centre = c
+
         head = c + Vector((0, 0, 0.03))
         side = -1.0 if turn_deg >= 0 else 1.0  # the side away from the camera
 
@@ -91,10 +96,10 @@ class Studio:
         # the open sky (warm key, cool fill: the colour of shadow in daylight).
         _area("Fill", at(-80, 8, 1.4), head, 1.8, 9.0, "#d4dcea")
         # Rim: behind, on the shadow side, to separate hair and shoulder from the wall.
-        _area("Rim", at(-150, 32, 1.1), head + Vector((0, 0.05, 0)), 0.35, 30.0, "#ffe2bc", size_y=1.1)
+        _area("Rim", at(-150, 32, 1.1), head + Vector((0, 0.05, 0)), 0.35, 42.0, "#ffe2bc", size_y=1.1)
         # A soft pool of light on the wall behind, brighter on the lit side.
         wall_at = at(35, 30, 1.0)
-        _area("Wall", Vector((wall_at.x, -0.2, 0.8)), Vector((wall_at.x * 0.4, 1.6, 0.0)), 1.2, 26.0, "#ffd9a8")
+        _area("Wall", Vector((wall_at.x, -0.2, 0.8)), Vector((wall_at.x * 0.4, 1.6, 0.0)), 1.2, 15.0, "#ffd9a8")
         # The wall.
         bpy.ops.mesh.primitive_plane_add(size=6.0, location=(0.0, 1.6, 0.0), rotation=(math.pi / 2, 0, 0))
         wall = bpy.context.object
@@ -123,3 +128,10 @@ class Studio:
         nt.links.new(sep.outputs["Z"], ramp.inputs["Fac"])
         nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
         bg.inputs["Strength"].default_value = 0.35
+
+    def view(self, turn_deg, elev_cm):
+        """Review: move the camera round the same point (the lights stay)."""
+        a = math.radians(turn_deg)
+        cam = self.camera
+        cam.location = self.centre + Vector((math.sin(a) * self.distance, -math.cos(a) * self.distance, elev_cm * CM))
+        _look(cam, self.centre)

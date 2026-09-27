@@ -1,10 +1,12 @@
 {
   "ami": {
     "appearance": "#b07a50|#2a1a12|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "ammia": {
     "appearance": "#a8744c|#3a2c22|#7a3228|#e2c27a|veil|#e8dcc0|clean|elder|basket",
+    "expressions": ["sad", "worried"],
     "kind": "character"
   },
   "amram": {
@@ -13,6 +15,7 @@
   },
   "asa": {
     "appearance": "#946040|#2a1a10|#8a7a5c|#4f6a7a|band|#6f4a2c|beard|adult|bundle",
+    "expressions": ["sad"],
     "kind": "character"
   },
   "attalos": {
@@ -21,6 +24,7 @@
   },
   "chrysis": {
     "appearance": "#8f5f3f|#1a1210|#7a6a58|#6a2a4f|scarf|#6a5a48|clean|adult|none",
+    "expressions": ["sad"],
     "kind": "character"
   },
   "dinah": {
@@ -29,10 +33,12 @@
   },
   "elazar": {
     "appearance": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "ezer": {
     "appearance": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
+    "expressions": ["angry", "sad"],
     "kind": "character"
   },
   "hadassah": {
@@ -57,6 +63,7 @@
   },
   "kallias.letter-from-paul": {
     "appearance": "#b07a50|#2a1c12|#8a6a4a|#9a2e28|none|#8a6a4a|clean|adult|none",
+    "expressions": ["sad", "worried"],
     "kind": "character"
   },
   "malik": {
@@ -69,10 +76,12 @@
   },
   "menashe": {
     "appearance": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
+    "expressions": ["sad", "worried"],
     "kind": "character"
   },
   "miriam": {
     "appearance": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "natan": {
@@ -81,6 +90,7 @@
   },
   "nikanor": {
     "appearance": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
+    "expressions": ["sad"],
     "kind": "character"
   },
   "nikon": {
@@ -113,18 +123,22 @@
   },
   "rivka": {
     "appearance": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "salome": {
     "appearance": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "shelomit": {
     "appearance": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "shifra": {
     "appearance": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
+    "expressions": ["sad", "worried"],
     "kind": "character"
   },
   "shimon": {
@@ -133,6 +147,7 @@
   },
   "tamar": {
     "appearance": "#9a6440|#1a1210|#8f3f2f|#e2b555|scarf|#c96f3b|clean|adult|net",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "tamar.journey-to-bethlehem": {
@@ -153,10 +168,12 @@
   },
   "yoezer": {
     "appearance": "#7a4a2e|#2a1a10|#6b5a3a|#8a6a4a|band|#5a4a3a|beard|adult|jar",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "yonatan": {
     "appearance": "#8d5a3a|#1f1611|#8b7a5a|#a8322a|scarf|#d8c49a|clean|adult|staff",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "yoram": {
@@ -165,10 +182,12 @@
   },
   "zenon": {
     "appearance": "#9a6a45|#3a3028|#e6dcc4|#35527a|none|#e6dcc4|beard|adult|tablets",
+    "expressions": ["worried"],
     "kind": "character"
   },
   "zerah": {
     "appearance": "#946040|#cfc8bb|#7a6448|#2f5590|wrap|#c9b48a|beard|elder|lamp",
+    "expressions": ["sad", "worried"],
     "kind": "character"
   }
 }

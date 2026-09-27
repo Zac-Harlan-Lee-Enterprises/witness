@@ -6,14 +6,26 @@ import { DIALOGUE_SPEEDS } from '@/domain/settings';
 import { ContentKindBadge } from '../common/ContentBlock';
 import { useSettings, useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
-import { Portrait } from '../common/Portrait';
-import { preloadPortraits } from '../portraits/portrait-art';
+import { Portrait, type PortraitSource } from '../common/Portrait';
+import { portraitImage, preloadPortraits } from '../portraits/portrait-art';
 import type { GameRuntimeLike } from '../game/types';
 import { prefersReducedMotionSetting } from '../game/motion';
 
-/** The speaker's portrait (CSS px; smaller on phones, see app.css). */
+interface Shown {
+  speaker: string;
+  picture: PortraitSource;
+}
+
+/**
+ * The speaker's portrait (CSS px): 104, larger on wide screens so faces can
+ * be read, smaller on phones and with large text (see app.css, which sets
+ * the displayed size; `sizes` tells the browser which file to fetch).
+ */
 const PORTRAIT_SIZE = 104;
 const PORTRAIT_SIZE_LARGE_TEXT = 72;
+const PORTRAIT_SIZES =
+  '(max-width: 640px) 60px, (min-width: 1100px) and (min-height: 720px) 152px, 104px';
+const PORTRAIT_SIZES_LARGE_TEXT = '(max-width: 640px) 60px, 72px';
 
 /**
  * The conversation box. Text reveals at the chosen speed (or instantly), but
@@ -32,6 +44,42 @@ export function DialogueOverlay({ runtime }: { runtime: GameRuntimeLike }) {
     // Everyone who may speak in this chapter, so their portraits show at once.
     preloadPortraits(chapter.characters, PORTRAIT_SIZE);
   }, [chapter]);
+  const dialogueId = view?.dialogueId ?? null;
+  useEffect(() => {
+    // When a conversation opens, the faces its lines will need.
+    const dialogue = dialogueId ? chapter.dialogues.find((d) => d.id === dialogueId) : undefined;
+    if (!dialogue) return;
+    const faces = dialogue.nodes.flatMap((n) => {
+      if (n.expression === 'neutral') return [];
+      const c = chapter.characters.find((x) => x.id === n.speaker);
+      return c ? [{ appearance: c.appearance, id: c.id, expression: n.expression }] : [];
+    });
+    preloadPortraits(faces, PORTRAIT_SIZE);
+  }, [chapter, dialogueId]);
+  // The picture the last line showed, so a change of face on the same
+  // speaker cross-fades (the box itself is re-created for every line).
+  // Kept in state and updated when the line changes, as React allows
+  // (remembering a value from the previous render).
+  const art =
+    view?.speaker.appearance && view.speaker.kind === 'character'
+      ? portraitImage(view.speaker.appearance, view.speaker.id, view.expression)
+      : null;
+  const line = view ? `${view.dialogueId}/${view.nodeId}` : null;
+  const now: Shown | null =
+    view && art
+      ? { speaker: view.speaker.id, picture: { src: art.src, srcSet: art.srcSet } }
+      : null;
+  const [track, setTrack] = useState<{
+    line: string | null;
+    now: Shown | null;
+    before: Shown | null;
+  }>({ line: null, now: null, before: null });
+  if (track.line !== line) setTrack({ line, now, before: track.now });
+  const before = track.line === line ? track.before : track.now;
+  const fadeFrom =
+    now && before?.speaker === now.speaker && before.picture.src !== now.picture.src
+      ? before.picture
+      : null;
   const spoken = view ? `${speakerLabel(view) ? `${speakerLabel(view)}: ` : ''}${view.text}` : '';
   return (
     <>
@@ -39,7 +87,12 @@ export function DialogueOverlay({ runtime }: { runtime: GameRuntimeLike }) {
         {spoken}
       </p>
       {view && (
-        <DialogueBox key={`${view.dialogueId}/${view.nodeId}`} view={view} runtime={runtime} />
+        <DialogueBox
+          key={`${view.dialogueId}/${view.nodeId}`}
+          view={view}
+          runtime={runtime}
+          fadeFrom={fadeFrom}
+        />
       )}
     </>
   );
@@ -67,7 +120,15 @@ function useTypewriter(text: string): { shown: string; done: boolean; skip: () =
   };
 }
 
-function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRuntimeLike }) {
+function DialogueBox({
+  view,
+  runtime,
+  fadeFrom,
+}: {
+  view: DialogueView;
+  runtime: GameRuntimeLike;
+  fadeFrom: PortraitSource | null;
+}) {
   const { shown, done, skip } = useTypewriter(view.text);
   const firstAction = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLElement>(null);
@@ -101,11 +162,16 @@ function DialogueBox({ view, runtime }: { view: DialogueView; runtime: GameRunti
       aria-modal="false"
       aria-labelledby="dialogue-speaker"
     >
-      <div className="dialogue__portrait">
+      <div
+        className={`dialogue__portrait${settings.textScale > 1.4 ? '' : ' dialogue__portrait--grow'}`}
+      >
         <Portrait
           appearance={view.speaker.appearance}
           characterId={view.speaker.kind === 'character' ? view.speaker.id : null}
+          expression={view.speaker.kind === 'character' ? view.expression : 'neutral'}
           size={settings.textScale > 1.4 ? PORTRAIT_SIZE_LARGE_TEXT : PORTRAIT_SIZE}
+          sizes={settings.textScale > 1.4 ? PORTRAIT_SIZES_LARGE_TEXT : PORTRAIT_SIZES}
+          fadeFrom={fadeFrom}
         />
       </div>
       <div className="dialogue__main">

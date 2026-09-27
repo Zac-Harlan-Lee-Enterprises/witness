@@ -8,18 +8,19 @@
  *   node scripts/art-build.mjs places              # render every place in PLACES (below)
  *   npm run art:market                             # = place jerusalem-market (≈ 6 min on an M3 Pro)
  *   npm run art:people                             # every person those places need (only what is missing)
- *   node scripts/art-build.mjs people-low          # half-resolution people sheets for phones (no rendering)
- *   node scripts/art-build.mjs people-shadows      # cast shadows that fade out past their box, not at it (no rendering)
  *   npm run art:portrait-data                      # export everyone who speaks, in every chapter
- *   npm run art:portraits                          # render public/art/portraits (≈ 2 min a person)
- *   npm run art:portraits -- --who miriam player:look-1   # just some people
+ *   npm run art:fetch-makehuman                    # MakeHuman's CC0 model data, for the portraits
+ *   npm run art:portraits                          # every portrait and expression (≈ 80 s each; two Blenders at once)
+ *   npm run art:portraits -- --who miriam player:look-1 --expression neutral   # just some
+ *   npm run art:portraits -- --missing --jobs 3     # only what is missing or out of date
  *   node scripts/art-build.mjs probe <scene-id> x0 y0 x1 y1 [ppu]   # a quick beauty render for review
  *
  * Extra arguments after the job are passed to the Blender script
  * (for example --variants day, --samples 32, --only menashe~sit, --who miriam).
  */
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const CANDIDATES = [
   process.env.BLENDER,
@@ -64,6 +65,118 @@ const SAMPLES = {
   'ammia-workshop': '512',
   'philemon-house': '640',
 };
+
+/**
+ * Portraits: one Blender per person and expression (a person's neutral
+ * portrait first, then their expressions, which reuse its skin
+ * calibration), several people at once. A Blender that crashes (Metal can,
+ * now and then, when it compiles its kernels) is run again.
+ */
+async function portraits(args) {
+  const take = (flag, many = false) => {
+    const i = args.indexOf(flag);
+    if (i < 0) return null;
+    const vals = [];
+    let j = i + 1;
+    for (; j < args.length && !args[j].startsWith('--'); j++) vals.push(args[j]);
+    args.splice(i, many ? j - i : Math.min(2, j - i));
+    return many ? vals : (vals[0] ?? true);
+  };
+  const jobsN = Number(take('--jobs') ?? 2);
+  const who = take('--who', true);
+  const expression = take('--expression') ?? 'all';
+  const missing = take('--missing') === true;
+  const data = JSON.parse(readFileSync('tools/art/data/portrait-people.json', 'utf8'));
+  const OUT = 'public/art/portraits';
+  const MANIFEST = 'src/features/portraits/portrait-manifest.json';
+  const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : {};
+  const people = [
+    ...data.characters.map((c) => ({ who: c.id, pid: c.id, key: c.key, exprs: c.expressions })),
+    ...data.players.map((p) => ({
+      who: `player:${p.id}`,
+      pid: `player-${p.id}`,
+      key: p.key,
+      exprs: [],
+    })),
+  ].filter((p) => !who || who.includes(p.who));
+  const done = (p, e) => {
+    const entry = manifest[p.pid];
+    if (!entry || entry.appearance !== p.key) return false;
+    if (e !== 'neutral' && !(entry.expressions ?? []).includes(e)) return false;
+    const dir = e === 'neutral' ? OUT : join(OUT, e);
+    return existsSync(join(dir, `${p.pid}-512.webp`));
+  };
+  const chains = people
+    .map((p) => {
+      const exprs = expression === 'all' ? ['neutral', ...p.exprs] : expression.split(',');
+      return { p, tasks: exprs.filter((e) => !(missing && done(p, e))) };
+    })
+    .filter((c) => c.tasks.length > 0);
+  const total = chains.reduce((n, c) => n + c.tasks.length, 0);
+  let finished = 0;
+  let failed = 0;
+  const one = (p, e) =>
+    new Promise((resolve) => {
+      const child = spawn(
+        blender,
+        [
+          '-b',
+          '--factory-startup',
+          '-P',
+          'tools/art/build_portraits.py',
+          '--',
+          '--out',
+          OUT,
+          '--manifest',
+          MANIFEST,
+          '--who',
+          p.who,
+          '--expression',
+          e,
+          ...args,
+        ],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+      let log = '';
+      child.stdout.on('data', (d) => (log += d));
+      child.stderr.on('data', (d) => (log += d));
+      child.on('close', (code) => {
+        // Each Blender's own log, for when something goes wrong.
+        mkdirSync('.logs/portraits', { recursive: true });
+        writeFileSync(join('.logs/portraits', `${p.pid}~${e}.log`), log);
+        resolve({ code, log });
+      });
+    });
+  const run = async (chain) => {
+    for (const e of chain.tasks) {
+      let result = { code: 1, log: '' };
+      for (let attempt = 1; attempt <= 3 && result.code !== 0; attempt++) {
+        result = await one(chain.p, e);
+        if (result.code !== 0)
+          console.log(`  ${chain.p.pid} ${e}: attempt ${attempt} failed (${result.code})`);
+      }
+      finished++;
+      const check = result.log.split('\n').find((l) => l.includes('[portrait] CHECK'));
+      if (result.code !== 0) {
+        failed++;
+        console.log(
+          `[${finished}/${total}] FAILED ${chain.p.pid} ${e}\n${result.log.split('\n').slice(-15).join('\n')}`,
+        );
+      } else
+        console.log(
+          `[${finished}/${total}] ${chain.p.pid} ${e}${check ? `  ${check.slice(check.indexOf('{'))}` : ''}`,
+        );
+    }
+  };
+  const queue = [...chains];
+  await Promise.all(
+    Array.from({ length: Math.max(1, jobsN) }, async () => {
+      for (let c = queue.shift(); c; c = queue.shift()) await run(c);
+    }),
+  );
+  console.log(`portraits: ${total - failed} rendered, ${failed} failed`);
+  return failed ? 1 : 0;
+}
 
 const [what, ...rest] = process.argv.slice(2);
 const blender = CANDIDATES.find((c) => existsSync(c));
@@ -117,13 +230,6 @@ const jobs = {
       ...rest,
     ],
   ],
-  // Half-resolution people sheets (phones) from the packed sheets, without
-  // rendering (only people whose low sheets are missing or out of date;
-  // --force redoes all). The people job makes them too, for what it renders.
-  'people-low': () => [['tools/art/downsample_people.py', 'public/art/people', ...rest]],
-  // A fading margin for cast-shadow frames whose shadow reaches their box's
-  // edge (no rendering; new renders get it as they are made).
-  'people-shadows': () => [['tools/art/shadow_margins.py', 'public/art/people', ...rest]],
   // Bring older renders up to date (tiled grounds, half-resolution pages) without rendering.
   upgrade: () => [
     [
@@ -133,17 +239,10 @@ const jobs = {
   ],
   // Everyone in tools/art/data/portrait-people.json (every character who
   // speaks in any chapter, and the player looks) unless --who is given; the
-  // manifest is bundled by src/features/portraits.
-  portraits: () => [
-    [
-      'tools/art/build_portraits.py',
-      '--out',
-      'public/art/portraits',
-      '--manifest',
-      'src/features/portraits/portrait-manifest.json',
-      ...rest,
-    ],
-  ],
+  // manifest is bundled by src/features/portraits. Everyone is rendered in a
+  // Blender of their own: a displaced head is millions of micro-polygons, and
+  // over a run of 43 in one process memory piled up until meshing a head
+  // took 17 minutes instead of 20 seconds.
   probe: () => {
     const [id, x0, y0, x1, y1, ppu = '1.5', ...extra] = rest;
     mkdirSync('test-results/art-probes', { recursive: true });
@@ -169,9 +268,12 @@ const jobs = {
   },
 };
 
+if (what === 'portraits') process.exit(await portraits([...rest]));
 const job = jobs[what];
 if (!job) {
-  console.error(`Usage: node scripts/art-build.mjs ${Object.keys(jobs).join('|')} [args]`);
+  console.error(
+    `Usage: node scripts/art-build.mjs ${[...Object.keys(jobs), 'portraits'].join('|')} [args]`,
+  );
   process.exit(1);
 }
 for (const args of job()) {

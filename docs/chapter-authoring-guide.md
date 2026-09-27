@@ -56,6 +56,7 @@ A scene ([src/domain/world.ts](../src/domain/world.ts)) is an ASCII `layout` plu
 - Dialogue ([src/domain/dialogue.ts](../src/domain/dialogue.ts)): nodes with `speaker` (character id, `player` or `narrator`), `text` (use `{player}` for the nickname — and keep the player ungendered), `effects`, `choices`, `next`, conditional `branches`, and dialogue-level conditional `entries`.
 - Choices: `when` hides a choice; `requires` + `unavailableText` shows it **disabled with the reason** — use this to make constraints visible ("You have no water left to clean his wounds").
 - Retelling Scripture? Use `kind: 'paraphrase'` with a `recordId` pointing at a paraphrase record.
+- A character's face on a line: add `expression` (`glad`, `worried`, `sad`, `angry`, `surprised` or `afraid`; `neutral` if omitted) where the feeling is clear from the words and the scene, e.g. `say('e1', 'ezer', 'Cheated! …', { expression: 'angry' })`. It is presentation only (which portrait is shown): never change a line's words for it. Then `npm run art:portrait-data` and `npm run art:portraits -- --missing` render the faces the lines now use ([portraits guide](art/portraits.md) §11); until then the neutral portrait stands in.
 - Avoid preachy exposition and "good answer vs. evil answer" choices. Give each option a real reason a thoughtful person might pick it, and a concrete consequence later.
 
 ## 5. The declarative language

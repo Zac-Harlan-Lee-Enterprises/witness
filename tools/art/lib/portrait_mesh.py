@@ -26,6 +26,22 @@ def from_arrays(name, V, quads, N=None, material=None, collection=None, scale=0.
     return obj
 
 
+def micro_displace(obj, pixel=1.0):
+    """Adaptive subdivision for true displacement: Cycles dices the mesh
+    into micro-polygons about `pixel` pixels across where the camera sees
+    it, and the material's displacement moves each one."""
+    mod = obj.modifiers.new("micro", "SUBSURF")
+    # Linear: the base mesh is already 0.75 mm and exact, and Catmull-Clark
+    # patches (OpenSubdiv) made dicing a 450k-quad head take up to 25 minutes.
+    mod.subdivision_type = "SIMPLE"
+    mod.levels = 0
+    mod.render_levels = 1
+    mod.use_adaptive_subdivision = True
+    mod.adaptive_space = "PIXEL"
+    mod.adaptive_pixel_size = pixel
+    return mod
+
+
 def orient_quads(V, quads, N):
     """Flip quads whose winding points against the field's normals."""
     a = V[quads[:, 0]]

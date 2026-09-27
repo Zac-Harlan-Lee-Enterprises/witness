@@ -4,13 +4,15 @@
  * tools/art/data/portrait-people.json):
  *
  * - every character who speaks in a chapter (src/content/portrait-cast.ts;
- *   biblical figures never get a close-up), with their name, role and how
- *   many lines they speak, so the build can cast them;
+ *   biblical figures never get a close-up), with their name, role, how
+ *   many lines they speak (so the build can cast them) and the expressions
+ *   their lines carry (each is rendered: `--expression all`);
  * - every player look.
  *
  *   npm run art:portrait-data
  */
 import { writeFileSync } from 'node:fs';
+import { format } from 'prettier';
 import { chapterSource } from '../src/content';
 import { portraitCast } from '../src/content/portrait-cast';
 import { appearanceKey } from '../src/domain/appearance-key';
@@ -49,6 +51,7 @@ const data = {
     name: s.character.name,
     role: s.character.role,
     lines: s.lines,
+    expressions: s.expressions,
     key: appearanceKey(s.character.appearance),
     appearance: dyed(s.character.appearance),
   })),
@@ -63,7 +66,8 @@ const data = {
     reason: s.reason,
   })),
 };
-writeFileSync(OUT, JSON.stringify(data, null, 2) + '\n');
+// Formatted as Prettier would (the repository checks formatting).
+writeFileSync(OUT, await format(JSON.stringify(data), { parser: 'json' }));
 console.log(
   `wrote ${OUT}: ${data.characters.length} characters in ${data.chapters.length} chapters, ` +
     `${data.players.length} player looks (${skipped.length} characters without a portrait)`,

@@ -1,7 +1,9 @@
 """Eyes: an eyeball with a recessed iris under a clear, refracting cornea,
-a wet tear line along the lower lid, and the pink caruncle in the inner
-corner. The eyes turn to look at the camera; the lids (portrait_head.py)
-stay where they are.
+and a wet tear line along the lower lid. The eyeball fills the socket of
+MakeHuman's head (its helper sphere); the lids and the pink inner corner are
+the head's own skin (portrait_mhhead.py, portrait_mhskin.py). Both eyes turn
+to look at one point (the camera, or a little away from it), so they
+converge.
 
 Built in the eye's own frame (the pupil looks along -Y), in metres.
 """
@@ -16,11 +18,9 @@ import common
 import portrait_materials as PM
 
 CM = 0.01
-IRIS_R = 0.6  # cm
-CORNEA_R = 0.74
 
 
-def _eyeball_mesh(name, R, col, material):
+def _eyeball_mesh(name, R, IRIS_R, col, material):
     """A sphere whose front is pressed in to a flat iris, slightly behind the cornea."""
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=96, v_segments=64, radius=R * CM)
@@ -40,7 +40,7 @@ def _eyeball_mesh(name, R, col, material):
     return obj
 
 
-def _cornea_mesh(name, R, col, material):
+def _cornea_mesh(name, R, IRIS_R, CORNEA_R, col, material):
     """The clear outer layer: the sclera's wet surface plus the corneal bulge."""
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=96, v_segments=64, radius=1.0)
@@ -69,46 +69,66 @@ class Eyes:
         self.P = params
         self.col = col
         self.objects = []
-        R = head.eye_r
-        iris_mat = PM.eye_inner(params.iris, params.seed, params.iris_kind, params.age_t)
+        self.pupils = {}  # side -> (centre m, pupil direction), for the gaze check
+        # The eyeball fills MakeHuman's eye socket (its helper sphere), a
+        # little inside it so the lids rest on the wet surface; the iris is
+        # sized to the opening between the lids, as a person's is.
+        R = head.eye_r - 0.03
+        iris_r = max(0.52, min(0.64, (0.25 + 0.03 * params.child) * head.fissure_width()))
+        self.iris_r = iris_r
+        cornea_r = iris_r * 1.28
+        iris_mat = PM.eye_inner(params.iris, params.seed, params.iris_kind, params.age_t, iris_r=iris_r)
         wet = PM.cornea()
+        # Both eyes look at the same point (the camera, or a point a few
+        # degrees from it), so they converge. The eyeball is fitted to the
+        # lid margins (portrait_mhhead), so looking straight at the camera
+        # already puts each pupil in its opening. One shared tilt, up or
+        # down, then sets how the lids frame the irises: the pupils a
+        # little above the middle of the openings, the upper lids just over
+        # the tops of the irises, as in a relaxed gaze.
+        centres = {sx: Vector(head.eye_centre(sx).tolist()) * CM for sx in (-1, 1)}
+        target = Vector(look_at)
+        pitch = 0.0
         for sx in (-1, 1):
-            c = Vector(head.eye_centre(sx).tolist()) * CM
-            ball = _eyeball_mesh(f"eye{sx}", R, col, iris_mat)
-            cornea = _cornea_mesh(f"cornea{sx}", R, col, wet)
+            c = centres[sx]
+            d = (target - c).normalized()
+            rest = (Vector(self._opening(sx).tolist()) * CM - c).normalized()
+            pitch += (math.asin(max(-1.0, min(1.0, rest.z))) - math.asin(max(-1.0, min(1.0, d.z)))) / 2
+        # (At most a few degrees: the camera is at the eyes' height.)
+        pitch = max(-math.radians(6), min(math.radians(6), pitch))
+        target = target + Vector((0, 0, math.tan(pitch) * (target - (centres[-1] + centres[1]) / 2).length))
+        for sx in (-1, 1):
+            c = centres[sx]
+            ball = _eyeball_mesh(f"eye{sx}", R, iris_r, col, iris_mat)
+            cornea = _cornea_mesh(f"cornea{sx}", R, iris_r, cornea_r, col, wet)
             # Shadows pass through the clear cornea, so the iris is lit.
             cornea.visible_shadow = False
-            # Aim the pupil at the camera (the eyes converge on it).
-            d = (Vector(look_at) - c).normalized()
+            d = (target - c).normalized()
             q = (-d).to_track_quat("Y", "Z")
+            self.pupils[sx] = (c.copy(), d.normalized(), R * CM)
             for o in (ball, cornea):
                 o.matrix_world = Matrix.Translation(c) @ q.to_matrix().to_4x4()
                 self.objects.append(o)
         self._tear_lines()
-        self._caruncles()
+
+    def _opening(self, sx):
+        """Where the pupil is when the eye looks straight ahead: the middle of
+        the opening between the lids, a little high, and a little toward
+        the nose."""
+        head = self.head
+        u = -0.06
+        up = head.lid_point(sx, u, upper=True, rest=True)
+        lo = head.lid_point(sx, u, upper=False, rest=True)
+        return lo + (up - lo) * 0.56
 
     def _tear_lines(self):
         """A thin wet meniscus where each lid meets the eye."""
         head = self.head
         mat = PM.tear()
         for sx in (-1, 1):
-            for upper, rad in ((False, 0.028),):
+            for upper, rad in ((False, 0.02),):
                 pts = [Vector(head.lid_point(sx, u, upper=upper, out=0.01).tolist()) * CM for u in np.linspace(-0.97, 0.97, 40)]
                 self.objects.append(_tube(f"tear{sx}{upper}", pts, rad * CM, self.col, mat))
-
-    def _caruncles(self):
-        head = self.head
-        mat = PM.caruncle(self.P.appearance["skin"])
-        for sx in (-1, 1):
-            p = Vector(head.lid_point(sx, -0.97, upper=False, out=0.0).tolist())
-            q = Vector(head.lid_point(sx, -0.97, upper=True, out=0.0).tolist())
-            c = (p + q) / 2 + Vector((sx * 0.06, -0.02, 0))
-            bm = bmesh.new()
-            bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=10, radius=1.0)
-            bmesh.ops.scale(bm, vec=Vector((0.12, 0.1, 0.16)) * CM, verts=bm.verts)
-            o = common.mesh_object(f"caruncle{sx}", bm, mat, self.col)
-            o.location = c * CM
-            self.objects.append(o)
 
 
 def _tube(name, pts, r, col, material, segments=8):

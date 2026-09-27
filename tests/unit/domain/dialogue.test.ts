@@ -3,8 +3,10 @@ import {
   continuationOf,
   danglingNodeRefs,
   DialogueError,
+  DialogueNodeSchema,
   DialogueSchema,
   entryNodeId,
+  EXPRESSIONS,
   findNode,
   interpolate,
   visibleChoices,
@@ -82,6 +84,22 @@ describe('dialogue engine', () => {
       nodes: [{ id: 'y', speaker: 'npc', text: 't', next: 'z' }],
     });
     expect(danglingNodeRefs(broken).sort()).toEqual(['x', 'z']);
+  });
+
+  it('gives every line a face: neutral unless the line says otherwise, and only a known one', () => {
+    expect(findNode(dialogue, 'hello').expression).toBe('neutral');
+    const angry = DialogueNodeSchema.parse({
+      id: 'e1',
+      speaker: 'ezer',
+      text: 'Cheated!',
+      expression: 'angry',
+    });
+    expect(angry.expression).toBe('angry');
+    expect(EXPRESSIONS[0]).toBe('neutral');
+    expect(
+      DialogueNodeSchema.safeParse({ id: 'x', speaker: 'ezer', text: '…', expression: 'smug' })
+        .success,
+    ).toBe(false);
   });
 
   it('interpolates the player name and leaves unknown tokens', () => {

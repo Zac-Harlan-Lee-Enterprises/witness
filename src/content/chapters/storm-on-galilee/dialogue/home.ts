@@ -17,6 +17,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'shelomit',
         '{player}! There you are. Come and sit a moment. Did you see the crowd down on the shore?',
         {
+          expression: 'glad',
           choices: [
             opt('c-who', 'So many people! Who are they listening to?', 'n3'),
             opt('c-seen', 'I saw. What’s going on?', 'n3'),
@@ -44,7 +45,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n5a',
         'shelomit',
         'You. You’re old enough to pull an oar, and sensible enough to keep your head. Mostly.',
-        { next: 'n6' },
+        { expression: 'glad', next: 'n6' },
       ),
       say('n5b', 'shelomit', 'Good. Then listen before you rush off.', { next: 'n6' }),
       say(
@@ -142,6 +143,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'shelomit',
         'Loaded and ready. Go carefully, {player}. The lake is kind — until it isn’t.',
         {
+          expression: 'worried',
           choices: [
             opt('will', 'I will.'),
             opt('worried', 'Are you worried?', 'bye2', { once: true }),
@@ -152,7 +154,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'bye2',
         'shelomit',
         'A little. Grandmothers worry; it’s our work. I’ll keep a lamp burning until you’re home.',
-        { next: 'bye' },
+        { expression: 'worried', next: 'bye' },
       ),
     ],
   },

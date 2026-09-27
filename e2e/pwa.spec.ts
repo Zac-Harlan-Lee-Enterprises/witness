@@ -33,6 +33,20 @@ test('installs a service worker and keeps working offline after the first visit'
   await newGame(page);
   await waitForWorld(page); // Phaser + chapter content come from the precache
   await expect(page.locator('.hud__scene')).toHaveText('Aunt Miriam’s house');
+  // Neutral portraits are precached; an expression never seen before can't
+  // load offline, so Aunt Miriam's neutral portrait stands in for it.
+  const box = page.locator('section.dialogue');
+  for (
+    let i = 0;
+    i < 3 && !(await page.locator('#dialogue-speaker').textContent())?.includes('Miriam');
+    i++
+  )
+    await box.getByRole('button', { name: /^(Continue|Show all text)$/ }).click();
+  const portrait = box.locator('.dialogue__portrait img.portrait');
+  await expect(portrait).toHaveAttribute('data-portrait', 'miriam');
+  await expect
+    .poll(() => portrait.evaluate((el: HTMLImageElement) => (el.complete ? el.naturalWidth : 0)))
+    .toBeGreaterThan(0);
   // Every place's morning art is precached: the house and the market are
   // drawn from it offline, not painted.
   await expect(page.locator('.viewport canvas')).toHaveAttribute('data-art', 'prerendered:day');

@@ -87,6 +87,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         { next: 'q1' },
       ),
       say('q1', 'menashe', 'Are they… are they gone?', {
+        expression: 'afraid',
         choices: [
           opt('sip', 'Here — have a sip of water.', 'q3', {
             once: true,
@@ -101,6 +102,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         ],
       }),
       say('q3', 'menashe', 'Thank you… thank you.', {
+        expression: 'glad',
         effects: [{ type: 'setFlag', flag: 'gave-sip', value: true }],
         next: 'q1',
       }),
@@ -128,25 +130,25 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'friend',
         'menashe',
         'You… it’s you. The one with the measures, from the market. Of all the people to come down this road.',
-        { next: 'explain' },
+        { expression: 'surprised', next: 'explain' },
       ),
       say(
         'known',
         'menashe',
         'I know you… from the market. You were there when Ezer was shouting at me.',
-        { next: 'explain' },
+        { expression: 'worried', next: 'explain' },
       ),
       say(
         'stranger',
         'menashe',
         'You don’t have to stop for me. I’m a Samaritan. I know what people say about us.',
-        { next: 'explain' },
+        { expression: 'sad', next: 'explain' },
       ),
       say(
         'explain',
         'menashe',
         'They came down from the rocks. Took my purse and my cloak, broke my oil jar. I twisted my ankle trying to run. I can’t walk far on it.',
-        { next: 'decide' },
+        { expression: 'worried', next: 'decide' },
       ),
       say(
         'decide',
@@ -267,6 +269,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         ],
       }),
       say('cloak-given', 'menashe', 'Your own cloak? I… don’t know what to say.', {
+        expression: 'surprised',
         next: 'care-end',
       }),
       say('care-end', 'narrator', 'That’s the best you can do here.', {
@@ -291,6 +294,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         { next: 'malik1' },
       ),
       say('malik1', 'malik', 'Ho! My young friend — and who is this? A Samaritan? Hm.', {
+        expression: 'surprised',
         choices: [
           opt('robbed', 'He was robbed. He needs help, whoever he is.', 'malik2'),
           opt('remind', 'You told me travelers must look after each other.', 'malik2'),
@@ -301,6 +305,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'malik',
         '…So I did. Up on the donkey with him, then — gently! We’ll all go down to the inn together.',
         {
+          expression: 'glad',
           effects: [
             { type: 'adjustTrust', character: 'malik', delta: 1 },
             { type: 'setFlag', flag: 'menashe-with-you', value: true },
@@ -334,9 +339,12 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         next: 'doubting',
       }),
       say('trusting', 'menashe', 'I believe you. Go — and hurry.', {
+        expression: 'worried',
         effects: [{ type: 'adjustTrust', character: 'menashe', delta: 1 }],
       }),
-      say('doubting', 'menashe', 'Will you really? …Go, then. I’ll wait. What else can I do?'),
+      say('doubting', 'menashe', 'Will you really? …Go, then. I’ll wait. What else can I do?', {
+        expression: 'sad',
+      }),
 
       // ── Hurrying on ──────────────────────────────────────────────────────
       say(
@@ -345,9 +353,9 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'You step back onto the road, heart pounding. Maybe someone else will come. Maybe it’s a trap. It’s hard to know what’s right when you’re afraid.',
         { next: 'hurry2' },
       ),
-      say('hurry2', 'menashe', '…Go, then.'),
+      say('hurry2', 'menashe', '…Go, then.', { expression: 'sad' }),
 
-      say('after', 'menashe', 'Please… hurry.'),
+      say('after', 'menashe', 'Please… hurry.', { expression: 'worried' }),
     ],
   },
   {

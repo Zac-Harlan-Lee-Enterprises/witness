@@ -27,6 +27,7 @@
     "art:data": "tsx scripts/export-art-data.ts",
     "art:market": "node scripts/art-build.mjs market",
     "art:people": "node scripts/art-build.mjs people",
+    "art:fetch-makehuman": "node scripts/fetch-makehuman.mjs",
     "art:portrait-data": "tsx scripts/export-portrait-data.ts",
     "art:portraits": "node scripts/art-build.mjs portraits",
     "art:portrait-sheets": "node scripts/portrait-sheets.mjs",

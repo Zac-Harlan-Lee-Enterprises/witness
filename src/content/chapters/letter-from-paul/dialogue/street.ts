@@ -56,6 +56,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'zenon',
         'Good morning, {player}. No errands for me today? Pity. I have a contract to copy and a hand that wants to rest.',
         {
+          expression: 'glad',
           choices: [
             opt('about', 'What do you do here, exactly?', 'about', { once: true }),
             askZenonAboutBundle('hello'),
@@ -133,7 +134,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'own',
         'zenon',
         'So she’d know it was really him. Anyone can pay a scribe. Only Kallias writes like a chicken walking through ink.',
-        { next: 'after' },
+        { expression: 'glad', next: 'after' },
       ),
       say(
         'bundle1',
@@ -171,6 +172,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'menandros',
         'Pots! Lamps! Good lamps for tonight — the whole assembly is going to Philemon’s, I hear.',
         {
+          expression: 'glad',
           choices: [
             opt('going', 'Are you going too?', 'm2', { once: true }),
             opt('bundle', 'Attalos has a letter with no name on it. Any idea whose?', 'm3', {
@@ -241,7 +243,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'a3',
         'attalos',
         'Good. Letters are like mules: they only get anywhere if somebody takes them. Ask me anything.',
-        { choices: investigate() },
+        { expression: 'glad', choices: investigate() },
       ),
       say('again', 'attalos', 'Any luck with that letter?', { choices: investigate() }),
       say(
@@ -276,11 +278,13 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'go-deliver',
         'attalos',
         'Tatia’s, is it? Would you take it to her? This mule has opinions about standing still.',
+        { expression: 'glad' },
       ),
       say(
         'thanks',
         'attalos',
         'Tatia has her letter? Good. I’m off down the Laodicea road this afternoon. If you’re going that way, I’ll be at the waystation by the bridge, waiting out the rain.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -322,9 +326,12 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         't-gathering',
         'tatia',
         'Wouldn’t miss it. A letter from Paul, read out to all of us! Epaphras told us so much about him.',
-        { next: 't1' },
+        { expression: 'glad', next: 't1' },
       ),
-      say('deliver', 'tatia', 'A letter for me? From Laodicea?', { next: 'deliver2' }),
+      say('deliver', 'tatia', 'A letter for me? From Laodicea?', {
+        expression: 'surprised',
+        next: 'deliver2',
+      }),
       say('deliver2', 'narrator', 'Tatia wipes the white dust off her hands and breaks the seal.', {
         effects: [
           { type: 'takeItem', item: 'bundle-letter' },
@@ -337,9 +344,10 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         'deliver3',
         'tatia',
         'It’s from my cloth merchant — twelve more cloaks next month! Thank you, {player}. And thank Attalos, when you see him.',
-        { next: 't1' },
+        { expression: 'glad', next: 't1' },
       ),
       say('after', 'tatia', 'Twelve cloaks! I’ll need another pair of hands.', {
+        expression: 'glad',
         choices: [
           opt('weather', 'Will it rain today?', 't-weather', { once: true }),
           opt('bye', 'Goodbye, Tatia.'),
@@ -364,6 +372,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         { next: 'together2' },
       ),
       say('together2', 'kallias', 'You go in first. I’ll be right behind you. …I will.', {
+        expression: 'worried',
         next: 'go',
       }),
       say(

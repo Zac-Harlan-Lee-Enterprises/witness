@@ -1,44 +1,96 @@
 import { useState } from 'react';
 import type { Appearance } from '@/domain/characters';
+import type { Expression } from '@/domain/dialogue';
 import { portraitImage } from '../portraits/portrait-art';
 
 /**
  * A person's portrait. Decorative: the speaker's name is always shown as text.
  *
  * A pre-rendered portrait (tools/art/build_portraits.py) is shown when one
- * exists for how the person looks now. It has a fixed size and a matching
- * background while it loads, so nothing moves. Otherwise (or if the image
- * cannot load) an original SVG drawn from the same Appearance data is shown.
+ * exists for how the person looks now, in the expression asked for (or
+ * neutral, if that expression wasn't rendered for them, or can't be loaded).
+ * It has a fixed size and a matching background while it loads, so nothing
+ * moves. Otherwise (or if no picture can be loaded) an original SVG drawn
+ * from the same Appearance data is shown.
+ *
+ * `fadeFrom` is the picture shown just before (the same person's previous
+ * line): it fades out over the new one, so a change of expression is a
+ * soft cross-fade. With reduced motion it is simply replaced.
  */
 const INK = '#2a170b';
+
+export interface PortraitSource {
+  src: string;
+  srcSet: string;
+}
+
+function reducedMotion(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.dataset.motion === 'reduce';
+}
 
 export function Portrait({
   appearance,
   size = 72,
   characterId = null,
+  expression = 'neutral',
+  sizes,
+  fadeFrom = null,
 }: {
   appearance: Appearance | null;
   size?: number;
   /** Whose portrait this is, when two people could look alike. */
   characterId?: string | null;
+  /** The face for the line being spoken. */
+  expression?: Expression;
+  /** The `sizes` the browser picks a file by (default: `size` px). */
+  sizes?: string;
+  /** The picture to cross-fade from (see above). */
+  fadeFrom?: PortraitSource | null;
 }) {
-  const [failed, setFailed] = useState<string | null>(null);
-  const art = appearance ? portraitImage(appearance, characterId) : null;
-  if (art && failed !== art.src) {
+  // Pictures that failed to load. An expression that can't load (offline,
+  // before it was ever cached) falls back to the neutral portrait, which is
+  // always precached; if that fails too, to the drawing.
+  const [failed, setFailed] = useState<readonly string[]>([]);
+  const wanted = appearance ? portraitImage(appearance, characterId, expression) : null;
+  const art =
+    wanted && failed.includes(wanted.src) && wanted.expression !== 'neutral' && appearance
+      ? portraitImage(appearance, characterId, 'neutral')
+      : wanted;
+  const [leaving, setLeaving] = useState<PortraitSource | null>(() =>
+    fadeFrom && art && fadeFrom.src !== art.src && !reducedMotion() ? fadeFrom : null,
+  );
+  if (art && !failed.includes(art.src)) {
     return (
-      <img
-        className="portrait portrait--rendered"
-        src={art.src}
-        srcSet={art.srcSet}
-        sizes={`${size}px`}
-        width={size}
-        height={size}
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        data-portrait={art.id}
-        onError={() => setFailed(art.src)}
-      />
+      <span className="portrait-stack">
+        <img
+          className="portrait portrait--rendered"
+          src={art.src}
+          srcSet={art.srcSet}
+          sizes={sizes ?? `${size}px`}
+          width={size}
+          height={size}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          data-portrait={art.id}
+          data-expression={art.expression}
+          onError={() => setFailed((f) => [...f, art.src])}
+        />
+        {leaving && (
+          <img
+            className="portrait--rendered portrait-leaving"
+            src={leaving.src}
+            srcSet={leaving.srcSet}
+            sizes={sizes ?? `${size}px`}
+            width={size}
+            height={size}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            onAnimationEnd={() => setLeaving(null)}
+          />
+        )}
+      </span>
     );
   }
   return <DrawnPortrait appearance={appearance} size={size} />;
