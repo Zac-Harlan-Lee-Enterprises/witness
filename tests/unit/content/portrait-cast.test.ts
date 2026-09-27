@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { portraitCast, speakerExpressions, speakerLines } from '@/content/portrait-cast';
+import {
+  HELD_BACK_EXPRESSIONS,
+  portraitCast,
+  speakerExpressions,
+  speakerLines,
+} from '@/content/portrait-cast';
 import type { Chapter } from '@/domain/chapter';
 import type { Appearance, Character } from '@/domain/characters';
 import type { Expression } from '@/domain/dialogue';
@@ -71,6 +76,23 @@ describe('portrait cast (who gets a rendered portrait)', () => {
       chapter('a', 1, [person('ezer')], [['ezer', 'sad'], 'ezer']),
     ]);
     expect(sitters[0]?.expressions).toEqual(['sad']);
+  });
+
+  it('renders no portrait for a held-back expression; the line keeps its annotation', () => {
+    const ch = chapter(
+      'a',
+      1,
+      [person('ezer')],
+      [
+        ['ezer', 'glad'],
+        ['ezer', 'angry'],
+        ['ezer', 'surprised'],
+        ['ezer', 'afraid'],
+      ],
+    );
+    expect(speakerExpressions(ch).get('ezer')).toEqual(['glad', 'angry', 'surprised', 'afraid']);
+    expect(portraitCast([ch]).sitters[0]?.expressions).toEqual(['angry']);
+    expect([...HELD_BACK_EXPRESSIONS].sort()).toEqual(['afraid', 'glad', 'surprised']);
   });
 
   it('casts everyone who speaks, and leaves out those who never do', () => {

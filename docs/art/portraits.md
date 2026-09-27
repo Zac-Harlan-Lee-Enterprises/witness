@@ -183,6 +183,12 @@ The person's own features are then moved from there: often a longer or higher-br
 
 A dialogue line may carry an `expression` ([`src/domain/dialogue.ts`](../../src/domain/dialogue.ts)): `neutral` (the default), `glad`, `worried`, `sad`, `angry`, `surprised` or `afraid`. It is presentation only: which portrait is shown. It never changes the words, the story's rules, Scripture text or any approval.
 
+**Held back (2026-09-27):** `glad`, `surprised` and `afraid` are not shipped yet (`HELD_BACK_EXPRESSIONS` in [`portrait-cast.ts`](../../src/content/portrait-cast.ts)).
+- Their first renders fell short. Most `glad` faces were a strained, crooked grin showing a thin strip of upper teeth; the open mouths of `surprised` and `afraid` looked like dentures.
+- Their lines keep the annotation and show the speaker's neutral portrait. Nothing is rendered for them until they are reworked.
+- To bring one back: remove it from the set, run `npm run art:portrait-data`, then `node scripts/art-build.mjs portraits --missing`.
+- `worried`, `sad` and `angry` are shipped.
+
 **Annotation.** 205 lines across the four chapters carry one, marked only where the feeling is clear from the words and the scene:
 
 | Expression | Lines |

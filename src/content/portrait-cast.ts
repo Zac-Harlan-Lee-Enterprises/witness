@@ -24,7 +24,10 @@ export interface PortraitSitter {
   chapterNumber: number;
   /** Lines the character speaks in the chapter. */
   lines: number;
-  /** The expressions (other than neutral) their lines carry, in EXPRESSIONS order: each needs a portrait. */
+  /**
+   * The expressions (other than neutral) their lines carry, in EXPRESSIONS
+   * order, less those held back: each needs a portrait.
+   */
   expressions: Expression[];
   character: Character;
 }
@@ -34,6 +37,18 @@ export interface SkippedSitter {
   chapterId: string;
   reason: 'biblical figure' | 'never speaks';
 }
+
+/**
+ * Expressions whose portraits are held back until they are reworked: the
+ * first MakeHuman renders of them read as strained grins (glad) and
+ * denture-like open mouths (surprised, afraid). Lines keep these
+ * annotations, and their speakers show their neutral portrait meanwhile.
+ */
+export const HELD_BACK_EXPRESSIONS: ReadonlySet<Expression> = new Set([
+  'glad',
+  'surprised',
+  'afraid',
+]);
 
 /** How many dialogue lines each speaker has in a chapter. */
 export function speakerLines(chapter: Chapter): Map<string, number> {
@@ -90,7 +105,9 @@ export function portraitCast(chapters: readonly Chapter[]): {
         chapterId: chapter.id,
         chapterNumber: chapter.number,
         lines: spoken,
-        expressions: expressions.get(character.id) ?? [],
+        expressions: (expressions.get(character.id) ?? []).filter(
+          (e) => !HELD_BACK_EXPRESSIONS.has(e),
+        ),
         character,
       });
     }

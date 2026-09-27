@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { chapterSource } from '@/content';
-import { portraitCast } from '@/content/portrait-cast';
+import { HELD_BACK_EXPRESSIONS, portraitCast } from '@/content/portrait-cast';
 import { appearanceKey } from '@/domain/appearance-key';
 import type { Chapter } from '@/domain/chapter';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
@@ -154,7 +154,7 @@ describe('portraits', () => {
     }
   });
 
-  it('every expression a speaker’s lines carry has a rendered portrait, in every size', () => {
+  it('every expression a speaker’s lines carry has a rendered portrait, in every size (held-back ones show neutral)', () => {
     const lines = chapters.flatMap((c) =>
       c.dialogues.flatMap((d) =>
         d.nodes
@@ -178,13 +178,15 @@ describe('portraits', () => {
         entries,
         '/',
       );
-      expect(art?.expression, `${sitter.portraitId} ${l.expression}`).toBe(l.expression);
+      // A held-back expression shows the speaker's neutral portrait until it is reworked.
+      const shown = HELD_BACK_EXPRESSIONS.has(l.expression) ? 'neutral' : l.expression;
+      expect(art?.expression, `${sitter.portraitId} ${l.expression}`).toBe(shown);
       for (const size of PORTRAIT_SIZES)
         expect(
           existsSync(
-            join(ROOT, 'public', portraitFolder(l.expression), `${sitter.portraitId}-${size}.webp`),
+            join(ROOT, 'public', portraitFolder(shown), `${sitter.portraitId}-${size}.webp`),
           ),
-          `${l.expression}/${sitter.portraitId}-${size}.webp`,
+          `${shown}/${sitter.portraitId}-${size}.webp`,
         ).toBe(true);
     }
   });
