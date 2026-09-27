@@ -13,6 +13,34 @@
       "target": "#ab7b55"
     }
   },
+  "ami~afraid": {
+    "gaze": {
+      "across": [0.524, 0.27],
+      "height": [0.54, 0.319],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.94,
+      "gain": [0.7199, 0.9753, 1.1301],
+      "measured": "#a87953",
+      "target": "#ab7b55"
+    }
+  },
+  "ami~glad": {
+    "gaze": {
+      "across": [0.524, 0.27],
+      "height": [0.495, 0.196],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.83,
+      "gain": [0.7199, 0.9753, 1.1301],
+      "measured": "#ad7d57",
+      "target": "#ab7b55"
+    }
+  },
   "ami~worried": {
     "gaze": {
       "across": [0.525, 0.271],
@@ -41,6 +69,20 @@
       "target": "#a37551"
     }
   },
+  "ammia~glad": {
+    "gaze": {
+      "across": [0.497, 0.317],
+      "height": [0.708, 0.345],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.41,
+      "gain": [0.8718, 1.0405, 1.0006],
+      "measured": "#a67550",
+      "target": "#a37551"
+    }
+  },
   "ammia~sad": {
     "gaze": {
       "across": [0.497, 0.317],
@@ -52,6 +94,20 @@
       "deltaE": 2.26,
       "gain": [0.8718, 1.0405, 1.0006],
       "measured": "#a0704b",
+      "target": "#a37551"
+    }
+  },
+  "ammia~surprised": {
+    "gaze": {
+      "across": [0.497, 0.317],
+      "height": [0.567, 0.283],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.94,
+      "gain": [0.8718, 1.0405, 1.0006],
+      "measured": "#9e704d",
       "target": "#a37551"
     }
   },
@@ -83,6 +139,20 @@
       "target": "#966b49"
     }
   },
+  "amram~glad": {
+    "gaze": {
+      "across": [0.493, 0.313],
+      "height": [0.094, -0.351],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.1,
+      "gain": [0.5595, 0.6685, 0.6372],
+      "measured": "#956946",
+      "target": "#966b49"
+    }
+  },
   "asa": {
     "gaze": {
       "across": [0.527, 0.314],
@@ -94,6 +164,20 @@
       "deltaE": 0.19,
       "gain": [0.689, 0.8572, 0.9822],
       "measured": "#906145",
+      "target": "#906144"
+    }
+  },
+  "asa~glad": {
+    "gaze": {
+      "across": [0.528, 0.314],
+      "height": [0.572, 0.47],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.69,
+      "gain": [0.689, 0.8572, 0.9822],
+      "measured": "#926345",
       "target": "#906144"
     }
   },
@@ -111,6 +195,20 @@
       "target": "#906144"
     }
   },
+  "asa~surprised": {
+    "gaze": {
+      "across": [0.527, 0.314],
+      "height": [0.479, 0.393],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.44,
+      "gain": [0.689, 0.8572, 0.9822],
+      "measured": "#8f6043",
+      "target": "#906144"
+    }
+  },
   "attalos": {
     "gaze": {
       "across": [0.511, 0.322],
@@ -122,6 +220,20 @@
       "deltaE": 0.45,
       "gain": [0.6371, 0.7459, 0.7094],
       "measured": "#855a3b",
+      "target": "#865b3c"
+    }
+  },
+  "attalos~glad": {
+    "gaze": {
+      "across": [0.511, 0.322],
+      "height": [0.653, 0.382],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.68,
+      "gain": [0.6371, 0.7459, 0.7094],
+      "measured": "#885c3c",
       "target": "#865b3c"
     }
   },
@@ -139,6 +251,20 @@
       "target": "#8b6043"
     }
   },
+  "chrysis~glad": {
+    "gaze": {
+      "across": [0.472, 0.373],
+      "height": [0.673, 0.481],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.21,
+      "gain": [0.601, 0.754, 0.8551],
+      "measured": "#8f6245",
+      "target": "#8b6043"
+    }
+  },
   "chrysis~sad": {
     "gaze": {
       "across": [0.472, 0.373],
@@ -150,6 +276,20 @@
       "deltaE": 1.07,
       "gain": [0.601, 0.754, 0.8551],
       "measured": "#895d41",
+      "target": "#8b6043"
+    }
+  },
+  "chrysis~surprised": {
+    "gaze": {
+      "across": [0.472, 0.373],
+      "height": [0.552, 0.402],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.77,
+      "gain": [0.601, 0.754, 0.8551],
+      "measured": "#8a5f43",
       "target": "#8b6043"
     }
   },
@@ -178,6 +318,48 @@
       "deltaE": 0.5,
       "gain": [0.7014, 0.7993, 0.7631],
       "measured": "#855637",
+      "target": "#865738"
+    }
+  },
+  "elazar~afraid": {
+    "gaze": {
+      "across": [0.502, 0.277],
+      "height": [0.636, 0.293],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.89,
+      "gain": [0.7014, 0.7993, 0.7631],
+      "measured": "#845536",
+      "target": "#865738"
+    }
+  },
+  "elazar~glad": {
+    "gaze": {
+      "across": [0.502, 0.277],
+      "height": [0.574, -3.23],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.53,
+      "gain": [0.7014, 0.7993, 0.7631],
+      "measured": "#885839",
+      "target": "#865738"
+    }
+  },
+  "elazar~surprised": {
+    "gaze": {
+      "across": [0.501, 0.277],
+      "height": [0.478, 0.104],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.48,
+      "gain": [0.7014, 0.7993, 0.7631],
+      "measured": "#865637",
       "target": "#865738"
     }
   },
@@ -212,14 +394,28 @@
   "ezer~angry": {
     "gaze": {
       "across": [0.501, 0.277],
-      "height": [0.571, 0.114],
+      "height": [0.578, 0.112],
       "miss": 0.0,
       "yaw": [-0.0, 0.0]
     },
     "skin": {
-      "deltaE": 1.02,
+      "deltaE": 1.22,
       "gain": [0.7665, 0.8997, 1.0255],
-      "measured": "#986247",
+      "measured": "#996347",
+      "target": "#956145"
+    }
+  },
+  "ezer~glad": {
+    "gaze": {
+      "across": [0.501, 0.277],
+      "height": [0.614, 0.119],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.71,
+      "gain": [0.7665, 0.8997, 1.0255],
+      "measured": "#966145",
       "target": "#956145"
     }
   },
@@ -251,6 +447,20 @@
       "target": "#ab7b55"
     }
   },
+  "hadassah~glad": {
+    "gaze": {
+      "across": [0.451, 0.348],
+      "height": [0.619, 0.541],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.31,
+      "gain": [0.8458, 1.0373, 1.023],
+      "measured": "#af7e58",
+      "target": "#ab7b55"
+    }
+  },
   "hagit": {
     "gaze": {
       "across": [0.535, 0.401],
@@ -262,6 +472,34 @@
       "deltaE": 0.8,
       "gain": [0.7424, 0.8835, 0.8621],
       "measured": "#84593b",
+      "target": "#865b3c"
+    }
+  },
+  "hagit~glad": {
+    "gaze": {
+      "across": [0.473, 0.336],
+      "height": [0.634, 0.495],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.31,
+      "gain": [0.7424, 0.8835, 0.8621],
+      "measured": "#875b3c",
+      "target": "#865b3c"
+    }
+  },
+  "hagit~surprised": {
+    "gaze": {
+      "across": [0.473, 0.335],
+      "height": [0.521, 0.399],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.74,
+      "gain": [0.7424, 0.8835, 0.8621],
+      "measured": "#815739",
       "target": "#865b3c"
     }
   },
@@ -293,6 +531,20 @@
       "target": "#82593e"
     }
   },
+  "hanina~glad": {
+    "gaze": {
+      "across": [0.509, 0.309],
+      "height": [0.332, -0.108],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.07,
+      "gain": [0.4708, 0.5335, 0.5416],
+      "measured": "#835b40",
+      "target": "#82593e"
+    }
+  },
   "kallias": {
     "gaze": {
       "across": [0.508, 0.302],
@@ -321,6 +573,20 @@
       "target": "#ab7b55"
     }
   },
+  "kallias.letter-from-paul~glad": {
+    "gaze": {
+      "across": [0.512, 0.285],
+      "height": [0.168, 0.16],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.26,
+      "gain": [0.95, 1.1564, 1.177],
+      "measured": "#ae7e59",
+      "target": "#ab7b55"
+    }
+  },
   "kallias.letter-from-paul~sad": {
     "gaze": {
       "across": [0.512, 0.284],
@@ -332,6 +598,20 @@
       "deltaE": 0.5,
       "gain": [0.95, 1.1564, 1.177],
       "measured": "#aa7a54",
+      "target": "#ab7b55"
+    }
+  },
+  "kallias.letter-from-paul~surprised": {
+    "gaze": {
+      "across": [0.512, 0.285],
+      "height": [0.534, 0.164],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.85,
+      "gain": [0.95, 1.1564, 1.177],
+      "measured": "#a97954",
       "target": "#ab7b55"
     }
   },
@@ -349,6 +629,34 @@
       "target": "#ab7b55"
     }
   },
+  "kallias~glad": {
+    "gaze": {
+      "across": [0.508, 0.302],
+      "height": [-5.59, 0.238],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.88,
+      "gain": [0.8318, 0.9147, 0.79],
+      "measured": "#be8c64",
+      "target": "#bb8b63"
+    }
+  },
+  "kallias~surprised": {
+    "gaze": {
+      "across": [0.508, 0.302],
+      "height": [0.446, 0.224],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.17,
+      "gain": [0.8318, 0.9147, 0.79],
+      "measured": "#bb8b63",
+      "target": "#bb8b63"
+    }
+  },
   "malik": {
     "gaze": {
       "across": [0.5, 0.287],
@@ -360,6 +668,34 @@
       "deltaE": 0.45,
       "gain": [0.7557, 0.7991, 0.77],
       "measured": "#754a32",
+      "target": "#764b32"
+    }
+  },
+  "malik~glad": {
+    "gaze": {
+      "across": [0.5, 0.287],
+      "height": [0.581, 0.17],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.61,
+      "gain": [0.7557, 0.7991, 0.77],
+      "measured": "#784c33",
+      "target": "#764b32"
+    }
+  },
+  "malik~surprised": {
+    "gaze": {
+      "across": [0.5, 0.287],
+      "height": [0.492, 0.174],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.21,
+      "gain": [0.7557, 0.7991, 0.77],
+      "measured": "#734830",
       "target": "#764b32"
     }
   },
@@ -377,6 +713,20 @@
       "target": "#9c714e"
     }
   },
+  "menandros~glad": {
+    "gaze": {
+      "across": [0.516, 0.314],
+      "height": [0.425, 0.196],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.23,
+      "gain": [0.5436, 0.6366, 0.5834],
+      "measured": "#9f724e",
+      "target": "#9c714e"
+    }
+  },
   "menashe": {
     "gaze": {
       "across": [0.512, 0.293],
@@ -391,6 +741,34 @@
       "target": "#8b6043"
     }
   },
+  "menashe~afraid": {
+    "gaze": {
+      "across": [0.512, 0.293],
+      "height": [0.689, 0.269],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.68,
+      "gain": [0.8186, 1.0475, 1.2003],
+      "measured": "#8a5f43",
+      "target": "#8b6043"
+    }
+  },
+  "menashe~glad": {
+    "gaze": {
+      "across": [0.512, 0.293],
+      "height": [0.331, 0.086],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 2.26,
+      "gain": [0.8186, 1.0475, 1.2003],
+      "measured": "#916548",
+      "target": "#8b6043"
+    }
+  },
   "menashe~sad": {
     "gaze": {
       "across": [0.512, 0.293],
@@ -402,6 +780,20 @@
       "deltaE": 0.53,
       "gain": [0.8186, 1.0475, 1.2003],
       "measured": "#8a6044",
+      "target": "#8b6043"
+    }
+  },
+  "menashe~surprised": {
+    "gaze": {
+      "across": [0.512, 0.293],
+      "height": [0.549, 0.112],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.93,
+      "gain": [0.8186, 1.0475, 1.2003],
+      "measured": "#8e6245",
       "target": "#8b6043"
     }
   },
@@ -433,6 +825,20 @@
       "target": "#966b49"
     }
   },
+  "miriam~glad": {
+    "gaze": {
+      "across": [0.466, 0.327],
+      "height": [0.642, 0.437],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.41,
+      "gain": [0.6818, 0.8284, 0.7873],
+      "measured": "#986c48",
+      "target": "#966b49"
+    }
+  },
   "miriam~worried": {
     "gaze": {
       "across": [0.466, 0.327],
@@ -461,6 +867,20 @@
       "target": "#966b49"
     }
   },
+  "natan~glad": {
+    "gaze": {
+      "across": [0.491, 0.269],
+      "height": [0.59, 0.337],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.5,
+      "gain": [0.915, 1.2454, 1.4359],
+      "measured": "#996c49",
+      "target": "#966b49"
+    }
+  },
   "nikanor": {
     "gaze": {
       "across": [0.503, 0.303],
@@ -472,6 +892,20 @@
       "deltaE": 0.46,
       "gain": [0.5765, 0.7051, 0.687],
       "measured": "#9d714e",
+      "target": "#9c714e"
+    }
+  },
+  "nikanor~glad": {
+    "gaze": {
+      "across": [0.503, 0.302],
+      "height": [0.589, 0.299],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.87,
+      "gain": [0.5765, 0.7051, 0.687],
+      "measured": "#9e724e",
       "target": "#9c714e"
     }
   },
@@ -489,6 +923,20 @@
       "target": "#9c714e"
     }
   },
+  "nikanor~surprised": {
+    "gaze": {
+      "across": [0.503, 0.303],
+      "height": [0.476, 0.257],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.96,
+      "gain": [0.5765, 0.7051, 0.687],
+      "measured": "#9d704c",
+      "target": "#9c714e"
+    }
+  },
   "nikon": {
     "gaze": {
       "across": [0.509, 0.302],
@@ -500,6 +948,20 @@
       "deltaE": 0.57,
       "gain": [0.621, 0.6374, 0.6281],
       "measured": "#976246",
+      "target": "#956145"
+    }
+  },
+  "nikon~glad": {
+    "gaze": {
+      "across": [0.508, 0.302],
+      "height": [0.589, 0.028],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.9,
+      "gain": [0.621, 0.6374, 0.6281],
+      "measured": "#986347",
       "target": "#956145"
     }
   },
@@ -517,6 +979,20 @@
       "target": "#a3744f"
     }
   },
+  "oded~glad": {
+    "gaze": {
+      "across": [0.512, 0.323],
+      "height": [0.618, 0.309],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.21,
+      "gain": [0.8387, 1.0701, 1.1322],
+      "measured": "#a67752",
+      "target": "#a3744f"
+    }
+  },
   "peninah": {
     "gaze": {
       "across": [0.493, 0.337],
@@ -528,6 +1004,34 @@
       "deltaE": 0.38,
       "gain": [0.7082, 0.8811, 0.8786],
       "measured": "#ac7c56",
+      "target": "#ab7b55"
+    }
+  },
+  "peninah~glad": {
+    "gaze": {
+      "across": [0.493, 0.337],
+      "height": [0.674, 0.344],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.42,
+      "gain": [0.7082, 0.8811, 0.8786],
+      "measured": "#af7d56",
+      "target": "#ab7b55"
+    }
+  },
+  "peninah~surprised": {
+    "gaze": {
+      "across": [0.493, 0.337],
+      "height": [0.55, 0.302],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.28,
+      "gain": [0.7082, 0.8811, 0.8786],
+      "measured": "#a87852",
       "target": "#ab7b55"
     }
   },
@@ -601,6 +1105,34 @@
       "target": "#966b49"
     }
   },
+  "rivka~glad": {
+    "gaze": {
+      "across": [0.464, 0.351],
+      "height": [0.635, 0.365],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 2.18,
+      "gain": [0.7179, 0.8907, 0.8995],
+      "measured": "#9c6f4c",
+      "target": "#966b49"
+    }
+  },
+  "rivka~surprised": {
+    "gaze": {
+      "across": [0.464, 0.351],
+      "height": [0.554, 0.322],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.7,
+      "gain": [0.7179, 0.8907, 0.8995],
+      "measured": "#986d4b",
+      "target": "#966b49"
+    }
+  },
   "rivka~worried": {
     "gaze": {
       "across": [0.464, 0.351],
@@ -626,6 +1158,20 @@
       "deltaE": 0.37,
       "gain": [0.7324, 0.8597, 0.8163],
       "measured": "#855a3c",
+      "target": "#865b3c"
+    }
+  },
+  "salome~glad": {
+    "gaze": {
+      "across": [0.47, 0.319],
+      "height": [0.656, 0.38],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.28,
+      "gain": [0.7324, 0.8597, 0.8163],
+      "measured": "#895d3c",
       "target": "#865b3c"
     }
   },
@@ -657,6 +1203,34 @@
       "target": "#906547"
     }
   },
+  "shelomit~glad": {
+    "gaze": {
+      "across": [0.487, 0.343],
+      "height": [0.682, 0.331],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.85,
+      "gain": [0.7649, 0.9363, 0.9822],
+      "measured": "#906445",
+      "target": "#906547"
+    }
+  },
+  "shelomit~surprised": {
+    "gaze": {
+      "across": [0.487, 0.343],
+      "height": [0.566, 0.284],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 2.03,
+      "gain": [0.7649, 0.9363, 0.9822],
+      "measured": "#8b6043",
+      "target": "#906547"
+    }
+  },
   "shelomit~worried": {
     "gaze": {
       "across": [0.487, 0.343],
@@ -685,6 +1259,20 @@
       "target": "#ab7b55"
     }
   },
+  "shifra~glad": {
+    "gaze": {
+      "across": [0.451, 0.361],
+      "height": [0.571, 0.338],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.84,
+      "gain": [0.7457, 0.8961, 0.8631],
+      "measured": "#b17f58",
+      "target": "#ab7b55"
+    }
+  },
   "shifra~sad": {
     "gaze": {
       "across": [0.452, 0.361],
@@ -696,6 +1284,20 @@
       "deltaE": 1.14,
       "gain": [0.7457, 0.8961, 0.8631],
       "measured": "#ab7952",
+      "target": "#ab7b55"
+    }
+  },
+  "shifra~surprised": {
+    "gaze": {
+      "across": [0.451, 0.361],
+      "height": [0.505, 0.309],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.74,
+      "gain": [0.7457, 0.8961, 0.8631],
+      "measured": "#aa7953",
       "target": "#ab7b55"
     }
   },
@@ -755,6 +1357,62 @@
       "target": "#9c714e"
     }
   },
+  "tamar.journey-to-bethlehem~glad": {
+    "gaze": {
+      "across": [0.464, 0.344],
+      "height": [0.593, 0.411],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.49,
+      "gain": [0.7083, 0.8747, 0.8515],
+      "measured": "#a0734e",
+      "target": "#9c714e"
+    }
+  },
+  "tamar~afraid": {
+    "gaze": {
+      "across": [0.468, 0.362],
+      "height": [0.635, 0.466],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.09,
+      "gain": [0.7382, 0.9271, 0.9629],
+      "measured": "#926343",
+      "target": "#956545"
+    }
+  },
+  "tamar~glad": {
+    "gaze": {
+      "across": [0.468, 0.362],
+      "height": [0.607, 0.405],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.07,
+      "gain": [0.7382, 0.9271, 0.9629],
+      "measured": "#986747",
+      "target": "#956545"
+    }
+  },
+  "tamar~surprised": {
+    "gaze": {
+      "across": [0.468, 0.362],
+      "height": [0.532, 0.35],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.87,
+      "gain": [0.7382, 0.9271, 0.9629],
+      "measured": "#936445",
+      "target": "#956545"
+    }
+  },
   "tamar~worried": {
     "gaze": {
       "across": [0.468, 0.362],
@@ -783,6 +1441,34 @@
       "target": "#b3855f"
     }
   },
+  "tatia~glad": {
+    "gaze": {
+      "across": [0.448, 0.352],
+      "height": [0.572, 0.291],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.76,
+      "gain": [0.8174, 0.9831, 0.9539],
+      "measured": "#b88a64",
+      "target": "#b3855f"
+    }
+  },
+  "tatia~surprised": {
+    "gaze": {
+      "across": [0.448, 0.351],
+      "height": [0.508, 0.269],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.11,
+      "gain": [0.8174, 0.9831, 0.9539],
+      "measured": "#b0825d",
+      "target": "#b3855f"
+    }
+  },
   "tobiah": {
     "gaze": {
       "across": [0.527, 0.311],
@@ -794,6 +1480,34 @@
       "deltaE": 0.74,
       "gain": [0.6492, 0.8102, 0.8154],
       "measured": "#9e724f",
+      "target": "#9c714e"
+    }
+  },
+  "tobiah~glad": {
+    "gaze": {
+      "across": [0.527, 0.311],
+      "height": [0.585, 0.416],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.53,
+      "gain": [0.6492, 0.8102, 0.8154],
+      "measured": "#a07450",
+      "target": "#9c714e"
+    }
+  },
+  "tobiah~surprised": {
+    "gaze": {
+      "across": [0.527, 0.311],
+      "height": [0.482, 0.346],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.28,
+      "gain": [0.6492, 0.8102, 0.8154],
+      "measured": "#9c6f4b",
       "target": "#9c714e"
     }
   },
@@ -811,6 +1525,20 @@
       "target": "#956145"
     }
   },
+  "yair~surprised": {
+    "gaze": {
+      "across": [0.513, 0.296],
+      "height": [0.516, 0.329],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.16,
+      "gain": [0.6184, 0.6645, 0.6891],
+      "measured": "#966043",
+      "target": "#956145"
+    }
+  },
   "yoezer": {
     "gaze": {
       "across": [0.535, 0.292],
@@ -822,6 +1550,34 @@
       "deltaE": 0.8,
       "gain": [0.5336, 0.5244, 0.4663],
       "measured": "#774c34",
+      "target": "#764b32"
+    }
+  },
+  "yoezer~afraid": {
+    "gaze": {
+      "across": [0.535, 0.291],
+      "height": [0.651, 0.384],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.67,
+      "gain": [0.5336, 0.5244, 0.4663],
+      "measured": "#754b32",
+      "target": "#764b32"
+    }
+  },
+  "yoezer~surprised": {
+    "gaze": {
+      "across": [0.535, 0.292],
+      "height": [0.516, 0.222],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.5,
+      "gain": [0.5336, 0.5244, 0.4663],
+      "measured": "#754a32",
       "target": "#764b32"
     }
   },
@@ -853,6 +1609,20 @@
       "target": "#895b3e"
     }
   },
+  "yonatan~glad": {
+    "gaze": {
+      "across": [0.512, 0.321],
+      "height": [0.573, 0.378],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.72,
+      "gain": [0.6476, 0.816, 0.9063],
+      "measured": "#8b5d40",
+      "target": "#895b3e"
+    }
+  },
   "yonatan~worried": {
     "gaze": {
       "across": [0.512, 0.321],
@@ -881,6 +1651,20 @@
       "target": "#764b32"
     }
   },
+  "yoram~glad": {
+    "gaze": {
+      "across": [0.51, 0.308],
+      "height": [0.286, 0.028],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 2.64,
+      "gain": [0.4836, 0.4553, 0.45],
+      "measured": "#764e38",
+      "target": "#764b32"
+    }
+  },
   "zenon": {
     "gaze": {
       "across": [0.499, 0.323],
@@ -892,6 +1676,34 @@
       "deltaE": 0.37,
       "gain": [0.7197, 0.912, 0.9451],
       "measured": "#976c4a",
+      "target": "#966b49"
+    }
+  },
+  "zenon~glad": {
+    "gaze": {
+      "across": [0.499, 0.323],
+      "height": [0.577, 0.191],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.6,
+      "gain": [0.7197, 0.912, 0.9451],
+      "measured": "#986d4a",
+      "target": "#966b49"
+    }
+  },
+  "zenon~surprised": {
+    "gaze": {
+      "across": [0.499, 0.323],
+      "height": [0.48, 0.192],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.25,
+      "gain": [0.7197, 0.912, 0.9451],
+      "measured": "#966b49",
       "target": "#966b49"
     }
   },
@@ -920,6 +1732,20 @@
       "deltaE": 0.3,
       "gain": [0.6873, 0.8089, 0.8611],
       "measured": "#8f6043",
+      "target": "#906144"
+    }
+  },
+  "zerah~glad": {
+    "gaze": {
+      "across": [0.508, 0.28],
+      "height": [0.174, -0.463],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.76,
+      "gain": [0.6873, 0.8089, 0.8611],
+      "measured": "#926345",
       "target": "#906144"
     }
   },
