@@ -45,14 +45,17 @@ def args():
     p.add_argument("--mp4-mb", type=float, default=12.0)
     p.add_argument("--poster", nargs=2, type=int, default=[8, 96], help="shot and frame for the poster")
     p.add_argument("--no-webm", action="store_true")
+    p.add_argument("--shots", nargs="+", type=int, default=None, help="only these shots (a review cut)")
     return p.parse_args(argv)
 
 
-def timeline(frames, quality):
+def timeline(frames, quality, only=None):
     """[(shot, folder, n_frames, start)] in film order."""
     out = []
     start = 1
     for sid, spec in sorted(teaser_shots.SHOTS.items()):
+        if only and sid not in only:
+            continue
         folder = os.path.join(frames, quality, f"shot{sid}")
         files = sorted(f for f in os.listdir(folder) if f.endswith(".png")) if os.path.isdir(folder) else []
         if len(files) < spec.frames:
@@ -160,7 +163,7 @@ def main():
     a = args()
     out = a.out or os.path.join(HERE, ".cache", "teaser", a.quality, "film")
     os.makedirs(out, exist_ok=True)
-    cuts, total = timeline(a.frames, a.quality)
+    cuts, total = timeline(a.frames, a.quality, a.shots)
     first = imageio.load(os.path.join(cuts[0][1], cuts[0][2][0]))
     size = (first.shape[1], first.shape[0])
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -179,7 +182,8 @@ def main():
         webm = os.path.join(out, "teaser.webm")
         size_w = encode(scene, webm, "WEBM", "WEBM", crf + 4)
         print("WEBM", crf + 4, round(size_w / 1e6, 2), "MB", flush=True)
-    poster(cuts, a.poster[0], a.poster[1], os.path.join(out, "poster.webp"))
+    if not a.shots or a.poster[0] in a.shots:
+        poster(cuts, a.poster[0], a.poster[1], os.path.join(out, "poster.webp"))
     if a.sheet:
         contact_sheet(cuts, total, a.sheet)
     print("EDIT DONE", total, "frames", round(total / FPS, 2), "s", flush=True)
