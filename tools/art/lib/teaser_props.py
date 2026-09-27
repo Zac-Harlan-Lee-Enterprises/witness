@@ -90,8 +90,8 @@ def rock_material(name="teaser-rock", base="#bdb3a2", dark="#7d7163", red=0.0, l
         pos = g.coords("Object")
         rnd = g.object_random()
         big = g.noise(pos, 1.2, 4.0, 0.6)
-        pits = g.voronoi(pos, 9.0)
-        pit = g.map(pits, 0.0, 0.18, 1.0, 0.0)
+        pits = g.voronoi(pos, 40.0)
+        pit = g.mul(g.map(pits, 0.0, 0.12, 1.0, 0.0), 0.5)
         col = g.mix(g.smooth(big, 0.35, 0.7), dark, base)
         col = g.mix(g.mul(rnd, 0.35), col, "#a89c8a")
         if red > 0:

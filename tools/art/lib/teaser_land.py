@@ -244,6 +244,9 @@ class Land:
             h = self.road.carve(x, y, h)
         for path in self.paths:
             h = path.carve(x, y, h)
+        # The dust of the ground itself: lumps, hollows and crust, a few
+        # centimetres, seen only close up.
+        h = h + detail * (0.035 * N.fbm(x / 0.7, y / 0.7, 3, seed=s + 70) + 0.012 * N.fbm(x / 0.16, y / 0.16, 2, seed=s + 71))
         for mark in self.marks:
             h = mark(x, y, h)
         return h

@@ -235,9 +235,14 @@ def ground(name="judean-ground", palette=None):
         var = g.map(g.noise(pos, 3.0, 5.0, 0.6), 0.3, 0.7, 0.9, 1.07)
         col = g.mix(1.0, col, g.rgb(var), "MULTIPLY")
         # Close up: fine grains and a thin crust over the dust.
-        micro = g.fade(0.6, 5.0)
+        micro = g.fade(1.0, 12.0)
         grains = g.map(g.voronoi(pos, 140.0), 0.0, 0.35, 1.0, 0.0)
-        col = g.mix(g.mul(g.mul(grains, 0.25), micro), col, "#7f6c56")
+        col = g.mix(g.mul(g.mul(grains, 0.4), micro), col, "#7f6c56")
+        # Small stones set in the trodden dust.
+        grit_cells = g.voronoi(pos, 34.0, 1.0, "Distance")
+        grit_pick = g.voronoi(pos, 34.0, 1.0, "Color")
+        embedded = g.mul(g.map(grit_cells, 0.0, 0.2, 1.0, 0.0), g.math("GREATER_THAN", g.xyz(grit_pick)[0], 0.72))
+        col = g.mix(g.mul(embedded, micro), col, g.mix(g.xyz(grit_pick)[1], "#8a7658", "#d6c8a8"))
         crumb = g.noise(pos, 70.0, 4.0, 0.7)
         col = g.mix(g.mul(g.smooth(crumb, 0.55, 0.7, 0.0, 0.2), micro), col, "#ddd0b4")
         # Oil soaked into the dust long ago: dark, dull, a faint sheen left.
@@ -247,7 +252,7 @@ def ground(name="judean-ground", palette=None):
         peb = g.mul(g.smooth(stones, 0.3, 0.7), g.mul(cover, g.fade(4.0, 18.0)))
         grit = g.mul(g.noise(pos, 40.0, 3.0, 0.7), g.fade(3.0, 12.0))
         lumps = g.mul(small, g.fade(80.0, 300.0))
-        fine_h = g.mul(g.add(g.mul(grains, 0.3), g.mul(crumb, 0.3)), micro)
+        fine_h = g.mul(g.add(g.add(g.mul(grains, 0.3), g.mul(crumb, 0.3)), g.mul(embedded, 0.8)), micro)
         h = g.add(g.add(peb, g.mul(grit, 0.4)), g.add(g.mul(lumps, 3.0), g.mul(tracks_bump, -1.5)))
         rough = g.mixf(g.mul(oil, 0.6), g.map(tread, 0.0, 1.0, 0.95, 0.84), 0.62)
         normal = g.bump(fine_h, 0.6, 0.002, normal=g.bump(h, 0.35, 0.05))

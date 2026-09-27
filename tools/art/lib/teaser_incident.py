@@ -24,6 +24,7 @@ from mathutils import Matrix, Vector
 from mathutils import noise as mnoise
 
 import common
+import rocks
 import materials as M
 import teaser_city as C
 import teaser_noise as N
@@ -78,7 +79,7 @@ def clay_break():
 
 
 def pebble_material(kind):
-    colours = {"flint": ("#4f463d", "#7a6a58"), "lime": ("#b8ad98", "#d4c9b2"), "brown": ("#7a6246", "#9c8262")}
+    colours = {"flint": ("#6a5c4c", "#8a7864"), "lime": ("#c2b393", "#ddd0b2"), "brown": ("#9a7e5c", "#b89c76")}
     a, b = colours[kind]
 
     def build():
@@ -86,7 +87,7 @@ def pebble_material(kind):
         pos = g.coords("Object")
         col = g.mix(g.map(g.noise(pos, 40.0, 4.0), 0.3, 0.7), a, b)
         col = g.mix(g.mul(g.object_random(), 0.5), col, a)
-        g.principled(col, 0.55 if kind == "flint" else 0.8, 0.4, g.bump(g.noise(pos, 120.0, 3.0), 0.3, 0.0008))
+        g.principled(col, 0.7 if kind == "flint" else 0.9, 0.3, g.bump(g.noise(pos, 8.0, 4.0), 0.6, 0.05))
         return g.mat
 
     return C._cached(f"pebble-{kind}", build)
@@ -429,28 +430,31 @@ class Incident:
     def rocks(self):
         """The rocks the man lies in the shade of (game 45-46, 16-17), and
         stones along the road's edges."""
-        red = PR.rock_material("teaser-red-rock", "#c2a88e", "#7a5e4c", red=0.55, lichen=0.3)
-        pale = PR.rock_material("teaser-rock-road", "#c6bba6", "#857868", red=0.1, lichen=0.2)
-        for k, (gx, gy, s) in enumerate(((45.6, 16.2, (1.3, 1.1, 1.5)), (45.9, 17.6, (1.5, 1.2, 1.7)), (47.0, 16.8, (1.2, 1.0, 1.2)))):
+        red = M.rock("#c2a584", "teaser-red-rock", lichen=0.35, red=0.6)
+        pale = M.rock("#c9b996", "teaser-road-rock", lichen=0.2, red=0.15)
+        for k, (gx, gy, s) in enumerate(((45.6, 16.2, (1.3, 1.1, 1.3)), (45.9, 17.6, (1.5, 1.2, 1.5)), (47.0, 16.8, (1.2, 1.0, 1.1)))):
             a, b = from_game(gx, gy)
-            r = PR.boulder(f"rock{k}", s, seed=40 + k, material=red, detail=4, flat=0.5)
-            self.place(r, a, b, self.rng.uniform(0, math.tau), -0.35)
-        for k in range(14):
+            r = rocks.stone(f"rock{k}", Vector((0, 0, 0)), s, red, 400 + k, flat=0.6, blocky=0.6, n=60, sink=0.3)
+            craggy(r, 0.22, 2.6, 400 + k)
+            self.place(r, a, b, self.rng.uniform(0, math.tau), -0.1)
+        for k in range(18):
             side = 1 if k % 2 else -1
             a = self.rng.uniform(-9.0, 8.0)
-            b = side * self.rng.uniform(2.0, 3.2)
-            s = self.rng.uniform(0.12, 0.35)
-            r = PR.boulder(f"edge-stone{k}", (s, s * 0.8, s * 0.6), seed=60 + k, material=pale, detail=3)
-            self.place(r, a, b, self.rng.uniform(0, math.tau), -0.04)
+            b = side * self.rng.uniform(1.9, 3.4)
+            s = self.rng.uniform(0.1, 0.3)
+            r = rocks.stone(f"edge-stone{k}", Vector((0, 0, 0)), (s, s * 0.8, s * 0.55), pale, 460 + k, flat=0.55, blocky=0.7, sink=0.35)
+            craggy(r, 0.025, 6.0, 460 + k)
+            self.place(r, a, b, self.rng.uniform(0, math.tau), 0.0)
 
     def pebbles(self):
         """The road's gravel: small flints and limestone pieces, half sunk."""
         rng = np.random.default_rng(71)
         protos = []
-        for k, kind in enumerate(("flint", "lime", "brown", "flint", "lime", "brown")):
-            protos.append(PR.boulder(f"pebble{k}", (1.0, 0.8, 0.55), seed=80 + k, material=pebble_material(kind), detail=2, flat=0.4))
-        n_near = 3000 if self.preview else 14000
-        n_far = 2000 if self.preview else 9000
+        kinds = ("lime", "lime", "brown", "lime", "flint", "brown", "lime", "lime")
+        for k, kind in enumerate(kinds):
+            protos.append(rocks.stone(f"pebble{k}", Vector((0, 0, 0)), (1.0, 0.8, 0.65), pebble_material(kind), 800 + k, flat=0.75, blocky=0.6, n=22, sink=0.0, smooth=0))
+        n_near = 6000 if self.preview else 36000
+        n_far = 3000 if self.preview else 16000
         r = np.concatenate([np.sqrt(rng.random(n_near)) * 5.0, 5.0 + rng.random(n_far) * 20.0])
         th = rng.random(len(r)) * math.tau
         a = 1.5 + r * np.cos(th)
@@ -459,14 +463,16 @@ class Incident:
         x = self.O[0] + self.u[0] * a + self.v[0] * b
         y = self.O[1] + self.u[1] * a + self.v[1] * b
         on_road = np.abs(b) < 1.4
-        keep = rng.random(len(r)) < np.where(on_road, 0.45, 1.0)
+        # Gravel lies in drifts: thick in patches, bare between.
+        drift = np.clip(N.fbm(a / 1.8, b / 1.8, 3, seed=73) * 1.4 + 0.3, 0.05, 1.0)
+        keep = rng.random(len(r)) < np.where(on_road, 0.3, 0.9) * drift
         keep &= self.oil(x, y) < 0.5
         x, y = x[keep], y[keep]
         z = self.land.height(x, y)
         m = len(x)
-        size = np.exp(rng.normal(np.log(0.018), 0.55, m)).clip(0.006, 0.09)
-        pts = np.stack([x, y, z - size * 0.25], axis=1)
-        rot = np.stack([rng.uniform(-0.3, 0.3, m), rng.uniform(-0.3, 0.3, m), rng.uniform(0, math.tau, m)], axis=1)
+        size = np.exp(rng.normal(np.log(0.011), 0.6, m)).clip(0.004, 0.06)
+        pts = np.stack([x, y, z - size * 0.3], axis=1)
+        rot = np.stack([rng.uniform(-0.5, 0.5, m), rng.uniform(-0.5, 0.5, m), rng.uniform(0, math.tau, m)], axis=1)
         idx = rng.integers(0, len(protos), m)
         self.objects.append(PR.instancer("pebbles", pts, protos, idx, rot, size))
 
@@ -491,3 +497,21 @@ class Incident:
 
     def attributes(self, X, Y, Z):
         return {"oil": self.oil(X, Y)}
+
+
+def craggy(obj, strength, scale, seed):
+    """Weather a stone's flat facets: subdivide and push the surface in and
+    out by cellular noise (pits, ledges, spalled edges)."""
+    import common as _c
+
+    _c.add_modifier(obj, "SUBSURF", levels=3, render_levels=3, subdivision_type="SIMPLE")
+    tex = bpy.data.textures.new(f"crag-{seed}", "VORONOI")
+    tex.noise_scale = 1.0 / scale
+    tex.distance_metric = "DISTANCE"
+    mod = _c.add_modifier(obj, "DISPLACE", texture=tex, strength=strength, mid_level=0.6)
+    mod.texture_coords = "LOCAL"
+    tex2 = bpy.data.textures.new(f"crag2-{seed}", "CLOUDS")
+    tex2.noise_scale = 0.35 / scale
+    mod2 = _c.add_modifier(obj, "DISPLACE", texture=tex2, strength=strength * 0.5, mid_level=0.5)
+    mod2.texture_coords = "LOCAL"
+    return obj
