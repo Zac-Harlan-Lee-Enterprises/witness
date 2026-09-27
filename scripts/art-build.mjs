@@ -19,7 +19,7 @@
  * (for example --variants day, --samples 32, --only menashe~sit, --who miriam).
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CANDIDATES = [
@@ -140,7 +140,12 @@ async function portraits(args) {
       let log = '';
       child.stdout.on('data', (d) => (log += d));
       child.stderr.on('data', (d) => (log += d));
-      child.on('close', (code) => resolve({ code, log }));
+      child.on('close', (code) => {
+        // Each Blender's own log, for when something goes wrong.
+        mkdirSync('.logs/portraits', { recursive: true });
+        writeFileSync(join('.logs/portraits', `${p.pid}~${e}.log`), log);
+        resolve({ code, log });
+      });
     });
   const run = async (chain) => {
     for (const e of chain.tasks) {

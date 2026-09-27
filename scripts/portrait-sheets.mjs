@@ -49,6 +49,8 @@ const PASSES = {
   v4: 'MakeHuman pass',
 };
 const [passBefore, passAfter] = pass.split('-').map((p) => PASSES[p] ?? p);
+/** Lower-case the first letter only ("MakeHuman pass" → "makeHuman" would be wrong). */
+const lower = (t) => (t.startsWith('MakeHuman') ? t : t[0].toLowerCase() + t.slice(1));
 
 const dataUrl = (buf) => `data:image/webp;base64,${buf.toString('base64')}`;
 const now = (id, size = 256, expression = 'neutral') =>
@@ -214,7 +216,7 @@ if (compareAt) {
   writeFileSync(
     file,
     await sheet(page, {
-      title: `${passBefore} (left) and ${passAfter.toLowerCase()} (right)`,
+      title: `${passBefore} (left) and ${lower(passAfter)} (right)`,
       tiles,
       cols: 4,
       tile: Math.min(TILE, 200),
@@ -234,7 +236,7 @@ if (compareAt) {
   writeFileSync(
     detailFile,
     await sheet(page, {
-      title: `Faces up close: ${passBefore.toLowerCase()} (left) and ${passAfter.toLowerCase()} (right)`,
+      title: `Faces up close: ${lower(passBefore)} (left) and ${lower(passAfter)} (right)`,
       tiles: detail,
       cols: 2,
       tile: 320,
