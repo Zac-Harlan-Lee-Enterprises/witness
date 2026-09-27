@@ -45,27 +45,33 @@ describe('offline caching of pre-rendered art', () => {
     expect(ART_RUNTIME_CACHE_ENTRIES).toBeGreaterThanOrEqual(1000);
   });
 
-  it('precaches every neutral portrait and caches the other expressions on first use', () => {
-    const glob = (pattern: string, path: string) =>
-      new RegExp(
-        `^${pattern
-          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-          .replace(/\*\*\//g, '(?:.*/)?')
-          .replace(/\*\*/g, '.*')
-          .replace(/(?<!\.)\*/g, '[^/]*')}$`,
-      ).test(path);
-    expect(glob(CACHED_ON_FIRST_USE_PORTRAITS, 'art/portraits/angry/ezer-512.webp')).toBe(true);
-    expect(glob(CACHED_ON_FIRST_USE_PORTRAITS, 'art/portraits/ezer-512.webp')).toBe(false);
-    const config = readFileSync(join(__dirname, '../../../vite.config.ts'), 'utf8');
-    expect(config).toContain('CACHED_ON_FIRST_USE_PORTRAITS,\n          ]');
-    // Room in the runtime cache for every expression rendered, besides the places.
+  it('precaches every neutral portrait and caches the other expressions on first use', async () => {
+    // Workbox's own matcher, on the files as they are (a glob that looked
+    // right once left every portrait out of the precache).
+    const { getManifest } = await import('workbox-build');
+    const { manifestEntries = [] } = await getManifest({
+      globDirectory: join(__dirname, '../../../public'),
+      globPatterns: ['art/portraits/**/*.webp'],
+      globIgnores: [CACHED_ON_FIRST_USE_PORTRAITS],
+    });
+    const urls = manifestEntries.map((e) => e.url);
     const manifest = JSON.parse(
       readFileSync(
         join(__dirname, '../../../src/features/portraits/portrait-manifest.json'),
         'utf8',
       ),
     ) as Record<string, { expressions?: string[] }>;
+    const people = Object.keys(manifest);
+    expect(people.length).toBeGreaterThan(40);
+    for (const id of people)
+      for (const size of [128, 256, 512])
+        expect(urls).toContain(`art/portraits/${id}-${size}.webp`);
+    expect(urls.filter((u) => u.split('/').length > 3)).toEqual([]);
+    const config = readFileSync(join(__dirname, '../../../vite.config.ts'), 'utf8');
+    expect(config).toContain('CACHED_ON_FIRST_USE_PORTRAITS,\n          ]');
+    // Room in the runtime cache for every expression rendered, besides the places.
     const files = Object.values(manifest).reduce((n, e) => n + (e.expressions?.length ?? 0) * 3, 0);
+    expect(files).toBeGreaterThan(0);
     expect(files).toBeLessThan(ART_RUNTIME_CACHE_ENTRIES / 3);
   });
 });

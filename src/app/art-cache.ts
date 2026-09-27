@@ -39,7 +39,7 @@ export const CACHED_ON_FIRST_USE_PEOPLE_LIGHTS = ['overcast', 'lamp', 'night'] a
  * box preloads them then). Offline before that, the neutral portrait is
  * shown in their place.
  */
-export const CACHED_ON_FIRST_USE_PORTRAITS = '**/art/portraits/*/**';
+export const CACHED_ON_FIRST_USE_PORTRAITS = '**/art/portraits/*/*.webp';
 
 /** Art files kept by the cache-on-first-use cache: room for every chapter's places, people, light variants and portrait expressions. */
 export const ART_RUNTIME_CACHE_ENTRIES = 1500;

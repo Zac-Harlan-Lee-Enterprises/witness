@@ -354,3 +354,27 @@ NEXT   : Merge fix/art-polish after review. Then: moon shadows of the boats' set
          lake's ground (sails are conditional now); if wanted, bake them into the set-sail sprites' own
          shadow on a water-surface catcher (build_place catcher_for at the water height).
 BLOCKED: none.
+
+--- 2026-09-27  Claude Opus 5.5 (portraits agent) — conversation portraits on MakeHuman's CC0 head, with expressions (feat/portraits-makehuman) ---
+DONE   : Portrait heads rebuilt on MakeHuman's CC0 hm08 model (owner's approval 2026-09-26, ADR-0016: geometry and
+         morph targets only; no MakeHuman textures, proxies or code). scripts/fetch-makehuman.mjs downloads the 497
+         pinned files (commit 1f508f6, SHA-256 each, tools/art/data/makehuman-files.json) into gitignored
+         tools/art/.cache/makehuman. New tools/art/lib: makehuman.py (OBJ/target loader, macro weights), portrait_face.py
+         (identity: ~170 target weights per person, cast by face/nose/eye/lip type; authored expression-unit mixes),
+         portrait_mhhead.py (rest/posed shapes, landmarks from targets, lid margins, eyes fitted to them, OpenVDB SDFs,
+         head turned on the neck), portrait_mhskin.py (skin maps on the rest shape, mouth lining, wrinkles from
+         strain), portrait_teeth.py (procedural teeth and gums on MakeHuman's dental helpers, tucked under the skin where
+         an expression brings it in). Every render calibrates the skin to Appearance.skin and records skin ΔE and gaze
+         (tools/art/data/portrait-checks.json). Dialogue lines take an optional `expression` (domain Zod enum, neutral
+         default); 205 lines annotated across the 4 chapters (text verified unchanged); portrait data exports each
+         speaker's expressions; portraitImage/Portrait take an expression with neutral fallback (also when a file can't
+         load offline); the dialogue box cross-fades a change of face (cut under reduced motion) and shows 152 px on
+         wide screens; neutral portraits precached, expression folders cached on first use. 127 renders (43 neutral,
+         84 expressions); docs/art/portraits.md rewritten; sheets in docs/art/portraits.
+TESTS  : Vitest 623 -> 640 (schema, cast expressions, UI expression/fallback/cross-fade/reduced motion/sizes,
+         art-cache split, content: every expression rendered, skin ΔE, gaze convergence). typecheck, lint, knip,
+         prettier, content:validate clean. e2e (4481/5481): portraits, a11y, smoke, pwa, mobile, chapter.
+NEXT   : Review docs/art/portraits/expressions-*.webp with the owner; if a face should change, edit its casting in
+         tools/art/lib/portrait_params.py and run `npm run art:portraits -- --who <id>` (renders its neutral and
+         expressions), then `npm run art:portrait-sheets`.
+BLOCKED: none.
