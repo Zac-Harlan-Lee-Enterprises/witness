@@ -127,7 +127,8 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
 
     # ── Skin ───────────────────────────────────────────────────────────────
     cav, _ = portrait_mhskin.occlusion(Vr, Q)
-    maps = portrait_mhskin.maps(head, Vr, used, cav, skin_hex, beard=a["beard"])
+    cav_far, _ = portrait_mhskin.occlusion(Vr, Q, rays=16, reach=40.0)
+    maps = portrait_mhskin.maps(head, Vr, used, cav, skin_hex, beard=a["beard"], cav_far=cav_far, Q=Q)
     regions = maps.pop("_regions")
     bunch = portrait_mhskin.strain(Vr, V, Q)
     for fam, gain in WRINKLE_GAIN.items():
@@ -155,7 +156,11 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
     log("skin", f"{time.time() - t0:.1f}s")
 
     # ── Teeth, gums and tongue ────────────────────────────────────────────
-    portrait_teeth.build(head, P, col, {"teeth": PM.teeth(P.age_t, P.child), "gum": PM.gum(skin_hex), "tongue": PM.tongue()})
+    # (Kept inside the mouth where an expression brings the skin in past them.)
+    mouth_field = head.sdf_grid("posed", lo=(-15, -17, -36), hi=(15, 15, 19), voxel=0.25)
+    inside = portrait_teeth.Inside(V, Q, mouth_field, maps["mouth"])
+    portrait_teeth.build(head, P, col, {"teeth": PM.teeth(P.age_t, P.child), "gum": PM.gum(skin_hex), "tongue": PM.tongue()}, inside=inside)
+    log("teeth", "tucked", portrait_teeth.build.tucked, "points under the skin")
 
     # ── Clothes and head covering (on the rest shape) ─────────────────────
     wool_head = a["headwear"] in ("band", "hood")

@@ -12,6 +12,13 @@ the gum over their necks. The tongue is MakeHuman's helper tongue.
 Each arch is built on the rest shape and moved rigidly (the best-fitting
 rotation and translation of its helper block) to the posed shape, so the
 lower teeth follow an opening jaw.
+
+The expressions move the lips and cheeks, not the upper teeth: a mouth
+stretched back (fear) or a wide smile can bring the corners of the mouth
+in past the back teeth and gums, which then poke through the skin. So
+every point of the teeth, gums and tongue that ends up outside the face
+(in the open, not in the mouth: see `Inside`) is drawn back under the
+skin, where it can't be seen.
 """
 import math
 
@@ -116,9 +123,69 @@ def _crown(kind, w, h, th, segs=20, rings=12):
     return np.array(verts, F), quads
 
 
-def build(head, P, col, mats):
-    """Teeth, gums and tongue for a head (portrait_mhhead.MHHead)."""
+class Inside:
+    """Where the mouth's contents may be seen: in the mouth (behind the
+    lips, in front of the mouth's own lining) but never outside the face.
+    A point is outside the face when it is out of the flesh (the skin's
+    distance field is positive) and the skin nearest to it is the face's
+    outer skin, not the lining of the mouth: a gum that pokes through the
+    corner of a stretched mouth, not a front tooth seen between parted lips."""
+
+    def __init__(self, V, Q, field, lining):
+        from mathutils.bvhtree import BVHTree
+
+        tris, owner = [], []
+        for i, q in enumerate(Q):
+            tris.append((int(q[0]), int(q[1]), int(q[2])))
+            tris.append((int(q[0]), int(q[2]), int(q[3])))
+            owner += [i, i]
+        self.tree = BVHTree.FromPolygons([Vector(v) for v in V.tolist()], tris, all_triangles=True)
+        self.owner = owner
+        self.Q = Q
+        self.field = field
+        # The mouth's lining (0 outer skin … 1 inside the mouth), per skin vertex.
+        self.lining = np.asarray(lining, F)
+
+    def exposed(self, P):
+        """True for points (cm) outside the face."""
+        dist = self.field.dist(np.asarray(P, F))
+        out = np.zeros(len(P), bool)
+        for i in np.nonzero(dist > 0.02)[0]:
+            loc, _, idx, _ = self.tree.find_nearest(Vector(P[i].tolist()))
+            if idx is None:
+                continue
+            quad = self.Q[self.owner[idx]]
+            out[i] = float(self.lining[quad].mean()) < 0.5
+        return out
+
+    def tuck(self, P, depth=0.12):
+        """Points outside the face drawn back under the skin (along the
+        field's gradient, to `depth` cm inside); the rest unchanged.
+        Returns (points, how many were moved)."""
+        P = np.asarray(P, F).copy()
+        bad = self.exposed(P)
+        if bad.any():
+            for _ in range(4):
+                d = self.field.dist(P[bad])
+                P[bad] -= self.field.grad(P[bad]) * (d + depth)[:, None]
+        return P, int(bad.sum())
+
+
+def _tuck_bmesh(bm, inside):
+    if inside is None:
+        return 0
+    P = np.array([tuple(v.co) for v in bm.verts], F)
+    P, n = inside.tuck(P)
+    for v, p in zip(bm.verts, P):
+        v.co = Vector(p.tolist())
+    return n
+
+
+def build(head, P, col, mats, inside=None):
+    """Teeth, gums and tongue for a head (portrait_mhhead.MHHead); `inside`
+    (an Inside) keeps them out of sight where they would poke through."""
     objs = []
+    tucked = 0
     rng = np.random.default_rng(P.seed + 71)
     child = P.child
     # Children's teeth are smaller (a ten-year-old has most adult front teeth, a six-year-old few).
@@ -149,8 +216,8 @@ def build(head, P, col, mats):
                 tangent /= max(np.linalg.norm(tangent), 1e-6)
                 # Outward: across the arch, away from its inside (toward the lips and cheeks).
                 outward = np.cross(tangent, np.array([0, 0, 1], F))
-                inside = np.array([0.0, curve[:, 1].min() + 0.6 * (curve[:, 1].max() - curve[:, 1].min()), p[2]], F)
-                if np.dot(outward, p - inside) < 0:
+                arch_in = np.array([0.0, curve[:, 1].min() + 0.6 * (curve[:, 1].max() - curve[:, 1].min()), p[2]], F)
+                if np.dot(outward, p - arch_in) < 0:
                     outward = -outward
                 outward[2] = 0
                 outward /= max(np.linalg.norm(outward), 1e-6)
@@ -187,6 +254,7 @@ def build(head, P, col, mats):
         # Move the whole arch with its block (the lower teeth with the jaw).
         for v in bm.verts:
             v.co = Vector((Rm @ np.array(v.co, F) + t).tolist())
+        tucked += _tuck_bmesh(bm, inside)
         for v in bm.verts:
             v.co *= CM
         teeth = common.mesh_object(f"teeth-{jaw}", bm, mats["teeth"], col)
@@ -194,9 +262,14 @@ def build(head, P, col, mats):
         # The gum: a soft ridge along the arch over the teeth's necks.
         gum_pts.sort(key=lambda g: g[0])
         if gum_pts:
-            objs.append(_gum(f"gum-{jaw}", gum_pts, Rm, t, col, mats["gum"], down))
+            gum, n = _gum(f"gum-{jaw}", gum_pts, Rm, t, col, mats["gum"], down, inside)
+            objs.append(gum)
+            tucked += n
     # The tongue.
     Vt, Qt, used = head.helper_mesh("helper-tongue")
+    if inside is not None:
+        Vt, n = inside.tuck(Vt)
+        tucked += n
     tongue = portrait_mesh.from_arrays("tongue", Vt, Qt, None, mats["tongue"], col)
     for p in tongue.data.polygons:
         p.use_smooth = True
@@ -204,10 +277,11 @@ def build(head, P, col, mats):
     sub.levels = 0
     sub.render_levels = 2
     objs.append(tongue)
+    build.tucked = tucked
     return objs
 
 
-def _gum(name, gum_pts, Rm, t, col, mat, down):
+def _gum(name, gum_pts, Rm, t, col, mat, down, inside=None):
     """A rounded ridge through the gum points (a tube, flattened)."""
     bm = bmesh.new()
     rings = []
@@ -225,10 +299,11 @@ def _gum(name, gum_pts, Rm, t, col, mat, down):
         for k in range(seg):
             k2 = (k + 1) % seg
             bm.faces.new((ra[k], ra[k2], rb[k2], rb[k]))
+    n = _tuck_bmesh(bm, inside)
     for v in bm.verts:
         v.co *= CM
     obj = common.mesh_object(name, bm, mat, col)
     sub = obj.modifiers.new("sub", "SUBSURF")
     sub.levels = 0
     sub.render_levels = 1
-    return obj
+    return obj, n

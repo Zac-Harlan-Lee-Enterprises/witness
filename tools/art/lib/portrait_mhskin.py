@@ -189,9 +189,18 @@ def lid_rims(head, V):
     return out
 
 
-def maps(head, V, base_idx, cav, skin_hex, beard=False):
+def lining(V, Q, cav_far, stomion, s=1.0):
+    """The mouth's lining (0 … 1): skin that can't be seen from outside the
+    head at rest (every direction blocked, `cav_far` from `occlusion` with a
+    long reach) around the mouth: the insides of the lips, cheeks and palate."""
+    near = (np.abs(V[:, 0]) < 4.5 * s) & (np.abs(V[:, 2] - stomion[2]) < 4.5 * s) & (V[:, 1] > stomion[1] - 0.6)
+    return (_smooth(cav_far, 0.85, 0.97) * near).astype(F)
+
+
+def maps(head, V, base_idx, cav, skin_hex, beard=False, cav_far=None, Q=None):
     """Per-vertex maps for skin vertices V (rest shape, cm); `base_idx` are
-    their indices in MakeHuman's base mesh, `cav` their occlusion."""
+    their indices in MakeHuman's base mesh, `cav` their occlusion (and
+    `cav_far` with a long reach, for the lining of the mouth)."""
     P = head.P
     R = head.R
     L = head.rest
@@ -235,7 +244,10 @@ def maps(head, V, base_idx, cav, skin_hex, beard=False):
     front = np.clip((-3.0 - V[:, 1]) / 2.0, 0, 1)
     # Inside the mouth: enclosed and behind the lips' meeting line.
     st = L["stomion"]
-    mouth = _smooth(cav, 0.45, 0.75) * (V[:, 1] > st[1] + 0.25) * (np.abs(V[:, 0]) < 3.5 * s) * (np.abs(V[:, 2] - st[2]) < 3.0 * s)
+    if cav_far is not None:
+        mouth = lining(V, Q, cav_far, st, s)
+    else:
+        mouth = _smooth(cav, 0.45, 0.75) * (V[:, 1] > st[1] + 0.25) * (np.abs(V[:, 0]) < 3.5 * s) * (np.abs(V[:, 2] - st[2]) < 3.0 * s)
     nost = _smooth(cav, 0.4, 0.7) * _g(V, (0, L["subnasale"][1] - 0.6, L["subnasale"][2] + 0.4), (1.6, 1.3, 0.9)) * (1 - mouth)
     ear_in = _smooth(cav, 0.45, 0.8) * ears
 
