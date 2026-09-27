@@ -11,7 +11,7 @@ import random
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 from mathutils import noise as mnoise
 
 import common
@@ -268,3 +268,49 @@ def scatter(land, name, centre, heading, fov, r_near, r_far, density, protos, se
     idx = rng.integers(0, len(protos), m)
     pts = np.stack([x, y, z - sink * scale], axis=1)
     return instancer(name, pts, protos, idx, rot, scale)
+
+
+def thornbush(name, radius=0.5, height=0.5, seed=1, leaves=0.35):
+    """A thorny burnet bush: a tangle of thin grey twigs branching from the
+    base into a dome, spiny tips, and only a scatter of small leaf clusters,
+    so it reads as twigs against the light."""
+    rng = random.Random(seed)
+    tw = bmesh.new()
+    lv = bmesh.new()
+
+    def branch(p0, direction, length, r, depth):
+        steps = 3
+        pts = [p0]
+        d = direction.normalized()
+        for k in range(steps):
+            d = (d + Vector((rng.uniform(-0.35, 0.35), rng.uniform(-0.35, 0.35), rng.uniform(-0.15, 0.25)))).normalized()
+            pts.append(pts[-1] + d * (length / steps))
+        for a, b in zip(pts, pts[1:]):
+            bmesh.ops.create_cone(tw, cap_ends=False, segments=4, radius1=r, radius2=r * 0.75, depth=(b - a).length, matrix=_between(a, b))
+            r *= 0.75
+        tip = pts[-1]
+        if depth > 0:
+            for _ in range(rng.randint(2, 3)):
+                nd = (d + Vector((rng.uniform(-0.9, 0.9), rng.uniform(-0.9, 0.9), rng.uniform(-0.2, 0.6)))).normalized()
+                branch(pts[rng.randint(1, steps)], nd, length * rng.uniform(0.5, 0.7), r, depth - 1)
+        else:
+            # Spines, and now and then a small leaf cluster.
+            for _ in range(3):
+                sd = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-0.3, 1))).normalized()
+                bmesh.ops.create_cone(tw, cap_ends=False, segments=3, radius1=0.002, radius2=0.0, depth=0.03, matrix=_between(tip, tip + sd * 0.03))
+            if rng.random() < leaves:
+                bmesh.ops.create_icosphere(lv, subdivisions=1, radius=radius * 0.06, matrix=Matrix.Translation(tip) @ Matrix.Diagonal((1.0, 1.0, 0.7, 1.0)))
+
+    for k in range(9):
+        a = k / 9 * math.tau + rng.uniform(-0.3, 0.3)
+        d = Vector((math.cos(a) * 0.8, math.sin(a) * 0.8, 1.0))
+        branch(Vector((0, 0, 0)), d, height * 0.55, 0.012, 2)
+    obj = common.mesh_object(name, tw, twig_material(), None, smooth=False)
+    me = bpy.data.meshes.new(f"{name}-leaves")
+    lv.to_mesh(me)
+    lv.free()
+    leaves_obj = bpy.data.objects.new(f"{name}-leaves", me)
+    bpy.context.scene.collection.objects.link(leaves_obj)
+    me.materials.append(shrub_material())
+    leaves_obj.parent = obj
+    return obj

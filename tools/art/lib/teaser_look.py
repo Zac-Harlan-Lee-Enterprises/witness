@@ -27,7 +27,7 @@ def sun_direction(azimuth_deg, elevation_deg):
     return (math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el))
 
 
-def sky(scene, azimuth, elevation, sun_strength=4.0, sky_strength=0.3, color="#fff1dc", angle=0.53, aerosol=1.2, air=1.0, ozone=1.0, haze_density=0.0, haze_color="#c9d3df", anisotropy=0.55, altitude=700.0, bounce=0.2, bounce_color="#d9c3a0"):
+def sky(scene, azimuth, elevation, sun_strength=4.0, sky_strength=0.3, color="#fff1dc", angle=0.53, aerosol=1.2, air=1.0, ozone=1.0, haze_density=0.0, haze_color="#c9d3df", anisotropy=0.55, altitude=700.0, bounce=0.2, bounce_color="#d9c3a0", horizon_color="#f2e2c8", horizon_height=0.22, horizon_amount=0.75):
     """A clear sky with the sun at (azimuth, elevation) degrees, and haze."""
     for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("TeaserSun")]:
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -69,7 +69,37 @@ def sky(scene, azimuth, elevation, sun_strength=4.0, sky_strength=0.3, color="#f
     bg = nt.nodes.new("ShaderNodeBackground")
     bg.inputs["Strength"].default_value = sky_strength
     out = nt.nodes.new("ShaderNodeOutputWorld")
-    nt.links.new(sk.outputs["Color"], bg.inputs["Color"])
+    # Dust and haze thicken toward the horizon: the clear sky fades, low
+    # down, into a warm pale band (tinted by the sun's side).
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Generated"], sep.inputs["Vector"])
+    band = nt.nodes.new("ShaderNodeMapRange")
+    band.inputs["From Min"].default_value = 0.0
+    band.inputs["From Max"].default_value = horizon_height
+    band.inputs["To Min"].default_value = horizon_amount
+    band.inputs["To Max"].default_value = 0.0
+    band.interpolation_type = "SMOOTHSTEP"
+    nt.links.new(sep.outputs["Z"], band.inputs["Value"])
+    mixc = nt.nodes.new("ShaderNodeMix")
+    mixc.data_type = "RGBA"
+    nt.links.new(band.outputs["Result"], mixc.inputs[0])
+    nt.links.new(sk.outputs["Color"], mixc.inputs[6])
+    # The band: the sky's own brightness near the horizon, warmed.
+    lum = nt.nodes.new("ShaderNodeRGBToBW")
+    nt.links.new(sk.outputs["Color"], lum.inputs[0])
+    tint = nt.nodes.new("ShaderNodeMix")
+    tint.data_type = "RGBA"
+    tint.blend_type = "MULTIPLY"
+    tint.inputs[0].default_value = 1.0
+    nt.links.new(lum.outputs[0], tint.inputs[6])
+    tint.inputs[7].default_value = hex_rgb(horizon_color)
+    comb = nt.nodes.new("ShaderNodeVectorMath")
+    comb.operation = "SCALE"
+    nt.links.new(tint.outputs[2], comb.inputs[0])
+    comb.inputs["Scale"].default_value = 1.7
+    nt.links.new(comb.outputs[0], mixc.inputs[7])
+    nt.links.new(mixc.outputs[2], bg.inputs["Color"])
     nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
     if haze_density > 0:
         haze(scene, haze_density, haze_color, anisotropy)
@@ -232,6 +262,20 @@ def ground(name="judean-ground", palette=None):
         col = g.mix(speck, col, pal["veg"])
         tread = g.math("MAXIMUM", road, g.mul(path, 0.7))
         col = g.mix(tread, col, pal["road"])
+        # The road: a compacted crust, finely cracked, darker in the ruts.
+        rut = g.attr("rut")
+        crack = g.map(g.voronoi(pos, 8.0, 1.0, "Distance", "DISTANCE_TO_EDGE"), 0.0, 0.02, 1.0, 0.0)
+        broken_c = g.smooth(g.noise(pos, 1.3, 3.0), 0.45, 0.62)
+        crust = g.mul(g.mul(g.mul(crack, broken_c), tread), g.fade(1.5, 14.0))
+        col = g.mix(g.mul(crust, 0.28), col, "#8c7a60")
+        col = g.mix(g.mul(rut, 0.4), col, "#a08a6a")
+        # Far off: the stony skin of the slopes, rock breaking through where steep.
+        far = g.map(g.distance(), 60.0, 250.0)
+        scree = g.smooth(g.noise(pos, 1.0 / 7.0, 4.0, 0.65), 0.52, 0.7)
+        stony = g.mul(g.mul(scree, far), g.add(0.35, g.mul(g.smooth(slope, 0.2, 0.6), 0.65)))
+        col = g.mix(g.mul(stony, 0.7), col, "#7e6c56")
+        bright = g.mul(g.mul(g.smooth(g.noise(pos, 1.0 / 5.0, 3.0), 0.62, 0.72), far), g.smooth(slope, 0.3, 0.7))
+        col = g.mix(g.mul(bright, 0.5), col, "#dccdb0")
         var = g.map(g.noise(pos, 3.0, 5.0, 0.6), 0.3, 0.7, 0.9, 1.07)
         col = g.mix(1.0, col, g.rgb(var), "MULTIPLY")
         # Close up: fine grains and a thin crust over the dust.
@@ -254,6 +298,7 @@ def ground(name="judean-ground", palette=None):
         lumps = g.mul(small, g.fade(80.0, 300.0))
         fine_h = g.mul(g.add(g.add(g.mul(grains, 0.3), g.mul(crumb, 0.3)), g.mul(embedded, 0.8)), micro)
         h = g.add(g.add(peb, g.mul(grit, 0.4)), g.add(g.mul(lumps, 3.0), g.mul(tracks_bump, -1.5)))
+        h = g.add(h, g.mul(crust, -0.4))
         rough = g.mixf(g.mul(oil, 0.6), g.map(tread, 0.0, 1.0, 0.95, 0.84), 0.62)
         normal = g.bump(fine_h, 0.6, 0.002, normal=g.bump(h, 0.35, 0.05))
         g.principled(col, rough, 0.12, normal)

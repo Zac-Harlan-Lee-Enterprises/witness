@@ -45,12 +45,14 @@ def clay_outer():
     def build():
         g = Graph("jar-outer")
         pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 14.0, 5.0), 0.3, 0.7), "#9d6440", "#bd8458")
-        # Slip wiped thin in places; dust settled.
-        col = g.mix(g.mul(g.smooth(g.noise(pos, 5.0, 3.0), 0.55, 0.7), 0.35), col, "#c9a37a")
-        col = g.mix(g.mul(g.smooth(g.noise(pos, 22.0, 3.0), 0.5, 0.7), 0.3), col, "#cdb894")
+        col = g.mix(g.map(g.noise(pos, 14.0, 5.0), 0.3, 0.7), "#a9806a", "#c29a7c")
+        # Slip wiped thin in places; dust settled into every pore.
+        col = g.mix(g.mul(g.smooth(g.noise(pos, 5.0, 3.0), 0.5, 0.7), 0.4), col, "#cdb293")
+        col = g.mix(g.add(0.4, g.mul(g.smooth(g.noise(pos, 22.0, 3.0), 0.45, 0.7), 0.3)), col, "#cbb896")
+        pores = g.map(g.voronoi(pos, 220.0), 0.0, 0.3, 1.0, 0.0)
+        col = g.mix(g.mul(pores, 0.25), col, "#6e4a34")
         rings = g.wave(pos, 90.0, 1.5, 2.0, "BANDS", "Z")
-        g.principled(col, 0.78, 0.3, g.bump(g.add(g.noise(pos, 60.0, 4.0), g.mul(rings, 0.2)), 0.2, 0.001))
+        g.principled(col, 0.93, 0.18, g.bump(g.add(g.noise(pos, 60.0, 4.0), g.add(g.mul(rings, 0.2), g.mul(pores, 0.5))), 0.35, 0.001))
         return g.mat
 
     return C._cached("jar-outer", build)
@@ -60,8 +62,9 @@ def clay_inner():
     def build():
         g = Graph("jar-inner")
         pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 12.0, 4.0), 0.3, 0.7), "#5a3a24", "#7a5234")
-        g.principled(col, 0.5, 0.4, g.bump(g.noise(pos, 50.0, 3.0), 0.2, 0.001))
+        col = g.mix(g.map(g.noise(pos, 12.0, 4.0), 0.3, 0.7), "#4e3424", "#6a4a32")
+        # The oil it held, dried to a dull dark film.
+        g.principled(col, 0.7, 0.3, g.bump(g.noise(pos, 50.0, 3.0), 0.2, 0.001))
         return g.mat
 
     return C._cached("jar-inner", build)
@@ -71,7 +74,7 @@ def clay_break():
     def build():
         g = Graph("jar-break")
         pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 80.0, 4.0), 0.3, 0.7), "#b8764a", "#d09268")
+        col = g.mix(g.map(g.noise(pos, 80.0, 4.0), 0.3, 0.7), "#a8765a", "#c08e6e")
         g.principled(col, 0.92, 0.2, g.bump(g.noise(pos, 300.0, 3.0), 0.6, 0.0005))
         return g.mat
 
@@ -284,7 +287,7 @@ class Incident:
             core = (1.0 - N.smoothstep(0.75, 1.05, r)) * N.smoothstep(0.0, 0.08, inside_len)
             heel = 0.75 + 0.35 * N.smoothstep(0.7, 0.1, t)
             rim = np.exp(-((r - 1.2) / 0.25) ** 2) * N.smoothstep(0.0, 0.1, inside_len) * 0.35
-            hf[m] = hf[m] - depth * core * heel + depth * rim
+            hf[m] = hf[m] - 1.6 * depth * core * heel + 1.3 * depth * rim
         for (sa0, sb0), (sa1, sb1) in self.drags:
             da = sa1 - sa0
             db = sb1 - sb0
@@ -309,11 +312,12 @@ class Incident:
         db = (b - cb) / 0.42
         warp = 0.35 * N.fbm(a * 3.0, b * 3.0, 3, seed=61)
         r = np.sqrt(da * da + db * db) + warp
-        stain = 1.0 - N.smoothstep(0.75, 1.0, r)
+        stain = (1.0 - N.smoothstep(0.35, 1.15, r)) ** 0.8
+        stain = stain * (0.75 + 0.25 * N.fbm(a * 9.0, b * 9.0, 3, seed=63))
         # Splashes round it.
         sp = N.perlin(a * 18.0, b * 18.0, 62)
         splash = (sp > 0.28) & (r < 1.6)
-        return np.clip(stain + splash * 0.6, 0.0, 1.0)
+        return np.clip(stain + splash * 0.35, 0.0, 1.0)
 
     # ── things ──────────────────────────────────────────────────────────────
     def build(self, with_man=True):
@@ -406,7 +410,7 @@ class Incident:
         """A thornbush at the roadside with a torn strip of cloth caught on it
         (game 43, 12): a blue stripe on brown wool."""
         a, b = from_game(43.0, 12.2)
-        bush = PR.shrub("thornbush", 0.55, 0.5, seed=31)
+        bush = PR.thornbush("thornbush", 0.55, 0.55, seed=31)
         self.place(bush, a, b, 0.0, -0.02)
         bm = bmesh.new()
         uvl = bm.loops.layers.uv.new("UVMap")

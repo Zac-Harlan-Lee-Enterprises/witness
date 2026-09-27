@@ -389,11 +389,21 @@ class Track:
 
     def carve(self, x, y, h):
         shape = np.shape(h)
-        d, z, _ = self.nearest(x, y)
+        d, z, s = self.nearest(x, y)
         hf = np.asarray(h, dtype=np.float64).ravel().copy()
         w = 1.0 - N.smoothstep(self.width * 0.5, self.width * 0.5 + self.shoulder, d)
         hf = hf + (z - hf) * w
+        # Ruts worn by feet and hooves, a pace apart, wandering a little.
+        hf = hf - 0.035 * self.ruts(d, s)
         return hf.reshape(shape)
+
+    def ruts(self, d, s):
+        """0..1: in one of the two ruts along the track."""
+        if self.width < 2.0:
+            return np.zeros_like(d)
+        off = 0.62 + 0.12 * N.perlin(s / 9.0, 0.3, 91)
+        r = np.exp(-((d - off) / 0.17) ** 2)
+        return r * (d < self.width * 0.5)
 
     def mask(self, x, y):
         d, _, _ = self.nearest(x, y)
@@ -555,6 +565,11 @@ def land_attributes(land, X, Y, Z, slope=None):
     wet = land.wetness(X, Y)
     gd = land.gorge_distance(X, Y)
     road = land.road.mask(X, Y).reshape(X.shape) if land.road is not None else np.zeros_like(X)
+    if land.road is not None:
+        d, _, s_ = land.road.nearest(X, Y)
+        rut = land.road.ruts(d, s_).reshape(X.shape)
+    else:
+        rut = np.zeros_like(X)
     path = np.zeros_like(X)
     for p in land.paths:
         path = np.maximum(path, p.mask(X, Y).reshape(X.shape))
@@ -563,5 +578,6 @@ def land_attributes(land, X, Y, Z, slope=None):
         "wet": np.clip((wet - 3.0) / 6.0, 0.0, 1.0),
         "gorge": np.clip(1.0 - gd / 60.0, 0.0, 1.0),
         "road": road,
+        "rut": rut,
         "path": path,
     }
