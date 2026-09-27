@@ -99,22 +99,16 @@ def city_pad(city):
     return pad
 
 
-def rim_path(land, x0, x1, margin=16.0, step=6.0):
-    """A shepherds' path along the gorge's north rim, just back from the edge."""
+def rim_path(land, x0, x1, margin=10.0, step=6.0):
+    """A shepherds' path along the gorge's north rim: just back from the lip
+    of its top cliff band (teaser_land.Land.WALL), wandering with it."""
     xs = np.arange(x0, x1, step)
-    out = []
-    d = np.arange(20.0, 460.0, 2.0)
+    top = sum(run for run, _ in land.WALL[:-1])
+    ds = []
     for x in xs:
-        yc = float(land.gorge_y(x))
-        y = yc + d
-        xx = np.full_like(d, x)
-        cut = land.gorge_bed(xx) + land.gorge_wall(d, xx, y)
-        free = land.coarse(xx, y) < cut - 1.0
-        rim = float(d[np.argmax(free)]) if free.any() else 300.0
-        out.append(rim + margin)
-    ds = np.array(out)
-    k = 9
-    ds = np.convolve(np.pad(ds, k, mode="edge"), np.ones(2 * k + 1) / (2 * k + 1), mode="same")[k:-k]
+        w0 = 9.0 + 5.0 * float(N.perlin(np.array([x / 400.0]), 3.1, land.seed + 5)[0])
+        ds.append(w0 + top + margin)
+    ds = np.array(ds)
     return np.stack([xs, land.gorge_y(xs) + ds], axis=1)
 
 
@@ -219,43 +213,40 @@ def shot4(ctx, scene):
 
 
 def shot5(ctx, scene):
-    """The ridge path above the gorge: the player walking away, small."""
+    """The path along the gorge's rim: the player walking away, small, the
+    gorge falling away beside the path. The camera hangs out over the gorge,
+    behind and above, drifting after the walker."""
     land = ctx.land()
     path = land.paths[0]
     start = 260.0
     a = path.point(start)
-    b = path.point(start + 30.0)
-    head = math.atan2(b[1] - a[1], b[0] - a[0])
-    centre = a - np.array([math.cos(head), math.sin(head)]) * 12.0
-    land_set(ctx, scene, (centre[0], centre[1]), head, fov=math.radians(260))
     z = ground_at(land)
+    # Out over the gorge, 55 m back along it, level with the rim and above.
+    back = a[0] - 42.0
+    eye0 = Vector((back, 0.72 * a[1] + 0.28 * float(land.gorge_y(back)), z(a[0], a[1]) + 12.0))
+    head = math.atan2(a[1] - eye0.y, a[0] - eye0.x)
+    land_set(ctx, scene, (eye0.x, eye0.y), head, fov=math.radians(170), far=700.0)
     fig = TP.Figure(ctx.appearance("player:look-1"), "walker", marks=("water-skin", "cloak-roll"))
     walker = TP.Walker(fig, path.poly, z, cadence=0.92, start=start)
     LK.eevee(scene, preview=ctx.preview)
     LK.sky(scene, -55.0, 42.0, sun_strength=5.4, sky_strength=0.2, aerosol=1.5)
     LK.haze(scene, 0.00006, "#dcd5ca", ground=z(a[0], a[1]) - 250.0, scale_height=900.0, centre=(a[0], a[1]))
     scene.view_settings.exposure = -1.6
-    cam = R.camera(scene, lens=35.0)
-
-    gorge_side = None
+    cam = R.camera(scene, lens=32.0)
 
     def animate(f, t):
-        nonlocal gorge_side
         at = walker.at(t)
+        eye = eye0 + Vector((1.2 * t, 0.0, -0.3 * t))
         s_, _ = walker.distance(t)
-        head_ = walker.heading(s_)
-        fwd = Vector((math.cos(head_), math.sin(head_), 0.0))
-        left = Vector((-math.sin(head_), math.cos(head_), 0.0))
-        if gorge_side is None:
-            # Which side the gorge is on: keep the camera over the land, looking across it.
-            probe = at + left * 40.0
-            gorge_side = -1.0 if land.gorge_distance(np.array([probe.x]), np.array([probe.y]))[0] < land.gorge_distance(np.array([at.x]), np.array([at.y]))[0] else 1.0
-        # High and wide: behind the walker and up, the gorge opening beside them.
-        eye = at - fwd * (34.0 - 0.8 * t) + left * gorge_side * 14.0
-        eye.z = max(z(eye.x, eye.y) + 4.0, at.z + 22.0 - 0.6 * t)
-        tgt = at + fwd * 55.0 - left * gorge_side * 70.0
-        tgt.z = at.z - 32.0
-        R.aim(cam, eye, tgt, 40.0)
+        ahead = walker.point(s_ + 260.0)
+        # Far along the gorge, a little below the rim: the cliffs recede.
+        gy_ = float(land.gorge_y(ahead[0]))
+        far_pt = Vector((ahead[0], 0.8 * ahead[1] + 0.2 * gy_, at.z - 22.0))
+        # Aim so the walker sits low in the frame, the gorge running on ahead.
+        d_far = (far_pt - eye).normalized()
+        d_at = (at - eye).normalized()
+        tgt = eye + (d_far * 0.55 + d_at * 0.45) * 100.0
+        R.aim(cam, eye, tgt, 32.0)
         R.focus(cam, (at - eye).length, 11.0)
 
     return Shot(animate)
@@ -312,12 +303,16 @@ def crowd(ctx, city, n, seed, x0, x1, t_total):
         look["carry"] = LOADS[(k * 7 + 3) % len(LOADS)]
         fig = TP.Figure(look, f"walker{k}")
         y = city.gy + rng.uniform(-2.0, 2.0)
-        east = rng.random() < 0.5
-        L = abs(x1 - x0)
-        # Paths start before the street's near end, so people walk into view too.
-        xa, xb = (x0 - 12.0, x1) if east else (x1, x0 - 12.0)
+        # No faces near the lens: people near the camera walk away from it
+        # (seen from behind); those coming toward it stay far down the street.
+        east = rng.random() < 0.6
+        if east:
+            xa, xb = x0 - 4.0, x1
+            start = rng.uniform(13.0, x1 - x0 - 12.0)
+        else:
+            xa, xb = x1, x0
+            start = rng.uniform(0.0, max(1.0, (x1 - x0) - 34.0 - 1.3 * t_total))
         path = np.array([[xa, y], [xb, y + rng.uniform(-0.8, 0.8)]])
-        start = rng.uniform(0.0, L + 12.0 - 1.1 * t_total)
         w = TP.Walker(fig, path, lambda x, y: city.z(x, y), cadence=rng.uniform(0.8, 0.95), start=max(0.0, start), phase=rng.random())
         walkers.append(w)
     return walkers
@@ -374,7 +369,7 @@ def shot3(ctx, scene):
     gx, gy, gz = city.gx, city.gy, city.gz
     x_a = gx - 112.0
     walkers = crowd(ctx, city, 24 if not ctx.preview else 16, 5, x_a - 4.0, gx - 30.0, 8.0)
-    sellers = stallholders(ctx, city, mk, x_a + 4.0, x_a + 60.0, 9)
+    sellers = stallholders(ctx, city, mk, x_a + 16.0, x_a + 70.0, 9)
     doves = []
     rng = np.random.default_rng(9)
     for k in range(7):
@@ -383,7 +378,7 @@ def shot3(ctx, scene):
         at.z = city.z(at.x, at.y)
         doves.append((p, at, rng.uniform(0, math.tau), rng.uniform(0, 10), k >= 5))
     LK.eevee(scene, preview=ctx.preview, volume_end=600.0)
-    LK.sky(scene, -4.0, 11.0, sun_strength=4.2, sky_strength=0.35, color="#ffc990", aerosol=2.2, angle=0.6, bounce=0.1)
+    LK.sky(scene, -4.0, 11.0, sun_strength=4.2, sky_strength=0.35, color="#ffc990", aerosol=2.2, angle=0.6, bounce=0.3)
     LK.haze(scene, 0.00005, "#e6d2bc", ground=gz - 100.0, scale_height=500.0, centre=(gx, gy))
     LK.dust(scene, (gx - 170.0, gy - 8.0, gz - 1.0), (gx - 5.0, gy + 8.0, gz + 12.0), density=0.0015, color="#ecdcc4", anisotropy=0.3)
     scene.view_settings.exposure = -1.1
@@ -530,12 +525,12 @@ def shot7(ctx, scene):
     (ma, mb), turn = inc.man_place
     # His jar is broken and his cloak gone: nothing in his hands.
     fig = TP.Figure(dict(ctx.appearance("menashe"), carry="none"), "man")
-    at = inc.P(ma + 0.5, mb + 0.1, 0.0)
+    at = inc.P(ma - 0.35, mb + 0.25, 0.0)
     cam = R.camera(scene, lens=40.0)
     e0 = inc.P(2.3, 0.5, 1.5)
-    e1 = inc.P(2.6, -0.6, 0.85)
+    e1 = inc.P(1.8, -1.0, 1.05)
     t0 = inc.P(3.05, -1.4, 0.0)
-    t1 = inc.P(ma + 0.2, mb + 0.1, 0.22)
+    t1 = inc.P(ma - 0.1, mb + 0.1, 0.15)
     move = R.Move([e0, e1], [t0, t1], lens=[38.0, 42.0], ease_in=0.6, ease_out=1.0, shake=0.004)
     # Feet toward the camera, head away (and into the deepest shade).
     away = math.atan2(at.y - e1.y, at.x - e1.x) + turn
@@ -567,9 +562,9 @@ def placeholder(label):
 GRADE_LAND = {"contrast": 1.08, "saturation": 1.05, "vignette": 0.2}
 
 SHOTS = {
-    1: Spec("jerusalem-sunrise", 168, shot1, lambda u: lerp_grade({"contrast": 1.05, "balance": (0.92, 0.97, 1.08), "saturation": 0.9, "vignette": 0.25}, {"contrast": 1.08, "balance": (1.05, 1.0, 0.94), "saturation": 1.0, "vignette": 0.22}, u)),
+    1: Spec("jerusalem-sunrise", 168, shot1, lambda u: lerp_grade({"contrast": 1.06, "balance": (0.97, 0.98, 1.03), "saturation": 0.92, "vignette": 0.25}, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.0, "vignette": 0.22}, u)),
     2: Spec("miriam-room", 168, shot2, {"contrast": 1.06, "balance": (1.02, 1.0, 0.97), "saturation": 1.0, "vignette": 0.3, "bloom": 0.2, "bloom_threshold": 0.7}),
-    3: Spec("market", 192, shot3, {"contrast": 1.08, "balance": (1.04, 1.0, 0.95), "saturation": 1.02, "vignette": 0.22, "bloom": 0.12}),
+    3: Spec("market", 192, shot3, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.02, "vignette": 0.22, "bloom": 0.12}),
     4: Spec("gate-and-wilderness", 192, shot4, {"contrast": 1.1, "saturation": 1.05, "balance": (1.03, 1.0, 0.96), "vignette": 0.22}),
     5: Spec("ridge-path", 168, shot5, {"contrast": 1.12, "saturation": 0.95, "balance": (1.04, 1.0, 0.95), "vignette": 0.22}),
     6: Spec("below-the-bend", 168, shot6, {"contrast": 1.12, "balance": (1.03, 1.0, 0.95), "saturation": 0.92, "vignette": 0.28}),

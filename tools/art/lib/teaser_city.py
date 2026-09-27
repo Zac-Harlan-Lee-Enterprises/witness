@@ -101,7 +101,7 @@ def paving(name="city-paving"):
         b = g.node("ShaderNodeTexBrick", {"Vector": g.vec(x, y, 0.0), "Scale": 1.0, "Mortar Size": 0.035, "Mortar Smooth": 0.6, "Brick Width": 1.3, "Row Height": 0.85, "Color1": (1, 1, 1, 1), "Color2": (0.75, 0.75, 0.75, 1)}, offset=0.37, squash=1.0)
         joint = g.mul(b.outputs["Fac"], paved)
         slab = g.xyz(b.outputs["Color"])[0]
-        col = g.mix(g.map(slab, 0.75, 1.0), "#b7a584", "#cdbd9c")
+        col = g.mix(g.map(slab, 0.75, 1.0), "#a8967a", "#bcab8c")
         col = g.mix(g.map(g.noise(pos, 2.0, 4.0), 0.4, 0.7, 0.0, 0.5), col, "#a39170")
         col = g.mix(joint, col, "#8a7a60")
         earth = g.mix(g.map(g.noise(pos, 0.7, 4.0), 0.35, 0.65), "#a8906c", "#bca581")
@@ -242,6 +242,7 @@ class City:
         walls = Builder("city-houses")
         tops = Builder("city-roofs")
         self.holes = Builder("city-openings")
+        self.timber = Builder("city-timber")
         self.clutter = []
         streets = self._streets()
         lots = self._lots(streets)
@@ -252,6 +253,7 @@ class City:
         self.objects.append(walls.finish(M.limestone("#d6c09a", "teaser-ashlar", worn=0.6)))
         self.objects.append(tops.finish(M.plaster("#d2bf99", "teaser-roof-plaster")))
         self.objects.append(self.holes.finish(plain("city-dark", "#1a130d", 0.95)))
+        self.objects.append(self.timber.finish(M.wood("#5e4630", 4.0)))
         self._roof_clutter()
         self._city_wall()
         self._street_ground(streets)
@@ -348,7 +350,24 @@ class City:
             uy1 = y0 + (y1 - y0) * (0.45 + rng.random() * 0.2)
             walls.box(x0 + 0.3, y0 + 0.3, roof_z, ux1, uy1, roof_z + 2.6, r, roof_z)
             tops.quad([(x0 + 0.3, y0 + 0.3, roof_z + 2.62), (ux1, y0 + 0.3, roof_z + 2.62), (ux1, uy1, roof_z + 2.62), (x0 + 0.3, uy1, roof_z + 2.62)], r, roof_z)
-        # Doors and windows: dark recesses on the faces toward streets.
+        # Roof beams: their ends show in a row just under the parapet.
+        tb = self.timber
+        for side in (0, 1):
+            y = y0 - 0.12 if side == 0 else y1
+            x = x0 + 0.5
+            while x < x1 - 0.4:
+                tb.box(x - 0.07, y, roof_z - 0.3, x + 0.07, y + 0.12, roof_z - 0.14, 0.5, zb)
+                x += 0.55 + rng.random() * 0.15
+        # Outside stairs up to the roof on some houses.
+        if rng.random() < 0.3 and (x1 - x0) > 4.0:
+            n = int(h / 0.25)
+            for k in range(n):
+                sx = x0 + 0.2 + k * 0.28
+                if sx + 0.3 > x1:
+                    break
+                walls.box(sx, y0 - 0.9, zb, sx + 0.3, y0, zb + (k + 1) * 0.25, r, zb)
+        # Doors and windows: dark recesses on the faces toward streets; a
+        # wooden door in some doorways.
         self._openings(self.holes, (x0, y0, x1, y1), zb, storeys, r)
         self.roofs_at.append((x0, y0, x1, y1, roof_z))
 

@@ -388,8 +388,8 @@ class Pigeon:
     def __init__(self, name, seed=0):
         rng = random.Random(seed)
         self.rng = rng
-        grey = pigeon_material("#8a8f98", "#5c606a")
-        dark = pigeon_material("#5d6068", "#3e4148")
+        grey = pigeon_material("#8c8a86", "#615d58")
+        dark = pigeon_material("#5c5b5a", "#403e3c")
         s = 0.9 + rng.random() * 0.2
         self.body = blob(f"{name}-body", (0, 0, 0.11 * s), (0.075 * s, 0.14 * s, 0.07 * s), grey, seed, 0.03, 2)
         self.head = blob(f"{name}-head", (0, 0, 0), (0.028 * s, 0.034 * s, 0.03 * s), dark, seed + 1, 0.02, 2)
