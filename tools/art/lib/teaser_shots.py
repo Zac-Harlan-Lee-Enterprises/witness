@@ -198,7 +198,9 @@ def shot4(ctx, scene):
     far = Vector((p0[0], p0[1], 0.0)) + d * 3000.0
     t0 = Vector((far.x, far.y, gz - 40.0))
     t2 = Vector((far.x, far.y, gz - 520.0))
-    move = R.Move([e0, e1, e2], [t0, t2], lens=[24.0, 28.0], ease_in=0.35, ease_out=1.0, shake=0.01)
+    # First straight out through the passage, then round to the road below.
+    t_gate = Vector((city.gx + 600.0, city.gy, gz - 15.0))
+    move = R.Move([e0, e1, e2], [t_gate, t0, t2], lens=[24.0, 28.0], ease_in=0.35, ease_out=1.0, shake=0.01)
     LK.eevee(scene, preview=ctx.preview)
     LK.sky(scene, -40.0, 30.0, sun_strength=5.0, sky_strength=0.2, aerosol=1.6)
     LK.haze(scene, 0.00006, "#dcd5ca", ground=gz - 300.0, scale_height=1000.0, centre=(p0[0], p0[1]))
