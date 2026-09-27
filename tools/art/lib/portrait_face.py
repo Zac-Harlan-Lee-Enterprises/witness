@@ -95,7 +95,7 @@ EXPRESSION_UNITS = {
         "eyebrows-{s}-up": 1.0,
         "eyebrows-{s}-inner-up": 0.25,
         "eye-{s}-opened-up": 0.25,
-        "mouth-open": 0.25,
+        "mouth-open": 0.22,
         "mouth-protusion": 0.15,
         "mouth/mouth-scale-horiz-decr": 0.2,
         "mouth/mouth-upperlip-height-incr": 0.35,
@@ -104,10 +104,10 @@ EXPRESSION_UNITS = {
         # Inner brows up and drawn together, the upper lids raised and the
         # lower ones tense, the lips stretched sideways and a little apart
         # (not a gaping mouth), the neck taut.
-        "eyebrows-{s}-inner-up": 1.2,
-        "eyebrows-{s}-up": 0.5,
+        "eyebrows-{s}-inner-up": 1.35,
+        "eyebrows-{s}-up": 0.65,
         "eyebrows-{s}-down": 0.15,
-        "eye-{s}-opened-up": 0.4,
+        "eye-{s}-opened-up": 0.6,
         "eye-{s}-slit": 0.2,
         "mouth-retraction": 0.6,
         "mouth-open": 0.08,
@@ -126,6 +126,7 @@ CHILD_MIXES = {
         "cheek/{lr}-cheek-trans-up": 0.35,
         "cheek/{lr}-cheek-volume-incr": 0.55,
         "mouth/mouth-laugh-lines-in": 0.3,
+        "mouth-compression": 0.12,
         "eye-{s}-slit": 0.55,
         "eyebrows-{s}-extern-up": 0.1,
     },

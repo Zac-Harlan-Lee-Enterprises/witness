@@ -208,7 +208,7 @@ def build(head, P, col, mats, inside=None):
         front = curve[j0].copy()
         jz = int(np.clip(round(j0 / len(curve) * (len(tops) - 1)), 0, len(tops) - 1))
         _, h0, th0 = table[0][1], table[0][2] * scale, table[0][3] * scale
-        front[2] = (bots[jz] + 0.05 + 0.4 * h0) if down else (tops[jz] - 0.05 - 0.4 * h0)
+        front[2] = (bots[jz] + 0.05 + 0.4 * h0) if down else (tops[jz] - 0.27 - 0.4 * h0)
         forward = _gap_to_lips(head, front + np.array([0.0, -(th0 / 2 + 0.05), 0.0], F))
         bm = bmesh.new()
         gum_pts = []
@@ -234,7 +234,9 @@ def build(head, P, col, mats, inside=None):
                 outward /= max(np.linalg.norm(outward), 1e-6)
                 # Heights: the biting edge at the block's edge toward the other jaw.
                 j = int(np.clip(round(i / len(curve) * (len(tops) - 1)), 0, len(tops) - 1))
-                edge_z = bots[j] + 0.05 if down else tops[j] - 0.05
+                # (The lower teeth sit lower: a relaxed lower lip covers most of
+                # them when the mouth opens; standing tall they read as dentures.)
+                edge_z = bots[j] + 0.05 if down else tops[j] - 0.27
                 front = k <= 2
                 tilt = math.radians((12 if front else 4) + rng.uniform(-3, 3))
                 verts, quads = _crown(kind, w, h, th)
