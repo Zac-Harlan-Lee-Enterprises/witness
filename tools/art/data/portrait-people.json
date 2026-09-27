@@ -17,7 +17,7 @@
       "name": "Aunt Miriam",
       "role": "Healer, your aunt",
       "lines": 15,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried"],
       "key": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
       "appearance": {
         "skin": "#966b49",
@@ -38,7 +38,7 @@
       "name": "Malik",
       "role": "Nabataean trader",
       "lines": 12,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
       "appearance": {
         "skin": "#764b32",
@@ -80,7 +80,7 @@
       "name": "Tobiah",
       "role": "Carter",
       "lines": 2,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
       "appearance": {
         "skin": "#9c714e",
@@ -101,7 +101,7 @@
       "name": "Hadassah",
       "role": "Weaver",
       "lines": 6,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
       "appearance": {
         "skin": "#ab7b55",
@@ -122,7 +122,7 @@
       "name": "Ezer",
       "role": "Baker",
       "lines": 9,
-      "expressions": ["sad", "angry"],
+      "expressions": ["glad", "sad", "angry"],
       "key": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
       "appearance": {
         "skin": "#956145",
@@ -143,7 +143,7 @@
       "name": "Menashe",
       "role": "Samaritan oil merchant",
       "lines": 24,
-      "expressions": ["worried", "sad"],
+      "expressions": ["glad", "worried", "sad", "surprised", "afraid"],
       "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
       "appearance": {
         "skin": "#8b6043",
@@ -185,7 +185,7 @@
       "name": "Salome",
       "role": "Innkeeper",
       "lines": 17,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried"],
       "key": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
       "appearance": {
         "skin": "#865b3c",
@@ -206,7 +206,7 @@
       "name": "Rivka",
       "role": "Aunt Miriam’s friend in Jericho",
       "lines": 12,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "surprised"],
       "key": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
       "appearance": {
         "skin": "#966b49",
@@ -227,7 +227,7 @@
       "name": "Natan",
       "role": "Rivka’s son",
       "lines": 2,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
       "appearance": {
         "skin": "#966b49",
@@ -248,7 +248,7 @@
       "name": "Yair",
       "role": "Rivka’s brother, a fig grower",
       "lines": 11,
-      "expressions": [],
+      "expressions": ["surprised"],
       "key": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
       "appearance": {
         "skin": "#956145",
@@ -269,7 +269,7 @@
       "name": "Grandmother Shelomit",
       "role": "Your grandmother, a net-mender",
       "lines": 23,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "surprised"],
       "key": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
       "appearance": {
         "skin": "#906547",
@@ -290,7 +290,7 @@
       "name": "Uncle Elazar",
       "role": "Master of the family boat",
       "lines": 22,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "surprised", "afraid"],
       "key": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
       "appearance": {
         "skin": "#865738",
@@ -311,7 +311,7 @@
       "name": "Tamar",
       "role": "Your cousin, a rower",
       "lines": 13,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "surprised", "afraid"],
       "key": "#9a6440|#1a1210|#8f3f2f|#e2b555|scarf|#c96f3b|clean|adult|net",
       "appearance": {
         "skin": "#956545",
@@ -332,7 +332,7 @@
       "name": "Yoezer",
       "role": "A hired man on the family boat",
       "lines": 6,
-      "expressions": ["worried"],
+      "expressions": ["worried", "surprised", "afraid"],
       "key": "#7a4a2e|#2a1a10|#6b5a3a|#8a6a4a|band|#5a4a3a|beard|adult|jar",
       "appearance": {
         "skin": "#764b32",
@@ -353,7 +353,7 @@
       "name": "Old Hanina",
       "role": "A fisherman who has read the lake for sixty years",
       "lines": 7,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
       "appearance": {
         "skin": "#82593e",
@@ -374,7 +374,7 @@
       "name": "Nikanor",
       "role": "A salt-fish trader from Magdala",
       "lines": 17,
-      "expressions": ["sad"],
+      "expressions": ["glad", "sad", "surprised"],
       "key": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
       "appearance": {
         "skin": "#9c714e",
@@ -395,7 +395,7 @@
       "name": "Shifra",
       "role": "A potter’s wife from the hills",
       "lines": 18,
-      "expressions": ["worried", "sad"],
+      "expressions": ["glad", "worried", "sad", "surprised"],
       "key": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
       "appearance": {
         "skin": "#ab7b55",
@@ -416,7 +416,7 @@
       "name": "Ami",
       "role": "Shifra’s son",
       "lines": 10,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "afraid"],
       "key": "#b07a50|#2a1a12|#c9a878|#556b3a|none|#c9a878|clean|child|none",
       "appearance": {
         "skin": "#ab7b55",
@@ -437,7 +437,7 @@
       "name": "Oded",
       "role": "Shifra’s brother, a potter",
       "lines": 5,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#a8734a|#3a2a1c|#8a7a5c|#b8683e|band|#8a2f2f|beard|adult|oar",
       "appearance": {
         "skin": "#a3744f",
@@ -479,7 +479,7 @@
       "name": "Tamar",
       "role": "Your mother",
       "lines": 20,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#a0704a|#2a1a10|#7a3f34|#e3c27a|veil|#e8dcc0|clean|adult|bread",
       "appearance": {
         "skin": "#9c714e",
@@ -500,7 +500,7 @@
       "name": "Saba Amram",
       "role": "Your grandfather",
       "lines": 11,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#9a6a45|#dcd4c4|#5f5a44|#c9a45a|wrap|#efe6d2|beard|elder|staff",
       "appearance": {
         "skin": "#966b49",
@@ -521,7 +521,7 @@
       "name": "Uncle Asa",
       "role": "A stonemason, your mother’s brother",
       "lines": 11,
-      "expressions": ["sad"],
+      "expressions": ["glad", "sad", "surprised"],
       "key": "#946040|#2a1a10|#8a7a5c|#4f6a7a|band|#6f4a2c|beard|adult|bundle",
       "appearance": {
         "skin": "#906144",
@@ -542,7 +542,7 @@
       "name": "Aunt Peninah",
       "role": "Uncle Asa’s wife",
       "lines": 9,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#b07a50|#1f1511|#35527a|#e8d49a|scarf|#c96f3b|clean|adult|none",
       "appearance": {
         "skin": "#ab7b55",
@@ -563,7 +563,7 @@
       "name": "Kallias",
       "role": "Registration clerk",
       "lines": 6,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#c08a5e|#3a2a1c|#e6dcc6|#3f5f8f|none|#e6dcc6|clean|adult|tablet",
       "appearance": {
         "skin": "#bb8b63",
@@ -584,7 +584,7 @@
       "name": "Hagit",
       "role": "Your neighbor, who keeps goats",
       "lines": 17,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#8a5a38|#cfc8bb|#556b3a|#d9b25f|veil|#6b5a7a|clean|elder|jar",
       "appearance": {
         "skin": "#865b3c",
@@ -605,7 +605,7 @@
       "name": "Cousin Yonatan",
       "role": "A young shepherd, your cousin",
       "lines": 11,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried"],
       "key": "#8d5a3a|#1f1611|#8b7a5a|#a8322a|scarf|#d8c49a|clean|adult|staff",
       "appearance": {
         "skin": "#895b3e",
@@ -626,7 +626,7 @@
       "name": "Old Yoram",
       "role": "Shepherd of the village flock",
       "lines": 6,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#7a4a2e|#e2dbcf|#6f5a3a|#5a4a3a|hood|#8a6a4a|beard|elder|lamb",
       "appearance": {
         "skin": "#764b32",
@@ -647,7 +647,7 @@
       "name": "Zerah",
       "role": "A basket-maker from Tekoa",
       "lines": 11,
-      "expressions": ["worried", "sad"],
+      "expressions": ["glad", "worried", "sad"],
       "key": "#946040|#cfc8bb|#7a6448|#2f5590|wrap|#c9b48a|beard|elder|lamp",
       "appearance": {
         "skin": "#906144",
@@ -668,7 +668,7 @@
       "name": "Ammia",
       "role": "Your grandmother, a dyer of red wool",
       "lines": 36,
-      "expressions": ["worried", "sad"],
+      "expressions": ["glad", "worried", "sad", "surprised"],
       "key": "#a8744c|#3a2c22|#7a3228|#e2c27a|veil|#e8dcc0|clean|elder|basket",
       "appearance": {
         "skin": "#a37551",
@@ -689,7 +689,7 @@
       "name": "Kallias",
       "role": "Ammia’s former apprentice",
       "lines": 29,
-      "expressions": ["worried", "sad"],
+      "expressions": ["glad", "worried", "sad", "surprised"],
       "key": "#b07a50|#2a1c12|#8a6a4a|#9a2e28|none|#8a6a4a|clean|adult|none",
       "appearance": {
         "skin": "#ab7b55",
@@ -710,7 +710,7 @@
       "name": "Zenon",
       "role": "A scribe who writes and reads letters",
       "lines": 12,
-      "expressions": ["worried"],
+      "expressions": ["glad", "worried", "surprised"],
       "key": "#9a6a45|#3a3028|#e6dcc4|#35527a|none|#e6dcc4|beard|adult|tablets",
       "appearance": {
         "skin": "#966b49",
@@ -731,7 +731,7 @@
       "name": "Attalos",
       "role": "A mule driver on the Laodicea road",
       "lines": 11,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#8a5a38|#1f1611|#6b5a3a|#c9a45a|wrap|#c9b48a|beard|adult|bundle",
       "appearance": {
         "skin": "#865b3c",
@@ -752,7 +752,7 @@
       "name": "Tatia",
       "role": "A fuller who cleans and finishes cloth",
       "lines": 8,
-      "expressions": [],
+      "expressions": ["glad", "surprised"],
       "key": "#b8845a|#2a1a12|#d8d0b8|#5f7438|scarf|#9a8a6a|clean|adult|basket",
       "appearance": {
         "skin": "#b3855f",
@@ -773,7 +773,7 @@
       "name": "Menandros",
       "role": "A potter",
       "lines": 3,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#a0704a|#2a1a10|#8c5231|#e2c170|band|#5a3a22|beard|adult|jar",
       "appearance": {
         "skin": "#9c714e",
@@ -794,7 +794,7 @@
       "name": "Nikon",
       "role": "Overseer of the dye works by the bridge",
       "lines": 4,
-      "expressions": [],
+      "expressions": ["glad"],
       "key": "#9a6040|#4a3a30|#3f5f8f|#d9b25f|none|#3f5f8f|beard|adult|none",
       "appearance": {
         "skin": "#956145",
@@ -815,7 +815,7 @@
       "name": "Chrysis",
       "role": "An enslaved worker at the dye works",
       "lines": 8,
-      "expressions": ["sad"],
+      "expressions": ["glad", "sad", "surprised"],
       "key": "#8f5f3f|#1a1210|#7a6a58|#6a2a4f|scarf|#6a5a48|clean|adult|none",
       "appearance": {
         "skin": "#8b6043",

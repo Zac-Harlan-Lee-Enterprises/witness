@@ -27,6 +27,8 @@ the lids narrowed...) for each expression a line can carry. The mixes are
 authored here; they are the same for everyone, with small per-person
 asymmetry, and are blended by the person's ancestry as the units are.
 """
+import json
+import os
 import random
 
 from portrait_params import seed_of
@@ -40,13 +42,19 @@ EXPRESSIONS = ("neutral", "glad", "worried", "sad", "angry", "surprised", "afrai
 # that has a left and a right version. Authored by eye on the renders.
 EXPRESSION_UNITS = {
     "glad": {
-        # A real smile reaches the eyes: corners up and back, the lips
-        # parting over the upper teeth, the cheeks lifting the lower lids.
-        "mouth-corner-puller": 1.0,
-        "mouth-upward-retraction": 0.35,
-        "mouth-open": 0.06,
-        "eye-{s}-slit": 0.5,
-        "eyebrows-{s}-extern-up": 0.15,
+        # A warm, real smile (not a grin): the cheeks rise and push the
+        # lower lids up into a slight squint, the corners of the mouth lift
+        # up and back with the lips closed or nearly so, and the folds from
+        # nose to mouth deepen. (Pulling the corners with the lip muscles
+        # alone drew them sideways into a tight, toothy salesman's grin.)
+        "mouth-corner-puller": 0.55,
+        "mouth/mouth-angles-up": 0.75,
+        "mouth-compression": 0.08,
+        "cheek/{lr}-cheek-trans-up": 0.45,
+        "cheek/{lr}-cheek-volume-incr": 0.35,
+        "mouth/mouth-laugh-lines-in": 0.5,
+        "eye-{s}-slit": 0.6,
+        "eyebrows-{s}-extern-up": 0.05,
     },
     "worried": {
         # Inner brows up and drawn together, lips pressed, corners down.
@@ -80,20 +88,75 @@ EXPRESSION_UNITS = {
         "neck-platysma": 0.55,
     },
     "surprised": {
+        # Brows up (lines across the forehead), the upper lids a little
+        # raised, the jaw dropped a little with the lips relaxed into a soft
+        # oval that hides most of the teeth. (Eyes wide open with white all
+        # round, and a gaping mouth, read as startled or manic.)
         "eyebrows-{s}-up": 1.0,
         "eyebrows-{s}-inner-up": 0.25,
-        "eye-{s}-opened-up": 0.8,
-        "mouth-open": 0.5,
+        "eye-{s}-opened-up": 0.25,
+        "mouth-open": 0.22,
+        "mouth-protusion": 0.15,
+        "mouth/mouth-scale-horiz-decr": 0.2,
+        "mouth/mouth-upperlip-height-incr": 0.35,
     },
     "afraid": {
-        # Brows up and together, eyes wide, the lips stretched back, the
-        # neck taut.
-        "eyebrows-{s}-inner-up": 1.25,
-        "eyebrows-{s}-up": 0.6,
-        "eye-{s}-opened-up": 1.0,
+        # Carried by the brows and eyes (a beard hides the mouth): the inner
+        # brows pulled up hard and drawn together, bunching the middle of the
+        # forehead; the upper lids raised to show a sliver of white above the
+        # iris; the lower lids tense; the lips stretched sideways and barely
+        # apart; the neck taut. More intense than worried at a glance.
+        "eyebrows-{s}-inner-up": 1.6,
+        "eyebrows-{s}-up": 0.55,
+        "eyebrows-{s}-down": 0.35,
+        "eye-{s}-opened-up": 0.95,
+        "eye-{s}-slit": 0.3,
         "mouth-retraction": 0.7,
-        "mouth-open": 0.35,
-        "neck-platysma": 0.7,
+        "mouth-open": 0.08,
+        "mouth/mouth-upperlip-height-incr": 0.2,
+        "neck-platysma": 0.6,
+    },
+}
+
+# A child's face for an expression, where it differs from a grown-up's.
+CHILD_MIXES = {
+    # A child's smile: the corners lifted and the mouth a little wider, the
+    # cheeks up, the lips closed. A child's full lower lip is the trouble:
+    # pushed up by the smile it read as a pout, and seen three-quarter on,
+    # its outer end hanging below the near corner made a hook that read as
+    # a crooked smirk. So the lower lip is thinned, its height reduced and
+    # its outer ends raised to meet the corners (MakeHuman's lower-lip
+    # "ext-down" target raises them; "ext-up" lowers them), and the cheeks
+    # are filled only a little (fuller, they puffed out).
+    "glad": {
+        "mouth-corner-puller": 0.45,
+        "mouth/mouth-angles-up": 0.8,
+        "mouth/mouth-scale-horiz-incr": 0.2,
+        "cheek/{lr}-cheek-trans-up": 0.35,
+        "cheek/{lr}-cheek-volume-incr": 0.3,
+        "mouth/mouth-laugh-lines-in": 0.25,
+        "mouth/mouth-lowerlip-volume-decr": 0.7,
+        "mouth/mouth-lowerlip-height-decr": 0.4,
+        "mouth/mouth-lowerlip-ext-down": 1.0,
+        "eye-{s}-slit": 0.55,
+        "eyebrows-{s}-extern-up": 0.1,
+    },
+    # A frightened child: eyes wide under raised, drawn brows, and the
+    # mouth's corners pulled down with the lips a little apart (close to
+    # tears). The grown-up's lips stretched sideways, on a child's round
+    # cheeks seen three-quarter on, read as a crooked grin.
+    "afraid": {
+        "eyebrows-{s}-inner-up": 1.9,
+        "eyebrows-{s}-up": 0.5,
+        "eyebrows-{s}-down": 0.4,
+        "eye-{s}-opened-up": 0.9,
+        "eye-{s}-slit": 0.25,
+        "mouth-retraction": 0.25,
+        "mouth-depression": 0.4,
+        "mouth-open": 0.12,
+        "mouth/mouth-angles-down": 0.4,
+        "mouth/mouth-lowerlip-ext-down": 0.2,
+        "neck-platysma": 0.3,
     },
 }
 
@@ -129,17 +192,25 @@ def ancestry(P):
 
 
 def _sided(unit, value, asym=0.0):
-    """A unit's weight; `{s}` units on both sides, the person's left scaled by (1 + asym)."""
-    if "{s}" not in unit:
-        return {unit: value}
-    return {unit.format(s="left"): value * (1 + asym), unit.format(s="right"): value * (1 - asym)}
+    """A unit's weight on both sides where it has sides (`{s}`: left/right
+    in the expression units; `{lr}`: l/r in MakeHuman's modelling
+    targets), the person's left scaled by (1 + asym)."""
+    for key, (left, right) in (("{s}", ("left", "right")), ("{lr}", ("l", "r"))):
+        if key in unit:
+            return {unit.replace(key, left): value * (1 + asym), unit.replace(key, right): value * (1 - asym)}
+    return {unit: value}
 
 
 def unit_weights(units, anc):
-    """{unit: weight} to target weights, blended by ancestry."""
+    """{unit: weight} to target weights. Expression units (a bare name) are
+    blended by ancestry; a modelling target (a path such as
+    `mouth/mouth-angles-up`) is used as it is."""
     out = {}
     total = sum(anc.values())
     for u, w in units.items():
+        if "/" in u:
+            out[u] = out.get(u, 0.0) + w
+            continue
         for race, share in anc.items():
             out[f"expression/units/{race}/{u}"] = out.get(f"expression/units/{race}/{u}", 0.0) + w * share / total
     return out
@@ -187,11 +258,25 @@ def expression(name, P):
     if name == "neutral":
         return unit_weights(mood_units(P), anc)
     r = random.Random(seed_of(P.id + ":" + name))
-    asym = r.uniform(-0.12, 0.12) * (1 - 0.6 * P.child)
+    # One side a few percent stronger (within a natural 5-10%).
+    asym = r.uniform(-0.04, 0.04) * (1 - 0.6 * P.child)
+    mix = EXPRESSION_UNITS[name]
+    override = os.environ.get("PORTRAIT_EXPRESSION_MIX")  # review: a JSON {unit: weight} to try instead
+    if override:
+        mix = json.loads(override)
+    if P.child > 0.5 and name in CHILD_MIXES and not override:
+        mix = CHILD_MIXES[name]
     units = {}
-    for u, w in EXPRESSION_UNITS[name].items():
+    for u, w in mix.items():
         for k, x in _sided(u, w, asym).items():
             units[k] = units.get(k, 0.0) + x
+    if name == "glad" and P.smile_squint != 1.0:
+        # How far this person's smile narrows their eyes (the cheeks push the
+        # lower lids up too, so both are scaled).
+        units = {
+            k: v * (P.smile_squint if ("slit" in k or "cheek-trans-up" in k) else 1.0)
+            for k, v in units.items()
+        }
     if P.child > 0.5 and name == "angry":
         # A child's cross face: brows and pout, no bared teeth.
         units = {k: v * (0.4 if k.startswith("mouth") else 1.0) for k, v in units.items()}

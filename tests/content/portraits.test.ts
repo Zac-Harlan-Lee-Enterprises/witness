@@ -199,6 +199,20 @@ describe('portraits', () => {
     expect(entries.ezer?.expressions).toContain('angry');
   });
 
+  it('Aunt Miriam greets the player with a glad face, from its own file', () => {
+    // The first face a player sees: the smile that was held back until it was reworked.
+    const ch1 = chapters.find((c) => c.id === 'road-to-jericho');
+    const line = ch1?.dialogues.find((d) => d.id === 'd-opening')?.nodes.find((n) => n.id === 'n2');
+    expect(line?.speaker).toBe('miriam');
+    expect(line?.expression).toBe('glad');
+    expect(entries.miriam?.expressions).toContain('glad');
+    const miriam = ch1?.characters.find((c) => c.id === 'miriam');
+    if (!miriam) throw new Error('Aunt Miriam is missing');
+    const art = portraitImage(miriam.appearance, 'miriam', 'glad', entries, '/');
+    expect(art?.expression).toBe('glad');
+    expect(art?.src).toMatch(/\/art\/portraits\/glad\/miriam-256\.webp$/);
+  });
+
   it('every character who speaks, in every chapter, is shown their own portrait', () => {
     const { sitters } = portraitCast(chapters);
     expect(sitters.length).toBeGreaterThan(35);

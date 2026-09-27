@@ -183,11 +183,7 @@ The person's own features are then moved from there: often a longer or higher-br
 
 A dialogue line may carry an `expression` ([`src/domain/dialogue.ts`](../../src/domain/dialogue.ts)): `neutral` (the default), `glad`, `worried`, `sad`, `angry`, `surprised` or `afraid`. It is presentation only: which portrait is shown. It never changes the words, the story's rules, Scripture text or any approval.
 
-**Held back (2026-09-27):** `glad`, `surprised` and `afraid` are not shipped yet (`HELD_BACK_EXPRESSIONS` in [`portrait-cast.ts`](../../src/content/portrait-cast.ts)).
-- Their first renders fell short. Most `glad` faces were a strained, crooked grin showing a thin strip of upper teeth; the open mouths of `surprised` and `afraid` looked like dentures.
-- Their lines keep the annotation and show the speaker's neutral portrait. Nothing is rendered for them until they are reworked.
-- To bring one back: remove it from the set, run `npm run art:portrait-data`, then `node scripts/art-build.mjs portraits --missing`.
-- `worried`, `sad` and `angry` are shipped.
+**Held back, then reworked (2026-09-27).** The first renders of `glad`, `surprised` and `afraid` read badly at dialogue size and were held back (`HELD_BACK_EXPRESSIONS` in [`portrait-cast.ts`](../../src/content/portrait-cast.ts)), their lines showing the neutral portrait, until they were reworked (§8, steps 15-19). All seven now ship. The set is kept, empty, for any expression that needs rework later: list it, run `npm run art:portrait-data`, and its lines show neutral; take it out again and render with `node scripts/art-build.mjs portraits --missing`.
 
 **Annotation.** 205 lines across the four chapters carry one, marked only where the feeling is clear from the words and the scene:
 
@@ -211,16 +207,16 @@ Scripture and paraphrase lines stay neutral unless the speaker's own feeling is 
 
 **Which portraits are rendered.** The portrait data ([`scripts/export-portrait-data.ts`](../../scripts/export-portrait-data.ts)) lists each speaker's expressions. `npm run art:portraits` renders their neutral portrait and those expressions only: 84 expression portraits for 39 people.
 
-**Authored mixes.** Each expression is a mix of MakeHuman's expression units, authored here (`EXPRESSION_UNITS` in [`portrait_face.py`](../../tools/art/lib/portrait_face.py)). The weights were pushed until each reads at the 104 px the game shows:
+**Authored mixes.** Each expression is a mix of MakeHuman's expression units and, where a muscle action alone looked wrong, its modelling targets (the corners of the mouth, the cheeks, the lips), authored here (`EXPRESSION_UNITS` and `CHILD_MIXES` in [`portrait_face.py`](../../tools/art/lib/portrait_face.py)). Each was judged at the 104 and 160 px the game shows, next to the same person's neutral portrait:
 
-- **glad:** the corners of the mouth pulled up and back, the lips parting over the upper teeth, the cheeks lifting the lower lids, the outer brows up a little.
+- **glad:** a warm, closed-lip smile. The cheeks rise and push the lower lids up into a slight squint, with crow's feet; the corners of the mouth lift up (MakeHuman's `mouth-angles-up`) more than they are pulled sideways; the folds from nose to mouth deepen. A child's mouth widens a little more, the cheeks fill only a little, and the full lower lip is thinned, with its outer ends raised to meet the corners (§8, step 19). How far a smile narrows the eyes is a person's own trait (`smile_squint` in `CASTING`, 1 by default): Elazar's hooded eyes (0.45) and Kallias's (0.4) closed to a slit that hid the iris, which the gaze check caught.
 - **worried:** the inner brows raised and drawn together, the lips pressed, the corners down a little.
 - **sad:** the inner brows raised, the lids heavy, the corners of the mouth pulled down, the chin raised a little; the eyes look down.
 - **angry:** the brows hard down and knit, the lids narrowed with the lower lids tense, the nostrils flared and the nose wrinkled, the upper lip raised off the teeth, the mouth open, the neck tight. (A child's is a frown and a pout.)
-- **surprised:** the brows high, the eyes wide, the jaw dropped.
-- **afraid:** the brows up and together, the eyes wide, the lips stretched back, the mouth a little open, the neck taut.
+- **surprised:** the brows high with lines across the forehead, the upper lids only a little raised, the jaw dropped a little, and a longer, relaxed upper lip in a soft oval that hides most of the teeth.
+- **afraid:** carried by the brows and eyes (a beard hides the mouth): the inner brows pulled up hard and drawn together, the middle of the forehead bunched, a sliver of white above the iris, the lower lids tense, the lips stretched sideways and barely apart, the neck taut. A child's is closer to tears: the brows drawn up harder, and the mouth's corners pulled down with the lips a little apart.
 
-Each person's expression is a little asymmetric: one side a few percent stronger.
+Each person's expression is a little asymmetric: one side at most 4% stronger (less for children).
 
 **Neutral** is a relaxed face, not a smile. The casting table's resting mood only tints it: a warm person's mouth corners a shade up, a stern person's brows a shade down, a tired person's lids a little heavy.
 
@@ -354,6 +350,11 @@ What was tried, what it looked like, and what changed. Each step was judged at 5
     - The second decides by the nearest skin: the outer skin or the mouth's lining.
     - Those points are now tucked under the skin, and the mouth's lining is coloured as a mouth.
 14. **The neck and cloth.** The tunic had wrapped the underside of the jaw (a dark band); it now stops at the neckline. Veils fell in many even pleats, like a lampshade; they now have a few broad folds and irregular bunching where they rest on the head.
+15. **Glad, surprised and afraid held back.** Reviewed in the game at 104 and 160 px, most smiles were a strained, crooked grin (a thin strip of upper teeth in a tight lip line, corners pulled sideways, cold eyes); Aunt Miriam's greeting, the first face a player sees, looked leering. The open mouths of surprise and fear looked like dentures, and eyes wide with white all round read as manic. They were held back while worried, sad and angry shipped.
+16. **A real smile.** The expression units only pull the corners of the mouth sideways and part the lips. The smile now lifts the corners with MakeHuman's own mouth-corner modelling target, raises and fills the cheeks, and narrows the eyes from below (the cheeks pushing the lower lids up), with the lips closed. Every lip-parting variant tried still showed a strip of teeth at 104 px, so none ships.
+17. **The dentures.** Two causes: MakeHuman's dental block sits 4-5 mm behind the lips, so the teeth stood in a dark cave; and the lower teeth stood tall in an open mouth. The arch is now brought forward until the front teeth rest against the inside of the lips, the lower teeth sit 2 mm lower (a relaxed lower lip covers them), and the enamel is a shade darker. Surprise drops the jaw less, with a longer, relaxed upper lip; fear barely parts the lips.
+18. **Fear through the eyes.** Under a beard, the first reworked fear read only as anxious. The inner brows now pull up harder and together, the upper lids show a sliver of white, and the lower lids tense.
+19. **Children, three-quarter on.** The children's smiles (Natan, Ami) read as a crooked smirk although the mix is symmetric to within 2%: rendered from the front the smile was even. Seen three-quarter on, the outer end of a child's full lower lip hung below the corner nearer the camera and made a downward hook, while the far corner's lift showed against the cheek. Tilting the mouth to compensate did nothing visible. Thinning the lower lip, lowering its height and raising its outer ends to meet the corners (MakeHuman's lower-lip `ext-down` target, which raises them, not `ext-up`, which lowers them), with less cheek fill (fuller, the cheeks puffed out), took most of the hook away. A frightened child with the grown-ups' lips stretched sideways looked like the same crooked grin, so a child's fear pulls the corners down instead.
 
 ## 9. Hair and cloth
 

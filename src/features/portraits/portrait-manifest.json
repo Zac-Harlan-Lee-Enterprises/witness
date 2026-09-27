@@ -1,30 +1,32 @@
 {
   "ami": {
     "appearance": "#b07a50|#2a1a12|#c9a878|#556b3a|none|#c9a878|clean|child|none",
-    "expressions": ["worried"],
+    "expressions": ["afraid", "glad", "worried"],
     "kind": "character"
   },
   "ammia": {
     "appearance": "#a8744c|#3a2c22|#7a3228|#e2c27a|veil|#e8dcc0|clean|elder|basket",
-    "expressions": ["sad", "worried"],
+    "expressions": ["glad", "sad", "surprised", "worried"],
     "kind": "character"
   },
   "amram": {
     "appearance": "#9a6a45|#dcd4c4|#5f5a44|#c9a45a|wrap|#efe6d2|beard|elder|staff",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "asa": {
     "appearance": "#946040|#2a1a10|#8a7a5c|#4f6a7a|band|#6f4a2c|beard|adult|bundle",
-    "expressions": ["sad"],
+    "expressions": ["glad", "sad", "surprised"],
     "kind": "character"
   },
   "attalos": {
     "appearance": "#8a5a38|#1f1611|#6b5a3a|#c9a45a|wrap|#c9b48a|beard|adult|bundle",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "chrysis": {
     "appearance": "#8f5f3f|#1a1210|#7a6a58|#6a2a4f|scarf|#6a5a48|clean|adult|none",
-    "expressions": ["sad"],
+    "expressions": ["glad", "sad", "surprised"],
     "kind": "character"
   },
   "dinah": {
@@ -33,20 +35,22 @@
   },
   "elazar": {
     "appearance": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
-    "expressions": ["worried"],
+    "expressions": ["afraid", "glad", "surprised", "worried"],
     "kind": "character"
   },
   "ezer": {
     "appearance": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
-    "expressions": ["angry", "sad"],
+    "expressions": ["angry", "glad", "sad"],
     "kind": "character"
   },
   "hadassah": {
     "appearance": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "hagit": {
     "appearance": "#8a5a38|#cfc8bb|#556b3a|#d9b25f|veil|#6b5a7a|clean|elder|jar",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "hanan": {
@@ -55,54 +59,62 @@
   },
   "hanina": {
     "appearance": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "kallias": {
     "appearance": "#c08a5e|#3a2a1c|#e6dcc6|#3f5f8f|none|#e6dcc6|clean|adult|tablet",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "kallias.letter-from-paul": {
     "appearance": "#b07a50|#2a1c12|#8a6a4a|#9a2e28|none|#8a6a4a|clean|adult|none",
-    "expressions": ["sad", "worried"],
+    "expressions": ["glad", "sad", "surprised", "worried"],
     "kind": "character"
   },
   "malik": {
     "appearance": "#7a4a2e|#1c1410|#2f5f6f|#d9a441|wrap|#c9b48a|beard|adult|bundle",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "menandros": {
     "appearance": "#a0704a|#2a1a10|#8c5231|#e2c170|band|#5a3a22|beard|adult|jar",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "menashe": {
     "appearance": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
-    "expressions": ["sad", "worried"],
+    "expressions": ["afraid", "glad", "sad", "surprised", "worried"],
     "kind": "character"
   },
   "miriam": {
     "appearance": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
-    "expressions": ["worried"],
+    "expressions": ["glad", "worried"],
     "kind": "character"
   },
   "natan": {
     "appearance": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "nikanor": {
     "appearance": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
-    "expressions": ["sad"],
+    "expressions": ["glad", "sad", "surprised"],
     "kind": "character"
   },
   "nikon": {
     "appearance": "#9a6040|#4a3a30|#3f5f8f|#d9b25f|none|#3f5f8f|beard|adult|none",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "oded": {
     "appearance": "#a8734a|#3a2a1c|#8a7a5c|#b8683e|band|#8a2f2f|beard|adult|oar",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "peninah": {
     "appearance": "#b07a50|#1f1511|#35527a|#e8d49a|scarf|#c96f3b|clean|adult|none",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "player-look-1": {
@@ -123,22 +135,22 @@
   },
   "rivka": {
     "appearance": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
-    "expressions": ["worried"],
+    "expressions": ["glad", "surprised", "worried"],
     "kind": "character"
   },
   "salome": {
     "appearance": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
-    "expressions": ["worried"],
+    "expressions": ["glad", "worried"],
     "kind": "character"
   },
   "shelomit": {
     "appearance": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
-    "expressions": ["worried"],
+    "expressions": ["glad", "surprised", "worried"],
     "kind": "character"
   },
   "shifra": {
     "appearance": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
-    "expressions": ["sad", "worried"],
+    "expressions": ["glad", "sad", "surprised", "worried"],
     "kind": "character"
   },
   "shimon": {
@@ -147,47 +159,52 @@
   },
   "tamar": {
     "appearance": "#9a6440|#1a1210|#8f3f2f|#e2b555|scarf|#c96f3b|clean|adult|net",
-    "expressions": ["worried"],
+    "expressions": ["afraid", "glad", "surprised", "worried"],
     "kind": "character"
   },
   "tamar.journey-to-bethlehem": {
     "appearance": "#a0704a|#2a1a10|#7a3f34|#e3c27a|veil|#e8dcc0|clean|adult|bread",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "tatia": {
     "appearance": "#b8845a|#2a1a12|#d8d0b8|#5f7438|scarf|#9a8a6a|clean|adult|basket",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "tobiah": {
     "appearance": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
+    "expressions": ["glad", "surprised"],
     "kind": "character"
   },
   "yair": {
     "appearance": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
+    "expressions": ["surprised"],
     "kind": "character"
   },
   "yoezer": {
     "appearance": "#7a4a2e|#2a1a10|#6b5a3a|#8a6a4a|band|#5a4a3a|beard|adult|jar",
-    "expressions": ["worried"],
+    "expressions": ["afraid", "surprised", "worried"],
     "kind": "character"
   },
   "yonatan": {
     "appearance": "#8d5a3a|#1f1611|#8b7a5a|#a8322a|scarf|#d8c49a|clean|adult|staff",
-    "expressions": ["worried"],
+    "expressions": ["glad", "worried"],
     "kind": "character"
   },
   "yoram": {
     "appearance": "#7a4a2e|#e2dbcf|#6f5a3a|#5a4a3a|hood|#8a6a4a|beard|elder|lamb",
+    "expressions": ["glad"],
     "kind": "character"
   },
   "zenon": {
     "appearance": "#9a6a45|#3a3028|#e6dcc4|#35527a|none|#e6dcc4|beard|adult|tablets",
-    "expressions": ["worried"],
+    "expressions": ["glad", "surprised", "worried"],
     "kind": "character"
   },
   "zerah": {
     "appearance": "#946040|#cfc8bb|#7a6448|#2f5590|wrap|#c9b48a|beard|elder|lamp",
-    "expressions": ["sad", "worried"],
+    "expressions": ["glad", "sad", "worried"],
     "kind": "character"
   }
 }

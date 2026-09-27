@@ -380,3 +380,22 @@ NEXT   : Review docs/art/portraits/expressions-*.webp with the owner; if a face 
          tools/art/lib/portrait_params.py and run `npm run art:portraits -- --who <id>` (renders its neutral and
          expressions), then `npm run art:portrait-sheets`.
 BLOCKED: none.
+
+--- 2026-09-27  Claude Opus 5.5 (main session) — gap fixes, updates in-game, portraits shipped, expressions reworked ---
+DONE   : PR #6 (phone texture memory, art polish, people's indoor shadows fade past their box instead of printing it,
+         CI room for slow runners: timeLimit doubles long e2e limits on CI, job 50 min). PR #7 (a new version reaches
+         players in a game: "Save and update" in the pause menu, a dot on the HUD's Menu, hourly and on-return update
+         checks; ADR-0006 updated; the owner had kept an old version with the drawn portraits for hours). PR #8
+         (MakeHuman portraits; glad/surprised/afraid held back: strained grins, denture-like mouths). PR #9 (hovering a
+         dialogue choice brought up a scrollbar: the choice's box slid 3 px out of the scrolling column; now only its
+         contents slide). This branch: glad, surprised and afraid reworked and released (warm closed smile, soft
+         surprised oval with the lower teeth tucked, fear in the brows and eyes); a per-person `smile_squint` in CASTING
+         after Elazar's and Kallias's smiles hid their irises (the gaze check caught it).
+TESTS  : Vitest 608 -> 648. typecheck, lint, prettier, knip, content:validate clean. e2e on this branch: portraits,
+         pwa, a11y, smoke, chapter, dialogue-layout, mobile: 23 passed. Full e2e on #8 and #9 passed (under heavy
+         machine load some tests time out; they pass on rerun).
+NEXT   : Known gaps, none requested: phones' low ground a little soft (docs/performance.md §2c options); the lake's
+         set sails lost their moon shadow; the Laodicea road still has the old stoke-holes until re-rendered; people
+         walking in the world are the older figures (only conversation portraits rebuilt); ~13 old agent worktrees
+         under .claude/worktrees can be removed (`git worktree remove`).
+BLOCKED: none.

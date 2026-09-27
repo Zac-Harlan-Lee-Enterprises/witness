@@ -249,7 +249,9 @@ def teeth(age=0.0, child=0.0):
     def build():
         n = Nodes(f"teeth-{age:.2f}")
         obj = n.coords("Object")
-        base = _lin("#d6c6a1" if age < 0.35 else ("#c9b58a" if age < 0.7 else "#b9a276"))
+        # (Darker than they look: teeth are always half in the shadow of the
+        # lips, and bright enamel read as dentures.)
+        base = _lin("#c4b391" if age < 0.35 else ("#b8a47e" if age < 0.7 else "#a8916a"))
         # Tooth to tooth (about a centimetre) and within a tooth.
         per = n.noise(95.0, 1.0, 0.5, obj)
         fine = n.noise(900.0, 3.0, 0.5, obj)

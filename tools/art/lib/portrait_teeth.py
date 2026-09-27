@@ -199,6 +199,17 @@ def build(head, P, col, mats, inside=None):
         mid = total / 2
         half = sum(w for _, w, _, _ in table) * scale
         fit = min(1.0, (total / 2) * 0.98 / half)
+        # MakeHuman's dental block sits well behind the lips (4-5 mm of air
+        # between the front teeth and the inside of the lips, which read as
+        # dentures deep in a dark mouth). A person's front teeth rest against
+        # the inside of the lips: the arch is brought forward until they
+        # do, fully at the front and less toward the back.
+        j0 = int(np.argmin(np.abs(curve[:, 0])))
+        front = curve[j0].copy()
+        jz = int(np.clip(round(j0 / len(curve) * (len(tops) - 1)), 0, len(tops) - 1))
+        _, h0, th0 = table[0][1], table[0][2] * scale, table[0][3] * scale
+        front[2] = (bots[jz] + 0.05 + 0.4 * h0) if down else (tops[jz] - 0.27 - 0.4 * h0)
+        forward = _gap_to_lips(head, front + np.array([0.0, -(th0 / 2 + 0.05), 0.0], F))
         bm = bmesh.new()
         gum_pts = []
         for side in (-1, 1):
@@ -223,7 +234,9 @@ def build(head, P, col, mats, inside=None):
                 outward /= max(np.linalg.norm(outward), 1e-6)
                 # Heights: the biting edge at the block's edge toward the other jaw.
                 j = int(np.clip(round(i / len(curve) * (len(tops) - 1)), 0, len(tops) - 1))
-                edge_z = bots[j] + 0.05 if down else tops[j] - 0.05
+                # (The lower teeth sit lower: a relaxed lower lip covers most of
+                # them when the mouth opens; standing tall they read as dentures.)
+                edge_z = bots[j] + 0.05 if down else tops[j] - 0.27
                 front = k <= 2
                 tilt = math.radians((12 if front else 4) + rng.uniform(-3, 3))
                 verts, quads = _crown(kind, w, h, th)
@@ -238,6 +251,8 @@ def build(head, P, col, mats, inside=None):
                     y_ax = -y_ax
                 M = np.stack([x_ax, y_ax, zdir], 1)
                 base_pt = np.array([p[0], p[1], edge_z], F) - zdir * (h + rng.uniform(-0.05, 0.04)) + outward * (0.05 + rng.uniform(-0.03, 0.03))
+                # Brought forward (see above): fully at the incisors, half at the molars.
+                base_pt = base_pt + np.array([0.0, -forward * (1.0 - 0.5 * k / (len(table) - 1)), 0.0], F)
                 # A little irregularity: each tooth turned and set a fraction differently.
                 rot = Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, "X")
                 Vt = (np.array([rot @ Vector(v) for v in verts.tolist()], F) @ M.T) + base_pt
@@ -279,6 +294,19 @@ def build(head, P, col, mats, inside=None):
     objs.append(tongue)
     build.tucked = tucked
     return objs
+
+
+def _gap_to_lips(head, p, leave=0.06, reach=1.2, step=0.02):
+    """How far (cm) the point `p` (the front of the front teeth, on the rest
+    shape) can move forward before it is within `leave` of the inside of
+    the lips."""
+    field = head.sdf_grid("rest")
+    moved = 0.0
+    q = np.array(p, F).reshape(1, 3)
+    while moved < reach and float(field.dist(q)[0]) > leave:
+        q[0, 1] -= step
+        moved += step
+    return max(0.0, moved - step)
 
 
 def _gum(name, gum_pts, Rm, t, col, mat, down, inside=None):
