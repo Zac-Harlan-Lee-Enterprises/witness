@@ -42,6 +42,7 @@ export const TEST_PROFILE: PlayerProfile = {
   createdAt: new Date(0).toISOString(),
   lastPlayedAt: null,
   completedChapters: [],
+  seenTeasers: [],
 };
 
 export async function makeRuntime(): Promise<{ runtime: GameRuntimeLike; harness: Harness }> {

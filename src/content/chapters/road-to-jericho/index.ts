@@ -18,6 +18,7 @@ import { JERICHO_ROAD } from './scenes/jericho-road';
 import { JERUSALEM_MARKET } from './scenes/jerusalem-market';
 import { MIRIAM_HOUSE } from './scenes/miriam-house';
 import { withApprovals } from '../../shared/approvals';
+import { TEASER, TEASER_RECORD } from './teaser';
 
 const flagIs = (flag: string) => ({ type: 'flag' as const, flag });
 const carries = (item: string) => ({ type: 'hasItem' as const, item });
@@ -66,10 +67,12 @@ export const ROAD_TO_JERICHO: ChapterInput = {
   clues: CLUES,
   puzzles: PUZZLES,
   journal: JOURNAL,
-  records: withApprovals('road-to-jericho', RECORDS),
+  // The teaser's record is added after the chapter's approval: it is not covered by it.
+  records: [...withApprovals('road-to-jericho', RECORDS), TEASER_RECORD],
   sources: SOURCES,
   choices: CHOICES,
   themes: THEMES,
   scriptureConnection: SCRIPTURE_CONNECTION,
   summary: SUMMARY,
+  teaser: TEASER,
 };

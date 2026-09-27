@@ -59,6 +59,7 @@ const profile = (id: string): PlayerProfile => ({
   createdAt: new Date(0).toISOString(),
   lastPlayedAt: null,
   completedChapters: [],
+  seenTeasers: [],
 });
 
 beforeEach(() => {

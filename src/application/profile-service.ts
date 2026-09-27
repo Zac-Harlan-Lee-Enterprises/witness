@@ -48,6 +48,7 @@ export class ProfileService {
       createdAt: new Date(this.clock.now()).toISOString(),
       lastPlayedAt: null,
       completedChapters: [],
+      seenTeasers: [],
     };
     await this.profiles.put(profile);
     return { ok: true, profile };
@@ -70,6 +71,14 @@ export class ProfileService {
   async markChapterComplete(profile: PlayerProfile, chapterId: string): Promise<PlayerProfile> {
     if (profile.completedChapters.includes(chapterId)) return profile;
     const updated = { ...profile, completedChapters: [...profile.completedChapters, chapterId] };
+    await this.profiles.put(updated);
+    return updated;
+  }
+
+  /** Remember that this profile has seen a chapter's teaser (watched or skipped). */
+  async markTeaserSeen(profile: PlayerProfile, chapterId: string): Promise<PlayerProfile> {
+    if (profile.seenTeasers.includes(chapterId)) return profile;
+    const updated = { ...profile, seenTeasers: [...profile.seenTeasers, chapterId] };
     await this.profiles.put(updated);
     return updated;
   }

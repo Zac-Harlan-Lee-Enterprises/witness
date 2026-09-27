@@ -359,6 +359,20 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
     checkEffects(`${where} onEnter`, s.onEnter);
   });
 
+  // The teaser's words are a content record like any other.
+  if (chapter.teaser) {
+    checkRecord('teaser', chapter.teaser.recordId);
+    const rec = ids.records.get(chapter.teaser.recordId);
+    if (rec) {
+      const words = chapter.teaser.cues.map((c) => c.text);
+      if (words.some((w) => !(rec.body ?? '').includes(w)))
+        add(
+          'teaser',
+          `every cue's words must appear in its record '${rec.id}' (what editors review)`,
+        );
+    }
+  }
+
   // Connection + summary
   chapter.scriptureConnection.sections.forEach((sec) =>
     sec.recordIds.forEach((r) => checkRecord('scriptureConnection', r)),

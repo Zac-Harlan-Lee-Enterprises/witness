@@ -1107,7 +1107,7 @@ def pose_rotations(walk, breath, talk, hand="R", rest=None):
     R = {}
     if rest == "sit":
         # Cross-legged: thighs forward and out, shins folded in, hands on the knees.
-        rise = 1.0 if breath else 0.0
+        rise = float(breath)
         for side, sgn in (("L", 1), ("R", -1)):
             R[f"thigh_{side}"] = rot(x=-84.0, z=sgn * 42.0)
             R[f"shin_{side}"] = rot(x=138.0, z=-sgn * 38.0)
@@ -1125,7 +1125,7 @@ def pose_rotations(walk, breath, talk, hand="R", rest=None):
         return R
     if rest == "lie":
         # On the back: legs straight but one knee a little raised, arms by the sides.
-        rise = 1.0 if breath else 0.0
+        rise = float(breath)
         R["thigh_L"] = rot(x=-14.0)
         R["shin_L"] = rot(x=26.0)
         R["foot_L"] = rot(x=-10.0)
@@ -1156,7 +1156,7 @@ def pose_rotations(walk, breath, talk, hand="R", rest=None):
         R["spine"] = rot(x=-3.0, z=-yaw * 1.6)
         R["head"] = rot(z=yaw * 0.5)
     else:
-        rise = 1.0 if breath else 0.0
+        rise = float(breath)
         R["spine"] = rot(x=-0.8 * rise)
         R["chest"] = rot(x=-1.2 * rise)
         R["upper_arm_L"] = rot(y=2.0 + rise * 0.6)
