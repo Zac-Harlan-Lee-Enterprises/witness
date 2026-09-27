@@ -1606,14 +1606,22 @@ legend {
   box-shadow: 0 1px 0 rgb(44 29 18 / 0.15);
   transition:
     border-color 0.12s,
-    transform 0.12s,
     box-shadow 0.12s;
 }
 .choice:hover,
 .choice:focus-visible {
   border-color: var(--color-accent);
-  transform: translateX(3px);
   box-shadow: 0 3px 10px rgb(44 29 18 / 0.18);
+}
+/* The nudge moves what is inside a choice, within its padding, never the
+   choice itself: a choice moved sideways overflowed the scrolling dialogue,
+   and a scrollbar flashed up under the pointer. */
+.choice > * {
+  transition: transform 0.12s;
+}
+.choice:hover > *,
+.choice:focus-visible > * {
+  transform: translateX(3px);
 }
 /* The number as a small wax seal. */
 .choice__number {
@@ -1634,8 +1642,8 @@ legend {
 :root[data-contrast='high'] .choice {
   background: var(--color-surface);
 }
-:root[data-motion='reduce'] .choice:hover,
-:root[data-motion='reduce'] .choice:focus-visible {
+:root[data-motion='reduce'] .choice:hover > *,
+:root[data-motion='reduce'] .choice:focus-visible > * {
   transform: none;
 }
 @media (max-width: 640px) {
