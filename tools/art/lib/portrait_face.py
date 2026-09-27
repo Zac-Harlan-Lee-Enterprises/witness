@@ -42,13 +42,19 @@ EXPRESSIONS = ("neutral", "glad", "worried", "sad", "angry", "surprised", "afrai
 # that has a left and a right version. Authored by eye on the renders.
 EXPRESSION_UNITS = {
     "glad": {
-        # A real smile reaches the eyes: corners up and back, the lips
-        # parting over the upper teeth, the cheeks lifting the lower lids.
-        "mouth-corner-puller": 1.0,
-        "mouth-upward-retraction": 0.35,
-        "mouth-open": 0.06,
-        "eye-{s}-slit": 0.5,
-        "eyebrows-{s}-extern-up": 0.15,
+        # A warm, real smile (not a grin): the cheeks rise and push the
+        # lower lids up into a slight squint, the corners of the mouth lift
+        # up and back with the lips closed or nearly so, and the folds from
+        # nose to mouth deepen. (Pulling the corners with the lip muscles
+        # alone drew them sideways into a tight, toothy salesman's grin.)
+        "mouth-corner-puller": 0.55,
+        "mouth/mouth-angles-up": 0.75,
+        "mouth-compression": 0.08,
+        "cheek/{lr}-cheek-trans-up": 0.45,
+        "cheek/{lr}-cheek-volume-incr": 0.35,
+        "mouth/mouth-laugh-lines-in": 0.5,
+        "eye-{s}-slit": 0.6,
+        "eyebrows-{s}-extern-up": 0.05,
     },
     "worried": {
         # Inner brows up and drawn together, lips pressed, corners down.
@@ -82,25 +88,48 @@ EXPRESSION_UNITS = {
         "neck-platysma": 0.55,
     },
     "surprised": {
+        # Brows up (lines across the forehead), the upper lids a little
+        # raised, the jaw dropped a little with the lips relaxed into a soft
+        # oval that hides most of the teeth. (Eyes wide open with white all
+        # round, and a gaping mouth, read as startled or manic.)
         "eyebrows-{s}-up": 1.0,
         "eyebrows-{s}-inner-up": 0.25,
-        "eye-{s}-opened-up": 0.8,
-        "mouth-open": 0.5,
+        "eye-{s}-opened-up": 0.25,
+        "mouth-open": 0.25,
+        "mouth-protusion": 0.15,
+        "mouth/mouth-scale-horiz-decr": 0.2,
+        "mouth/mouth-upperlip-height-incr": 0.35,
     },
     "afraid": {
-        # Brows up and together, eyes wide, the lips stretched back, the
-        # neck taut.
-        "eyebrows-{s}-inner-up": 1.25,
-        "eyebrows-{s}-up": 0.6,
-        "eye-{s}-opened-up": 1.0,
-        "mouth-retraction": 0.7,
-        "mouth-open": 0.35,
-        "neck-platysma": 0.7,
+        # Inner brows up and drawn together, the upper lids raised and the
+        # lower ones tense, the lips stretched sideways and a little apart
+        # (not a gaping mouth), the neck taut.
+        "eyebrows-{s}-inner-up": 1.2,
+        "eyebrows-{s}-up": 0.5,
+        "eyebrows-{s}-down": 0.15,
+        "eye-{s}-opened-up": 0.4,
+        "eye-{s}-slit": 0.2,
+        "mouth-retraction": 0.6,
+        "mouth-open": 0.08,
+        "mouth/mouth-upperlip-height-incr": 0.2,
+        "neck-platysma": 0.5,
     },
 }
 
 # A child's face for an expression, where it differs from a grown-up's.
-CHILD_MIXES = {}
+CHILD_MIXES = {
+    # A child's smile is rounder and brighter: fuller cheeks, the corners
+    # lifted more than pulled, the lips closed.
+    "glad": {
+        "mouth-corner-puller": 0.4,
+        "mouth/mouth-angles-up": 0.9,
+        "cheek/{lr}-cheek-trans-up": 0.35,
+        "cheek/{lr}-cheek-volume-incr": 0.55,
+        "mouth/mouth-laugh-lines-in": 0.3,
+        "eye-{s}-slit": 0.55,
+        "eyebrows-{s}-extern-up": 0.1,
+    },
+}
 
 # Where the eyes look for an expression: degrees away from the camera (+ the
 # person's left, + up). Sadness looks down.
