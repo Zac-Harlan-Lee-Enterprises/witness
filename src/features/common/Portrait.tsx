@@ -8,10 +8,10 @@ import { portraitImage } from '../portraits/portrait-art';
  *
  * A pre-rendered portrait (tools/art/build_portraits.py) is shown when one
  * exists for how the person looks now, in the expression asked for (or
- * neutral, if that expression wasn't rendered for them). It has a fixed size
- * and a matching background while it loads, so nothing moves. Otherwise (or
- * if the image cannot load) an original SVG drawn from the same Appearance
- * data is shown.
+ * neutral, if that expression wasn't rendered for them, or can't be loaded).
+ * It has a fixed size and a matching background while it loads, so nothing
+ * moves. Otherwise (or if no picture can be loaded) an original SVG drawn
+ * from the same Appearance data is shown.
  *
  * `fadeFrom` is the picture shown just before (the same person's previous
  * line): it fades out over the new one, so a change of expression is a
@@ -47,12 +47,19 @@ export function Portrait({
   /** The picture to cross-fade from (see above). */
   fadeFrom?: PortraitSource | null;
 }) {
-  const [failed, setFailed] = useState<string | null>(null);
-  const art = appearance ? portraitImage(appearance, characterId, expression) : null;
+  // Pictures that failed to load. An expression that can't load (offline,
+  // before it was ever cached) falls back to the neutral portrait, which is
+  // always precached; if that fails too, to the drawing.
+  const [failed, setFailed] = useState<readonly string[]>([]);
+  const wanted = appearance ? portraitImage(appearance, characterId, expression) : null;
+  const art =
+    wanted && failed.includes(wanted.src) && wanted.expression !== 'neutral' && appearance
+      ? portraitImage(appearance, characterId, 'neutral')
+      : wanted;
   const [leaving, setLeaving] = useState<PortraitSource | null>(() =>
     fadeFrom && art && fadeFrom.src !== art.src && !reducedMotion() ? fadeFrom : null,
   );
-  if (art && failed !== art.src) {
+  if (art && !failed.includes(art.src)) {
     return (
       <span className="portrait-stack">
         <img
@@ -67,7 +74,7 @@ export function Portrait({
           draggable={false}
           data-portrait={art.id}
           data-expression={art.expression}
-          onError={() => setFailed(art.src)}
+          onError={() => setFailed((f) => [...f, art.src])}
         />
         {leaving && (
           <img

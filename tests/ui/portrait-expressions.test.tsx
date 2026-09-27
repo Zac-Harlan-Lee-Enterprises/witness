@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DialogueView } from '@/application/ui-store';
 import { appearanceKey } from '@/domain/appearance-key';
@@ -154,5 +154,24 @@ describe('Portrait', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe(
       '/art/portraits/miriam-256.webp',
     );
+  });
+
+  it('shows the neutral portrait when an expression cannot load (offline, never cached), then the drawing', async () => {
+    const { chapterSource } = await import('@/content');
+    const chapter = await chapterSource.load('road-to-jericho');
+    const miriam = chapter.characters.find((c) => c.id === 'miriam');
+    if (!miriam) throw new Error('no Miriam');
+    const { container } = render(
+      <Portrait appearance={miriam.appearance} characterId="miriam" expression="worried" />,
+    );
+    const first = container.querySelector('img');
+    expect(first?.dataset.expression).toBe('worried');
+    if (first) fireEvent.error(first);
+    const second = container.querySelector('img');
+    expect(second?.dataset.expression).toBe('neutral');
+    expect(second?.getAttribute('src')).toBe('/art/portraits/miriam-256.webp');
+    if (second) fireEvent.error(second);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg.portrait')).not.toBeNull();
   });
 });
