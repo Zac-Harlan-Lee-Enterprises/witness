@@ -1,6 +1,6 @@
 import type { Appearance } from '@/domain/characters';
 import type { ContentKind, ContentRecord } from '@/domain/content-records';
-import type { ChoiceView } from '@/domain/dialogue';
+import type { ChoiceView, Expression } from '@/domain/dialogue';
 import type { MessageTone, PanelId } from '@/domain/events';
 import { Store } from '@/shared/store';
 
@@ -25,6 +25,8 @@ export interface DialogueView {
   nodeId: string;
   speaker: DialogueSpeakerView;
   text: string;
+  /** The speaker's face on this line (which portrait to show). */
+  expression: Expression;
   kind: ContentKind;
   record: ContentRecord | null;
   choices: ChoiceView[];

@@ -51,6 +51,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
     start: 'a0',
     nodes: [
       say('a0', 'ammia', 'There you are!', {
+        expression: 'glad',
         branches: [
           { when: kallias('come-now'), next: 'together' },
           { when: kallias('carry-reply'), next: 'carry' },
@@ -64,8 +65,9 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'Ammia sees Kallias behind you. For a moment neither of them says anything.',
         { next: 'together2' },
       ),
-      say('together2', 'kallias', 'I came.', { next: 'together3' }),
+      say('together2', 'kallias', 'I came.', { expression: 'worried', next: 'together3' }),
       say('together3', 'ammia', 'So you did. Wet as a fish.', {
+        expression: 'glad',
         branches: [{ when: chose('choice-reading', 'softened'), next: 'confess' }],
         next: 'hush',
       }),
@@ -73,7 +75,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'confess',
         'kallias',
         'Ammia — about the red batch. It wasn’t the madder. I lied about that.',
-        { next: 'confess2' },
+        { expression: 'sad', next: 'confess2' },
       ),
       say(
         'confess2',
@@ -96,13 +98,17 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'carry3',
         'ammia',
         'Tomorrow. Good. And he signed it himself — look at those letters, leaning like tired men.',
-        { next: 'hush' },
+        { expression: 'glad', next: 'hush' },
       ),
       // You left it to him.
       say('alone', 'ammia', 'He didn’t come?', {
+        expression: 'sad',
         choices: [opt('ready', 'He said he’ll come when he’s ready.', 'alone2')],
       }),
-      say('alone2', 'ammia', 'Then we wait. I’ve waited all winter.', { next: 'hush' }),
+      say('alone2', 'ammia', 'Then we wait. I’ve waited all winter.', {
+        expression: 'sad',
+        next: 'hush',
+      }),
       say(
         'hush',
         'narrator',
@@ -242,6 +248,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'ammia',
         'Did you hear that? Paul offered to pay whatever Onesimus owed. Out of his own pocket, from a prison.',
         {
+          expression: 'surprised',
           branches: [
             { when: debt('my-account'), next: 't-account' },
             { when: debt('speak-for-him'), next: 't-speak' },
@@ -253,7 +260,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         't-account',
         'ammia',
         'And I hear somebody here already put three coins on your account.',
-        { next: 't-account2' },
+        { expression: 'glad', next: 't-account2' },
       ),
       say('t-account2', 'narrator', 'Kallias looks at his feet. You look at yours.', {
         next: 't-end',
@@ -266,7 +273,7 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
           opt('quiet', 'Say nothing.', 't-quiet'),
         ],
       }),
-      say('t-spoke', 'ammia', 'I know. I can see it too.', { next: 't-end' }),
+      say('t-spoke', 'ammia', 'I know. I can see it too.', { expression: 'glad', next: 't-end' }),
       say(
         't-quiet',
         'narrator',
@@ -280,13 +287,13 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         't-end',
         'ammia',
         'Half days, then, until it’s paid. And you’ll eat with us. Starting tomorrow.',
-        { next: 'final' },
+        { expression: 'glad', next: 'final' },
       ),
       say(
         'carried',
         'ammia',
         'Paul offered to pay whatever Onesimus owed, out of his own pocket. And Kallias offers to work off his. Tomorrow, then. I’ll put the madder to soak.',
-        { next: 'final' },
+        { expression: 'glad', next: 'final' },
       ),
       say(
         'alone',
@@ -311,8 +318,12 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
     entries: [{ when: flag('heard-the-letters'), node: 'after' }],
     start: 'before',
     nodes: [
-      say('before', 'kallias', 'I’m staying right here. If I move, I’ll run.'),
-      say('after', 'kallias', 'Half days until it’s paid. I can do that. I can.'),
+      say('before', 'kallias', 'I’m staying right here. If I move, I’ll run.', {
+        expression: 'worried',
+      }),
+      say('after', 'kallias', 'Half days until it’s paid. I can do that. I can.', {
+        expression: 'glad',
+      }),
     ],
   },
   {
@@ -325,11 +336,13 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'before',
         'zenon',
         'Ammia is waiting for you by the couches. They’ve asked me to read. My hands are shaking.',
+        { expression: 'worried' },
       ),
       say(
         'after',
         'zenon',
         'I’ve read contracts and complaints and bills of sale all my life. Never a letter like that one.',
+        { expression: 'surprised' },
       ),
     ],
   },
@@ -340,7 +353,9 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
     start: 'hello',
     nodes: [
       say('hello', 'tatia', 'Come and sit. They’ll start soon.'),
-      say('glad', 'tatia', 'There’s my letter-finder! Twelve cloaks, {player}. Twelve!'),
+      say('glad', 'tatia', 'There’s my letter-finder! Twelve cloaks, {player}. Twelve!', {
+        expression: 'glad',
+      }),
     ],
   },
 ];

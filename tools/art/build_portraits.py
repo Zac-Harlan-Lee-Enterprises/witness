@@ -83,9 +83,19 @@ def args():
 
 
 def write_manifest(path, entries):
-    """Sorted, two-space JSON: stable under Prettier."""
+    """Sorted, two-space JSON as Prettier writes it (short arrays of plain
+    values on one line), so the repository's formatting check passes."""
+    import re
+
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     text = json.dumps(entries, indent=2, sort_keys=True)
+
+    def inline(m):
+        items = [x.strip() for x in m.group(2).split(",\n")]
+        one = m.group(1) + "[" + ", ".join(items) + "]"
+        return one if len(one) <= 100 else m.group(0)
+
+    text = re.sub(r"(^[ ]*\"[^\"\n]*\": )\[\n((?:[ ]*[^\[\]{}\n]+,\n)*[ ]*[^\[\]{}\n]+)\n[ ]*\]", inline, text, flags=re.M)
     with open(path, "w") as f:
         f.write(text + "\n")
 
@@ -96,7 +106,10 @@ def update_json(path, change):
     import fcntl
 
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path + ".lock", "w") as lock:
+    import hashlib
+
+    lock_path = os.path.join(tempfile.gettempdir(), "witness-" + hashlib.sha1(os.path.abspath(path).encode()).hexdigest()[:12] + ".lock")
+    with open(lock_path, "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         data = json.load(open(path)) if os.path.exists(path) else {}
         change(data)
@@ -221,7 +234,7 @@ def main():
                 png = portrait_person.render(scene, os.path.join(tmp, f"{name}.png"))
                 big = imageio.load(png)
             big[:, :, 3] = 1.0
-            img = portrait_finish.resize(big, a.size, sharpen=0.0)
+            img = portrait_finish.vignette(portrait_finish.resize(big, a.size, sharpen=0.0))
             face = portrait_person.face_colour(big, marks, mask, size)
             check = {
                 "skin": {

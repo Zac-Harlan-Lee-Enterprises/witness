@@ -399,7 +399,7 @@ def cornea():
 
     def build():
         n = Nodes("cornea")
-        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.1)
+        glass = n.new("ShaderNodeBsdfGlass", IOR=1.376, Roughness=0.035)
         glass.inputs["Color"].default_value = (1, 1, 1, 1)
         n.link(glass, "BSDF", n.out, "Surface")
         return n.mat

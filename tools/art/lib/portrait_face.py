@@ -40,24 +40,30 @@ EXPRESSIONS = ("neutral", "glad", "worried", "sad", "angry", "surprised", "afrai
 # that has a left and a right version. Authored by eye on the renders.
 EXPRESSION_UNITS = {
     "glad": {
-        "mouth-corner-puller": 0.78,
-        "mouth-upward-retraction": 0.12,
-        "eye-{s}-slit": 0.32,
-        "eyebrows-{s}-extern-up": 0.12,
+        # A real smile reaches the eyes: corners up and back, the lips
+        # parting over the upper teeth, the cheeks lifting the lower lids.
+        "mouth-corner-puller": 1.0,
+        "mouth-upward-retraction": 0.35,
+        "mouth-open": 0.06,
+        "eye-{s}-slit": 0.5,
+        "eyebrows-{s}-extern-up": 0.15,
     },
     "worried": {
-        "eyebrows-{s}-inner-up": 0.85,
-        "eyebrows-{s}-down": 0.22,
-        "mouth-compression": 0.28,
-        "mouth-depression": 0.18,
-        "eye-{s}-opened-up": 0.12,
+        # Inner brows up and drawn together, lips pressed, corners down.
+        "eyebrows-{s}-inner-up": 1.0,
+        "eyebrows-{s}-down": 0.35,
+        "mouth-compression": 0.4,
+        "mouth-depression": 0.3,
+        "eye-{s}-opened-up": 0.2,
     },
     "sad": {
-        "eyebrows-{s}-inner-up": 0.75,
-        "mouth-depression": 0.62,
-        "mouth-compression": 0.12,
-        "eye-{s}-closure": 0.2,
-        "neck-platysma": 0.1,
+        # Inner brows up, lids heavy, the mouth's corners pulled down, the
+        # chin raised a little against the lower lip; looking down.
+        "eyebrows-{s}-inner-up": 1.0,
+        "mouth-depression": 0.9,
+        "mouth-compression": 0.25,
+        "eye-{s}-closure": 0.3,
+        "neck-platysma": 0.15,
     },
     "angry": {
         # Brows hard down and drawn together, lids narrowed with the lower
@@ -74,23 +80,25 @@ EXPRESSION_UNITS = {
     },
     "surprised": {
         "eyebrows-{s}-up": 1.0,
-        "eyebrows-{s}-inner-up": 0.2,
-        "eye-{s}-opened-up": 0.75,
-        "mouth-open": 0.42,
+        "eyebrows-{s}-inner-up": 0.25,
+        "eye-{s}-opened-up": 0.8,
+        "mouth-open": 0.5,
     },
     "afraid": {
-        "eyebrows-{s}-inner-up": 0.85,
-        "eyebrows-{s}-up": 0.45,
-        "eye-{s}-opened-up": 0.8,
-        "mouth-retraction": 0.45,
-        "mouth-open": 0.22,
-        "neck-platysma": 0.45,
+        # Brows up and together, eyes wide, the lips stretched back, the
+        # neck taut.
+        "eyebrows-{s}-inner-up": 1.0,
+        "eyebrows-{s}-up": 0.6,
+        "eye-{s}-opened-up": 1.0,
+        "mouth-retraction": 0.7,
+        "mouth-open": 0.35,
+        "neck-platysma": 0.7,
     },
 }
 
 # Where the eyes look for an expression: degrees away from the camera (+ the
 # person's left, + up). Sadness looks down.
-EXPRESSION_GAZE = {"sad": (0.0, -6.0), "worried": (0.0, -1.5)}
+EXPRESSION_GAZE = {"sad": (0.0, -8.0), "worried": (0.0, -1.5)}
 
 
 def _luma(hexcol):
@@ -152,11 +160,14 @@ def mood_units(P):
     # person's brows a little down, a tired person's lids a little heavy).
     sa = max(-0.9, min(0.9, P.smile_asym))
     add("mouth-corner-puller", min(0.1, 0.25 * P.smile), asym=0.35 * sa)
-    add("eye-{s}-slit", min(0.12, 0.2 * P.eyes_smile) + 0.4 * P.squint)
-    if P.brow_inner >= 0:
-        add("eyebrows-{s}-inner-up", 0.6 * P.brow_inner)
-    else:
-        add("eyebrows-{s}-down", -0.9 * P.brow_inner)
+    add("eye-{s}-slit", 0.35 * P.squint)
+    # Only the moods that are the person's nature move the brows at rest
+    # (a worried mother, a stern baker): worry or sternness in a line is
+    # that line's expression.
+    if P.brow_inner >= 0.3:
+        add("eyebrows-{s}-inner-up", 0.45 * P.brow_inner)
+    elif P.brow_inner < -0.2:
+        add("eyebrows-{s}-down", -0.8 * P.brow_inner)
     add("eyebrows-{s}-extern-up", 0.5 * P.brow_outer, asym=max(-0.9, min(0.9, P.brow_asym)))
     if P.lid_droop >= 0:
         add("eye-{s}-closure", 0.4 * P.lid_droop)
@@ -294,10 +305,13 @@ def identity(P):
 
     # ── Skull and face shape ───────────────────────────────────────────────
     ft = FACE_TYPES[face_t]
+    # (A woman's face keeps its type more softly: a long or square face
+    # at full strength read as a man's.)
+    soft = 0.7 if female else 1.0
     for shape, w in ft["shapes"].items():
-        add({f"head/{shape}": (w + j(0.15)) * m})
-    pair("head/head-scale-horiz", j(0.18) - 0.3 * ft["length"] * m)
-    pair("head/head-scale-vert", j(0.15) + ft["length"] * m * (0.7 if female else 1.0) + (0.06 if not female else -0.06))
+        add({f"head/{shape}": (w + j(0.15)) * m * soft})
+    pair("head/head-scale-horiz", j(0.18) - 0.3 * ft["length"] * m * soft)
+    pair("head/head-scale-vert", j(0.15) + ft["length"] * m * (0.45 if female else 1.0) + (0.06 if not female else -0.06))
     pair("head/head-scale-depth", j(0.2))
     pair("head/head-back-scale-depth", j(0.3))
     # Adults have lost a child's round fullness; heavier people keep more.
@@ -317,7 +331,7 @@ def identity(P):
     ends("eyebrows/eyebrows-trans", ("down", "up"), (j(0.22) - (0.0 if female else 0.08)) * m)
     # (The brows' resting angle stays level or a little up at the tail: the
     # "down" end draws the inner brows down into a scowl.)
-    pair("eyebrows/eyebrows-angle", max(-0.08, min(0.35, 0.1 + j(0.2) + (0.06 if female else 0.0))) * m)
+    pair("eyebrows/eyebrows-angle", max(-0.08, min(0.1, j(0.1))) * m)
 
     # ── Eyes and lids ──────────────────────────────────────────────────────
     eo, ec, ed, eh, es, ez = EYE_TYPES[eye_t]
@@ -390,9 +404,9 @@ def identity(P):
 
     # ── Jaw and chin ───────────────────────────────────────────────────────
     pair("chin/chin-prominent", (ft["chin"] + j(0.3)) * m + 0.1 * (P.masc - 0.5))
-    pair("chin/chin-width", (ft["jaw"] * 0.7 + j(0.25)) * m + 0.2 * (P.masc - 0.5))
-    pair("chin/chin-height", (ft["length"] * 0.6 + j(0.3)) * m)
-    pair("chin/chin-bones", (ft["jaw"] + j(0.25)) * m + 0.25 * (P.masc - 0.5) - 0.2 * child)
+    pair("chin/chin-width", (ft["jaw"] * 0.7 * soft + j(0.25)) * m + 0.2 * (P.masc - 0.5))
+    pair("chin/chin-height", (ft["length"] * 0.6 * soft + j(0.3)) * m)
+    pair("chin/chin-bones", (ft["jaw"] * soft + j(0.25)) * m + 0.25 * (P.masc - 0.5) - 0.2 * child)
     pair("chin/chin-prognathism", j(0.25) * m)
     pair("chin/chin-jaw-drop", j(0.2) * m)
     if not female and child < 0.5 and r.random() < 0.3:

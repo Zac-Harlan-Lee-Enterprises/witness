@@ -38,7 +38,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n2',
         'tamar',
         '{player}! Mind the donkey — that one is Uncle Asa’s. Everybody has come home at once.',
-        { next: 'n3' },
+        { expression: 'glad', next: 'n3' },
       ),
       say(
         'n3',
@@ -123,6 +123,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'tamar',
         'The bread smells wonderful. Now the guest room: Asa’s and Peninah’s beds must go in. The rest… we’ll see what fits.',
         {
+          expression: 'glad',
           choices: [
             opt('where', 'Where else could things go?', 'where', { once: true }),
             opt('ok', 'I’ll sort it out.'),
@@ -136,6 +137,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         { next: 'room' },
       ),
       say('give', 'tamar', 'Bread baked and the guests settled. You’re a treasure, {player}.', {
+        expression: 'glad',
         next: 'give2',
       }),
       say(
@@ -171,6 +173,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       ),
       say('busy', 'tamar', 'Go on, love — Yonatan will be hungry. And be home by nightfall.'),
       say('night', 'tamar', 'What a day. Sit with me by the fire a moment, {player}.', {
+        expression: 'glad',
         branches: [{ when: flag('heard-report'), next: 'night-after' }],
       }),
       say(
@@ -226,6 +229,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'peninah',
         '{player}! Look how tall you’ve grown. Dodi’s finally asleep — we walked all the way from Jerusalem this morning.',
         {
+          expression: 'glad',
           choices: [
             opt('why', 'Why did you have to come here to be registered?', 'why', { once: true }),
             opt('things', 'Is there room for everything in here?', 'things', {
@@ -248,15 +252,25 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'Your mother’s loom, the barley jars, Asa’s tools… Asa won’t let his tools out of his sight. They’re how he earns our bread.',
         { next: 'p1' },
       ),
-      say('space', 'peninah', 'It’s so roomy now! We could fit another guest in here.'),
-      say('tools', 'peninah', 'Asa will sleep better with his tools beside him. Thank you.'),
+      say('space', 'peninah', 'It’s so roomy now! We could fit another guest in here.', {
+        expression: 'glad',
+      }),
+      say('tools', 'peninah', 'Asa will sleep better with his tools beside him. Thank you.', {
+        expression: 'glad',
+      }),
       say('loom', 'peninah', 'Your mother’s loom makes a fine headboard.'),
-      say('grain', 'peninah', 'We’re sleeping beside the barley jars. Dodi thinks they’re giants.'),
+      say(
+        'grain',
+        'peninah',
+        'We’re sleeping beside the barley jars. Dodi thinks they’re giants.',
+        { expression: 'glad' },
+      ),
       say('night', 'peninah', 'Shh — Dodi’s asleep. Good night, {player}.'),
       say(
         'awake',
         'peninah',
         'I don’t know what to think. I only know I’ll remember this night as long as I live.',
+        { expression: 'surprised' },
       ),
     ],
   },
@@ -282,17 +296,20 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'early',
         'asa',
         'Registered! Kallias wrote me down in no time, thanks to you. Asa son of Amram, a man with a household and a share of a roof. What can I carry?',
+        { expression: 'glad' },
       ),
       say(
         'tools',
         'asa',
         'My chisels, down with the donkeys? …Well. At least the donkeys can’t use them. Good night, {player}.',
+        { expression: 'sad' },
       ),
       say('night', 'asa', 'Good night, {player}. It’s been a long day of standing still.'),
       say(
         'awake',
         'asa',
         'I came to Bethlehem to be counted. I didn’t expect to go home with news like this.',
+        { expression: 'surprised' },
       ),
     ],
   },
@@ -307,6 +324,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'amram',
         'The registration is done, the bread is eaten, and my old bones have earned their rest. Sit with me a moment.',
         {
+          expression: 'glad',
           choices: [
             opt('all', 'Did everyone get registered?', 'all', { once: true }),
             opt('bye', 'Good night, Saba.'),
@@ -337,6 +355,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('found', 'tamar', 'You found Yonatan’s lamb? In the dark? Come here, you.', {
+        expression: 'glad',
         next: 'e2',
       }),
       say(
@@ -381,15 +400,13 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'z2',
         'zerah',
         'My leg is slow, and every door I have tried is full. I don’t need much. A corner out of the wind.',
-        { branches: [{ when: asaHomeEarly, next: 'z2a' }], next: 'z3' },
+        { expression: 'worried', branches: [{ when: asaHomeEarly, next: 'z2a' }], next: 'z3' },
       ),
       say(
         'z2a',
         'asa',
         'Come in out of the cold, grandfather. We’ll find you a corner somewhere.',
-        {
-          next: 'z3',
-        },
+        { expression: 'glad', next: 'z3' },
       ),
       say(
         'z3',
@@ -446,7 +463,10 @@ export const HOME_DIALOGUES: DialogueInput[] = [
           }),
         ],
       }),
-      say('own', 'zerah', 'Your own bed? …Bless you, child. I won’t forget it.', { next: 'own2' }),
+      say('own', 'zerah', 'Your own bed? …Bless you, child. I won’t forget it.', {
+        expression: 'glad',
+        next: 'own2',
+      }),
       say(
         'own2',
         'narrator',
@@ -459,7 +479,10 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'You lead Zerah past the sleeping guests to the space by the wall. Aunt Peninah moves over without waking.',
         { next: 'guest2' },
       ),
-      say('guest2', 'zerah', 'A roof and a wall and a blanket. Thank you, child.', { next: 'end' }),
+      say('guest2', 'zerah', 'A roof and a wall and a blanket. Thank you, child.', {
+        expression: 'glad',
+        next: 'end',
+      }),
       say(
         'straw',
         'narrator',
@@ -492,15 +515,17 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'none',
         'zerah',
         'I understand. It has been the same at every door. I’ll find a corner by the well.',
-        { next: 'none2' },
+        { expression: 'sad', next: 'none2' },
       ),
       say('none2', 'narrator', 'He lifts his little lamp and goes back out into the lane.', {
         next: 'end',
       }),
       say('end', 'narrator', 'When you’re ready, lie down to sleep.', { kind: 'instruction' }),
       say('after-own', 'zerah', 'Go to sleep, child. I’ll keep the fire company.'),
-      say('after-guest', 'zerah', 'Shh. Everyone is asleep. Thank you again.'),
-      say('after-straw', 'zerah', 'The donkey snores. Did you know that?'),
+      say('after-guest', 'zerah', 'Shh. Everyone is asleep. Thank you again.', {
+        expression: 'glad',
+      }),
+      say('after-straw', 'zerah', 'The donkey snores. Did you know that?', { expression: 'glad' }),
     ],
   },
   {
@@ -543,7 +568,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n3',
         'hagit',
         '{player}! Are you awake? I couldn’t sleep — and now I’m glad I couldn’t.',
-        { next: 'n4' },
+        { expression: 'glad', next: 'n4' },
       ),
       say(
         'n4',
@@ -585,7 +610,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n10',
         'hagit',
         'I don’t know what to make of it, {player}. I’ve lived in Bethlehem seventy years. I keep turning it over and over.',
-        { effects: [setFlag('heard-report')], next: 'hub' },
+        { expression: 'surprised', effects: [setFlag('heard-report')], next: 'hub' },
       ),
       say('hub', 'narrator', 'Hagit waits in the doorway, her lamp flickering.', {
         choices: [

@@ -31,7 +31,7 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'a1',
         'amram',
         '{player}! Come to rescue your old grandfather? Every family that ever belonged to Bethlehem has come home at once.',
-        { next: 'hub' },
+        { expression: 'glad', next: 'hub' },
       ),
       say('hub', 'amram', 'The clerk writes, and I tell him who is who.', {
         choices: [
@@ -83,7 +83,7 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'k1',
         'kallias',
         'Name? Household? Property? — oh. You’re a child. Forgive me; I’ve been saying those three words since dawn.',
-        { next: 'hub' },
+        { expression: 'surprised', next: 'hub' },
       ),
       say('hub', 'kallias', 'Next! …Not you. You’re fine.', {
         choices: [
@@ -116,6 +116,7 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'done',
         'kallias',
         'Asa son of Amram — written down and done. If only every household were so tidy.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -151,7 +152,11 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'seen',
         'asa',
         'Interesting? A little white lamb went trotting up the lane a while ago, bold as a king. …Or was it a goat? It had little horns, now I think of it.',
-        { effects: [{ type: 'discoverClue', clue: 'clue-asa-lamb' }], next: 'hub' },
+        {
+          expression: 'glad',
+          effects: [{ type: 'discoverClue', clue: 'clue-asa-lamb' }],
+          next: 'hub',
+        },
       ),
       say(
         'help',
@@ -209,10 +214,12 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'kid',
         'hagit',
         'My little white kid? She’s been up the lane and back three times this afternoon, the rascal. Why?',
-        { next: 'hub' },
+        { expression: 'glad', next: 'hub' },
       ),
       say('night', 'hagit', 'Go home to bed, child. It’s late, even for me.'),
-      say('night-zerah', 'hagit', 'Your Zerah is asleep by my fire. He snores like a donkey.'),
+      say('night-zerah', 'hagit', 'Your Zerah is asleep by my fire. He snores like a donkey.', {
+        expression: 'glad',
+      }),
     ],
   },
   {
@@ -230,6 +237,7 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'hagit',
         'zerah',
         'Your neighbor makes strong tea and asks a great many questions. Thank you, child.',
+        { expression: 'glad' },
       ),
     ],
   },

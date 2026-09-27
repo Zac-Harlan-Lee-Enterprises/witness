@@ -30,6 +30,7 @@ export const RETURN_DIALOGUES: DialogueInput[] = [
     start: 'w1',
     nodes: [
       say('w1', 'shelomit', '{player}! Oh, let me look at you. Let me look at all of you.', {
+        expression: 'glad',
         next: 'w2',
       }),
       say(
@@ -37,6 +38,7 @@ export const RETURN_DIALOGUES: DialogueInput[] = [
         'shelomit',
         'The wind came howling down the lanes after dark. I came down here with the lamp, and I stood here, and I prayed.',
         {
+          expression: 'worried',
           choices: [
             opt('storm', 'The storm was terrible. We nearly went under.', 'w3'),
             opt('stopped', 'And then the wind just stopped. All at once.', 'w4'),
@@ -44,9 +46,10 @@ export const RETURN_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('w3', 'shelomit', 'I know. I could hear the lake roaring from here. And then?', {
+        expression: 'worried',
         choices: [opt('stopped', 'And then the wind just stopped. All at once.', 'w4')],
       }),
-      say('w4', 'shelomit', 'Stopped?', { next: 'w5' }),
+      say('w4', 'shelomit', 'Stopped?', { expression: 'surprised', next: 'w5' }),
       say(
         'w5',
         'player',
@@ -82,6 +85,7 @@ export const RETURN_DIALOGUES: DialogueInput[] = [
         'again',
         'shelomit',
         'Go and sleep, {player}. You’ve earned it. We’ll talk more in the morning.',
+        { expression: 'glad' },
       ),
     ],
   },

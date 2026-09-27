@@ -116,9 +116,13 @@ def beard_mask(head, V, base_idx):
     low_x, low_z = mw + 0.6, st[2] + 1.0
     slope = (top_z - low_z) / (top_x - low_x)
     line = top_z - (top_x - ax) * slope
-    cheek = np.clip((line - z) / 0.7 + 0.5, 0, 1)
+    # A natural edge: the line wanders, and the hair thins out over a
+    # centimetre and a half above it rather than stopping (a hard edge read
+    # as a patch stuck on the cheek).
+    line = line + 0.35 * np.sin(ax * 2.1 + 1.3 * np.sign(x)) + 0.22 * np.sin(ax * 5.3 + z * 1.7)
+    cheek = np.clip((line - z) / 1.6 + 0.35, 0, 1) ** 1.6
     # The sideburns: a band in front of each ear up to the scalp.
-    side = np.clip((ax - (ex - 2.1 * s)) / 0.5, 0, 1) * np.clip((ex - 0.5 * s - ax) / 0.4, 0, 1) * (z < ear[2] + 3.0 * s)
+    side = np.clip((ax - (ex - 2.1 * s)) / 0.7, 0, 1) * np.clip((ex - 0.5 * s - ax) / 0.4, 0, 1) * np.clip((ear[2] + 3.0 * s - z) / 1.0, 0, 1)
     cheek = np.maximum(cheek, side)
     # Not on the ears or behind them.
     cheek *= np.clip((ear[1] - 0.9 * s - y) / 0.8, 0, 1)

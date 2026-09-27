@@ -96,10 +96,10 @@ class Studio:
         # the open sky (warm key, cool fill: the colour of shadow in daylight).
         _area("Fill", at(-80, 8, 1.4), head, 1.8, 9.0, "#d4dcea")
         # Rim: behind, on the shadow side, to separate hair and shoulder from the wall.
-        _area("Rim", at(-150, 32, 1.1), head + Vector((0, 0.05, 0)), 0.35, 30.0, "#ffe2bc", size_y=1.1)
+        _area("Rim", at(-150, 32, 1.1), head + Vector((0, 0.05, 0)), 0.35, 42.0, "#ffe2bc", size_y=1.1)
         # A soft pool of light on the wall behind, brighter on the lit side.
         wall_at = at(35, 30, 1.0)
-        _area("Wall", Vector((wall_at.x, -0.2, 0.8)), Vector((wall_at.x * 0.4, 1.6, 0.0)), 1.2, 26.0, "#ffd9a8")
+        _area("Wall", Vector((wall_at.x, -0.2, 0.8)), Vector((wall_at.x * 0.4, 1.6, 0.0)), 1.2, 15.0, "#ffd9a8")
         # The wall.
         bpy.ops.mesh.primitive_plane_add(size=6.0, location=(0.0, 1.6, 0.0), rotation=(math.pi / 2, 0, 0))
         wall = bpy.context.object

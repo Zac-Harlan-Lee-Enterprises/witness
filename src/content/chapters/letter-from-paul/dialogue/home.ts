@@ -24,6 +24,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         { next: 'n2' },
       ),
       say('n2', 'ammia', '{player}! Good, you’re up. I have two pieces of news for you.', {
+        expression: 'glad',
         next: 'n3',
       }),
       say(
@@ -36,7 +37,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n4',
         'ammia',
         'Tonight the assembly gathers there, at lamp-lighting, to hear the letters read. Paul has never seen our faces. But he has written to us.',
-        { next: 'n5' },
+        { expression: 'glad', next: 'n5' },
       ),
       say(
         'n5',
@@ -59,7 +60,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n7a',
         'ammia',
         'The same. He went off to Laodicea in the winter, after the red batch. I said hard things. So did he.',
-        { next: 'n8' },
+        { expression: 'sad', next: 'n8' },
       ),
       say(
         'n7b',
@@ -92,7 +93,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'n9b',
         'ammia',
         'I told him he’d cost me a season. He said the madder was bad. Then he was gone.',
-        { next: 'n8' },
+        { expression: 'sad', next: 'n8' },
       ),
       say(
         'n10',
@@ -154,7 +155,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'r-every2',
         'ammia',
         'He wrote that down, did he. That it was a lie. And put his own name under it.',
-        { next: 'ask' },
+        { expression: 'surprised', next: 'ask' },
       ),
       say(
         'r-soften',
@@ -172,6 +173,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         { next: 'r-plea2' },
       ),
       say('r-plea2', 'ammia', 'So you’re on his side now, are you? …Good. Someone should be.', {
+        expression: 'glad',
         next: 'ask',
       }),
       say(
@@ -234,6 +236,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         { next: 'pack' },
       ),
       say('bye', 'ammia', 'Go carefully. And {player} — whatever he says, bring it back to me.', {
+        expression: 'worried',
         choices: [opt('will', 'I will.')],
       }),
     ],

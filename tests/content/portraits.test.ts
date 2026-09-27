@@ -42,6 +42,22 @@ beforeAll(async () => {
   );
 });
 
+/** Width and height of a WebP file, from its header (lossy, lossless or extended). */
+function webpSize(buf: Buffer): { width: number; height: number } | null {
+  if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WEBP')
+    return null;
+  const chunk = buf.toString('ascii', 12, 16);
+  if (chunk === 'VP8 ')
+    return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+  if (chunk === 'VP8L') {
+    const bits = buf.readUInt32LE(21);
+    return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+  }
+  if (chunk === 'VP8X')
+    return { width: buf.readUIntLE(24, 3) + 1, height: buf.readUIntLE(27, 3) + 1 };
+  return null;
+}
+
 function glob(pattern: string, path: string): boolean {
   const re = new RegExp(
     `^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`,
@@ -88,18 +104,18 @@ describe('portraits', () => {
     const { sitters } = portraitCast(chapters);
     expect(sitters.length).toBeGreaterThan(35);
     for (const s of sitters) {
-      const art = portraitImage(s.character.appearance, s.characterId, entries, '/');
+      const art = portraitImage(s.character.appearance, s.characterId, 'neutral', entries, '/');
       expect(art?.id, `${s.chapterId}: ${s.characterId}`).toBe(s.portraitId);
     }
     for (const [look, a] of Object.entries(PLAYER_APPEARANCES))
-      expect(portraitImage(a, null, entries, '/')?.id, look).toBe(`player-${look}`);
+      expect(portraitImage(a, null, 'neutral', entries, '/')?.id, look).toBe(`player-${look}`);
   });
 
   it('never shows a biblical figure in close-up', () => {
     const figures = chapters.flatMap((c) => c.characters.filter((x) => x.biblicalFigure));
     expect(figures.length).toBeGreaterThan(0);
     for (const f of figures) {
-      expect(portraitImage(f.appearance, f.id, entries, '/'), f.id).toBeNull();
+      expect(portraitImage(f.appearance, f.id, 'neutral', entries, '/'), f.id).toBeNull();
       expect(data.characters.some((c) => c.character === f.id)).toBe(false);
     }
   });
@@ -129,6 +145,23 @@ describe('portraits', () => {
         `${rel} is recorded in docs/art/asset-manifest.json`,
       ).toBe(true);
     }
+  });
+
+  it('every file is a square WebP of the size its name gives', () => {
+    for (const f of readdirSync(DIR)) {
+      const size = Number(/-(\d+)\.webp$/.exec(f)?.[1]);
+      expect(webpSize(readFileSync(join(DIR, f))), f).toEqual({ width: size, height: size });
+    }
+  });
+
+  it('the portraits guide shows only review pictures that exist, and every one of them', () => {
+    const guide = readFileSync(join(ROOT, 'docs', 'art', 'portraits.md'), 'utf8');
+    const linked = new Set([...guide.matchAll(/\(portraits\/([^)\s]+\.webp)\)/g)].map((m) => m[1]));
+    const sheets = readdirSync(join(ROOT, 'docs', 'art', 'portraits'));
+    expect(linked.size).toBeGreaterThan(10);
+    for (const f of linked) expect(sheets, `docs/art/portraits/${f ?? ''}`).toContain(f);
+    for (const f of sheets)
+      expect([...linked], `${f} is not in docs/art/portraits.md`).toContain(f);
   });
 
   it('stays small enough to precache for offline play', () => {

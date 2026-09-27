@@ -76,6 +76,7 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         { next: 'g3' },
       ),
       say('g3', 'tamar', 'Squall! {player} — the sail!', {
+        expression: 'afraid',
         choices: [
           opt('now', 'Get the sail in!', undefined, {
             effects: [{ type: 'openPuzzle', puzzle: 'p-sail' }],
@@ -101,6 +102,7 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         { next: 'q3' },
       ),
       say('q3', 'elazar', 'Bail! Everyone who isn’t rowing — bail!', {
+        expression: 'afraid',
         branches: [{ when: KNOWN, next: 'q4-known' }],
         next: 'q4',
       }),
@@ -155,13 +157,13 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         'sb2-heavy',
         'elazar',
         'We’re loaded to the rails ourselves, {player}! Whatever we do, we do it now!',
-        { next: 'decide' },
+        { expression: 'afraid', next: 'decide' },
       ),
       say(
         'sb2-light',
         'elazar',
         'We’ve a little room, {player} — but whatever we do, we do it now!',
-        { next: 'decide' },
+        { expression: 'afraid', next: 'decide' },
       ),
       say('decide', 'narrator', 'The waves are still rising. What will you do?', {
         choices: [
@@ -350,6 +352,7 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
     start: 'e1',
     nodes: [
       say('e1', 'elazar', 'A good night for it. Listen — nothing but the oars.', {
+        expression: 'glad',
         choices: [
           opt('ahead', 'Is that the teacher’s boat ahead?', 'e2', { once: true }),
           opt('ok', 'It’s beautiful out here.', 'e3'),
@@ -365,9 +368,10 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         'elazar',
         'Beautiful, yes. The lake always is, until it isn’t — your grandmother’s words, not mine.',
       ),
-      say('wind', 'elazar', 'Get that sail in — like Tamar taught you!'),
-      say('storm', 'elazar', 'Bail! Keep bailing!'),
+      say('wind', 'elazar', 'Get that sail in — like Tamar taught you!', { expression: 'worried' }),
+      say('storm', 'elazar', 'Bail! Keep bailing!', { expression: 'afraid' }),
       say('calm', 'elazar', 'What was that? I’ve never… Wind doesn’t stop like that.', {
+        expression: 'surprised',
         choices: [
           opt('home', 'Can we go home?', 'c2'),
           opt('wait', 'Not yet — I want to see to the others.'),
@@ -414,13 +418,14 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         'Sail, yard, oars, bail. Brails first to empty the sail, then the yard down and lashed, then oars and the bow to the waves — then bail.',
         { effects: [{ type: 'discoverClue', clue: 'clue-tamar-sail' }] },
       ),
-      say('wind', 'tamar', 'The sail, {player}! Brails first!'),
+      say('wind', 'tamar', 'The sail, {player}! Brails first!', { expression: 'worried' }),
       say(
         'storm',
         'tamar',
         'Keep bailing! Don’t look at the waves — look at the water in the boat!',
+        { expression: 'afraid' },
       ),
-      say('calm', 'tamar', 'Is it… over? Just like that?'),
+      say('calm', 'tamar', 'Is it… over? Just like that?', { expression: 'surprised' }),
     ],
   },
   {
@@ -432,9 +437,11 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
     ],
     start: 'y1',
     nodes: [
-      say('y1', 'yoezer', 'Quiet night. I don’t trust quiet nights.'),
-      say('storm', 'yoezer', 'Bail!'),
-      say('calm', 'yoezer', 'All my years on this water, and I’ve never seen the like. Never.'),
+      say('y1', 'yoezer', 'Quiet night. I don’t trust quiet nights.', { expression: 'worried' }),
+      say('storm', 'yoezer', 'Bail!', { expression: 'afraid' }),
+      say('calm', 'yoezer', 'All my years on this water, and I’ve never seen the like. Never.', {
+        expression: 'surprised',
+      }),
     ],
   },
   {
@@ -448,9 +455,11 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
     start: 'a1',
     nodes: [
       say('a1', 'ami', 'It’s so dark. Is that my mother’s boat? Can you see her?', {
+        expression: 'worried',
         choices: [opt('there', 'There — just off the side. She’s right there.')],
       }),
       say('storm', 'ami', 'I want my mother!', {
+        expression: 'afraid',
         choices: [opt('hold', 'Hold on to me. Hold on tight.')],
       }),
       say('calm', 'ami', 'I’m c-cold.', {
@@ -466,8 +475,8 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
           opt('close', 'Sit close to me. It will be morning soon.'),
         ],
       }),
-      say('cloak', 'ami', 'It’s so warm. Thank you.'),
-      say('warm', 'ami', 'I’m warm now. Is it nearly morning?'),
+      say('cloak', 'ami', 'It’s so warm. Thank you.', { expression: 'glad' }),
+      say('warm', 'ami', 'I’m warm now. Is it nearly morning?', { expression: 'glad' }),
     ],
   },
   {
@@ -476,11 +485,14 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
     entries: [{ when: CALM, node: 'calm' }],
     start: 's1',
     nodes: [
-      say('s1', 'shifra', 'Thank you — oh, thank you. Hold on to Ami, please!'),
+      say('s1', 'shifra', 'Thank you — oh, thank you. Hold on to Ami, please!', {
+        expression: 'worried',
+      }),
       say(
         'calm',
         'shifra',
         'The wind… it just stopped. Did you see? Everyone in every boat must have felt it.',
+        { expression: 'surprised' },
       ),
     ],
   },

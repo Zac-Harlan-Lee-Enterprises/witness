@@ -102,6 +102,20 @@ def resize(img, size, sharpen=None):
     return out
 
 
+def vignette(img, strength=0.18, start=0.42):
+    """Darken toward the corners, as a portrait lens does, so the face is the
+    brightest thing in the picture after the headwear (in sRGB, gently:
+    nothing within `start` of the centre, `strength` darker at the corners)."""
+    h, w = img.shape[:2]
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+    r = np.hypot((x + 0.5) / w - 0.5, (y + 0.5) / h - 0.5) / math.sqrt(0.5)
+    t = np.clip((r - start) / (1.0 - start), 0, 1)
+    k = 1.0 - strength * t * t * (3 - 2 * t)
+    out = img.copy()
+    out[:, :, :3] *= k[:, :, None]
+    return out
+
+
 def contact_sheet(imgs, cols=4, size=256, gap=8, bg=(0.94, 0.89, 0.78)):
     rows = (len(imgs) + cols - 1) // cols
     H = rows * size + (rows + 1) * gap

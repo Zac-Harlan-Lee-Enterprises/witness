@@ -40,7 +40,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'h0',
         'hanina',
         'Shelomit’s youngster. Sit, sit. Everyone is looking at the crowd today. Nobody is looking up.',
-        { next: 'h1' },
+        { expression: 'glad', next: 'h1' },
       ),
       say('h1', 'hanina', 'Well? What have you come to ask me?', {
         choices: [
@@ -77,7 +77,11 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'w1',
         'hanina',
         'Water? To cross a lake of sweet water? Dip your hand over the side, child. Carry something more useful.',
-        { effects: [{ type: 'setFlag', flag: 'heard-sweet-water', value: true }], next: 'h1' },
+        {
+          expression: 'glad',
+          effects: [{ type: 'setFlag', flag: 'heard-sweet-water', value: true }],
+          next: 'h1',
+        },
       ),
       say(
         'after',
@@ -105,6 +109,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'nikanor',
         'Ah — Elazar’s new crew! Nikanor, from Magdala. The best salted fish on the lake. Here: six jars, sealed and roped, for the far shore by morning.',
         {
+          expression: 'glad',
           effects: [
             { type: 'giveItem', item: 'fish-jar', quantity: 6 },
             { type: 'setFlag', flag: 'got-jars', value: true },
@@ -148,7 +153,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'b1',
         'nikanor',
         'Help? Bless you. My apprentice ran off to hear the teacher, and the brine tub needs exactly seven measures of lake water for this basket of salt.',
-        { next: 'b2' },
+        { expression: 'glad', next: 'b2' },
       ),
       say(
         'b2',
@@ -173,7 +178,11 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'tell',
         'nikanor',
         'Seven measures, exactly? Let me see… yes! Good. In goes the salt, and tomorrow’s catch goes in the brine.',
-        { effects: [{ type: 'setFlag', flag: 'brine-done', value: true }], next: 't2' },
+        {
+          expression: 'glad',
+          effects: [{ type: 'setFlag', flag: 'brine-done', value: true }],
+          next: 't2',
+        },
       ),
       say(
         't2',
@@ -190,6 +199,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'nikanor',
         'You’re back! I heard the wind from my bed and couldn’t sleep a wink.',
         {
+          expression: 'glad',
           branches: [
             { when: flag('jettisoned'), next: 'night-lost' },
             { when: flag('left-jars'), next: 'night-left' },
@@ -197,11 +207,15 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
           next: 'night-safe',
         },
       ),
-      say('night-lost', 'nikanor', 'Overboard? Three of my jars?', { next: 'night-lost2' }),
+      say('night-lost', 'nikanor', 'Overboard? Three of my jars?', {
+        expression: 'surprised',
+        next: 'night-lost2',
+      }),
       say(
         'night-lost2',
         'nikanor',
         '…Well. Fish can be salted again. Elazar and I will settle it — a few weeks of his catch, I expect. Go and sleep.',
+        { expression: 'sad' },
       ),
       say(
         'night-left',
@@ -212,6 +226,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'night-safe',
         'nikanor',
         'My jars — every one of them safe. They can cross another night. Go and sleep.',
+        { expression: 'glad' },
       ),
     ],
   },
@@ -231,7 +246,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'e1',
         'elazar',
         'There’s my new crew! Your grandmother has told you, then. Nikanor’s jars to the far shore tonight — and you’re going to load her.',
-        { next: 'e1b' },
+        { expression: 'glad', next: 'e1b' },
       ),
       say(
         'e1b',
@@ -275,12 +290,16 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         { next: 'e2' },
       ),
       say('loaded', 'elazar', 'She’s loaded. Now we wait for evening.'),
-      say('night', 'elazar', 'Home. All of us.', { next: 'night2' }),
+      say('night', 'elazar', 'Home. All of us.', { expression: 'glad', next: 'night2' }),
       say(
         'night2',
         'elazar',
         'I’ve fished this lake since I was younger than you, {player}. I’ve seen squalls come out of nowhere. I have never seen one stop like that.',
-        { branches: [{ when: flag('jettisoned'), next: 'night-jars' }], next: 'night-end' },
+        {
+          expression: 'surprised',
+          branches: [{ when: flag('jettisoned'), next: 'night-jars' }],
+          next: 'night-end',
+        },
       ),
       say(
         'night-jars',
@@ -348,6 +367,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
     start: 't1',
     nodes: [
       say('t1', 'tamar', 'There you are! Your first crossing, and I get to teach you everything.', {
+        expression: 'glad',
         choices: [
           opt('sail', 'What do we do if the wind gets up?', 't2', { once: true }),
           opt('boat', 'Is our boat old?', 't4', { once: true }),
@@ -370,14 +390,18 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         't4',
         'tamar',
         'Old? Uncle says she’s been patched more times than Grandmother’s cloak. New planks, old planks, borrowed planks — she’s still the same boat.',
-        { effects: [{ type: 'setFlag', flag: 'heard-old-boat', value: true }], next: 't1' },
+        {
+          expression: 'glad',
+          effects: [{ type: 'setFlag', flag: 'heard-old-boat', value: true }],
+          next: 't1',
+        },
       ),
       say('again', 'tamar', 'Remember: sail, yard, oars, bail. Say it in your sleep.'),
       say(
         'night',
         'tamar',
         'I’ve never been so scared in my life. And then — nothing. Flat water, and stars.',
-        { choices: [opt('me', 'Me neither.', 'night2')] },
+        { expression: 'worried', choices: [opt('me', 'Me neither.', 'night2')] },
       ),
       say(
         'night2',
@@ -442,9 +466,13 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         { next: 's4' },
       ),
       say('s4', 'oded', 'Two oars and a bit of rope. I’ve rowed it twice. How hard can it be?', {
+        expression: 'glad',
         next: 's4b',
       }),
-      say('s4b', 'shifra', 'Oded makes pots, not voyages. But we’ve come so far.', { next: 's2' }),
+      say('s4b', 'shifra', 'Oded makes pots, not voyages. But we’ve come so far.', {
+        expression: 'worried',
+        next: 's2',
+      }),
       say(
         's5',
         'shifra',
@@ -452,6 +480,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         { next: 's2' },
       ),
       say('night', 'shifra', '{player}!', {
+        expression: 'glad',
         branches: [
           { when: storm('take-aboard'), next: 'n-aboard' },
           { when: storm('tow'), next: 'n-tow' },
@@ -463,7 +492,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'n-aboard',
         'shifra',
         'You took us in — all of us — in that sea. I don’t know how to thank you.',
-        { next: 'n-end' },
+        { expression: 'glad', next: 'n-end' },
       ),
       say(
         'n-tow',
@@ -472,6 +501,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         { next: 'n-end' },
       ),
       say('n-oar', 'shifra', 'Oded says your oar is the only reason we stayed the right way up.', {
+        expression: 'glad',
         next: 'n-end',
       }),
       say(
@@ -481,6 +511,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         { next: 'n-end' },
       ),
       say('n-end', 'shifra', 'We’re all here. Every one of us.', {
+        expression: 'glad',
         branches: [{ when: chose('choice-cloak', 'given'), next: 'n-cloak' }],
         next: 'n-bye',
       }),
@@ -488,7 +519,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'n-cloak',
         'shifra',
         'And Ami won’t take your cloak off. I’ll bring it back in the morning, I promise.',
-        { next: 'n-bye' },
+        { expression: 'glad', next: 'n-bye' },
       ),
       say(
         'n-bye',
@@ -504,6 +535,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
     start: 'a1',
     nodes: [
       say('a1', 'ami', 'Are you a real fisher? Is your boat big? Does it have a sail?', {
+        expression: 'glad',
         choices: [
           opt('yes', 'It does. You’ll see it tonight, if you’re crossing.', 'a2'),
           opt('bye', 'I have to go.'),
@@ -512,9 +544,12 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say('a2', 'ami', 'Uncle Oded’s boat doesn’t have a sail. It has a hole.', { next: 'a3' }),
       say('a3', 'ami', '…A little one. He stuffed some cloth in it.'),
       say('night', 'ami', 'Were you scared? I was scared.', {
+        expression: 'worried',
         branches: [{ when: chose('choice-cloak', 'given'), next: 'n-cloak' }],
       }),
-      say('n-cloak', 'ami', 'Your cloak is warm. Can I keep it until the morning?'),
+      say('n-cloak', 'ami', 'Your cloak is warm. Can I keep it until the morning?', {
+        expression: 'glad',
+      }),
     ],
   },
   {
@@ -610,6 +645,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         'shifra',
         '{player}, wait! Our boat is so small, and Ami is so little. Could he cross in yours?',
         {
+          expression: 'worried',
           choices: [
             opt('room', 'Yes — there’s room for him.', 'ami-yes', {
               when: not(HEAVY),
@@ -635,9 +671,13 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('ami-yes', 'shifra', 'Thank you! Ami, you do everything they tell you. Everything!', {
+        expression: 'glad',
         next: 'go',
       }),
-      say('ami-no', 'shifra', 'I understand. We’ll keep close behind you, then.', { next: 'go' }),
+      say('ami-no', 'shifra', 'I understand. We’ll keep close behind you, then.', {
+        expression: 'sad',
+        next: 'go',
+      }),
       say(
         'go',
         'narrator',

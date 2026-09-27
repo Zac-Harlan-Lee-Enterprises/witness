@@ -118,8 +118,11 @@ def brow_mask(head, V):
     ph = rng.uniform(0, 6.28, 4)
     for sx in (-1, 1):
         u = sx * x
-        t = (u - 0.85 * s) / (E + 2.3 * s - 0.85 * s)  # 0 at the inner end, 1 at the tail
-        centre = head.brow_z(sx, np.maximum(u, 0.0), rest=True) - 0.5 * s
+        near = (u > 0) & (u < E + 4.0 * s) & (np.abs(z - head.eye_z) < 5.0 * s)
+        centre = np.full(len(V), 1e3, F)
+        t = np.full(len(V), -1.0, F)
+        if near.any():
+            centre[near], t[near] = head.brow_line(sx, u[near])
         half = thick * (1.0 - taper * np.clip(t, 0, 1)) * s
         ragged = 1.0 + 0.18 * np.sin(u * 7.0 + ph[0] + sx) * np.sin(u * 3.1 + ph[1])
         band = np.clip(1 - np.abs(z - centre) / (half * ragged), 0, 1) ** 0.6
@@ -130,7 +133,7 @@ def brow_mask(head, V):
         front = (y < head.eye_y + 1.5).astype(F)
         m = np.maximum(m, band * along * front)
     if P.brow_join > 0.05:
-        mid = np.clip(1 - np.abs(x) / 1.1, 0, 1) * np.clip(1 - np.abs(z - (head.brow_z(1, np.array([0.9], F), rest=True)[0] - 0.5 * s) + 0.15) / 0.3, 0, 1)
+        mid = np.clip(1 - np.abs(x) / 1.1, 0, 1) * np.clip(1 - np.abs(z - head.brow_line(1, np.array([0.9], F))[0][0] + 0.15) / 0.3, 0, 1)
         m = np.maximum(m, 0.35 * P.brow_join * mid * (y < -5.5))
     # Not across a scar.
     if P.scars:
@@ -568,16 +571,22 @@ class Hair:
         rng = self.rng
         E = head.eye_half
         s = head.s
-        t = np.clip((np.abs(roots[:, 0]) - 0.85 * s) / (E + 2.3 * s - 0.85 * s), 0, 1)
         sx = np.sign(roots[:, 0])
+        t = np.zeros(len(roots), F)
+        for side in (-1, 1):
+            k = sx == side
+            if k.any():
+                t[k] = np.clip(head.brow_line(side, np.abs(roots[k, 0]))[1], 0, 1)
         # Inner hairs point up, the body outward, the tail outward and down;
         # each hair a little off, and an old man's brows unruly.
         up = np.clip(1 - t / 0.25, 0, 1)
         dirs = np.stack([sx * (0.3 + 0.9 * (1 - up)), np.zeros_like(t), up * 1.2 + 0.25 - 0.5 * np.clip(t - 0.65, 0, 1)], 1).astype(F)
-        dirs += rng.normal(0, 0.3 + 0.25 * P.age_t, dirs.shape).astype(F)  # ungroomed
+        dirs += rng.normal(0, 0.18 + 0.1 * P.masc + 0.25 * P.age_t, dirs.shape).astype(F)  # ungroomed, not wild
         L = (0.62 + 0.35 * rng.random(len(roots)) - 0.25 * t) * (1 + 0.5 * P.age_t * rng.random(len(roots)) ** 3)
-        strands = grow(self.field, roots, nrm, dirs, L.astype(F), (0.015, 0.05 + 0.05 * P.age_t), 0.0, 6, np.zeros(len(roots), F), np.ones(len(roots), F), np.zeros(len(roots), F), flat=0.03)
-        self.objects.append(to_curves("brows", strands, 0.0055, 0.0015, self.mats["brow"], self.col))
+        # Lying on the skin (hairs that stood off it read as fuzz).
+        L = L * (0.85 + 0.15 * P.masc)
+        strands = grow(self.field, roots, nrm, dirs, L.astype(F), (0.008, 0.025 + 0.05 * P.age_t), 0.0, 6, np.zeros(len(roots), F), np.ones(len(roots), F), np.zeros(len(roots), F), flat=0.015)
+        self.objects.append(to_curves("brows", strands, 0.0065, 0.0018, self.mats["brow"], self.col))
 
     # ── Eyelashes ──────────────────────────────────────────────────────────
     def _lashes(self):

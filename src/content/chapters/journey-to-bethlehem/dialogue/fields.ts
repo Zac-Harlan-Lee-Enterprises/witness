@@ -40,6 +40,7 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
         'yonatan',
         '{player}! Is that supper? You’re a hero. Hold on — I’m counting them in.',
         {
+          expression: 'glad',
           effects: [
             { type: 'takeItem', item: 'supper' },
             { type: 'takeItem', item: 'cloak' },
@@ -55,19 +56,20 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
         { next: 'y3' },
       ),
       say('y3', 'yonatan', '…thirty-eight, thirty-nine. Thirty-nine? There should be forty.', {
+        expression: 'worried',
         next: 'y4',
       }),
       say(
         'y4',
         'yonatan',
         'It’s the speckled lamb — the one with the black ear. Its mother won’t stop calling. It must have wandered off while I was watering them at the trough.',
-        { effects: [setFlag('lamb-missing')], next: 'y5' },
+        { expression: 'worried', effects: [setFlag('lamb-missing')], next: 'y5' },
       ),
       say(
         'y5',
         'yonatan',
         'I can’t leave the flock, and Old Yoram’s knees won’t take the rough ground in the dark.',
-        { next: 'y6' },
+        { expression: 'worried', next: 'y6' },
       ),
       say(
         'y6',
@@ -108,6 +110,7 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('return2', 'yonatan', 'Forty. Every one of them. I owe you, {player}.', {
+        expression: 'glad',
         next: 'return3',
       }),
       say('return3', 'yonatan', 'Now go home — it’s nearly dark, and Aunt Tamar will worry.'),
@@ -121,6 +124,7 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
     start: 'o1',
     nodes: [
       say('o1', 'yoram', 'Sit a moment, child. The fire’s warm, even if my knees aren’t.', {
+        expression: 'glad',
         next: 'hub',
       }),
       say('hub', 'yoram', 'The fire’s still warm.', {
@@ -149,6 +153,7 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
       ),
       say('lamb', 'yoram', 'Wherever the signs say. Don’t guess, child — look.', { next: 'hub' }),
       say('newborn', 'yoram', 'Born this morning. Its mother is sulking, so I’m keeping it warm.', {
+        expression: 'glad',
         next: 'hub',
       }),
     ],

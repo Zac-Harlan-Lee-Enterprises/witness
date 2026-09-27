@@ -34,10 +34,30 @@ export const DialogueChoiceSchema = z.object({
 /** @public Domain-model type (chapter-authoring API). */
 export type DialogueChoice = z.infer<typeof DialogueChoiceSchema>;
 
+/**
+ * The face a speaker makes while saying a line: presentation only (which
+ * portrait is shown), never part of the story's rules. `neutral` is the
+ * person at rest. Keep in step with EXPRESSIONS in
+ * tools/art/lib/portrait_face.py, which renders them.
+ */
+export const EXPRESSIONS = [
+  'neutral',
+  'glad',
+  'worried',
+  'sad',
+  'angry',
+  'surprised',
+  'afraid',
+] as const;
+export const ExpressionSchema = z.enum(EXPRESSIONS);
+export type Expression = z.infer<typeof ExpressionSchema>;
+
 export const DialogueNodeSchema = z.object({
   id: z.string().min(1),
   speaker: z.string().min(1),
   text: z.string().min(1),
+  /** The speaker's face on this line (their portrait); neutral unless the feeling is clear. */
+  expression: ExpressionSchema.default('neutral'),
   kind: z.enum(CONTENT_KINDS).default('fiction'),
   recordId: z.string().optional(),
   effects: z.array(EffectSchema).default([]),

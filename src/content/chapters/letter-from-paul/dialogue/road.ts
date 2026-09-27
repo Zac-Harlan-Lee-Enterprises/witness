@@ -38,13 +38,16 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         { next: 'k2' },
       ),
       say('k2', 'kallias', '{player}? From Ammia’s? Is she — has something happened?', {
+        expression: 'worried',
         choices: [opt('letter', 'Your letter reached her. She has answered it.', 'k3')],
       }),
       say('k3', 'kallias', 'It reached her? After all that rain? I was sure it would be pulp.', {
+        expression: 'surprised',
         effects: [{ type: 'setFlag', flag: 'rain-began', value: true }],
         next: 'k4',
       }),
       say('k4', 'kallias', 'What did she… what did she write?', {
+        expression: 'worried',
         branches: [{ when: flag('letter-wet'), next: 'k5-wet' }],
         next: 'k5-dry',
       }),
@@ -76,9 +79,10 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'k8',
         'kallias',
         '“Tonight if you are brave, tomorrow if you are not.” That sounds like her.',
-        { next: 'k9' },
+        { expression: 'glad', next: 'k9' },
       ),
       say('k9', 'kallias', '“The debt is still a debt.” …I have eight coins. I owe her twenty.', {
+        expression: 'sad',
         choices: [
           opt('account', 'Then put some of it on my account. Here — three coins.', 'k-account', {
             requires: has('coins', 3),
@@ -104,9 +108,10 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'k-account',
         'kallias',
         'Your savings? {player}, I can’t — …Thank you. That makes eleven. It’s a start.',
-        { next: 'k10' },
+        { expression: 'glad', next: 'k10' },
       ),
       say('k-speak', 'kallias', 'You’d do that? Stand up in front of her, for me?', {
+        expression: 'surprised',
         next: 'k10',
       }),
       say('k-theirs', 'kallias', 'You’re right. It’s my debt. I’ll carry it.', { next: 'k10' }),
@@ -115,6 +120,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'kallias',
         'Nikon pays me at sundown. If I leave now, I lose today’s wage — and I walk into Philemon’s house in front of everyone who knows what I did.',
         {
+          expression: 'worried',
           branches: [{ when: not(solved('p-alum')), next: 'k10-alum' }],
           next: 'decide',
         },
@@ -136,7 +142,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'alum-done',
         'kallias',
         'Nikon says the bath is right — six measures exactly. You didn’t have to do that.',
-        { next: 'decide' },
+        { expression: 'glad', next: 'decide' },
       ),
       say('decide', 'narrator', 'Kallias waits to hear what you’ll say.', {
         choices: [
@@ -182,6 +188,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
 
       // ── Come home now ─────────────────────────────────────────────────────
       say('come', 'kallias', '…All right. All right. Let me tell Nikon.', {
+        expression: 'worried',
         branches: [{ when: solved('p-alum'), next: 'come-paid' }],
         next: 'come-unpaid',
       }),
@@ -216,7 +223,10 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
           opt('keep', 'Let’s go before it gets any worse.', 'walk'),
         ],
       }),
-      say('cloak-given', 'kallias', 'She kept it? All winter?', { next: 'walk' }),
+      say('cloak-given', 'kallias', 'She kept it? All winter?', {
+        expression: 'surprised',
+        next: 'walk',
+      }),
       say('walk', 'narrator', 'You set off up the road together.', {
         branches: [{ when: bundleDone, next: 'walk-mule' }],
         next: 'walk-foot',
@@ -330,7 +340,9 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'nikon',
         'Tomorrow’s alum bath wants six measures of water in the big jar — exactly six. If it’s set before he goes, he’s earned his day. If not, not.',
       ),
-      say('done', 'nikon', 'Six measures, exactly. Somebody in this yard can count.'),
+      say('done', 'nikon', 'Six measures, exactly. Somebody in this yard can count.', {
+        expression: 'glad',
+      }),
     ],
   },
   {
@@ -343,6 +355,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'chrysis',
         'You came all the way down from Colossae in this weather? For Kallias?',
         {
+          expression: 'surprised',
           choices: [
             opt('you', 'Do you work here too?', 'c2', { once: true }),
             opt('kallias', 'You know Kallias?', 'c-k', { once: true }),
@@ -377,7 +390,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'c5',
         'chrysis',
         'I save what I can. Some masters let you buy your freedom in the end. Mine says he might. Masters say a lot of things.',
-        { next: 'c1' },
+        { expression: 'sad', next: 'c1' },
       ),
       say('c-sorry', 'chrysis', 'Don’t be sorry at me. Just don’t pretend it isn’t so.', {
         effects: [{ type: 'setFlag', flag: 'talked-chrysis', value: true }],
@@ -390,6 +403,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         { next: 'c-k2' },
       ),
       say('c-k2', 'chrysis', 'His trouble is shame. Mine is a bill of sale.', {
+        expression: 'sad',
         effects: [{ type: 'setFlag', flag: 'talked-chrysis', value: true }],
         next: 'c1',
       }),
@@ -405,7 +419,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
           next: 'c-bread2',
         },
       ),
-      say('c-bread2', 'chrysis', 'Thank you.', { next: 'c1' }),
+      say('c-bread2', 'chrysis', 'Thank you.', { expression: 'glad', next: 'c1' }),
     ],
   },
   {

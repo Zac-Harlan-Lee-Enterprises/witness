@@ -351,6 +351,30 @@ class MHHead:
             out[i] = (k * z).sum() / max(k.sum(), 1e-6) if k.sum() > 1e-4 else self.eye_z + 1.6 * self.s
         return out
 
+    def brow_line(self, sx, u):
+        """Height (cm) of the middle of the eyebrow at distance u from the
+        midline, on the rest shape: over the upper lid, a little higher in
+        a soft arch two-thirds of the way out, level at the inner end (a
+        brow that rises toward the nose reads as worry), and dropping a
+        little at the tail. Also returns t, 0 at the brow's inner end and 1
+        at its tail."""
+        u = np.atleast_1d(np.asarray(u, F))
+        a = self.lid_point(sx, -1.0, rest=True)
+        b = self.lid_point(sx, 1.0, rest=True)
+        xi, xo = abs(float(a[0])), abs(float(b[0]))
+        start, end = xi - 0.55 * self.s, xo + 0.9 * self.s
+        t = (u - start) / (end - start)
+        te = np.clip((u - xi) / (xo - xi), 0, 1)
+        lid = np.array([self.lid_point(sx, float(2 * v - 1), upper=True, rest=True)[2] for v in te], F)
+        lid_top = max(float(self.lid_point(sx, float(2 * v - 1), upper=True, rest=True)[2]) for v in np.linspace(0, 1, 9))
+        # Follow the lid only gently: the brow is flatter than the lid's curve.
+        base = 0.35 * lid + 0.65 * lid_top
+        female = self.P.sex == "f"
+        arch = (0.22 if female else 0.12) * np.sin(np.pi * np.clip(t, 0, 1) ** 0.75) * self.s
+        tail = -0.25 * np.clip((t - 0.75) / 0.25, 0, 1) ** 1.5 * self.s
+        gap = (1.25 - 0.05 * self.P.child) * self.s
+        return (base + gap + arch + tail).astype(F), t.astype(F)
+
     # ── Fields for the clothes and hair ────────────────────────────────────
     def _triangles(self, V, faces):
         Q = self.base.quads[faces]
