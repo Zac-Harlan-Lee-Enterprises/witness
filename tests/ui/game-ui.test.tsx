@@ -271,14 +271,19 @@ describe('Puzzles', () => {
     await renderWithServices(<PuzzleHost runtime={runtime} />);
     const crock = screen.getByRole('region', { name: 'Big crock' });
     const pitcher = screen.getByRole('region', { name: 'Pitcher' });
-    await user.click(within(crock).getByRole('button', { name: 'Fill' }));
+    // It is water from the trough, and what you tip out goes back into it:
+    // nobody pours precious oil on the ground to measure a jar.
+    expect(screen.getByText(/back into the trough/)).toBeInTheDocument();
+    await user.click(within(crock).getByRole('button', { name: 'Fill from the water trough' }));
     await user.click(within(crock).getByRole('button', { name: 'Pour into pitcher' }));
-    await user.click(within(pitcher).getByRole('button', { name: 'Empty' }));
-    await user.click(within(crock).getByRole('button', { name: 'Pour into pitcher' }));
-    await user.click(within(crock).getByRole('button', { name: 'Fill' }));
-    expect(screen.getByRole('list', { name: 'What you’ve done' })).toHaveTextContent(
-      'Filled the big crock',
+    await user.click(
+      within(pitcher).getByRole('button', { name: 'Pour back into the water trough' }),
     );
+    await user.click(within(crock).getByRole('button', { name: 'Pour into pitcher' }));
+    await user.click(within(crock).getByRole('button', { name: 'Fill from the water trough' }));
+    const log = screen.getByRole('list', { name: 'What you’ve done' });
+    expect(log).toHaveTextContent('Filled the big crock from the water trough');
+    expect(log).toHaveTextContent('Poured the pitcher back into the water trough');
     await user.click(within(crock).getByRole('button', { name: 'Pour into pitcher' }));
     expect(await screen.findByText('Solved!')).toBeInTheDocument();
     expect(harness.state().puzzles['p-measure']?.status).toBe('solved');

@@ -54,7 +54,7 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await vessel(page, 'Grain basket', 'Fill');
   await snap(page, 'bethlehem-02-flour');
   await vessel(page, 'Grain basket', 'Pour into kneading trough');
-  await vessel(page, 'Kneading trough', 'Empty');
+  await vessel(page, 'Kneading trough', 'Pour back into the flour jar');
   await vessel(page, 'Grain basket', 'Pour into kneading trough');
   await expect(bread.getByText('Solved!')).toBeVisible();
   await bread.getByRole('button', { name: 'Continue' }).click();

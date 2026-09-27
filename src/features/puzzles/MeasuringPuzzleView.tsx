@@ -9,7 +9,12 @@ import {
 } from '@/domain/puzzles';
 import type { GameRuntimeLike } from '../game/types';
 
-/** Pouring puzzle: vessels drawn as labelled bars; every action is a button; a step log narrates. */
+/**
+ * Pouring puzzle: vessels drawn as labelled bars; every action is a button; a
+ * step log narrates. Each button says where things come from and go: a vessel
+ * is filled from the source and tipped back into it (a bare "Empty" read as
+ * pouring precious oil on the ground).
+ */
 export function MeasuringPuzzleView({
   puzzle,
   runtime,
@@ -69,16 +74,19 @@ export function MeasuringPuzzleView({
                     )
                   }
                 >
-                  Fill
+                  Fill from {puzzle.sourceLabel}
                 </button>
                 <button
                   type="button"
                   className="button button--small"
                   onClick={() =>
-                    act({ type: 'empty', vessel: v.id }, `Emptied the ${v.label.toLowerCase()}`)
+                    act(
+                      { type: 'empty', vessel: v.id },
+                      `Poured the ${v.label.toLowerCase()} back into ${puzzle.sourceLabel}`,
+                    )
                   }
                 >
-                  Empty
+                  Pour back into {puzzle.sourceLabel}
                 </button>
                 {others.map((o) => (
                   <button
