@@ -22,41 +22,6 @@
       "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
     },
     {
-      "path": "makehuman/data/eyes/high-poly/high-poly.mhclo",
-      "bytes": 72490,
-      "sha256": "b183cfe37120ab726f9b3f2ea6cd3a64c44ce7b4bd91a77c841cf70c04f83a0d"
-    },
-    {
-      "path": "makehuman/data/eyes/high-poly/high-poly.obj",
-      "bytes": 100882,
-      "sha256": "da2493215b708a344c33dc72f2a9a5b8fa985dcc5a70ad3b208995cf871da8e1"
-    },
-    {
-      "path": "makehuman/data/modifiers/modeling_modifiers.json",
-      "bytes": 17484,
-      "sha256": "c96aaca3f7a6d838d4946a02a1510247acbd75678cfdb0d99e4daf53bb036a11"
-    },
-    {
-      "path": "makehuman/data/poseunits/face-poseunits.bvh",
-      "bytes": 310826,
-      "sha256": "42a8e69692e30010371ee6993a6e5d3b468d35065559ec0953c936e31b8d903f"
-    },
-    {
-      "path": "makehuman/data/poseunits/face-poseunits.json",
-      "bytes": 1590,
-      "sha256": "e7224f76e9610049b79e5f9e8ac2985d1e9a367333395c07537919258cb42cc3"
-    },
-    {
-      "path": "makehuman/data/rigs/default.mhskel",
-      "bytes": 117790,
-      "sha256": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24"
-    },
-    {
-      "path": "makehuman/data/rigs/default_weights.mhw",
-      "bytes": 897521,
-      "sha256": "0f3641d651ae3d00ad6b4ccee43142edb109d3bd909d27d9e4139ef1beed8625"
-    },
-    {
       "path": "makehuman/data/targets/asym/asym-brown-1-l.target",
       "bytes": 5589,
       "sha256": "1d30894d6db8b0ecb0fde3466e461e1e8d44c0ba129e26b4e0d58f65409aa2be"
@@ -582,26 +547,6 @@
       "sha256": "2a7b8547c4e2e141e8338e8e386fdd1970bfbde03b02e9bc0a8687e4e7434ca2"
     },
     {
-      "path": "makehuman/data/targets/ears/l-ear-trans-backward.target",
-      "bytes": 7839,
-      "sha256": "02e302490707dce8ff8248f8cd5e7600978ae0f0c1a1decb3e55ff970b79da85"
-    },
-    {
-      "path": "makehuman/data/targets/ears/l-ear-trans-down.target",
-      "bytes": 7611,
-      "sha256": "dd790628ee1b25abd39bec929f083f7a86d87792a43b5b7a11860243abd712e3"
-    },
-    {
-      "path": "makehuman/data/targets/ears/l-ear-trans-forward.target",
-      "bytes": 8167,
-      "sha256": "e3bab170b063a39bf69e5a94d5bd54aeced0cf9a9222e223ae067161e3667a3b"
-    },
-    {
-      "path": "makehuman/data/targets/ears/l-ear-trans-up.target",
-      "bytes": 7126,
-      "sha256": "08acb404abca9c4ed4104baac9a55accd378a4a7268df07ab62f7b4f8f5865da"
-    },
-    {
       "path": "makehuman/data/targets/ears/l-ear-wing-decr.target",
       "bytes": 7567,
       "sha256": "1075c326f7e841e7f1681300f6b1e864d90f40ee94fb2ff7dc612a8b8f1d27c7"
@@ -690,26 +635,6 @@
       "path": "makehuman/data/targets/ears/r-ear-shape-triangle.target",
       "bytes": 5345,
       "sha256": "250ed8117fe652e12d7cdfcf10f677dc9bbde02f1477a0b763e8ae5ce4055e19"
-    },
-    {
-      "path": "makehuman/data/targets/ears/r-ear-trans-backward.target",
-      "bytes": 7347,
-      "sha256": "ae0d12984160beea75cde7e507b3e33223fcf3f53236e2fbcde327798b0a6d9f"
-    },
-    {
-      "path": "makehuman/data/targets/ears/r-ear-trans-down.target",
-      "bytes": 7134,
-      "sha256": "2b646a8b7d6738b0f84088562f985c9b8a760d707074c834018ee4582e1b50bc"
-    },
-    {
-      "path": "makehuman/data/targets/ears/r-ear-trans-forward.target",
-      "bytes": 7664,
-      "sha256": "e8faae90649156def817b39e854ce9e96a379671992924720de446ac4cc5ec65"
-    },
-    {
-      "path": "makehuman/data/targets/ears/r-ear-trans-up.target",
-      "bytes": 6649,
-      "sha256": "9331eaeed4689d1504aa62a07435658060f3920dd24e79a55b66da416db1beab"
     },
     {
       "path": "makehuman/data/targets/ears/r-ear-wing-decr.target",
@@ -1652,16 +1577,6 @@
       "sha256": "ff677345bd81e3f439bdf75496bbee620ca3c3f029955a546837afd283abf73a"
     },
     {
-      "path": "makehuman/data/targets/head/head-angle-in.target",
-      "bytes": 68747,
-      "sha256": "953fe91e2b7db350c1c932637e48b12d719528bdfdd077b44fc1cf7546a3e0fd"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-angle-out.target",
-      "bytes": 72434,
-      "sha256": "c0e5eb1f4919d72784d79eeb54082af46061b050bb1c0df29569a752b0ad5e8b"
-    },
-    {
       "path": "makehuman/data/targets/head/head-back-scale-depth-decr.target",
       "bytes": 8977,
       "sha256": "9f61e5de3594409e491f8ddcf47862b6f81ae54406e277534de23e669853914c"
@@ -1740,41 +1655,6 @@
       "path": "makehuman/data/targets/head/head-square.target",
       "bytes": 12618,
       "sha256": "001d0d135d964daf4ad99ba46a0f77c5bc2378f04e53c2b5a20242ab19cbf265"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-backward.target",
-      "bytes": 74770,
-      "sha256": "32bc8a9c7a7c49331cd6516e7503134deb0ff17a0cc3b36b474723a8b2e8dbb4"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-down.target",
-      "bytes": 76202,
-      "sha256": "1690236b7705f76ea1ff9555c82066158d05278953efbc98df7290147691de5b"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-forward.target",
-      "bytes": 69655,
-      "sha256": "ccf934993718025cc1086ce6981c92bdc9a2ed4f7ea67d6ed74640cd2a8799c3"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-in.target",
-      "bytes": 75186,
-      "sha256": "587950df2c45ba0dff23ab14a00b4cebd1883d7e216144558326c1f08e84a4af"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-out.target",
-      "bytes": 69677,
-      "sha256": "da3a8333abfd73e5a28510b3ad44537d867a9c4c8185cf8b538327840cc0a778"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-trans-up.target",
-      "bytes": 69100,
-      "sha256": "48060973dba8d8ffa87d7ce4748dd62e54671d602c1e1a084367312636fb8b75"
-    },
-    {
-      "path": "makehuman/data/targets/head/head-triangular.target",
-      "bytes": 12676,
-      "sha256": "09f898db574e636a35b6d39f455e04bfa0bc0248c89d32ad3c959cdb65b8fd1f"
     },
     {
       "path": "makehuman/data/targets/macrodetails/african-female-baby.target",
@@ -1895,546 +1775,6 @@
       "path": "makehuman/data/targets/macrodetails/caucasian-male-young.target",
       "bytes": 396479,
       "sha256": "70e228ba7164737dae664454394536fc5935fa48d333c1a97d77e2dc6eacc5f5"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 348508,
-      "sha256": "3f853d21a4746d3177df46ded4b407b658a151ffc82658e38c40864b674623d7"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 347783,
-      "sha256": "227cb6e69e992b9318be3db945b0cbfe2856f29ec2c8ed3c84e5481ef21f3762"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-minweight-idealproportions.target",
-      "bytes": 348296,
-      "sha256": "fbed0a885cb2d0d5268af8a1ab93075b24517265abb60ea8635ea0838b751b9b"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 349660,
-      "sha256": "775589d7f6e241b3235ec4ab969752c1d9076fc51339d02ba564d6c4428fe950"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 348176,
-      "sha256": "6796279dcf6b9d2658f322238482d4d4153c7558c34f546d8619e72a4d885078"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-minweight-idealproportions.target",
-      "bytes": 348257,
-      "sha256": "fa955742031fdf3d8b3b7941b8094c35e9cd229498a1ec346fa1d0bed2ffc361"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-averageweight-idealproportions.target",
-      "bytes": 349266,
-      "sha256": "51f9e2c5a13a2ba053a7b76cccbc2ce2984a2ccbf8d9a725d9d95d9642da1498"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-maxweight-idealproportions.target",
-      "bytes": 348176,
-      "sha256": "6796279dcf6b9d2658f322238482d4d4153c7558c34f546d8619e72a4d885078"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-minweight-idealproportions.target",
-      "bytes": 347590,
-      "sha256": "bd58e1431b262c6d238fba4a88542df01b59a3738c5efaee4d323428e6b532d7"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-child-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 349566,
-      "sha256": "d2efe289a062817d79ed8fa94bd52f3b947c7e81395703354e7fc185950ae7fa"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 350969,
-      "sha256": "975192dd29084c77e2ee329039efd7d0278d478ba087b994cb2c8dff1d63e48c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-minweight-idealproportions.target",
-      "bytes": 349796,
-      "sha256": "c1165a8a9a6942a4594f23633f7fdb50790d8f349a40d84b4b0e4aa16f94cd3d"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 349815,
-      "sha256": "7e0bfe56022b7cc0f204ef46fe4ff59be67b426e151770686bfc0d75f1f36bf7"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 347420,
-      "sha256": "932bfaebb21ba9921a77cae57893c18e9b9a8abcb22b2b3959e3a7ca9478e418"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-minweight-idealproportions.target",
-      "bytes": 349727,
-      "sha256": "df05798024cce081bd399af9c7bbc2c9ae5df4fccb5f338ec61149dc021eb670"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-averageweight-idealproportions.target",
-      "bytes": 349606,
-      "sha256": "beef507103a654b5246d8f76e4f90e4d8d5edc6c69643ce8550c817fd5a042cc"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-maxweight-idealproportions.target",
-      "bytes": 349767,
-      "sha256": "8f50a46ccc4b7fa6b0ee0289b870440daa50dab04de55bf4f84e7f61dfb21b57"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-minweight-idealproportions.target",
-      "bytes": 349547,
-      "sha256": "10234586fa89511eaf68a7084536c1b56c88567eb61e10df054532fb9c7198ee"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-old-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 349563,
-      "sha256": "0a3bd099b7a88150d56d68b69c07d3d3538cb57279e0e775d13f19d3dc3e339d"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 349535,
-      "sha256": "96f81f6e03caae79a75c404c9328aeea0d73e80bfe4b82b5ee247b3d4ce0ea78"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-minweight-idealproportions.target",
-      "bytes": 351599,
-      "sha256": "8be529e595d7a5fb12352c476faf99af8dd3ae3f50972d452f650d1f2f810213"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 351047,
-      "sha256": "12654c6dd22d81a9595f41f149f1988c141ca22a350d4c2b91fccd8f9b2ce23b"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 349729,
-      "sha256": "071fb6747e3d1dd00303fc605ad75ce05239c610a3a0c1757ab9210d7f02a020"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-minweight-idealproportions.target",
-      "bytes": 349835,
-      "sha256": "30330cfaf3d4850c3561567dca3c9dbe08b5c7ddab6163b2565a2964c168fc60"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-averageweight-idealproportions.target",
-      "bytes": 349582,
-      "sha256": "10275c2f0d390ac4180b34ac5fa98e907f50cc3661f3a5f45d2cb4aa9f9cf11a"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-maxweight-idealproportions.target",
-      "bytes": 349484,
-      "sha256": "329bad60b852bbc17eb8a6343e95dfc8942c590a21014f85e10afac21ede1ed0"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-minweight-idealproportions.target",
-      "bytes": 350141,
-      "sha256": "d70464833b00c5f36d8516d440cf1aa3835b9f45d51bcccedd48cf7b7c30781d"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/female-young-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 359317,
-      "sha256": "e882dfd6d2f2945c4b7b47cc22172ac0ea7837cad1c81f0e43169f7cc3d34a54"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-minweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-minweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-averageweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-maxweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-minweight-idealproportions.target",
-      "bytes": 163723,
-      "sha256": "4b36a92868d8ea6f4000777aca494e3ace843baa574271ff2356da89af3b2b7c"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-child-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-minweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-minweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-averageweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-maxweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-minweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-old-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-averageweight-idealproportions.target",
-      "bytes": 164124,
-      "sha256": "7bbd790604c908417ff8ca11e566e3577508d92a4f397a2ace0f89f4cc3aa373"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-averageweight-uncommonproportions.target",
-      "bytes": 190170,
-      "sha256": "758c0b12e6ba8f1a2b67a884578bae4ad75069a272823adae372e08041bd02c6"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-maxweight-idealproportions.target",
-      "bytes": 162992,
-      "sha256": "b1d386377040a51f9d2e1c173af028c3485a7c6091ca7e312a50dc28d1bd57f6"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-maxweight-uncommonproportions.target",
-      "bytes": 189409,
-      "sha256": "aee0e911e17dead7ac8c1f62dc5f63744d77d099583ad83f1f27aa55960c73a7"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-minweight-idealproportions.target",
-      "bytes": 167077,
-      "sha256": "278060f8fb9c1843df0ae0894d015c8459ccb8cef74cf4f65032bae9152cfd6a"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-averagemuscle-minweight-uncommonproportions.target",
-      "bytes": 188717,
-      "sha256": "8f70af09f5c90205a8143d29f1e716d1e5c50dd792f996ac5e107f010a07af39"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-averageweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-maxweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-minweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-maxmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-averageweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-averageweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-maxweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-maxweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-minweight-idealproportions.target",
-      "bytes": 164317,
-      "sha256": "d9452857903d18a2100ca26105d5a61083e7064fbe16f035863446728755ec20"
-    },
-    {
-      "path": "makehuman/data/targets/macrodetails/proportions/male-young-minmuscle-minweight-uncommonproportions.target",
-      "bytes": 193841,
-      "sha256": "197ce307060cedf9f9a26a6d67749ec108582c94d661937128e9578713cae0d9"
     },
     {
       "path": "makehuman/data/targets/macrodetails/universal-female-baby-averagemuscle-averageweight.target",
@@ -2797,36 +2137,6 @@
       "sha256": "3af713db636eb41f32af5010981bad30efe743a3ab1d4a61c619c664b610a51a"
     },
     {
-      "path": "makehuman/data/targets/measure/measure-neck-circ-decr.target",
-      "bytes": 9421,
-      "sha256": "897528bbe50e0c7193d3032eae062ae1878ec5965cbd93fc2f4091d5d69c2d47"
-    },
-    {
-      "path": "makehuman/data/targets/measure/measure-neck-circ-incr.target",
-      "bytes": 14966,
-      "sha256": "caa38a399ef4dcdd713e5cb3e496afa8c6c938dea41fd848703d4549a48a74c0"
-    },
-    {
-      "path": "makehuman/data/targets/measure/measure-neck-height-decr.target",
-      "bytes": 74160,
-      "sha256": "dd7e5fc0cb52cc4b43521b6386bb2503bf46f19d469269a5b0dd0c6d217d1ed6"
-    },
-    {
-      "path": "makehuman/data/targets/measure/measure-neck-height-incr.target",
-      "bytes": 68854,
-      "sha256": "5759b2b17604301ccd2844e66b2f814064c13b8da2559de6a0ee7109f1f20373"
-    },
-    {
-      "path": "makehuman/data/targets/measure/measure-shoulder-dist-decr.target",
-      "bytes": 88046,
-      "sha256": "15034d390da69ce7a3e46dfee0e248d0649bf6fc0bfec575b4cacf48b7a1ba5a"
-    },
-    {
-      "path": "makehuman/data/targets/measure/measure-shoulder-dist-incr.target",
-      "bytes": 82836,
-      "sha256": "af7394300c91d64fb0b032377aae72e546c778d1d5c00daed88858c04ee9150b"
-    },
-    {
       "path": "makehuman/data/targets/mouth/mouth-angles-down.target",
       "bytes": 7962,
       "sha256": "39181b6688e6f5ada15b47a82977c75379152434c61dafe8822afb3f551d4fa6"
@@ -2855,16 +2165,6 @@
       "path": "makehuman/data/targets/mouth/mouth-cupidsbow-width-incr.target",
       "bytes": 2202,
       "sha256": "f66e986b25c1998a2217d917b41075b61f245bdf35769c6a9b21a58588242321"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-dimples-in.target",
-      "bytes": 1112,
-      "sha256": "bc74f0fdc6f5779f4a69b801ba9201d625948af6e21acbb404b8cb6c4fce8c4e"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-dimples-out.target",
-      "bytes": 1560,
-      "sha256": "0cb3576858cabcf2915132673833a94944943a31a82e3c55ec5a3798aa654269"
     },
     {
       "path": "makehuman/data/targets/mouth/mouth-laugh-lines-in.target",
@@ -2917,16 +2217,6 @@
       "sha256": "dbdaf045b00c67bf8672d53bc8cf94eb3e3dea316de6fe18a278f7080564c65d"
     },
     {
-      "path": "makehuman/data/targets/mouth/mouth-lowerlip-width-decr.target",
-      "bytes": 2150,
-      "sha256": "f125ab08820f8762d5c623eb72182f5d86dcead188bfbd863d9f117554bd2b7a"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-lowerlip-width-incr.target",
-      "bytes": 2772,
-      "sha256": "6be43c8f0333323dd9affc9141066502d136d15d767596257c08b64cca82a847"
-    },
-    {
       "path": "makehuman/data/targets/mouth/mouth-philtrum-volume-decr.target",
       "bytes": 1073,
       "sha256": "e7400e4042f6f2a7fc3ec330ebc8f7f8269173eae52e29785ff00b0f831b0a6b"
@@ -2935,16 +2225,6 @@
       "path": "makehuman/data/targets/mouth/mouth-philtrum-volume-incr.target",
       "bytes": 890,
       "sha256": "5b3020ed98d17882e43d47c10886ccf72a0976bb772ec8599553bab5ecefcf91"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-scale-depth-decr.target",
-      "bytes": 7437,
-      "sha256": "15e5da9894901446e21ff4feda6aa757b67e889745995a1d1544002e615c8a30"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-scale-depth-incr.target",
-      "bytes": 7513,
-      "sha256": "ef1411bcef771a73718fd7b4dfb380290a19a06321babb69b19a26247dc0745d"
     },
     {
       "path": "makehuman/data/targets/mouth/mouth-scale-horiz-decr.target",
@@ -2957,44 +2237,14 @@
       "sha256": "ccfc39cca249883ebc46af6f2c96c4130df13a67ebce30a2550af17a48637770"
     },
     {
-      "path": "makehuman/data/targets/mouth/mouth-scale-vert-decr.target",
-      "bytes": 7495,
-      "sha256": "6087f1f8acd837aa1ad098965e907767b80238927c6b5c95f248d45a8aecd48b"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-scale-vert-incr.target",
-      "bytes": 13436,
-      "sha256": "acdbd062c3709211daf947c437b4962a944148c4255501fdd449625160e3d50a"
-    },
-    {
       "path": "makehuman/data/targets/mouth/mouth-trans-backward.target",
       "bytes": 17919,
       "sha256": "5d9479ef28a61228104891237f82c871dae1cee433067b3cdb8e4d265e3fe7bc"
     },
     {
-      "path": "makehuman/data/targets/mouth/mouth-trans-down.target",
-      "bytes": 17308,
-      "sha256": "635eb596ad9ce51a7874fee601ec9abf6ef3d9a95816a06caf1b6d410797f055"
-    },
-    {
       "path": "makehuman/data/targets/mouth/mouth-trans-forward.target",
       "bytes": 16083,
       "sha256": "e2174201e312702cb1196c268813660f25df9ed32f0f3706bc1135e74ab14d85"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-trans-in.target",
-      "bytes": 17509,
-      "sha256": "7d67a82fd61afa85638e41c2af5d27bfad4b9efb615fb4a994aa91b9186e43ef"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-trans-out.target",
-      "bytes": 17645,
-      "sha256": "e92343987725a1b4efe962279dd85c1b46d512ee19b0d1c678ff9fbb60aeb097"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-trans-up.target",
-      "bytes": 16864,
-      "sha256": "fdbec49a44e9467464a241fef0c4df0f67bbab0c2133a45e45c35f33d1d4c1aa"
     },
     {
       "path": "makehuman/data/targets/mouth/mouth-upperlip-ext-down.target",
@@ -3037,26 +2287,6 @@
       "sha256": "b124cbd9b9be318264f61a143da603b42e0357ed92b4b6afd1b31a83daaf8568"
     },
     {
-      "path": "makehuman/data/targets/mouth/mouth-upperlip-width-decr.target",
-      "bytes": 2954,
-      "sha256": "03c14256205de15266956e741a6d4aa4df46070ad539187b6b3168d0cb16ac0e"
-    },
-    {
-      "path": "makehuman/data/targets/mouth/mouth-upperlip-width-incr.target",
-      "bytes": 10647,
-      "sha256": "fde8bbe4e9d856ff2acb66820955816630c0bc8b5ce9484f34d5284aeb1481f9"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-back-scale-depth-decr.target",
-      "bytes": 4980,
-      "sha256": "a2466cce4331a6ff3d7ea84be9a07cb06d41ff1ee4aec109badef17868337af3"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-back-scale-depth-incr.target",
-      "bytes": 3915,
-      "sha256": "2857b4e1d49a36d6ca65cd6ae915df9048ce82f141a4b15e2f388153938cf0d0"
-    },
-    {
       "path": "makehuman/data/targets/neck/neck-double-decr.target",
       "bytes": 3618,
       "sha256": "21757d56fd147be67c962fdad9c3fee07e06bf069f17f1bb8f29fdae53b17b5a"
@@ -3065,16 +2295,6 @@
       "path": "makehuman/data/targets/neck/neck-double-incr.target",
       "bytes": 4236,
       "sha256": "095d6a532e3cb4da3cef1f41b940b5fec830a90e61b0ddf8b56d84f9021a2217"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-scale-depth-decr.target",
-      "bytes": 12881,
-      "sha256": "0859baedc84b94cb4cc93eda0df44fa9c1156c75f013a34fd017695acd72ba2b"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-scale-depth-incr.target",
-      "bytes": 12758,
-      "sha256": "05d69f134d945677193d37c49796516c183e4b2dd3da20e528ff09a6b0a6e93d"
     },
     {
       "path": "makehuman/data/targets/neck/neck-scale-horiz-decr.target",
@@ -3095,36 +2315,6 @@
       "path": "makehuman/data/targets/neck/neck-scale-vert-incr.target",
       "bytes": 82561,
       "sha256": "2618b7c18c1460fdba8d980da6fa2963210ae903a1a4464dfe55adabdd4eaa5a"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-backward.target",
-      "bytes": 16373,
-      "sha256": "2299aad92bfffe0a512ffe1591b58d0e8cb96279a873b67161e07b892eca04bd"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-down.target",
-      "bytes": 10436,
-      "sha256": "18f5ba07bb4f894f52fe00c8d2f87445b5528726a29d1ecb91f900f3110f2204"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-forward.target",
-      "bytes": 11452,
-      "sha256": "7c76b98672b65899a341c3e9bb6ae88568f3404a2bdbfd13c21373d87d2a7515"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-in.target",
-      "bytes": 10148,
-      "sha256": "654e62406dca3c60b2995512bbac3d07e71e2a7e984e8fb87fadc6fadec175d3"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-out.target",
-      "bytes": 8454,
-      "sha256": "47162fc5a19bc8ecaa497eabe0946eb51450ee9000bbe92f537d2f33f4cea647"
-    },
-    {
-      "path": "makehuman/data/targets/neck/neck-trans-up.target",
-      "bytes": 4715,
-      "sha256": "b018648e9303f253313020dcf20bb8802caa8420d60246444f64f880fa01ce0c"
     },
     {
       "path": "makehuman/data/targets/nose/nose-base-down.target",
@@ -3185,16 +2375,6 @@
       "path": "makehuman/data/targets/nose/nose-hump-incr.target",
       "bytes": 6836,
       "sha256": "87f167e76cc908e8f28fed8623cf55e737f59499e8338cfe78f5d635382a5191"
-    },
-    {
-      "path": "makehuman/data/targets/nose/nose-nostrils-angle-down.target",
-      "bytes": 3393,
-      "sha256": "151478df5f37878b1ef5458990504c042f76dba5ea2b98d7b98def2ff0037f6c"
-    },
-    {
-      "path": "makehuman/data/targets/nose/nose-nostrils-angle-up.target",
-      "bytes": 4046,
-      "sha256": "d403a05ea2d3178d95060649cf273cce475b6428118032473535cd47e51402ba"
     },
     {
       "path": "makehuman/data/targets/nose/nose-nostrils-width-decr.target",
@@ -3267,21 +2447,6 @@
       "sha256": "814b5bcb7fbb2dc0e5ba402d61f49dd77afe33884c0baf658ecd14b17dbcdd04"
     },
     {
-      "path": "makehuman/data/targets/nose/nose-trans-backward.target",
-      "bytes": 9950,
-      "sha256": "026897f67c2b668f6d3200efe264449037bd0efe10a6cda80807198e5dd50544"
-    },
-    {
-      "path": "makehuman/data/targets/nose/nose-trans-down.target",
-      "bytes": 6689,
-      "sha256": "6a4d970a97a1e1b3db113ca88cd1e75a6f950f296c7f456a4931f6b460c58dae"
-    },
-    {
-      "path": "makehuman/data/targets/nose/nose-trans-forward.target",
-      "bytes": 6808,
-      "sha256": "a7b232e6ca56d7027388f5a9028fe45e513fbc71cedb34f299912e8a457394e8"
-    },
-    {
       "path": "makehuman/data/targets/nose/nose-trans-in.target",
       "bytes": 9151,
       "sha256": "98ac3bc94aaab67e486f448d7fb1cd68cd4504c2b2326d450e2880bf95ad410c"
@@ -3290,11 +2455,6 @@
       "path": "makehuman/data/targets/nose/nose-trans-out.target",
       "bytes": 8580,
       "sha256": "13e18cfc36f16cd432bfcff1c509d65da4aeef41986835cb15c84849908daba1"
-    },
-    {
-      "path": "makehuman/data/targets/nose/nose-trans-up.target",
-      "bytes": 8106,
-      "sha256": "4c1ee5897c22dfb66aee081f65fd9fb77173e8af5bc5c9e8676073dd9eda1d4a"
     },
     {
       "path": "makehuman/data/targets/nose/nose-volume-decr.target",
@@ -3335,36 +2495,6 @@
       "path": "makehuman/data/targets/nose/nose-width3-incr.target",
       "bytes": 6595,
       "sha256": "32a88f1b999ea83f57889dda7fbda05347b57b41e0118e7c4cd4466e6b0ba6ec"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-muscle-pectoral-decr.target",
-      "bytes": 10694,
-      "sha256": "0fe1690e93ccb92d8a8487e54fddb353610ca4e38911509f9611fb5e75f73682"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-muscle-pectoral-incr.target",
-      "bytes": 17400,
-      "sha256": "0299c687b73a5e217d00273da99acb8a983c8a83640177062fdc27d20bdce77b"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-scale-horiz-decr.target",
-      "bytes": 116893,
-      "sha256": "8377c248eec6838292f55287b6a399398f7cb88e6d7d0af6781d8e30298e0d6f"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-scale-horiz-incr.target",
-      "bytes": 107221,
-      "sha256": "73f278c2be9c6eebead7ac4cd206879810a9e0202519493af0ed8b2e3842fbb5"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-vshape-decr.target",
-      "bytes": 96183,
-      "sha256": "f9da55d42731ef5fcfeaa9a473d84044cd7d19076c67dab5139cf001e85b09b2"
-    },
-    {
-      "path": "makehuman/data/targets/torso/torso-vshape-incr.target",
-      "bytes": 95207,
-      "sha256": "9d0ac9eec39a14d51d7db50e48292b3db67aed9b91e654b379f4dbe348644684"
     }
   ]
 }
