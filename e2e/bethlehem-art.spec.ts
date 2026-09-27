@@ -106,7 +106,7 @@ for (const vp of VIEWPORTS) {
         await vessel(page, 'Grain basket', 'Pour into kneading trough');
         await vessel(page, 'Grain basket', 'Fill');
         await vessel(page, 'Grain basket', 'Pour into kneading trough');
-        await vessel(page, 'Kneading trough', 'Empty');
+        await vessel(page, 'Kneading trough', 'Pour back into the flour jar');
         await vessel(page, 'Grain basket', 'Pour into kneading trough');
         const bread = page.getByRole('dialog', { name: 'Three Measures of Flour' });
         await expect(bread.getByText('Solved!')).toBeVisible();

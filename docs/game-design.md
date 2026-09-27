@@ -544,8 +544,8 @@ Four puzzle types, each growing out of the story. Checkers are pure functions th
 |---|---|
 | **Goal** | Mark exactly **4 measures** in Ezer's big crock, so Menashe's oil can be compared fairly without anyone taking anyone's word for it. |
 | **Where / when** | Ezer's measuring vessels, only during the side quest's `measure` stage (after hearing both sides). Optional. |
-| **Rules** | Crock holds 5, pitcher holds 3, and neither has marks in between. Actions: fill from the water trough, empty, pour one into the other (pouring stops when the source is empty or the target is full). Solved when the crock holds exactly 4. |
-| **Reference solution** | Fill crock (5) → pour into pitcher (crock 2) → empty pitcher → pour crock into pitcher (pitcher 2) → fill crock (5) → pour into pitcher until full (1 moves) → crock holds **4**. |
+| **Rules** | It is done with water, not oil: 4 measures of water mark the line, the water goes back into the trough, and then Menashe's oil is poured in to see whether it reaches the mark (no merchant would pour oil on the ground to test one jar). Crock holds 5, pitcher holds 3, and neither has marks in between. Actions: fill from the water trough, pour back into the trough, pour one into the other (pouring stops when the source is empty or the target is full). Solved when the crock holds exactly 4. |
+| **Reference solution** | Fill crock (5) → pour into pitcher (crock 2) → pour the pitcher back into the trough → pour crock into pitcher (pitcher 2) → fill crock (5) → pour into pitcher until full (1 moves) → crock holds **4**. |
 | **Hints** | T1: which amounts *can* you make exactly by pouring the 5 into the 3? T2: that leaves exactly 2, so could you save it? T3: the full method. |
 | **Explanation** | The mark proves the jar was honest when Menashe's oil reaches it. |
 | **On success** | Flag `measure-proved`. Talking to Ezer settles the dispute: +1 hour, trust changes, a gift of oil, and the journal entry on the Hebrew *log* measure (record `rec-hist-measures`, which states that the unit's exact volume is uncertain). |

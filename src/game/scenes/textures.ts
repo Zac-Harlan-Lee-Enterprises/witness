@@ -176,18 +176,29 @@ export function makeSharedTextures(textures: Phaser.Textures.TextureManager): vo
     c.fill();
   });
   add(textures, TEX.hawk, 48, 24, (c) => {
-    // The shadow of a large bird gliding overhead.
+    // The shadow of a hawk soaring overhead, drawn nose-up (it is turned to
+    // face the way it glides: systems/flight.ts): a small round head, broad
+    // wings with fingered tips, and a fanned tail, so head and tail read.
     c.fillStyle = 'rgba(30,24,40,0.9)';
     c.beginPath();
-    c.moveTo(2, 12);
-    c.quadraticCurveTo(12, 6, 21, 10);
-    c.lineTo(24, 4);
-    c.lineTo(27, 10);
-    c.quadraticCurveTo(36, 6, 46, 12);
-    c.quadraticCurveTo(34, 13, 27, 14);
-    c.lineTo(24, 22);
-    c.lineTo(21, 14);
-    c.quadraticCurveTo(14, 13, 2, 12);
+    c.moveTo(24, 2.5);
+    c.quadraticCurveTo(26.2, 3, 26, 6);
+    c.quadraticCurveTo(34, 5.5, 44, 8);
+    c.lineTo(47, 9);
+    c.lineTo(44.5, 9.8);
+    c.lineTo(46.5, 10.8);
+    c.lineTo(43.5, 11.2);
+    c.quadraticCurveTo(34, 12.5, 27, 13.5);
+    c.lineTo(29.5, 21.5);
+    c.quadraticCurveTo(24, 23.5, 18.5, 21.5);
+    c.lineTo(21, 13.5);
+    c.quadraticCurveTo(14, 12.5, 4.5, 11.2);
+    c.lineTo(1.5, 10.8);
+    c.lineTo(3.5, 9.8);
+    c.lineTo(1, 9);
+    c.lineTo(4, 8);
+    c.quadraticCurveTo(14, 5.5, 22, 6);
+    c.quadraticCurveTo(21.8, 3, 24, 2.5);
     c.fill();
   });
   add(textures, TEX.glint, 32, 32, (c) => {
