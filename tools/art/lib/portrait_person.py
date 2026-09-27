@@ -229,15 +229,20 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
         v = world_to_camera_view(scene, studio.camera, Vector(p_cm) * 0.01)
         return (v.x * size, (1 - v.y) * size)
 
-    eyes = [px(head.eye_centre(sx).tolist()) for sx in (-1, 1)]
+    def seen(p_cm):
+        """Where a point of the (unturned) head lands in the picture."""
+        p = np.asarray(p_cm, np.float32).reshape(1, 3)
+        return px((head.twist(p) if head.twist is not None else p)[0].tolist())
+
+    eyes = [seen(head.eye_centre(sx)) for sx in (-1, 1)]
     marks = {
         "eyes": ((eyes[0][0] + eyes[1][0]) / 2, (eyes[0][1] + eyes[1][1]) / 2),
-        "mouth": px(head.stomion.tolist()),
+        "mouth": seen(head.stomion),
         "studio": studio,
         "skin": obj,
         "head": head,
         "px": px,
-        "gaze": gaze_check(head, eyes_obj, seen_from),
+        "gaze": gaze_check(head, eyes_obj, seen_from, px, head.twist),
     }
     if head.twist is not None:
         turn_head(head.twist, col)
@@ -296,33 +301,49 @@ def turn_head(twist, col):
             cv.update_tag()
 
 
-def gaze_check(head, eyes, cam):
-    """Where each eye looks and where its pupil sits: `yaw` is how far
-    (degrees) each eye's line of sight passes beside the camera, left or
-    right (both near 0: the eyes converge on it); `miss` how far apart (cm)
-    the two lines of sight pass at their closest; `across` is where the
-    pupil is from the inner corner (0) to the outer (1); `height` how far down
-    the opening between the lids the pupil is (0 at the upper lid, 1 at
-    the lower: about a half means neither lid hides the iris)."""
+def gaze_check(head, eyes, cam, px=None, twist=None):
+    """Where each eye looks and where its pupil shows:
+
+    - `yaw`: how far (degrees) each eye's line of sight passes beside the
+      camera, left or right; the two are equal when the eyes converge
+      (both 0 when they look into the lens; a mood may look a little away);
+    - `miss`: how far apart (cm) the two lines of sight pass at their closest;
+    - `across` and `height`, as seen in the picture: where the pupil is
+      between the corners of its eye (0 … 1 from left to right) and between
+      the lids (0 at the upper lid, 1 at the lower; about a half means
+      neither lid hides the iris). `px` projects a point (cm) into the
+      picture; `twist` turns a point the way the head turns on the neck."""
     out = {"yaw": [], "across": [], "height": [], "miss": 0.0}
     rays = []
+
+    def seen(p):
+        p = np.asarray(p, np.float32).reshape(1, 3)
+        if twist is not None:
+            p = twist(p)
+        return np.array(px(p[0].tolist()), np.float32)
+
     for sx in (-1, 1):
         c, d, R = eyes.pupils[sx]
         rays.append((c, d))
         to_cam = (cam - c).normalized()
         a = math.degrees(math.atan2(d.x, -d.y) - math.atan2(to_cam.x, -to_cam.y))
         out["yaw"].append(round(float(a), 2))
-        pupil = np.array((c + d * R) * 100.0, np.float32)
-        inner = head.lid_point(sx, -1.0)
-        outer = head.lid_point(sx, 1.0)
-        # Across the eye as the lid points are measured (the head faces
-        # forward here: the check runs before it turns).
-        t = float((sx * pupil[0] - sx * inner[0]) / max(sx * outer[0] - sx * inner[0], 1e-6))
-        out["across"].append(round(float(t), 3))
-        u = max(-1.0, min(1.0, 2 * t - 1))
-        up = head.lid_point(sx, u, upper=True)[2]
-        lo = head.lid_point(sx, u, upper=False)[2]
-        out["height"].append(round(float((up - pupil[2]) / max(up - lo, 1e-6)), 3))
+        if px is None:
+            continue
+        pupil = seen((c + d * R) * 100.0)
+        us = np.linspace(-1, 1, 41)
+        upper = np.array([seen(head.lid_point(sx, float(u), upper=True)) for u in us])
+        lower = np.array([seen(head.lid_point(sx, float(u), upper=False)) for u in us])
+        xs = np.concatenate([upper[:, 0], lower[:, 0]])
+        left, right = float(xs.min()), float(xs.max())
+        out["across"].append(round((float(pupil[0]) - left) / max(right - left, 1e-6), 3))
+
+        def lid_y(line):
+            order = np.argsort(line[:, 0])
+            return float(np.interp(pupil[0], line[order, 0], line[order, 1]))
+
+        up_y, lo_y = lid_y(upper), lid_y(lower)
+        out["height"].append(round((float(pupil[1]) - up_y) / max(lo_y - up_y, 1e-6), 3))
     # How far apart (cm) the two lines of sight pass at their closest: near
     # 0 when the eyes converge on one point.
     (c1, d1), (c2, d2) = rays

@@ -78,6 +78,7 @@ def args():
     p.add_argument("--manifest", default=None, help="manifest path (default: <out>/portraits.json)")
     p.add_argument("--no-manifest", action="store_true", help="review: leave the manifest alone")
     p.add_argument("--checks", default=None, help="checks file (default: tools/art/data/portrait-checks.json; with --review, in the review folder)")
+    p.add_argument("--recheck", action="store_true", help="measure the gaze again without rendering (the skin is kept as rendered)")
     p.add_argument("--reencode", default=None, help="write the WebP sizes again from the 512 px PNGs in this review folder (no rendering)")
     return p.parse_args(argv)
 
@@ -197,6 +198,9 @@ def main():
         print("PORTRAITS DONE", flush=True)
         return
     makehuman.verify()
+    if a.recheck:
+        # Only the head, eyes and teeth are needed to measure the gaze.
+        os.environ["PORTRAIT_SKIP"] = "hair,clothes"
     checks_path = a.checks or (os.path.join(a.review, "portrait-checks.json") if a.review and a.no_manifest else CHECKS)
     for who in a.who or everyone(data):
         pid, kind, key, app, player, chapter, used = lookup(data, who)
@@ -220,6 +224,11 @@ def main():
                 **({"turn": a.turn} if a.turn is not None else {}),
             )
             name = review_name(pid, expression)
+            if a.recheck:
+                key_ = pid if expression == "neutral" else name
+                update_json(checks_path, lambda d, k=key_, g=marks["gaze"]: d.setdefault(k, {}).__setitem__("gaze", g))
+                portrait_person.log("RECHECKED", name, json.dumps(marks["gaze"]))
+                continue
             # The skin's colour matched to the person's in the game (every
             # expression takes the neutral portrait's correction).
             known = json.load(open(checks_path)) if os.path.exists(checks_path) else {}
