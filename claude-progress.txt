@@ -373,7 +373,9 @@ DONE   : Portrait heads rebuilt on MakeHuman's CC0 hm08 model (owner's approval 
          84 expressions); docs/art/portraits.md rewritten; sheets in docs/art/portraits.
 TESTS  : Vitest 623 -> 640 (schema, cast expressions, UI expression/fallback/cross-fade/reduced motion/sizes,
          art-cache split, content: every expression rendered, skin ΔE, gaze convergence). typecheck, lint, knip,
-         prettier, content:validate clean. e2e (4481/5481): portraits, a11y, smoke, pwa, mobile, chapter.
+         prettier, content:validate clean. e2e (4481/5481): portraits, a11y, smoke, pwa, mobile, chapter: 22 passed,
+         1 skipped (as before). The PWA e2e caught a precache glob that left every portrait out (fixed; the unit
+         test now uses Workbox's own matcher). bash init.sh healthy (on 5483: 5391 was another app's).
 NEXT   : Review docs/art/portraits/expressions-*.webp with the owner; if a face should change, edit its casting in
          tools/art/lib/portrait_params.py and run `npm run art:portraits -- --who <id>` (renders its neutral and
          expressions), then `npm run art:portrait-sheets`.
