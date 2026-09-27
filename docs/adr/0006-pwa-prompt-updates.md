@@ -11,14 +11,16 @@ The game is an installable, offline-capable PWA. A service worker precaches the 
 
 - `vite-plugin-pwa` is configured with `registerType: 'prompt'`, `injectRegister: false`, and Workbox `skipWaiting: false`, `clientsClaim: false`, `cleanupOutdatedCaches: true`. A new worker installs in the background and **waits**.
 - Registration happens in [register-sw.ts](../../src/infrastructure/pwa/register-sw.ts) through `virtual:pwa-register`, loaded with a dynamic import and skipped in development. `onNeedRefresh` sets `notices.updateAvailable`, and `onOfflineReady` sets `notices.offlineReady`. `registerSW` returns `applyUpdate()`, which calls `updateSW(true)` to activate the waiting worker and reload.
-- The prompt is shown by the **title screen's** notices: *A new version of the game is ready.* with an **Update now** button. It is not shown during a chapter, so a version swap can only start from the title screen, never mid-chapter. Before the player reaches the title screen, leaving a chapter disposes the `GameRuntime`, which flushes any pending autosave. "Save and quit to title" also writes the `auto` slot.
+- The prompt is shown by the **title screen's** notices: *A new version of the game is ready.* with an **Update now** button. Before the player reaches the title screen, leaving a chapter disposes the `GameRuntime`, which flushes any pending autosave. "Save and quit to title" also writes the `auto` slot.
+- **During a chapter** (added 2026-09-26) the same offer waits in the **pause menu**, as **Save and update**: it flushes the autosave, writes the `auto` slot, then activates the new version. The HUD's **Menu** button shows a dot and reads *a new version is ready*. Nothing swaps until the player chooses, and the pause menu is never open during a conversation or puzzle step.
+- **A game left open asks for new versions** (added 2026-09-26): every hour and on coming back to the tab or app, at most every ten minutes (`watchForUpdates` in [update-checks.ts](../../src/infrastructure/pwa/update-checks.ts)). The browser itself only asks when the page loads.
 - If registration fails, it is logged as a warning, and the game works online-only.
 
 ## Consequences
 
 - A running chapter never changes code under the player. The version in memory and the chunks it loads stay consistent until the player chooses to update.
 - A player who stays in a chapter keeps the running version for the whole session, and it stays usable offline. The in-app prompt never forces activation. Beyond that, the browser's standard service-worker lifecycle decides when a waiting worker activates by itself (once no page is still controlled by the old one).
-- There is no in-game update notice; the prompt appears on the title screen. If one is added, it must still leave the swap to an explicit player action (after an autosave), which keeps this decision.
+- Before 2026-09-26 the offer was only on the title screen, and the browser only checked for a new version when the page loaded. A player who went straight back into their game, or left it open, kept an old version for hours. The owner saw the old drawn portraits on the live site long after the rendered ones had shipped. The in-game offer and the periodic checks close that gap, and the swap is still an explicit player action after an autosave.
 - The e2e test [pwa.spec.ts](../../e2e/pwa.spec.ts) proves that a second launch works fully offline, including starting a chapter (Phaser and the chapter content come from the precache).
 
 ## Alternatives considered
