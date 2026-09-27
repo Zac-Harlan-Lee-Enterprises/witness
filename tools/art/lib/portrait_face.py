@@ -27,6 +27,8 @@ the lids narrowed...) for each expression a line can carry. The mixes are
 authored here; they are the same for everyone, with small per-person
 asymmetry, and are blended by the person's ancestry as the units are.
 """
+import json
+import os
 import random
 
 from portrait_params import seed_of
@@ -97,6 +99,9 @@ EXPRESSION_UNITS = {
     },
 }
 
+# A child's face for an expression, where it differs from a grown-up's.
+CHILD_MIXES = {}
+
 # Where the eyes look for an expression: degrees away from the camera (+ the
 # person's left, + up). Sadness looks down.
 EXPRESSION_GAZE = {"sad": (0.0, -8.0), "worried": (0.0, -1.5)}
@@ -129,17 +134,25 @@ def ancestry(P):
 
 
 def _sided(unit, value, asym=0.0):
-    """A unit's weight; `{s}` units on both sides, the person's left scaled by (1 + asym)."""
-    if "{s}" not in unit:
-        return {unit: value}
-    return {unit.format(s="left"): value * (1 + asym), unit.format(s="right"): value * (1 - asym)}
+    """A unit's weight on both sides where it has sides (`{s}`: left/right
+    in the expression units; `{lr}`: l/r in MakeHuman's modelling
+    targets), the person's left scaled by (1 + asym)."""
+    for key, (left, right) in (("{s}", ("left", "right")), ("{lr}", ("l", "r"))):
+        if key in unit:
+            return {unit.replace(key, left): value * (1 + asym), unit.replace(key, right): value * (1 - asym)}
+    return {unit: value}
 
 
 def unit_weights(units, anc):
-    """{unit: weight} to target weights, blended by ancestry."""
+    """{unit: weight} to target weights. Expression units (a bare name) are
+    blended by ancestry; a modelling target (a path such as
+    `mouth/mouth-angles-up`) is used as it is."""
     out = {}
     total = sum(anc.values())
     for u, w in units.items():
+        if "/" in u:
+            out[u] = out.get(u, 0.0) + w
+            continue
         for race, share in anc.items():
             out[f"expression/units/{race}/{u}"] = out.get(f"expression/units/{race}/{u}", 0.0) + w * share / total
     return out
@@ -187,9 +200,16 @@ def expression(name, P):
     if name == "neutral":
         return unit_weights(mood_units(P), anc)
     r = random.Random(seed_of(P.id + ":" + name))
-    asym = r.uniform(-0.12, 0.12) * (1 - 0.6 * P.child)
+    # One side a few percent stronger (within a natural 5-10%).
+    asym = r.uniform(-0.04, 0.04) * (1 - 0.6 * P.child)
+    mix = EXPRESSION_UNITS[name]
+    override = os.environ.get("PORTRAIT_EXPRESSION_MIX")  # review: a JSON {unit: weight} to try instead
+    if override:
+        mix = json.loads(override)
+    if P.child > 0.5 and name in CHILD_MIXES and not override:
+        mix = CHILD_MIXES[name]
     units = {}
-    for u, w in EXPRESSION_UNITS[name].items():
+    for u, w in mix.items():
         for k, x in _sided(u, w, asym).items():
             units[k] = units.get(k, 0.0) + x
     if P.child > 0.5 and name == "angry":
