@@ -315,7 +315,7 @@ Notes:
 - **Entities** are placed things. `interaction.verb` is one of `talk, examine, read, open, take, use, enter`. When the player interacts, `requires` is checked first (failure shows `blockedText`), then `effects` are dispatched, then `dialogue` starts.
 - **Triggers** fire once, guarded by the `onceFlag`. *Area* triggers (with `area`) fire when the player enters the rectangle and `when` holds. *State* triggers (no `area`, `when` required by a schema refinement) fire when `when` becomes true while the player is in the scene.
 - **Dialogue** speakers are character ids or the reserved `player` and `narrator`. A node whose `kind` is `paraphrase` or `scripture` must link a matching `ContentRecord` through `recordId` (integrity check).
-- **Appearance** drives both the Phaser sprite sheet ([game/art/people/](../src/game/art/people/) when painted; pre-rendered sheets from [tools/art/](../tools/art/) in places with pre-rendered art) and the React SVG portrait ([features/common/Portrait.tsx](../src/features/common/Portrait.tsx)). Player looks are the presets in `PLAYER_APPEARANCES`.
+- **Appearance** drives both the Phaser sprite sheet ([game/art/people/](../src/game/art/people/) when painted; pre-rendered sheets from [tools/art/](../tools/art/) in places with pre-rendered art) and the portrait ([features/common/Portrait.tsx](../src/features/common/Portrait.tsx)): a rendered photograph of the person, in the expression of the line being spoken (a dialogue node's optional `expression`; [portraits guide](art/portraits.md)), or an SVG drawing when there is none. Player looks are the presets in `PLAYER_APPEARANCES`.
 
 ### 5.2 Chapter content: progression, items, knowledge, puzzles
 

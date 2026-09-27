@@ -178,7 +178,7 @@ With a sub-path build, prefix these paths with the base path. Add CSP and other 
 | Offline navigation fallback | `navigateFallback: ${base}index.html` | ✓ `/witness/index.html` |
 | Precache entries | Relative URLs in `sw.js` | ✓ |
 | Lazy chunks (Phaser, chapter) and fonts | Resolved by Vite relative to `base` | ✓ |
-| **Game art and audio** | Nothing to fix. Tiles, characters and props are painted in code, portraits are inline SVG, and all audio is synthesised with WebAudio. There are **no asset URLs to break**. | — |
+| **Game art and audio** | Nothing to fix. Pre-rendered art (places, people, portraits) is served from `public/art/` under the base path (`import.meta.env.BASE_URL`), and all audio is synthesised with WebAudio. | — |
 
 These were checked on 2026-09-24 with a `VITE_BASE_PATH=/witness/` build. They are re-checked continuously by the feature-registry entry `subpath-deployment` in [`feature_list.json`](../feature_list.json), which [`quality-sweep.sh`](../quality-sweep.sh) re-runs. It asserts `/witness/assets/` in `index.html`, `"scope":"/witness/"` in the manifest and `/witness/index.html` in `sw.js`.
 
