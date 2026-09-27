@@ -43,3 +43,13 @@ export const CACHED_ON_FIRST_USE_PORTRAITS = '**/art/portraits/*/*.webp';
 
 /** Art files kept by the cache-on-first-use cache: room for every chapter's places, people, light variants and portrait expressions. */
 export const ART_RUNTIME_CACHE_ENTRIES = 1500;
+
+/**
+ * Teaser films (art/teaser/<chapter>/teaser.mp4, .webm) are never cached:
+ * they are several megabytes, watched once, and played with range requests
+ * (a 206 partial response can't be cached whole). They are fetched from the
+ * network only; offline, the teaser shows its poster and words instead
+ * (src/features/teaser/TeaserPlayer.tsx). Their posters are small and
+ * precached, so that fallback works offline.
+ */
+export const TEASER_FILM = /\/art\/teaser\/[^?#]+\.(?:mp4|webm)(?:[?#].*)?$/;

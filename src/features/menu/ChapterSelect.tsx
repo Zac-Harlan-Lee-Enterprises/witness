@@ -23,10 +23,13 @@ export function formatPlayTime(ms: number): string {
 export function ChapterSelect({
   profile,
   onStart,
+  onWatchTeaser,
   onBack,
 }: {
   profile: PlayerProfile;
   onStart: (chapterId: string, saveId: string | null) => void;
+  /** Watch a chapter's teaser film again. */
+  onWatchTeaser?: (chapterId: string) => void;
   onBack: () => void;
 }) {
   const { chapters, saves } = useServices();
@@ -95,6 +98,11 @@ export function ChapterSelect({
                   >
                     New game
                   </button>
+                  {meta.hasTeaser && onWatchTeaser && (
+                    <button type="button" className="button" onClick={() => onWatchTeaser(meta.id)}>
+                      Watch the teaser
+                    </button>
+                  )}
                 </div>
               ) : (
                 <p className="meta-note">

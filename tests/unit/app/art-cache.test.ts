@@ -6,6 +6,7 @@ import {
   CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
   CACHED_ON_FIRST_USE_PLACES,
   CACHED_ON_FIRST_USE_PORTRAITS,
+  TEASER_FILM,
 } from '@/app/art-cache';
 import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
 import { LETTER_FROM_PAUL } from '@/content/chapters/letter-from-paul';
@@ -75,5 +76,36 @@ describe('offline caching of pre-rendered art', () => {
     expect(files).toBeLessThan(ART_RUNTIME_CACHE_ENTRIES / 3);
     // workbox-build is a heavy import: well under a second on an idle machine,
     // 16 s while Blender renders alongside (it timed out at the default 5 s).
+  }, 60_000);
+
+  it('never caches the teaser films, and fetches them from the network first', () => {
+    for (const url of [
+      '/art/teaser/chapter-1/teaser.mp4',
+      '/witness/art/teaser/chapter-1/teaser.webm',
+      'https://x.test/art/teaser/chapter-1/teaser.mp4?v=3',
+    ])
+      expect(TEASER_FILM.test(url), url).toBe(true);
+    // The poster is an ordinary (precached) image, for the offline fallback.
+    expect(TEASER_FILM.test('/art/teaser/chapter-1/poster.webp')).toBe(false);
+    expect(TEASER_FILM.test('/art/jericho-road/ground-day.webp')).toBe(false);
+    const config = readFileSync(join(__dirname, '../../../vite.config.ts'), 'utf8');
+    const film = config.indexOf('urlPattern: TEASER_FILM');
+    const art = config.indexOf("handler: 'CacheFirst'");
+    expect(film).toBeGreaterThan(0);
+    // Workbox takes the first route that matches: the teaser's comes before the art's.
+    expect(film).toBeLessThan(art);
+    expect(config.slice(film, film + 80)).toContain("handler: 'NetworkOnly'");
+  });
+
+  it('precaches the teaser poster (the film itself is too big and not an image)', async () => {
+    const { getManifest } = await import('workbox-build');
+    const { manifestEntries = [] } = await getManifest({
+      globDirectory: join(__dirname, '../../../public'),
+      globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
+      globIgnores: ['**/art/people/**', '**/art/portraits/**'],
+    });
+    const urls = manifestEntries.map((e) => e.url);
+    expect(urls).toContain('art/teaser/chapter-1/poster.webp');
+    expect(urls.some((u) => /\.(mp4|webm)$/.test(u))).toBe(false);
   }, 60_000);
 });

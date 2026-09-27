@@ -8,6 +8,7 @@ import {
   CACHED_ON_FIRST_USE_PEOPLE_LIGHTS,
   CACHED_ON_FIRST_USE_PLACES,
   CACHED_ON_FIRST_USE_PORTRAITS,
+  TEASER_FILM,
 } from './src/app/art-cache';
 
 /**
@@ -93,6 +94,12 @@ export default defineConfig(({ mode }) => {
             CACHED_ON_FIRST_USE_PORTRAITS,
           ],
           runtimeCaching: [
+            {
+              // Teaser films: network only, never cached (src/app/art-cache.ts).
+              // A RegExp (not a function): Workbox copies it into the worker.
+              urlPattern: TEASER_FILM,
+              handler: 'NetworkOnly',
+            },
             {
               // Art manifests say which files make up a place (and version their
               // URLs): fetched fresh when online, from the cache when offline.

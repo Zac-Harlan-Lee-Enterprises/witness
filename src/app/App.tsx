@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChapterLoadError } from '@/content';
 import type { GameSettings } from '@/domain/settings';
+import type { Chapter } from '@/domain/chapter';
 import type { PlayerProfile } from '@/domain/profile';
+import { shouldPlayTeaser } from '@/domain/teaser';
 import { useStore } from '@/features/common/hooks';
 import { GameScreen } from '@/features/game/GameScreen';
 import { prefersReducedMotionSetting, useSystemReducedMotion } from '@/features/game/motion';
@@ -9,6 +11,7 @@ import { ChapterSelect } from '@/features/menu/ChapterSelect';
 import { TitleScreen } from '@/features/menu/TitleScreen';
 import { ProfileScreen } from '@/features/profiles/ProfileScreen';
 import { SettingsPanel } from '@/features/settings/SettingsPanel';
+import { TeaserPlayer } from '@/features/teaser/TeaserPlayer';
 import { attachGamepadNavigation } from '@/infrastructure/input/gamepad-navigation';
 import { attachGamepad } from '@/infrastructure/input/gamepad-source';
 import { attachKeyboard } from '@/infrastructure/input/keyboard-source';
@@ -22,6 +25,7 @@ type Screen =
   | { name: 'chapters'; profile: PlayerProfile }
   | { name: 'loading' }
   | { name: 'game'; runtime: GameRuntime }
+  | { name: 'teaser'; chapter: Chapter; profile: PlayerProfile; then: 'chapter' | 'chapters' }
   | { name: 'error'; message: string; details: string[] };
 
 /** Apply accessibility settings to the document root (CSS reads these). */
@@ -81,6 +85,27 @@ export function App({ services }: { services: AppServices }) {
 
   const keyboard = useMemo(() => createKeyboardAttacher(services), [services]);
 
+  const launch = async (
+    profile: PlayerProfile,
+    chapter: Chapter,
+    restored: ConstructorParameters<typeof GameRuntime>[3],
+  ) => {
+    const current = await services.profiles.touch(profile);
+    const runtime = new GameRuntime(services, chapter, current, restored, (id) => {
+      void services.profiles.markChapterComplete(current, id);
+    });
+    setScreen({ name: 'game', runtime });
+  };
+
+  const failed = (error: unknown) => {
+    services.logger.error('Chapter failed to start', error);
+    setScreen({
+      name: 'error',
+      message: 'This chapter could not be loaded. Please try again.',
+      details: error instanceof ChapterLoadError && services.config.isDev ? error.issues : [],
+    });
+  };
+
   const startChapter = async (profile: PlayerProfile, chapterId: string, saveId: string | null) => {
     setScreen({ name: 'loading' });
     try {
@@ -94,18 +119,42 @@ export function App({ services }: { services: AppServices }) {
         }
         restored = { save: result.save, fromVersion: result.fromVersion };
       }
-      const current = await services.profiles.touch(profile);
-      const runtime = new GameRuntime(services, chapter, current, restored, (id) => {
-        void services.profiles.markChapterComplete(current, id);
-      });
-      setScreen({ name: 'game', runtime });
+      // A new game opens with the chapter's teaser, the first time only.
+      if (shouldPlayTeaser(chapter, profile, restored !== null)) {
+        setScreen({ name: 'teaser', chapter, profile, then: 'chapter' });
+        return;
+      }
+      await launch(profile, chapter, restored);
     } catch (error) {
-      services.logger.error('Chapter failed to start', error);
-      setScreen({
-        name: 'error',
-        message: 'This chapter could not be loaded. Please try again.',
-        details: error instanceof ChapterLoadError && services.config.isDev ? error.issues : [],
-      });
+      failed(error);
+    }
+  };
+
+  const watchTeaser = async (profile: PlayerProfile, chapterId: string) => {
+    setScreen({ name: 'loading' });
+    try {
+      const chapter = await services.chapters.load(chapterId);
+      if (!chapter.teaser) {
+        setScreen({ name: 'chapters', profile });
+        return;
+      }
+      setScreen({ name: 'teaser', chapter, profile, then: 'chapters' });
+    } catch (error) {
+      failed(error);
+    }
+  };
+
+  const teaserDone = async (s: Extract<Screen, { name: 'teaser' }>) => {
+    try {
+      // Watched or skipped, it isn't played again on its own.
+      const profile = await services.profiles.markTeaserSeen(s.profile, s.chapter.id);
+      if (s.then === 'chapters') {
+        setScreen({ name: 'chapters', profile });
+        return;
+      }
+      await launch(profile, s.chapter, null);
+    } catch (error) {
+      failed(error);
     }
   };
 
@@ -136,6 +185,7 @@ export function App({ services }: { services: AppServices }) {
         <ChapterSelect
           profile={screen.profile}
           onStart={(chapterId, saveId) => void startChapter(screen.profile, chapterId, saveId)}
+          onWatchTeaser={(chapterId) => void watchTeaser(screen.profile, chapterId)}
           onBack={() => setScreen({ name: 'profiles' })}
         />
       )}
@@ -163,6 +213,14 @@ export function App({ services }: { services: AppServices }) {
             Back to title
           </button>
         </main>
+      )}
+      {screen.name === 'teaser' && screen.chapter.teaser && (
+        <TeaserPlayer
+          teaser={screen.chapter.teaser}
+          record={screen.chapter.records.find((r) => r.id === screen.chapter.teaser?.recordId)}
+          label={`Chapter ${screen.chapter.number} teaser: ${screen.chapter.title}`}
+          onDone={() => void teaserDone(screen)}
+        />
       )}
       {screen.name === 'game' && (
         <GameScreen
