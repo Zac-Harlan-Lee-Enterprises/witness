@@ -68,7 +68,7 @@ class Land:
     def gorge_bed(self, x):
         """The gorge floor's height: it falls faster than the land around it."""
         x = np.asarray(x, dtype=np.float64)
-        return np.maximum(330.0 - 0.046 * (x + 8000.0) + 6.0 * np.sin(x / 300.0), -252.0)
+        return np.maximum(380.0 - 0.034 * (x + 8000.0) + 6.0 * np.sin(x / 300.0), -252.0)
 
     def far(self, x, y):
         """The far side of the valley: a long wall of mountains to the east,
@@ -87,21 +87,37 @@ class Land:
         dydx = (self.gorge_y(x + 2.0) - self.gorge_y(x - 2.0)) / 4.0
         return np.abs(np.asarray(y) - yc) / np.sqrt(1.0 + dydx * dydx)
 
+    # The gorge's wall, from its floor outward: (run, rise) pairs; steep
+    # pairs are cliffs of hard limestone, gentle ones talus and scree
+    # between them, then the slope eases out onto the land above.
+    WALL = [(3.0, 22.0), (38.0, 26.0), (4.0, 18.0), (34.0, 20.0), (3.5, 14.0), (60.0, 18.0)]
+
     def gorge_wall(self, d, x, y, fine=False):
-        """Height of the gorge's walls above its floor at distance d: a flat
-        floor, then walls stepped by strata (hard beds stand steep, soft beds
-        weather back into benches), easing out onto the plateau."""
-        w0 = 9.0 + 5.0 * N.perlin(np.asarray(x) / 400.0, 3.1, self.seed + 5)
+        """Height of the gorge's walls above its floor at distance d: cliff
+        bands of hard limestone over talus slopes, wandering along the gorge."""
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        w0 = 9.0 + 5.0 * N.perlin(x / 400.0, 3.1, self.seed + 5)
         t = np.maximum(np.asarray(d) - w0, 0.0)
-        wall = 170.0 * (1.0 - np.exp(-t / 70.0)) + 0.35 * t
-        # Strata: steps in height with steep risers.
-        step = 11.0
-        k = wall / step
-        f = k - np.floor(k)
-        warp = 0.18 * N.perlin(np.asarray(x) / 90.0, np.asarray(y) / 90.0, self.seed + 9)
-        stepped = (np.floor(k) + np.clip((f + warp - 0.15) / 0.35, 0.0, 1.0) ** 1.5) * step
-        mix = N.smoothstep(4.0, 30.0, t) * (1.0 - N.smoothstep(150.0, 190.0, wall))
-        return wall * (1 - mix * 0.8) + stepped * mix * 0.8
+        # Each band's edge wanders along the gorge (spurs and bays).
+        t = t + 7.0 * N.fbm(x / 160.0, y / 160.0, 3, seed=self.seed + 9)
+        t = np.maximum(t, 0.0)
+        h = np.zeros_like(t)
+        start = 0.0
+        for k, (run0, rise0) in enumerate(self.WALL):
+            vary = N.fbm(x / 700.0, np.full_like(x, k * 3.7), 2, seed=self.seed + 50 + k)
+            run = run0 * (1.0 + 0.45 * vary)
+            rise = rise0 * (1.0 + 0.4 * N.fbm(x / 500.0, np.full_like(x, k * 5.1), 2, seed=self.seed + 60 + k))
+            u = np.clip((t - start) / run, 0.0, 1.0)
+            if run0 < 10.0:
+                # A cliff: nearly sheer, rounded a little at its lip.
+                u = u ** 0.8
+            else:
+                # Talus: concave, steepest under the cliff above.
+                u = 1.0 - (1.0 - u) ** 1.4
+            h = h + rise * u
+            start += run
+        return h + 0.25 * np.maximum(t - start, 0.0)
 
     # ── the field ──────────────────────────────────────────────────────────
     def _build(self):
@@ -113,19 +129,48 @@ class Land:
         wx = X + 700.0 * N.fbm(X / 3000.0, Y / 3000.0, 3, seed=s + 1)
         wy = Y + 700.0 * N.fbm(X / 3000.0 + 7.0, Y / 3000.0, 3, seed=s + 2)
         base = 470.0 - 0.03 * (X + 8000.0)
-        hills = 150.0 * N.ridged(wx / 2200.0, wy / 2200.0, 5, seed=s + 3)
-        roll = 70.0 * N.fbm(wx / 1100.0, wy / 1100.0, 4, seed=s + 4)
-        H = base + hills + roll
+        hills = 300.0 * N.ridged(wx / 1400.0, wy / 1400.0, 5, seed=s + 3)
+        roll = 80.0 * N.fbm(wx / 900.0, wy / 900.0, 4, seed=s + 4)
+        spurs = 12.0 * N.fbm(wx / 520.0, wy / 520.0, 3, seed=s + 5)
+        H = base + hills + roll + spurs
         # Flatten the far east into the Jordan valley's plain.
         plain = N.smoothstep(9000.0, 13000.0, X)
         H = H * (1 - plain) + (-240.0 + 6.0 * N.fbm(X / 800.0, Y / 800.0, 3, seed=s + 6)) * plain
         H = N.blur(H, 1)
         # Drainage: valleys where water gathers, branching like real ones;
         # then the finer gullies that feed them.
-        H, _ = self._carve(H, 2, 2.2, 55.0)
-        H, flow = self._carve(H, 1, 1.1, 22.0)
+        H = self._erode(H)
+        H, flow = self._carve(H, 1, 0.6, 10.0)
         # (The gorge is cut at sampling time, at full resolution: see height.)
         return H.astype(np.float32), flow.astype(np.float32)
+
+    def _erode(self, H, iterations=90, k=2):
+        """Stream-power erosion on a grid k cells coarser: each step every
+        cell is cut down toward the cell it drains to, by K * sqrt(area) *
+        slope, and hillslopes creep a little (diffusion). Valleys grow
+        headward and branch; sharp spurs are left between them."""
+        h, w = H.shape
+        hh, ww = h - h % k, w - w % k
+        C = H[:hh, :ww].reshape(hh // k, k, ww // k, k).mean(axis=(1, 3)).astype(np.float64)
+        cell = CELL * k
+        base = C.copy()
+        for it in range(iterations):
+            filled = _priority_flood(C)
+            recv, dist = _receivers(filled, cell)
+            area = _accumulate(filled) * cell * cell
+            hr = filled.ravel()[recv].reshape(C.shape)
+            slope = np.maximum(filled - hr, 0.0) / dist
+            cut = 1.4e-3 * np.sqrt(area) * slope * cell
+            cut = np.minimum(cut, np.maximum(filled - hr, 0.0) * 0.8)
+            C = C - cut
+            # Hillslope creep.
+            C = C * 0.9 + N.blur(C, 1) * 0.1
+        up = np.kron(C - base, np.ones((k, k)))
+        full = np.zeros_like(H, dtype=np.float64)
+        full[:hh, :ww] = up
+        full[hh:, :] = full[hh - 1 : hh, :]
+        full[:, ww:] = full[:, ww - 1 : ww]
+        return H + N.blur(full, 1)
 
     def _carve(self, H, k, rate, most):
         """Carve gullies by flow accumulation on a grid k cells coarser
@@ -141,7 +186,7 @@ class Land:
         full[: up.shape[0], : up.shape[1]] = up
         full[up.shape[0] :, :] = full[up.shape[0] - 1 : up.shape[0], :]
         full[:, up.shape[1] :] = full[:, up.shape[1] - 1 : up.shape[1]]
-        full = N.blur(full, 2)
+        full = N.blur(full, 1)
         flow = np.kron(np.log1p(acc), np.ones((k, k)))
         fl = np.zeros_like(H)
         fl[: flow.shape[0], : flow.shape[1]] = flow
@@ -165,25 +210,31 @@ class Land:
         h = self.coarse(x, y)
         sl = self.slope(x, y)
         rock = N.smoothstep(0.35, 0.9, sl)
+        hilly = N.smoothstep(0.04, 0.2, sl)
+        # Eroded relief: sharp spurs and ridgelines between the gullies
+        # (ridged noise), rough ground at every scale below that.
         h = h + detail * (
-            6.0 * N.fbm(x / 140.0, y / 140.0, 3, seed=s + 20)
-            + (0.8 + 2.2 * rock) * N.fbm(x / 22.0, y / 22.0, 4, seed=s + 21)
-            + (0.12 + 0.5 * rock) * N.fbm(x / 3.5, y / 3.5, 3, seed=s + 22)
+            16.0 * (N.ridged(x / 420.0, y / 420.0, 4, seed=s + 19) - 0.35) * (0.3 + 0.7 * hilly)
+            + 5.0 * N.fbm(x / 140.0, y / 140.0, 3, seed=s + 20)
+            + (1.0 + 2.4 * rock) * (N.ridged(x / 45.0, y / 45.0, 3, seed=s + 21) - 0.35)
+            + (0.25 + 0.6 * rock) * N.fbm(x / 7.0, y / 7.0, 3, seed=s + 22)
         )
         h = h + self.far(x, y)
-        # Strata: the hillsides step down in low benches of harder limestone
-        # (the Judean hills' stepped look), sharper where the ground is steep.
-        step = 3.6 + 1.2 * N.perlin(x / 900.0, y / 900.0, s + 29)
-        k = h / step
+        # Beds of harder limestone crop out along the slopes as broken ledges:
+        # a short steep riser (a metre or two) above a gentler slope, every
+        # 8-14 m of height, only here and there (never a staircase).
+        step = 10.0 + 3.5 * N.perlin(x / 1200.0, y / 1200.0, s + 29)
+        warp = 1.6 * N.fbm(x / 80.0, y / 80.0, 2, seed=s + 23)
+        k = (h + warp) / step
         f = k - np.floor(k)
-        warp = 0.22 * N.perlin(x / 60.0, y / 60.0, s + 23)
-        stepped = (np.floor(k) + np.clip((f + warp - 0.25) / 0.5, 0.0, 1.0)) * step
-        patchy = N.smoothstep(-0.1, 0.35, N.fbm(x / 170.0, y / 170.0, 3, seed=s + 33))
-        terr = (0.22 * N.smoothstep(0.1, 0.45, sl) + 0.3 * rock) * patchy
-        h = h + (stepped - h) * terr * detail
+        riser = 0.16
+        g = np.where(f < riser, f / riser * 0.55, 0.55 + (f - riser) / (1 - riser) * 0.45)
+        broken = N.smoothstep(0.05, 0.35, N.fbm(x / 55.0, y / 55.0, 3, seed=s + 33))
+        ledge = (g - f) * step * broken * N.smoothstep(0.12, 0.4, sl) * (1.0 - 0.6 * N.smoothstep(1.2, 2.0, sl))
+        h = h + ledge * 0.75 * detail
         # The gorge again, crisp at this resolution.
         d = self.gorge_distance(x, y)
-        near = (d < 400) & (x < 13000.0)
+        near = (d < 1500) & (x < 13000.0)
         if near.any():
             cut = self.gorge_bed(x[near]) + self.gorge_wall(d[near], x[near], y[near])
             h[near] = np.minimum(h[near], cut + detail * 0.6 * N.fbm(x[near] / 8.0, y[near] / 8.0, 3, seed=s + 24))
@@ -376,6 +427,28 @@ def _priority_flood(Z):
     return np.array(Zl)
 
 
+def _receivers(Z, cell):
+    """Each cell's steepest-descent neighbour (flat index) and the distance to it."""
+    h, w = Z.shape
+    best = np.zeros((h, w))
+    recv = np.arange(h * w).reshape(h, w)
+    dist = np.full((h, w), cell)
+    ii, jj = np.mgrid[0:h, 0:w]
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            if not (di or dj):
+                continue
+            ni = np.clip(ii + di, 0, h - 1)
+            nj = np.clip(jj + dj, 0, w - 1)
+            L = cell * (1.4142 if di and dj else 1.0)
+            drop = (Z - Z[ni, nj]) / L
+            better = drop > best
+            best = np.where(better, drop, best)
+            recv = np.where(better, ni * w + nj, recv)
+            dist = np.where(better, L, dist)
+    return recv.ravel(), dist
+
+
 def _accumulate(Z):
     """D8 flow accumulation (cells draining through each cell)."""
     h, w = Z.shape
@@ -414,7 +487,7 @@ def polar_grid(cx, cy, r0, r1, heading, fov, n_theta, back=0.0):
     radii = [0.0, r0]
     r = r0
     while r < r1:
-        stretch = 1.0 + 2.0 * min(1.0, max(0.0, (r - 6.0) / 60.0))
+        stretch = 1.0 + 1.0 * min(1.0, max(0.0, (r - 150.0) / 400.0))
         r = r * (1.0 + dtheta * stretch)
         radii.append(r)
     radii = np.array(radii)

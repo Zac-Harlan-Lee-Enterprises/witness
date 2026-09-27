@@ -109,14 +109,16 @@ def rock_material(name="teaser-rock", base="#bdb3a2", dark="#7d7163", red=0.0, l
     return _cached(name, build)
 
 
-def shrub_material(name="teaser-shrub", color="#5c6146", dry="#8a7f5e"):
+def shrub_material(name="teaser-shrub", color="#7d7c62", dry="#a39a7c"):
     def build():
         g = Graph(name)
         pos = g.coords("Object")
         rnd = g.object_random()
         n = g.noise(pos, 18.0, 4.0, 0.6)
         col = g.mix(g.smooth(n, 0.45, 0.65), color, dry)
-        col = g.mix(g.mul(rnd, 0.5), col, "#6f6a4c")
+        col = g.mix(g.mul(rnd, 0.5), col, "#6d6552")
+        # Dead twigs show through the sparse leaves.
+        col = g.mix(g.smooth(g.noise(pos, 7.0, 3.0), 0.55, 0.7, 0.0, 0.5), col, "#7a6e5c")
         g.principled(col, 0.85, 0.3, g.bump(g.noise(pos, 60.0, 3.0), 0.6, 0.01), **{"Subsurface Weight": 0.0})
         return g.mat
 
@@ -183,7 +185,7 @@ def shrub(name, radius=0.4, height=0.35, seed=1, material=None, twigs=True):
         bmesh.ops.create_icosphere(sub, subdivisions=2, radius=1.0)
         o = Vector((rng.random() * 50, rng.random() * 50, rng.random() * 50))
         for v in sub.verts:
-            d = 1.0 + 0.35 * mnoise.noise(v.co * 2.5 + o)
+            d = 1.0 + 0.55 * mnoise.noise(v.co * 3.2 + o)
             v.co = c + Vector((v.co.x * s * d, v.co.y * s * d, v.co.z * s * 0.75 * d))
         me = bpy.data.meshes.new("tmp")
         sub.to_mesh(me)

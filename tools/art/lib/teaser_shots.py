@@ -20,6 +20,8 @@ import bpy
 import numpy as np
 from mathutils import Vector
 
+import materials as M
+import rocks
 import teaser_city as C
 import teaser_land as TL
 import teaser_look as LK
@@ -154,18 +156,23 @@ def land_set(ctx, scene, centre, heading, fov=math.radians(120), shrubs=True, ne
         n_theta = min(n_theta, 520)
     TL.land_mesh(land, "land", centre[0], centre[1], heading, fov, r0=r0, r1=60000.0, n_theta=n_theta, material=LK.ground(), extra=extra)
     if shrubs:
-        protos = [PR.shrub(f"shrub{k}", 0.3 + 0.12 * k, 0.22 + 0.06 * k, seed=k) for k in range(4)]
-        protos += [PR.boulder(f"stone{k}", (0.35 + 0.2 * k, 0.3 + 0.15 * k, 0.22 + 0.1 * k), seed=10 + k, detail=2) for k in range(3)]
-
-        def where(x, y, z, sl, wet):
-            w = 0.18 + 0.8 * wet
+        def off_tracks(x, y, w):
             if land.road is not None:
                 w = w * (1 - land.road.mask(x, y))
             for p in land.paths:
                 w = w * (1 - p.mask(x, y))
             return np.clip(w, 0, 1)
 
-        PR.scatter(land, "shrubs", centre, heading, fov, near, far, density * (0.5 if ctx.preview else 1.0), protos, seed=5, where=where, size=(0.6, 1.6), sink=0.05)
+        # Dwarf shrubs: sparse, dull grey-olive cushions, thicker in the gullies.
+        shrubs_ = [PR.shrub(f"shrub{k}", 0.22 + 0.08 * k, 0.16 + 0.05 * k, seed=k) for k in range(4)]
+        PR.scatter(land, "shrubs", centre, heading, fov, near, far, density * (2.5 if ctx.preview else 6.0), shrubs_, seed=5,
+                   where=lambda x, y, z, sl, wet: off_tracks(x, y, (0.35 + 0.65 * wet) * (1 - np.clip((sl - 0.8) / 0.4, 0, 1))), size=(0.6, 1.5), sink=0.05, max_count=120000)
+        # Scree and loose stones: the game's own limestone and chert
+        # (rocks.stone, materials.rock), densest where the ground is steep.
+        rmat = PR.rock_material("teaser-scree", "#cbb999", "#8e7a62", red=0.15, lichen=0.2)
+        stones = [rocks.stone(f"scree{k}", Vector((0, 0, 0)), (0.5 + 0.1 * (k % 3), 0.4 + 0.1 * (k % 2), 0.3 + 0.05 * k), rmat, 900 + k, flat=0.5, blocky=0.7, sink=0.3) for k in range(6)]
+        PR.scatter(land, "scree", centre, heading, fov, near * 0.6, far * 0.6, density * (7.0 if not ctx.preview else 2.5), stones, seed=8,
+                   where=lambda x, y, z, sl, wet: off_tracks(x, y, 0.08 + 0.9 * np.clip((sl - 0.25) / 0.5, 0, 1)), size=(0.15, 0.9), sink=0.1, tilt=0.5, max_count=150000)
     return land
 
 
@@ -220,7 +227,7 @@ def shot5(ctx, scene):
     b = path.point(start + 30.0)
     head = math.atan2(b[1] - a[1], b[0] - a[0])
     centre = a - np.array([math.cos(head), math.sin(head)]) * 12.0
-    land_set(ctx, scene, (centre[0], centre[1]), head, fov=math.radians(140))
+    land_set(ctx, scene, (centre[0], centre[1]), head, fov=math.radians(260))
     z = ground_at(land)
     fig = TP.Figure(ctx.appearance("player:look-1"), "walker", marks=("water-skin", "cloak-roll"))
     walker = TP.Walker(fig, path.poly, z, cadence=0.92, start=start)
@@ -230,18 +237,26 @@ def shot5(ctx, scene):
     scene.view_settings.exposure = -1.6
     cam = R.camera(scene, lens=35.0)
 
+    gorge_side = None
+
     def animate(f, t):
+        nonlocal gorge_side
         at = walker.at(t)
-        s, _ = walker.distance(t)
-        back = walker.point(s - 11.0 - 1.2 * t)
-        side = walker.heading(s)
-        left = Vector((-math.sin(side), math.cos(side), 0.0))
-        eye = Vector((back[0], back[1], 0.0)) + left * 2.5
-        eye.z = max(z(eye.x, eye.y), at.z) + 3.2 + 0.25 * t
-        ahead = walker.point(s + 60.0)
-        tgt = Vector((ahead[0], ahead[1], at.z - 6.0))
-        R.aim(cam, eye, tgt, 35.0)
-        R.focus(cam, (at - eye).length, 8.0)
+        s_, _ = walker.distance(t)
+        head_ = walker.heading(s_)
+        fwd = Vector((math.cos(head_), math.sin(head_), 0.0))
+        left = Vector((-math.sin(head_), math.cos(head_), 0.0))
+        if gorge_side is None:
+            # Which side the gorge is on: keep the camera over the land, looking across it.
+            probe = at + left * 40.0
+            gorge_side = -1.0 if land.gorge_distance(np.array([probe.x]), np.array([probe.y]))[0] < land.gorge_distance(np.array([at.x]), np.array([at.y]))[0] else 1.0
+        # High and wide: behind the walker and up, the gorge opening beside them.
+        eye = at - fwd * (34.0 - 0.8 * t) + left * gorge_side * 14.0
+        eye.z = max(z(eye.x, eye.y) + 4.0, at.z + 22.0 - 0.6 * t)
+        tgt = at + fwd * 55.0 - left * gorge_side * 70.0
+        tgt.z = at.z - 32.0
+        R.aim(cam, eye, tgt, 40.0)
+        R.focus(cam, (at - eye).length, 11.0)
 
     return Shot(animate)
 
@@ -282,23 +297,49 @@ def city_set(ctx, scene, market=True, heading=0.0, fov=math.radians(150), shrubs
     return land, city, mk
 
 
+CROWD_LOOKS = [f"crowd:crowd-{k}" for k in range(4)] + ["hadassah", "ezer", "tobiah", "hanan", "salome", "yair", "malik", "shimon", "rivka"]
+LOADS = ["basket", "jar", "bundle", "none", "none", "basket", "bread", "jar", "staff", "none"]
+
+
 def crowd(ctx, city, n, seed, x0, x1, t_total):
-    """Market people walking up and down the street."""
+    """Market people walking up and down the street, many carrying loads:
+    baskets, jars on the shoulder, bundles, bread."""
     rng = np.random.default_rng(seed)
-    looks = [f"crowd:crowd-{k}" for k in range(4)] + ["hadassah", "ezer", "tobiah", "hanan", "salome", "yair"]
     walkers = []
     for k in range(n):
-        who = looks[k % len(looks)]
-        fig = TP.Figure(ctx.appearance(who), f"walker{k}")
-        y = city.gy + rng.uniform(-1.7, 1.7)
+        who = CROWD_LOOKS[k % len(CROWD_LOOKS)]
+        look = dict(ctx.appearance(who))
+        look["carry"] = LOADS[(k * 7 + 3) % len(LOADS)]
+        fig = TP.Figure(look, f"walker{k}")
+        y = city.gy + rng.uniform(-2.0, 2.0)
         east = rng.random() < 0.5
-        xa, xb = (x0, x1) if east else (x1, x0)
-        path = np.array([[xa, y], [xb, y + rng.uniform(-0.8, 0.8)]])
         L = abs(x1 - x0)
-        start = rng.uniform(0.0, L - 1.1 * t_total)
-        w = TP.Walker(fig, path, lambda x, y: city.z(x, y), cadence=rng.uniform(0.82, 0.95), start=max(0.0, start), phase=rng.random())
+        # Paths start before the street's near end, so people walk into view too.
+        xa, xb = (x0 - 12.0, x1) if east else (x1, x0 - 12.0)
+        path = np.array([[xa, y], [xb, y + rng.uniform(-0.8, 0.8)]])
+        start = rng.uniform(0.0, L + 12.0 - 1.1 * t_total)
+        w = TP.Walker(fig, path, lambda x, y: city.z(x, y), cadence=rng.uniform(0.8, 0.95), start=max(0.0, start), phase=rng.random())
         walkers.append(w)
     return walkers
+
+
+def stallholders(ctx, city, mk, x0, x1, n):
+    """People standing behind their stalls, facing the street: breathing,
+    turning a little, now and then talking."""
+    out = []
+    looks = ["ezer", "hadassah", "malik", "crowd:crowd-1", "salome", "crowd:crowd-3", "yair", "crowd:crowd-2", "tobiah"]
+    k = 0
+    for cx, cy, w, side in mk.stalls:
+        if not (x0 <= cx <= x1) or k >= n:
+            continue
+        look = dict(ctx.appearance(looks[k % len(looks)]))
+        look["carry"] = "none"
+        fig = TP.Figure(look, f"seller{k}")
+        at = Vector((cx + (k % 3 - 1) * 0.4, cy + side * 1.05, 0.0))
+        at.z = city.z(at.x, at.y)
+        out.append((fig, at, -side * math.pi / 2, k * 1.7))
+        k += 1
+    return out
 
 
 def shot1(ctx, scene):
@@ -314,7 +355,7 @@ def shot1(ctx, scene):
     t2 = Vector((gx - 20.0, gy, gz + 1.0))
     move = R.Move([e0, e1, e2], [t0, t1, t2], lens=[30.0, 32.0], ease_in=0.8, ease_out=1.0)
     LK.eevee(scene, preview=ctx.preview, volume_end=6000.0)
-    LK.sky(scene, -8.0, 4.0, sun_strength=3.0, sky_strength=0.55, color="#ffb070", aerosol=2.8, angle=0.7, bounce=0.06)
+    LK.sky(scene, -8.0, 10.0, sun_strength=3.4, sky_strength=0.45, color="#ffb070", aerosol=2.8, angle=0.7, bounce=0.22)
     LK.haze(scene, 0.00016, "#ead2b8", ground=gz - 120.0, scale_height=450.0, centre=(gx, gy), anisotropy=0.72)
     scene.view_settings.exposure = -0.9
     cam = R.camera(scene, lens=30.0)
@@ -332,23 +373,25 @@ def shot3(ctx, scene):
     land, city, mk = city_set(ctx, scene, fov=math.radians(200))
     gx, gy, gz = city.gx, city.gy, city.gz
     x_a = gx - 112.0
-    walkers = crowd(ctx, city, 14 if not ctx.preview else 8, 5, gx - 150.0, gx - 20.0, 8.0)
+    walkers = crowd(ctx, city, 24 if not ctx.preview else 16, 5, x_a - 4.0, gx - 30.0, 8.0)
+    sellers = stallholders(ctx, city, mk, x_a + 4.0, x_a + 60.0, 9)
     doves = []
     rng = np.random.default_rng(9)
     for k in range(7):
         p = MK.Pigeon(f"dove{k}", k)
-        at = Vector((x_a + 3.0 + rng.uniform(0, 5.0), gy - 0.6 + rng.uniform(-0.8, 1.2), 0.0))
+        at = Vector((x_a + 7.0 + rng.uniform(0, 6.0), gy - 0.6 + rng.uniform(-0.8, 1.2), 0.0))
         at.z = city.z(at.x, at.y)
         doves.append((p, at, rng.uniform(0, math.tau), rng.uniform(0, 10), k >= 5))
     LK.eevee(scene, preview=ctx.preview, volume_end=600.0)
     LK.sky(scene, -4.0, 11.0, sun_strength=4.2, sky_strength=0.35, color="#ffc990", aerosol=2.2, angle=0.6, bounce=0.1)
-    LK.haze(scene, 0.00012, "#e6d2bc", ground=gz - 100.0, scale_height=500.0, centre=(gx, gy))
-    LK.dust(scene, (gx - 170.0, gy - 8.0, gz - 1.0), (gx - 5.0, gy + 8.0, gz + 9.0), density=0.012, color="#ecdcc4")
+    LK.haze(scene, 0.00005, "#e6d2bc", ground=gz - 100.0, scale_height=500.0, centre=(gx, gy))
+    LK.dust(scene, (gx - 170.0, gy - 8.0, gz - 1.0), (gx - 5.0, gy + 8.0, gz + 12.0), density=0.0015, color="#ecdcc4", anisotropy=0.3)
     scene.view_settings.exposure = -1.1
     cam = R.camera(scene, lens=35.0)
-    e0 = Vector((x_a, gy - 1.3, gz + 1.55))
-    e1 = Vector((x_a + 9.0, gy - 1.0, gz + 1.6))
-    move = R.Move([e0, e1], [Vector((x_a + 26.0, gy + 1.5, gz + 1.2)), Vector((x_a + 36.0, gy + 0.8, gz + 1.3))], lens=35.0, ease_in=0.2, ease_out=0.3, shake=0.012)
+    gzm = city.z(x_a + 10.0, gy)
+    e0 = Vector((x_a, gy - 1.3, city.z(x_a, gy) + 1.55))
+    e1 = Vector((x_a + 9.0, gy - 1.0, city.z(x_a + 9.0, gy) + 1.6))
+    move = R.Move([e0, e1], [Vector((x_a + 26.0, gy + 1.5, gzm + 1.0)), Vector((x_a + 36.0, gy + 0.8, gzm + 1.0))], lens=35.0, ease_in=0.2, ease_out=0.3, shake=0.012)
 
     def animate(f, t):
         eye, tgt, lens = move.at(f / 191.0, t)
@@ -356,10 +399,13 @@ def shot3(ctx, scene):
         R.focus(cam, 7.5, 4.0)
         for w in walkers:
             w.at(t)
+        for fig, at, face, ph in sellers:
+            talk = 1 if math.sin(t * 1.3 + ph) > 0.75 else 0
+            TP.standing(fig, at, face + 0.25 * math.sin(t * 0.4 + ph), breath=0.5 + 0.5 * math.sin(t * 1.5 + ph), talk=talk)
         for p, at, head, ph, flies in doves:
             if flies and t > 3.2:
                 u = t - 3.2
-                pos = at + Vector((math.cos(head) * u * 4.0, math.sin(head) * u * 4.0, 1.6 * u + 0.8 * u * u))
+                pos = at + Vector((abs(math.cos(head)) * u * 4.0 + u * 2.0, math.sin(head) * u * 4.0, 1.6 * u + 0.8 * u * u))
                 p.place(pos, head, fly=u * 7.0, bank=0.2 * math.sin(u * 2))
             else:
                 peck = max(0.0, math.sin((t + ph) * 3.1)) ** 3
@@ -432,7 +478,7 @@ def shot2(ctx, scene):
 INCIDENT_S = 2600.0
 
 
-def incident_set(ctx, scene, eye_ab, look_ab):
+def incident_set(ctx, scene, eye_ab, look_ab, sun_el=46.0, sun_off=15.0):
     import teaser_incident as INC
 
     land = ctx.land()
@@ -447,9 +493,9 @@ def incident_set(ctx, scene, eye_ab, look_ab):
     inc.build()
     # Late morning: the sun high, a little ahead and to the right of the
     # road going down, so the rocks' shade falls toward the road.
-    sun_az = math.degrees(inc.heading) + 15.0
+    sun_az = math.degrees(inc.heading) + sun_off
     LK.eevee(scene, preview=ctx.preview, volume_end=3000.0)
-    LK.sky(scene, sun_az, 46.0, sun_strength=6.0, sky_strength=0.2, color="#fff4e4", aerosol=1.4, bounce=0.12)
+    LK.sky(scene, sun_az, sun_el, sun_strength=6.0, sky_strength=0.2, color="#fff4e4", aerosol=1.4, bounce=0.12)
     return land, inc
 
 
@@ -478,16 +524,16 @@ def shot6(ctx, scene):
 def shot7(ctx, scene):
     """A slow reveal: following the drag marks off the road to a man lying
     in the shade of the rocks. His face is not seen."""
-    land, inc = incident_set(ctx, scene, (2.2, 0.4), (4.2, -3.4))
+    land, inc = incident_set(ctx, scene, (2.2, 0.4), (4.2, -3.4), sun_el=33.0, sun_off=5.0)
     LK.haze(scene, 0.00007, "#ddd6ca", ground=inc.z(0, 0) - 200.0, scale_height=900.0, centre=tuple(inc.O))
     scene.view_settings.exposure = -1.75
     (ma, mb), turn = inc.man_place
     # His jar is broken and his cloak gone: nothing in his hands.
     fig = TP.Figure(dict(ctx.appearance("menashe"), carry="none"), "man")
-    at = inc.P(ma, mb, 0.0)
+    at = inc.P(ma + 0.5, mb + 0.1, 0.0)
     cam = R.camera(scene, lens=40.0)
     e0 = inc.P(2.3, 0.5, 1.5)
-    e1 = inc.P(2.75, -0.45, 1.3)
+    e1 = inc.P(2.6, -0.6, 0.85)
     t0 = inc.P(3.05, -1.4, 0.0)
     t1 = inc.P(ma + 0.2, mb + 0.1, 0.22)
     move = R.Move([e0, e1], [t0, t1], lens=[38.0, 42.0], ease_in=0.6, ease_out=1.0, shake=0.004)
@@ -498,8 +544,9 @@ def shot7(ctx, scene):
         eye, tgt, lens = move.at(f / 143.0, t)
         R.aim(cam, eye, tgt, lens)
         u = R.ease(f / 143.0)
-        d = (1 - u) * (t0 - eye).length + u * (at - eye).length
-        R.focus(cam, d, 3.5)
+        # Focus follows the drag marks and stops short of him: he stays soft.
+        d = (1 - u) * (t0 - eye).length + u * 0.5 * (at - eye).length
+        R.focus(cam, d, 1.6)
         TP.lying(fig, at, away, breath=0.5 + 0.5 * math.sin(t * 1.6))
 
     return Shot(animate)

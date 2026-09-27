@@ -63,7 +63,7 @@ def timeline(frames, quality):
 
 
 def strips(se):
-    return getattr(se, "strips", None) or se.sequences
+    return se.strips if hasattr(se, "strips") else se.sequences
 
 
 def build_edit(scene, cuts, total, size):

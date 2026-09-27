@@ -19,6 +19,7 @@ import numpy as np
 from mathutils import Matrix, Vector
 
 import common
+import materials as M
 import teaser_noise as N
 from teaser_nodes import Graph
 
@@ -237,15 +238,21 @@ class City:
         # The same city every time it is built (each shot builds its own).
         self.rng = random.Random(self.seed)
         self.objects = []
+        self.roofs_at = []
         walls = Builder("city-houses")
         tops = Builder("city-roofs")
+        self.holes = Builder("city-openings")
+        self.clutter = []
         streets = self._streets()
         lots = self._lots(streets)
         self.lots = lots
         for lot in lots:
             self._house(lot, walls, tops)
-        self.objects.append(walls.finish(stone_walls()))
-        self.objects.append(tops.finish(roofs()))
+        # The game's own Jerusalem limestone (the market's houses) and roof plaster.
+        self.objects.append(walls.finish(M.limestone("#d6c09a", "teaser-ashlar", worn=0.6)))
+        self.objects.append(tops.finish(M.plaster("#d2bf99", "teaser-roof-plaster")))
+        self.objects.append(self.holes.finish(plain("city-dark", "#1a130d", 0.95)))
+        self._roof_clutter()
         self._city_wall()
         self._street_ground(streets)
         return self
@@ -342,7 +349,8 @@ class City:
             walls.box(x0 + 0.3, y0 + 0.3, roof_z, ux1, uy1, roof_z + 2.6, r, roof_z)
             tops.quad([(x0 + 0.3, y0 + 0.3, roof_z + 2.62), (ux1, y0 + 0.3, roof_z + 2.62), (ux1, uy1, roof_z + 2.62), (x0 + 0.3, uy1, roof_z + 2.62)], r, roof_z)
         # Doors and windows: dark recesses on the faces toward streets.
-        self._openings(walls, (x0, y0, x1, y1), zb, storeys, r)
+        self._openings(self.holes, (x0, y0, x1, y1), zb, storeys, r)
+        self.roofs_at.append((x0, y0, x1, y1, roof_z))
 
     def _openings(self, b, box, zb, storeys, r):
         rng = self.rng
@@ -421,7 +429,7 @@ class City:
             while yy < ty + 4.4:
                 b.box(gx + 4.1, yy, top + 4.0, gx + 5.0, yy + 1.1, top + 5.2, 0.4, top + 4.0)
                 yy += 2.0
-        obj = b.finish(stone_walls("wall-stone", "#cfbf9d", "#a8946f", "#d5c8ad"))
+        obj = b.finish(M.limestone("#d2bb92", "teaser-wall-stone", worn=0.75))
         self.objects.append(obj)
         self.wall_top = top
 
@@ -438,3 +446,81 @@ class City:
         paved = ((Y > gy - self.street_w / 2 - 0.5) & (Y < gy + self.street_w / 2 + 0.5)).astype(float)
         obj = TL.grid_mesh("city-ground", X, Y, Z, {"paved": paved}, paving())
         self.objects.append(obj)
+
+
+def _roof_props():
+    """Prototypes of what stands on a roof: jars, a basket, a rolled mat,
+    firewood, a cloth drying over a line, a ladder."""
+    import teaser_props as PR
+
+    protos = []
+    for k, (col, s_) in enumerate((("#b06c46", 1.0), ("#a8663f", 0.8), ("#c08a5e", 1.2))):
+        prof = [(0.06 * s_, 0.0), (0.18 * s_, 0.1 * s_), (0.22 * s_, 0.3 * s_), (0.16 * s_, 0.5 * s_), (0.07 * s_, 0.6 * s_), (0.08 * s_, 0.64 * s_)]
+        protos.append(common.lathe(f"roof-jar{k}", prof, 18, M.terracotta(col, 0.35), None))
+    protos.append(common.lathe("roof-basket", [(0.2, 0.0), (0.28, 0.25), (0.3, 0.3)], 18, M.straw("#b39463"), None))
+    mat = common.lathe("roof-mat", [(0.0, -0.6), (0.12, -0.6), (0.12, 0.6), (0.0, 0.6)], 12, M.straw("#a88a5c"), None)
+    mat.data.transform(Matrix.Rotation(math.pi / 2, 4, "Y") @ Matrix.Translation((0, 0, 0)))
+    mat.data.transform(Matrix.Translation((0, 0, 0.12)))
+    protos.append(mat)
+    wood = bmesh.new()
+    rng = random.Random(5)
+    for k in range(14):
+        a = Vector((rng.uniform(-0.5, 0.5), rng.uniform(-0.25, 0.25), 0.05 + 0.08 * (k // 5)))
+        b = a + Vector((rng.uniform(0.6, 1.0), rng.uniform(-0.1, 0.1), rng.uniform(-0.03, 0.03)))
+        bmesh.ops.create_cone(wood, cap_ends=True, segments=6, radius1=0.035, radius2=0.03, depth=(b - a).length, matrix=Matrix.Translation((a + b) / 2) @ (b - a).to_track_quat("Z", "Y").to_matrix().to_4x4())
+    protos.append(common.mesh_object("roof-firewood", wood, M.wood("#6a5038", 3.0), None))
+    # A cloth over a line between two posts.
+    cl = bmesh.new()
+    for x0 in (-1.0, 1.0):
+        bmesh.ops.create_cone(cl, cap_ends=True, segments=6, radius1=0.03, radius2=0.03, depth=1.6, matrix=Matrix.Translation((x0, 0, 0.8)))
+    g = []
+    for j in range(5):
+        row = []
+        for i in range(9):
+            u = i / 8
+            row.append(cl.verts.new((-0.6 + 1.2 * u, 0.02 * math.sin(u * 9), 1.55 - j * 0.22 - 0.06 * math.sin(math.pi * u))))
+        g.append(row)
+    for j in range(4):
+        for i in range(8):
+            cl.faces.new((g[j][i], g[j][i + 1], g[j + 1][i + 1], g[j + 1][i]))
+    protos.append(common.mesh_object("roof-cloth", cl, M.cloth("#b9ad8e", "#7a3b30", "linen"), None))
+    lad = bmesh.new()
+    for sx in (-0.22, 0.22):
+        bmesh.ops.create_cube(lad, size=1.0, matrix=Matrix.Translation((sx, 0, 1.3)) @ Matrix.Diagonal((0.05, 0.05, 2.6, 1)))
+    for k in range(7):
+        bmesh.ops.create_cube(lad, size=1.0, matrix=Matrix.Translation((0, 0, 0.3 + k * 0.36)) @ Matrix.Diagonal((0.44, 0.04, 0.04, 1)))
+    ladder = common.mesh_object("roof-ladder", lad, M.wood("#5e4630", 4.0), None, smooth=False)
+    ladder.data.transform(Matrix.Rotation(-0.25, 4, "X"))
+    protos.append(ladder)
+    return protos, PR
+
+
+def _roof_clutter_impl(city):
+    protos, PR = _roof_props()
+    rng = city.rng
+    pts, idx, rot, sc = [], [], [], []
+    for x0, y0, x1, y1, z in city.roofs_at:
+        for k in range(rng.randrange(1, 5)):
+            kind = rng.choices(range(len(protos)), weights=[3, 2, 2, 2, 2, 2, 2, 1])[0]
+            if kind == 7:
+                # A ladder leans against the house from the street.
+                side = rng.randrange(4)
+                if side == 0:
+                    p = (rng.uniform(x0 + 0.8, x1 - 0.8), y0 - 0.7, z - 3.0)
+                    r_ = 0.0
+                elif side == 1:
+                    p = (rng.uniform(x0 + 0.8, x1 - 0.8), y1 + 0.7, z - 3.0)
+                    r_ = math.pi
+                else:
+                    continue
+            else:
+                p = (rng.uniform(x0 + 0.8, x1 - 0.8), rng.uniform(y0 + 0.8, y1 - 0.8), z)
+                r_ = rng.uniform(0, math.tau)
+            pts.append(p)
+            idx.append(kind)
+            rot.append((0.0, 0.0, r_))
+            sc.append(rng.uniform(0.85, 1.15))
+    city.objects.append(PR.instancer("roof-clutter", np.array(pts), protos, np.array(idx), np.array(rot), np.array(sc)))
+
+
+City._roof_clutter = _roof_clutter_impl

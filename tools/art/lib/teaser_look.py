@@ -27,7 +27,7 @@ def sun_direction(azimuth_deg, elevation_deg):
     return (math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el))
 
 
-def sky(scene, azimuth, elevation, sun_strength=4.0, sky_strength=0.3, color="#fff1dc", angle=0.53, aerosol=1.2, air=1.0, ozone=1.0, haze_density=0.0, haze_color="#c9d3df", anisotropy=0.55, altitude=700.0, bounce=0.1, bounce_color="#d9c3a0"):
+def sky(scene, azimuth, elevation, sun_strength=4.0, sky_strength=0.3, color="#fff1dc", angle=0.53, aerosol=1.2, air=1.0, ozone=1.0, haze_density=0.0, haze_color="#c9d3df", anisotropy=0.55, altitude=700.0, bounce=0.2, bounce_color="#d9c3a0"):
     """A clear sky with the sun at (azimuth, elevation) degrees, and haze."""
     for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("TeaserSun")]:
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -167,9 +167,9 @@ def dust(scene, lo, hi, density=0.02, color="#e8dcc8", anisotropy=0.6, name="Tea
 
 
 GROUND = {
-    "soil": "#ad9471", "chalk": "#cbbb99", "crust": "#8f7b60", "rock": "#cdc4b2", "rock_dark": "#7f7262",
-    "red": "#a97556", "gully": "#8a7458", "road": "#cdbb97", "veg": "#4f5540", "floor": "#cfc2a6",
-    "gravel": "#6e5f4d", "track": "#d3c4a2",
+    "soil": "#b0936c", "chalk": "#cdb993", "crust": "#94795a", "rock": "#d4bf98", "rock_dark": "#9c8060",
+    "red": "#ae7652", "gully": "#8c7152", "road": "#cfbb94", "veg": "#5c5a44", "floor": "#cdbc98",
+    "gravel": "#6f5c46", "track": "#d3c19c", "band": "#b89a72",
 }
 
 
@@ -206,6 +206,13 @@ def ground(name="judean-ground", palette=None):
         streak = g.noise(g.vmath("MULTIPLY", pos, (1.0, 1.0, 0.3)), 0.12, 5.0, 0.6)
         blotch = g.noise(pos, 0.08, 3.0, 0.5)
         rock_col = g.mix(g.smooth(g.add(g.mul(streak, 0.6), g.mul(blotch, 0.4)), 0.35, 0.7, 0.25, 1.0), pal["rock_dark"], pal["rock"])
+        # Strata: beds of uneven thickness, some harder and paler, some
+        # softer and browner, wavering along the face.
+        zb = g.add(z, g.mul(g.noise(pos, 1.0 / 90.0, 2.0), 6.0))
+        beds = g.noise(g.vec(0.0, 0.0, zb), 0.35, 3.0, 0.6)
+        rock_col = g.mix(g.smooth(beds, 0.45, 0.62, 0.0, 0.7), rock_col, pal["band"])
+        fine_beds = g.math("SINE", g.mul(zb, 2.3))
+        rock_col = g.mix(g.mul(g.map(fine_beds, 0.6, 1.0), 0.25), rock_col, "#e2d2b2")
         col = g.mix(rock_f, col, rock_col)
         col = g.mix(g.mul(wet, 0.5), col, pal["gully"])
         col = g.mix(g.smooth(gorge, 0.82, 0.96), col, pal["floor"])
