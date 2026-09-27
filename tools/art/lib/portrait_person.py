@@ -294,13 +294,16 @@ def turn_head(twist, col):
 def gaze_check(head, eyes, cam):
     """Where each eye looks and where its pupil sits: `yaw` is how far
     (degrees) each eye's line of sight passes beside the camera, left or
-    right (both near 0: the eyes converge on it); `across` is where the
+    right (both near 0: the eyes converge on it); `miss` how far apart (cm)
+    the two lines of sight pass at their closest; `across` is where the
     pupil is from the inner corner (0) to the outer (1); `height` how far down
     the opening between the lids the pupil is (0 at the upper lid, 1 at
     the lower: about a half means neither lid hides the iris)."""
-    out = {"yaw": [], "across": [], "height": []}
+    out = {"yaw": [], "across": [], "height": [], "miss": 0.0}
+    rays = []
     for sx in (-1, 1):
         c, d, R = eyes.pupils[sx]
+        rays.append((c, d))
         to_cam = (cam - c).normalized()
         a = math.degrees(math.atan2(d.x, -d.y) - math.atan2(to_cam.x, -to_cam.y))
         out["yaw"].append(round(float(a), 2))
@@ -315,6 +318,12 @@ def gaze_check(head, eyes, cam):
         up = head.lid_point(sx, u, upper=True)[2]
         lo = head.lid_point(sx, u, upper=False)[2]
         out["height"].append(round(float((up - pupil[2]) / max(up - lo, 1e-6)), 3))
+    # How far apart (cm) the two lines of sight pass at their closest: near
+    # 0 when the eyes converge on one point.
+    (c1, d1), (c2, d2) = rays
+    n = d1.cross(d2)
+    if n.length > 1e-9:
+        out["miss"] = round(abs((c2 - c1).dot(n.normalized())) * 100.0, 3)
     return out
 
 

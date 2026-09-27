@@ -79,22 +79,31 @@ class Eyes:
         cornea_r = iris_r * 1.28
         iris_mat = PM.eye_inner(params.iris, params.seed, params.iris_kind, params.age_t, iris_r=iris_r)
         wet = PM.cornea()
+        # Both eyes look at the same point (the camera, or a point a few
+        # degrees from it), so they converge. The eyeball is fitted to the
+        # lid margins (portrait_mhhead), so looking straight at the camera
+        # already puts each pupil in its opening. One shared tilt, up or
+        # down, then sets how the lids frame the irises: the pupils a
+        # little above the middle of the openings, the upper lids just over
+        # the tops of the irises, as in a relaxed gaze.
+        centres = {sx: Vector(head.eye_centre(sx).tolist()) * CM for sx in (-1, 1)}
+        target = Vector(look_at)
+        pitch = 0.0
         for sx in (-1, 1):
-            c = Vector(head.eye_centre(sx).tolist()) * CM
+            c = centres[sx]
+            d = (target - c).normalized()
+            rest = (Vector(self._opening(sx).tolist()) * CM - c).normalized()
+            pitch += (math.asin(max(-1.0, min(1.0, rest.z))) - math.asin(max(-1.0, min(1.0, d.z)))) / 2
+        # (At most a few degrees: the camera is at the eyes' height.)
+        pitch = max(-math.radians(6), min(math.radians(6), pitch))
+        target = target + Vector((0, 0, math.tan(pitch) * (target - (centres[-1] + centres[1]) / 2).length))
+        for sx in (-1, 1):
+            c = centres[sx]
             ball = _eyeball_mesh(f"eye{sx}", R, iris_r, col, iris_mat)
             cornea = _cornea_mesh(f"cornea{sx}", R, iris_r, cornea_r, col, wet)
             # Shadows pass through the clear cornea, so the iris is lit.
             cornea.visible_shadow = False
-            # Aim the pupil at the camera. "Straight ahead" is where the
-            # pupil sits in the middle of the opening between the lids (a
-            # little high, so the upper lid just covers the top of the iris,
-            # and a touch toward the nose), whatever the socket's shape; the
-            # eye then turns from there by the camera's angle from the
-            # head's forward direction. So both pupils sit in their openings
-            # as a person's do when they look at you.
-            d = (Vector(look_at) - c).normalized()
-            rest = (Vector(self._opening(sx).tolist()) * CM - c).normalized()
-            d = Vector((0.0, -1.0, 0.0)).rotation_difference(rest) @ d
+            d = (target - c).normalized()
             q = (-d).to_track_quat("Y", "Z")
             self.pupils[sx] = (c.copy(), d.normalized(), R * CM)
             for o in (ball, cornea):
