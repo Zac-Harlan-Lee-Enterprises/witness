@@ -352,9 +352,9 @@ def shot1(ctx, scene):
     t2 = Vector((gx - 20.0, gy, gz + 1.0))
     move = R.Move([e0, e1, e2], [t0, t1, t2], lens=[30.0, 32.0], ease_in=0.8, ease_out=1.0)
     LK.eevee(scene, preview=ctx.preview, volume_end=6000.0)
-    LK.sky(scene, -8.0, 10.0, sun_strength=3.4, sky_strength=0.45, color="#ffb070", aerosol=2.8, angle=0.7, bounce=0.22)
+    LK.sky(scene, -8.0, 8.0, sun_strength=3.6, sky_strength=0.45, color="#ffae68", aerosol=3.0, angle=0.7, bounce=0.22, horizon_amount=0.3, horizon_color="#f0cfa8")
     LK.haze(scene, 0.00016, "#ead2b8", ground=gz - 120.0, scale_height=450.0, centre=(gx, gy), anisotropy=0.72)
-    scene.view_settings.exposure = -0.9
+    scene.view_settings.exposure = -1.35
     cam = R.camera(scene, lens=30.0)
 
     def animate(f, t):
