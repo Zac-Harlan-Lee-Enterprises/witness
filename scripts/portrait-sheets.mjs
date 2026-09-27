@@ -9,11 +9,17 @@
  *   `--pass` names the pair (default v1-v2: the first pass against the second);
  * - `before-after-<pass>-detail.webp` (with --compare): the faces of a few
  *   people from the 512 px masters, before and after, where the nose, lips,
- *   eyes, skin and beards can be compared (`--detail id,id,…` chooses them).
+ *   eyes, skin and beards can be compared (`--detail id,id,…` chooses them);
+ * - `expressions-<chapter>.webp`: each person with expressions, neutral
+ *   first, then every expression their lines carry.
+ *
+ * `--out DIR` writes the sheets there instead, and `--tile N` draws the
+ * portraits N px across (e.g. 104 or 160, the sizes the game shows them).
  *
  *   npm run art:portrait-sheets
  *   npm run art:portrait-sheets -- --compare 640002b
  *   npm run art:portrait-sheets -- --compare d37dac5 --pass v2-v3
+ *   npm run art:portrait-sheets -- --compare 38d090f --pass v2-v4
  *
  * The sheets are drawn on a canvas in headless Chromium (Playwright, already
  * a dev dependency) and encoded as WebP there, so nothing else is needed.
@@ -26,19 +32,33 @@ import { chromium } from '@playwright/test';
 
 const ROOT = process.cwd();
 const DIR = join(ROOT, 'public', 'art', 'portraits');
-const OUT = join(ROOT, 'docs', 'art', 'portraits');
+const arg = (name) =>
+  process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null;
+const OUT = arg('--out') ?? join(ROOT, 'docs', 'art', 'portraits');
+/** Portrait size on the sheets (px): 256 by default; 104 or 160 to see them as the game does. */
+const TILE = Number(arg('--tile') ?? 256);
 const data = JSON.parse(
   readFileSync(join(ROOT, 'tools', 'art', 'data', 'portrait-people.json'), 'utf8'),
 );
-const arg = (name) =>
-  process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null;
 const compareAt = arg('--compare');
 const pass = arg('--pass') ?? 'v1-v2';
-const PASSES = { v1: 'First pass', v2: 'Second pass', v3: 'Third pass' };
+const PASSES = {
+  v1: 'First pass',
+  v2: 'Second pass',
+  v3: 'Third pass',
+  v4: 'MakeHuman pass',
+};
 const [passBefore, passAfter] = pass.split('-').map((p) => PASSES[p] ?? p);
 
 const dataUrl = (buf) => `data:image/webp;base64,${buf.toString('base64')}`;
-const now = (id, size = 256) => dataUrl(readFileSync(join(DIR, `${id}-${size}.webp`)));
+const now = (id, size = 256, expression = 'neutral') =>
+  dataUrl(
+    readFileSync(
+      join(DIR, ...(expression === 'neutral' ? [] : [expression]), `${id}-${size}.webp`),
+    ),
+  );
+/** The file size to draw a tile from (the next one up). */
+const fileFor = (tile) => (tile <= 128 ? 128 : tile <= 256 ? 256 : 512);
 
 function before(id, size = 256) {
   try {
@@ -89,6 +109,7 @@ async function sheet(page, { title, tiles, cols, tile = 256, pairs = false, crop
         for (let k = 0; k < srcs.length; k++) {
           const src = srcs[k];
           const xx = x + k * (tile + 4);
+          if (t.blank) continue;
           if (src && crop) {
             // A square from the source (fractions of its size), drawn at tile size.
             const img = await load(src);
@@ -123,11 +144,16 @@ const page = await browser.newPage();
 const written = [];
 for (const ch of data.chapters) {
   const people = data.characters.filter((c) => c.chapter === ch.id);
-  const tiles = people.map((c) => ({ name: c.name, role: c.role, after: now(c.id) }));
+  const tiles = people.map((c) => ({
+    name: c.name,
+    role: c.role,
+    after: now(c.id, fileFor(TILE)),
+  }));
   const buf = await sheet(page, {
     title: `Chapter ${ch.number}: ${ch.title}`,
     tiles,
-    cols: Math.min(4, tiles.length),
+    cols: Math.min(TILE < 200 ? 6 : 4, tiles.length),
+    tile: TILE,
   });
   const file = join(OUT, `contact-sheet-${ch.id}.webp`);
   writeFileSync(file, buf);
@@ -137,10 +163,39 @@ for (const ch of data.chapters) {
   const tiles = data.players.map((p) => ({
     name: `Player: ${p.id}`,
     role: 'A child, neither boy nor girl',
-    after: now(`player-${p.id}`),
+    after: now(`player-${p.id}`, fileFor(TILE)),
   }));
   const file = join(OUT, 'contact-sheet-players.webp');
-  writeFileSync(file, await sheet(page, { title: 'The player’s looks', tiles, cols: 4 }));
+  writeFileSync(
+    file,
+    await sheet(page, { title: 'The player’s looks', tiles, cols: 4, tile: TILE }),
+  );
+  written.push(file);
+}
+// Every expression rendered, per chapter: a row per person, neutral first.
+for (const ch of data.chapters) {
+  const people = data.characters.filter((c) => c.chapter === ch.id && c.expressions.length > 0);
+  if (people.length === 0) continue;
+  const width = Math.max(...people.map((c) => c.expressions.length)) + 1;
+  const tiles = people.flatMap((c) => {
+    const row = ['neutral', ...c.expressions].map((e) => ({
+      name: e === 'neutral' ? c.name : '',
+      role: e,
+      after: now(c.id, fileFor(TILE), e),
+    }));
+    while (row.length < width) row.push({ name: '', role: '', after: null, blank: true });
+    return row;
+  });
+  const file = join(OUT, `expressions-${ch.id}.webp`);
+  writeFileSync(
+    file,
+    await sheet(page, {
+      title: `Chapter ${ch.number}: every face their lines carry`,
+      tiles,
+      cols: width,
+      tile: Math.min(TILE, 200),
+    }),
+  );
   written.push(file);
 }
 if (compareAt) {
@@ -152,9 +207,9 @@ if (compareAt) {
       role: 'A child',
     })),
   ]
-    .map((p) => ({ ...p, before: before(p.id) }))
+    .map((p) => ({ ...p, before: before(p.id, fileFor(TILE)) }))
     .filter((p) => p.before);
-  const tiles = earlier.map((p) => ({ ...p, after: now(p.id) }));
+  const tiles = earlier.map((p) => ({ ...p, after: now(p.id, fileFor(TILE)) }));
   const file = join(OUT, `before-after-${pass}.webp`);
   writeFileSync(
     file,
@@ -162,7 +217,7 @@ if (compareAt) {
       title: `${passBefore} (left) and ${passAfter.toLowerCase()} (right)`,
       tiles,
       cols: 4,
-      tile: 200,
+      tile: Math.min(TILE, 200),
       pairs: true,
     }),
   );

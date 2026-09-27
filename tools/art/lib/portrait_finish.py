@@ -1,63 +1,12 @@
-"""Finishing a portrait: an optional painterly pass, high-quality resizing
-for the small sizes the game shows, and review contact sheets.
+"""Finishing a portrait: high-quality resizing for the sizes the game
+shows, a gentle lens vignette, and review contact sheets.
 
-The painterly pass is Blender's compositor Kuwahara filter (anisotropic):
-it flattens small variations into brush-like patches that follow the forms,
-like an oil study, while keeping edges.
+(A painterly pass, Blender's Kuwahara filter, was tried on the earlier
+heads and rejected; see docs/art/portraits.md §12.3.)
 """
 import math
 
-import bpy
 import numpy as np
-
-
-def setup_paint(scene, size=5, uniformity=4, sharpness=0.6, eccentricity=1.0, source=None):
-    """Route the render (or an image, `source`) through an anisotropic Kuwahara filter."""
-    g = bpy.data.node_groups.new("PortraitFinish", "CompositorNodeTree")
-    scene.compositing_node_group = g
-    g.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
-    if source is None:
-        rl = g.nodes.new("CompositorNodeRLayers")
-    else:
-        rl = g.nodes.new("CompositorNodeImage")
-        rl.image = source
-    k = g.nodes.new("CompositorNodeKuwahara")
-    k.inputs["Type"].default_value = "Anisotropic"
-    k.inputs["Size"].default_value = size
-    k.inputs["Uniformity"].default_value = uniformity
-    k.inputs["Sharpness"].default_value = sharpness
-    k.inputs["Eccentricity"].default_value = eccentricity
-    k.inputs["High Precision"].default_value = True
-    out = g.nodes.new("NodeGroupOutput")
-    g.links.new(rl.outputs["Image"], k.inputs["Image"])
-    g.links.new(k.outputs["Image"], out.inputs["Image"])
-    return g
-
-
-def paint_file(src, dst, **kw):
-    """Apply the painterly pass to a rendered PNG (a render of an empty
-    scene that only runs the compositor)."""
-    img = bpy.data.images.load(src, check_existing=False)
-    w, h = img.size
-    scene = bpy.data.scenes.new("PaintPass")
-    scene.render.engine = "BLENDER_WORKBENCH"
-    scene.render.resolution_x = w
-    scene.render.resolution_y = h
-    scene.render.resolution_percentage = 100
-    scene.display_settings.display_device = "sRGB"
-    scene.view_settings.view_transform = "Standard"
-    scene.view_settings.look = "None"
-    scene.render.image_settings.file_format = "PNG"
-    scene.render.image_settings.color_mode = "RGB"
-    cam = bpy.data.objects.new("PaintCam", bpy.data.cameras.new("PaintCam"))
-    scene.collection.objects.link(cam)
-    scene.camera = cam
-    setup_paint(scene, source=img, **kw)
-    scene.render.filepath = dst
-    bpy.ops.render.render(write_still=True, scene=scene.name)
-    bpy.data.images.remove(img)
-    bpy.data.scenes.remove(scene)
-    return dst
 
 
 def _lanczos(n_in, n_out, a=3):
