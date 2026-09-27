@@ -270,6 +270,13 @@ def expression(name, P):
     for u, w in mix.items():
         for k, x in _sided(u, w, asym).items():
             units[k] = units.get(k, 0.0) + x
+    if name == "glad" and P.smile_squint != 1.0:
+        # How far this person's smile narrows their eyes (the cheeks push the
+        # lower lids up too, so both are scaled).
+        units = {
+            k: v * (P.smile_squint if ("slit" in k or "cheek-trans-up" in k) else 1.0)
+            for k, v in units.items()
+        }
     if P.child > 0.5 and name == "angry":
         # A child's cross face: brows and pout, no bared teeth.
         units = {k: v * (0.4 if k.startswith("mouth") else 1.0) for k, v in units.items()}

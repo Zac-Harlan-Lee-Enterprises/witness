@@ -54,6 +54,9 @@ class Params:
     brow_asym: float = 0.0  # + the person's left brow higher
     lid_droop: float = 0.0  # heavy upper lids (weariness)
     squint: float = 0.0  # lower lids raised (sun, suspicion)
+    # How far a smile narrows this person's eyes (1 = the usual squint). Some
+    # faces close to a slit that hides the iris: Elazar's hooded eyes, Kallias's.
+    smile_squint: float = 1.0
     mouth_down: float = 0.0
     press: float = 0.0  # lips pressed together
     gaze: tuple = (0.0, 0.0)  # degrees away from the camera: (+ person's left, + up)
@@ -126,7 +129,7 @@ CASTING = {
     # ── Chapter 2: A Storm on Galilee ──────────────────────────────────────
     "shelomit": dict(age=71, sex="f", mood="kind", sun=0.65, face="oval", nose="aquiline", eyes="down", lips="thin"),
     # Uncle Elazar: master of the family boat, a fisherman since boyhood.
-    "elazar": dict(age=45, sex="m", mood="hearty", sun=1.0, face="square", nose="broad", eyes="hooded", lips="full"),
+    "elazar": dict(age=45, sex="m", mood="hearty", sun=1.0, face="square", nose="broad", eyes="hooded", lips="full", smile_squint=0.45),
     # Tamar: the player's cousin, a rower who teaches them the boat.
     "tamar": dict(age=17, sex="f", mood="bright", sun=0.75, face="heart", nose="straight", eyes="almond", lips="full"),
     "yoezer": dict(age=39, sex="m", mood="dour", sun=1.0, scars=[((2.6, -6.2), (3.4, -7.0), 0.09)], hair="crop", face="long", nose="convex", eyes="deep", lips="thin"),
@@ -146,7 +149,7 @@ CASTING = {
     "asa": dict(age=40, sex="m", mood="wry-tired", sun=0.8, scars=[((-3.6, 4.4), (-3.2, 3.5), 0.08)], hair="straight", face="square", nose="aquiline", eyes="almond", lips="medium"),
     "peninah": dict(age=33, sex="f", mood="gentle", sun=0.3, face="round", nose="straight", eyes="down", lips="medium"),
     # Kallias the clerk: "by tonight my hand will fall off".
-    "kallias": dict(age=27, sex="m", mood="harried", sun=0.1, hair="crop", recede=4.0, face="oval", nose="bridge", eyes="almond", lips="thin"),
+    "kallias": dict(age=27, sex="m", mood="harried", sun=0.1, hair="crop", recede=4.0, face="oval", nose="bridge", eyes="almond", lips="thin", smile_squint=0.4),
     # Hagit: "I've lived in Bethlehem seventy years."
     "hagit": dict(age=77, sex="f", mood="wonder", sun=0.7, face="long", nose="bulbous", eyes="deep", lips="thin"),
     # Cousin Yonatan: a young shepherd (his scarf would make the data guess a woman).
@@ -321,6 +324,7 @@ def params_for(pid, appearance, player=False, chapter=""):
     p.hair_curl = float(cast.get("curl", 0.35 + r.random() * 0.55))
     p.hair_cut = cast.get("hair", "curly")
     p.recede = float(cast.get("recede", 0.0))
+    p.smile_squint = float(cast.get("smile_squint", 1.0))
     if child > 0.5:
         p.hair_style = "child"
     elif female:
