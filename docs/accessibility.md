@@ -146,3 +146,17 @@ Numbered so issues and commits can refer to them.
 3. A text-spacing (1.4.12) check and a focus-not-obscured review (**G9**).
 4. A setting for how long notices stay (**G5**).
 5. An independent WCAG 2.2 AA audit (**G2**) before any public or classroom launch.
+
+## The teaser film (before Chapter 1)
+
+The film before Chapter 1 ([`TeaserPlayer.tsx`](../src/features/teaser/TeaserPlayer.tsx)) never stands between a player and the game:
+
+- **Skip** is always visible and has focus from the start; Escape skips from anywhere, and Enter or Space too when no other button has focus. **Pause/Play** stops and starts the film and its music (2.2.2 Pause, Stop, Hide).
+- The film has no words or sound of its own. Its words are **real text** over it, cued to its time, set in the game's type at the player's text size, white on a darkened band with a shadow, and in a polite live region, so screen readers announce each card once. The film's content is described in words for screen readers.
+- The film is **muted**; its music is the game's own synthesiser, so it follows the music volume and mute settings, and it stops on pause, skip or end.
+- **Reduced motion** (the setting, or the device's preference): the film does not play. The poster is shown with the words, stepped through with **Next**; Skip is still there.
+- **When the film can't load** (offline, a missing or unsupported file, nothing after 8 s), the same stills and words are shown: the chapter is never blocked.
+- It fits any screen (letterboxed), with 44-pixel controls clear of the safe areas.
+
+Tested in [`tests/ui/teaser.test.tsx`](../tests/ui/teaser.test.tsx) (axe, focus, keys, cues, reduced motion, fallbacks) and [`e2e/teaser.spec.ts`](../e2e/teaser.spec.ts) (axe in the browser, a phone screen, a film that can't load).
+

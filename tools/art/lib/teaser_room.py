@@ -37,7 +37,12 @@ def plaster():
         col = g.mix(g.mul(soot, 0.55), col, "#5a4a3a", "MULTIPLY")
         stains = g.smooth(g.noise(pos, 0.9, 3.0), 0.55, 0.7, 0.0, 0.25)
         col = g.mix(stains, col, "#9c8a6c")
-        h = g.add(g.noise(pos, 3.0, 5.0, 0.6), g.mul(g.noise(pos, 25.0, 3.0), 0.3))
+        patch = g.smooth(g.noise(pos, 0.6, 2.0), 0.62, 0.66, 0.0, 0.5)
+        col = g.mix(patch, col, "#e3d7bf")
+        cracks = g.voronoi(g.vmath("ADD", pos, g.vmath("MULTIPLY", g.node("ShaderNodeTexNoise", {"Vector": pos, "Scale": 4.0}).outputs["Color"], (0.03, 0.03, 0.03))), 7.0, 1.0, "Distance", "DISTANCE_TO_EDGE")
+        crack = g.mul(g.map(cracks, 0.0, 0.003, 1.0, 0.0), g.smooth(g.noise(pos, 1.5, 2.0), 0.58, 0.66))
+        col = g.mix(g.mul(crack, 0.35), col, "#6a5a46")
+        h = g.add(g.add(g.noise(pos, 3.0, 5.0, 0.6), g.mul(g.noise(pos, 25.0, 3.0), 0.3)), g.add(g.mul(crack, -0.6), g.mul(patch, 0.4)))
         g.principled(col, 0.92, 0.2, g.bump(h, 0.35, 0.02))
         return g.mat
 
@@ -62,7 +67,7 @@ def table_wood():
         pos = g.coords("Object")
         grain = g.wave(g.vmath("MULTIPLY", pos, (0.15, 1.0, 1.0)), 9.0, 6.0, 4.0, "BANDS", "Y")
         knots = g.noise(pos, 3.0, 4.0)
-        col = g.mix(g.map(grain, 0.2, 0.9), "#4a3322", "#8a6644")
+        col = g.mix(g.map(grain, 0.2, 0.9), "#5e4430", "#7d5b3d")
         col = g.mix(g.mul(g.map(knots, 0.55, 0.7), 0.4), col, "#3a281a")
         wear = g.noise(pos, 0.8, 3.0)
         col = g.mix(g.mul(g.map(wear, 0.45, 0.65), 0.35), col, "#a88660")
@@ -136,6 +141,7 @@ class Room:
         self._oil_lamp(Vector((-0.2, 0.14, TABLE_Z)))
         self._mortar(Vector((-0.32, -0.12, TABLE_Z)))
         self._herbs_on_table()
+        self._table_things()
         self._background()
         return self
 
@@ -291,6 +297,32 @@ class Room:
                 continue
             _leaf(bm, c, rng.random() * math.tau, 0.012 + rng.random() * 0.01, rng)
         self.objects.append(common.mesh_object("loose-leaves", bm, leaf, None))
+
+    def _table_things(self):
+        """A folded linen cloth, a small iron knife with a wooden handle, a
+        little bowl of dried leaves, and a scatter of seeds."""
+        cloth = M.cloth("#d8cbb0", "#8a4f2f", "linen", 0.3, 0.04)
+        c = common.box("table-cloth", (0.26, 0.2, 0.012), (0.36, 0.2, TABLE_Z + 0.006), cloth, None, bevel=0.004)
+        c.rotation_euler = (0, 0, -0.25)
+        self.objects.append(c)
+        c2 = common.box("table-cloth2", (0.25, 0.19, 0.01), (0.365, 0.2, TABLE_Z + 0.017), cloth, None, bevel=0.004)
+        c2.rotation_euler = (0, 0, -0.2)
+        self.objects.append(c2)
+        blade = common.box("knife-blade", (0.11, 0.018, 0.003), (-0.05, -0.2, TABLE_Z + 0.004), M.plain("#5c5650", 0.45, 0.6), None, bevel=0.001)
+        handle = common.box("knife-handle", (0.08, 0.02, 0.014), (-0.145, -0.2, TABLE_Z + 0.008), M.wood("#6a4a2e", 8.0), None, bevel=0.004)
+        for o in (blade, handle):
+            o.rotation_euler = (0, 0, 0.0)
+            self.objects.append(o)
+        bowl = common.lathe("leaf-bowl", [(0.02, 0.0), (0.05, 0.012), (0.065, 0.03), (0.062, 0.034), (0.045, 0.014)], 24, M.terracotta("#a96a44", 0.1), None)
+        bowl.location = (-0.36, 0.1, TABLE_Z)
+        self.objects.append(bowl)
+        self.objects.append(self._blob("bowl-leaves", Vector((-0.36, 0.1, TABLE_Z + 0.026)), (0.05, 0.05, 0.012), herb_material("#6a6a44", "#8e8656"), 7, 0.3))
+        rng = self.rng
+        bm = bmesh.new()
+        for k in range(30):
+            p = Vector((-0.2 + rng.gauss(0, 0.06), -0.05 + rng.gauss(0, 0.05), TABLE_Z + 0.002))
+            bmesh.ops.create_icosphere(bm, subdivisions=1, radius=0.0025, matrix=Matrix.Translation(p) @ Matrix.Diagonal((1.4, 1.0, 0.7, 1.0)))
+        self.objects.append(common.mesh_object("seeds", bm, M.plain("#5a3e24", 0.5), None))
 
     def _bundle(self, name, at, angle, mat, lying=False):
         """A bundle of dried herbs tied at the stems: many thin stems with

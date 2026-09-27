@@ -419,3 +419,27 @@ PERF_MARKET=1 PERF_LABEL=after npx playwright test e2e/market-perf.spec.ts --pro
 ```
 
 On a Mac, `place-art.spec.ts` has Chromium draw with the real GPU (Metal): with the software renderer headless Chromium uses otherwise, the game runs slowly enough to switch to its low-power, half-resolution art after the first place, and the captures would not show what players see. Playwright empties `test-results/` at the start of each run: copy a capture set elsewhere before running again. For "before" images of an older build, run the same specs from a git worktree of that commit.
+
+## 11. The teaser film before Chapter 1
+
+A 57-second film (`public/art/teaser/chapter-1/`: `teaser.webm` VP9, `teaser.mp4` H.264, both silent, and `poster.webp`) played before a profile's first new game of Chapter 1 and from chapter select. Unlike the places, it is seen through a **perspective film camera**, so it has its own sets built at film scale from the game's own parts and palette:
+
+| Module | What it builds |
+|---|---|
+| [`teaser_land.py`](../../tools/art/lib/teaser_land.py) | The Judean wilderness, 24 × 18 km: broad hills falling east to the Jordan valley, shaped by **stream-power erosion** (valleys cut where water gathers, branching; spurs left between), a gorge of cliff bands over talus, the road (a least-cost route, cut and filled) and the shepherds' path along the rim. Each shot samples it on a polar grid round its camera (fine near, coarse far) |
+| [`teaser_look.py`](../../tools/art/lib/teaser_look.py) | EEVEE settings, the sky and sun, aerial haze (a volume box: a world volume in EEVEE swallows the sky's light), dust, and the ground shader (soil, chalk, crust, strata, sheep tracks, gravel, oil) |
+| [`teaser_city.py`](../../tools/art/lib/teaser_city.py), [`teaser_market.py`](../../tools/art/lib/teaser_market.py) | Jerusalem west of its east gate (the game's limestone and roof plaster, roof clutter), the wall and gate, and the lower market's stalls, goods, trees and pigeons |
+| [`teaser_room.py`](../../tools/art/lib/teaser_room.py) | Aunt Miriam's table at first light: the lamp, the remedy, the letter, herbs |
+| [`teaser_incident.py`](../../tools/art/lib/teaser_incident.py) | Below the bend, laid out from the game's own map (`jericho-road`): the broken jar, the oil, footprints and drag marks pressed into the ground, the purse, the torn cloth, the rocks and the man in their shade |
+| [`teaser_people.py`](../../tools/art/lib/teaser_people.py) | The game's people (`people.py`) placed anywhere; **walkers with planted feet** (the stride is measured from the walk cycle, so the body moves exactly as far as the stance foot pushes it) |
+| [`teaser_shots.py`](../../tools/art/lib/teaser_shots.py) | The eight shots: set, light, camera move (eased, spline), depth of field, grade |
+| [`teaser_render.py`](../../tools/art/lib/teaser_render.py) | Camera moves, and the grade applied to each 16-bit frame in numpy (so a grade can change without rendering again) |
+
+```bash
+node scripts/art-build.mjs teaser --quality preview     # an animatic: 640×360, 8 samples, a few minutes
+node scripts/art-build.mjs teaser --shots 6             # one shot at final quality (1920×1080, 64 samples)
+node scripts/art-build.mjs teaser                       # every shot (frames already rendered are skipped), then the edit
+node scripts/art-build.mjs teaser-edit                  # cut and encode from the frames (Blender's FFmpeg)
+```
+
+Frames go to `tools/art/.cache/teaser/<quality>/shot<N>/` (gitignored); a crash loses nothing. The film has **no words and no sound**: the words are the chapter's teaser cues (`src/content/chapters/road-to-jericho/teaser.ts`), shown as text by the game, and the music is composed for the game's synthesiser (`src/infrastructure/audio/film-score.ts`). The service worker never caches the films (network only); the poster is precached for the offline fallback (`TEASER_FILM` in [`art-cache.ts`](../../src/app/art-cache.ts)).
