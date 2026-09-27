@@ -51,6 +51,9 @@ SIZES = (512, 256, 128)
 # High enough that pores and skin grain survive compression (86 smoothed them away).
 QUALITY = {512: 92, 256: 91, 128: 90}
 DATA = os.path.join(HERE, "data", "portrait-people.json")
+# What each render measured (skin colour against the person's, where the
+# pupils sit): written here, checked by tests/content/portraits.test.ts.
+CHECKS = os.path.join(HERE, "data", "portrait-checks.json")
 
 
 def args():
@@ -74,6 +77,7 @@ def args():
     p.add_argument("--elev", type=float, default=None, help="review: camera height above the aim point (cm)")
     p.add_argument("--manifest", default=None, help="manifest path (default: <out>/portraits.json)")
     p.add_argument("--no-manifest", action="store_true", help="review: leave the manifest alone")
+    p.add_argument("--checks", default=None, help="checks file (default: tools/art/data/portrait-checks.json; with --review, in the review folder)")
     p.add_argument("--reencode", default=None, help="write the WebP sizes again from the 512 px PNGs in this review folder (no rendering)")
     return p.parse_args(argv)
 
@@ -84,6 +88,21 @@ def write_manifest(path, entries):
     text = json.dumps(entries, indent=2, sort_keys=True)
     with open(path, "w") as f:
         f.write(text + "\n")
+
+
+def update_json(path, change):
+    """Read, change and write a JSON file under a lock (several Blenders may
+    be rendering people at once)."""
+    import fcntl
+
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path + ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        data = json.load(open(path)) if os.path.exists(path) else {}
+        change(data)
+        write_manifest(path, data)
+        fcntl.flock(lock, fcntl.LOCK_UN)
+    return data
 
 
 def folder(out, expression):
@@ -152,7 +171,6 @@ def main():
     data = json.load(open(a.data))
     os.makedirs(a.out, exist_ok=True)
     manifest_path = a.manifest or os.path.join(a.out, "portraits.json")
-    manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
     tmp = tempfile.mkdtemp(prefix="witness-portraits-")
     rendered = []
     if a.reencode:
@@ -166,6 +184,7 @@ def main():
         print("PORTRAITS DONE", flush=True)
         return
     makehuman.verify()
+    checks_path = a.checks or (os.path.join(a.review, "portrait-checks.json") if a.review and a.no_manifest else CHECKS)
     for who in a.who or everyone(data):
         pid, kind, key, app, player, chapter, used = lookup(data, who)
         for expression in expressions_for(a.expression, used):
@@ -188,6 +207,11 @@ def main():
                 **({"turn": a.turn} if a.turn is not None else {}),
             )
             name = review_name(pid, expression)
+            # The skin's colour matched to the person's in the game (every
+            # expression takes the neutral portrait's correction).
+            known = json.load(open(checks_path)) if os.path.exists(checks_path) else {}
+            gain = known.get(pid, {}).get("skin", {}).get("gain") if expression != "neutral" else None
+            gain, _, mask = portrait_person.calibrate_skin(scene, marks, app["skin"], tmp, size, gain=gain)
             png = portrait_person.render(scene, os.path.join(tmp, f"{name}.png"))
             big = imageio.load(png)
             if float(big[:, :, :3].mean()) < 0.02:
@@ -198,13 +222,22 @@ def main():
                 big = imageio.load(png)
             big[:, :, 3] = 1.0
             img = portrait_finish.resize(big, a.size, sharpen=0.0)
+            face = portrait_person.face_colour(big, marks, mask, size)
+            check = {
+                "skin": {
+                    "target": app["skin"],
+                    "measured": portrait_person.rgb01_hex(face) if face else None,
+                    "deltaE": round(portrait_person.delta_e(face, portrait_person.hex_rgb01(app["skin"])), 2) if face else None,
+                    "gain": gain,
+                },
+                "gaze": marks["gaze"],
+            }
+            portrait_person.log("CHECK", name, json.dumps(check))
+            update_json(checks_path, lambda d, key=(pid if expression == "neutral" else name), v=check: d.__setitem__(key, v))
             if not a.review or not a.no_manifest:
                 write_sizes(img, a.out, pid, expression)
             if not a.no_manifest:
-                # Re-read: other Blenders may be writing their people at the same time.
-                manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
-                record(manifest, pid, kind, key, expression)
-                write_manifest(manifest_path, manifest)
+                update_json(manifest_path, lambda m, e=expression: record(m, pid, kind, key, e))
             if a.review:
                 os.makedirs(a.review, exist_ok=True)
                 out = os.path.join(a.review, f"{name}.png")

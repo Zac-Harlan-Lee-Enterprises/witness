@@ -94,77 +94,85 @@ class Params:
 # What each person's part in the story implies: age, sex (where the
 # appearance data would guess wrong), how much of their life is spent in
 # the sun, and a quiet expression that fits them. Moods are defined below.
+# Faces are cast by type too (face, nose, eyes, lips: portrait_face.FACE_TYPES
+# and the rest), so no two people read as the same face, and family members
+# (Rivka and Yair; Shifra and Oded; Tamar, Asa and Amram) share a nose.
 # Portrait ids are character ids; a later chapter's character who shares an
 # id with an earlier one is `<id>.<chapter id>` (src/content/portrait-cast.ts).
 CASTING = {
     # ── Chapter 1: The Road to Jericho ─────────────────────────────────────
     # Aunt Miriam: "my knees can't manage that road anymore". A healer.
-    "miriam": dict(age=54, sex="f", mood="kind", sun=0.45),
+    "miriam": dict(age=54, sex="f", mood="kind", sun=0.45, face="long", nose="aquiline", eyes="hooded", lips="medium"),
     # Malik: a jovial Nabataean caravan trader ("Ha! A careful one.").
-    "malik": dict(age=44, sex="m", mood="jovial", sun=0.9),
-    "shimon": dict(age=72, sex="m", mood="calm-squint", sun=1.0),
+    "malik": dict(age=44, sex="m", mood="jovial", sun=0.9, face="long", nose="aquiline", eyes="deep", lips="full"),
+    "shimon": dict(age=72, sex="m", mood="calm-squint", sun=1.0, face="long", nose="convex", eyes="hooded", lips="thin"),
     # Tobiah the carter: sure of everything, right about nothing.
-    "tobiah": dict(age=32, sex="m", mood="cocky", sun=0.75, hair="wavy"),
+    "tobiah": dict(age=32, sex="m", mood="cocky", sun=0.75, hair="wavy", face="square", nose="straight", eyes="almond", lips="medium"),
     # Hadassah: a warm market weaver ("Oh — hello, dear.").
-    "hadassah": dict(age=41, sex="f", mood="warm", sun=0.35),
+    "hadassah": dict(age=41, sex="f", mood="warm", sun=0.35, face="round", nose="broad", eyes="almond", lips="full"),
     # Ezer the baker: shouting about short measure.
-    "ezer": dict(age=46, sex="m", mood="stern", sun=0.25),
+    "ezer": dict(age=46, sex="m", mood="stern", sun=0.25, face="square", nose="bulbous", eyes="deep", lips="thin"),
     # Menashe: robbed and hurt on the road; most of his lines are spoken injured.
-    "menashe": dict(age=36, sex="m", mood="pained", sun=0.55, scars=[((-2.1, 5.6), (-1.2, 4.6), 0.1)]),
+    "menashe": dict(age=36, sex="m", mood="pained", sun=0.55, scars=[((-2.1, 5.6), (-1.2, 4.6), 0.1)], face="oval", nose="straight", eyes="down", lips="medium"),
     # Hanan: a young Levite, still a student.
     # (Third pass: the bare-headed young men get their own faces and haircuts.)
-    "hanan": dict(age=19, sex="m", mood="thoughtful", sun=0.15, hair="wavy"),
-    "salome": dict(age=43, sex="f", mood="shrewd", sun=0.35),
+    "hanan": dict(age=19, sex="m", mood="thoughtful", sun=0.15, hair="wavy", face="long", nose="bridge", eyes="almond", lips="thin"),
+    "salome": dict(age=43, sex="f", mood="shrewd", sun=0.35, face="square", nose="bridge", eyes="deep", lips="thin"),
     # Rivka: her young son has a fever.
-    "rivka": dict(age=37, sex="f", mood="worried", sun=0.3),
-    "natan": dict(age=7, sex="m", mood="curious", sun=0.1, curl=0.95),
+    "rivka": dict(age=37, sex="f", mood="worried", sun=0.3, face="heart", nose="straight", eyes="round", lips="full"),
+    "natan": dict(age=7, sex="m", mood="curious", sun=0.1, curl=0.95, face="round", nose="snub", eyes="round", lips="full"),
     # Yair: a fig grower who tells the story of the road.
-    "yair": dict(age=41, sex="m", mood="wistful", sun=0.85),
+    "yair": dict(age=41, sex="m", mood="wistful", sun=0.85, face="diamond", nose="straight", eyes="round", lips="medium"),
     # ── Chapter 2: A Storm on Galilee ──────────────────────────────────────
-    "shelomit": dict(age=71, sex="f", mood="kind", sun=0.65),
+    "shelomit": dict(age=71, sex="f", mood="kind", sun=0.65, face="oval", nose="aquiline", eyes="down", lips="thin"),
     # Uncle Elazar: master of the family boat, a fisherman since boyhood.
-    "elazar": dict(age=45, sex="m", mood="hearty", sun=1.0),
+    "elazar": dict(age=45, sex="m", mood="hearty", sun=1.0, face="square", nose="broad", eyes="hooded", lips="full"),
     # Tamar: the player's cousin, a rower who teaches them the boat.
-    "tamar": dict(age=17, sex="f", mood="bright", sun=0.75),
-    "yoezer": dict(age=39, sex="m", mood="dour", sun=1.0, scars=[((2.6, -6.2), (3.4, -7.0), 0.09)], hair="crop"),
+    "tamar": dict(age=17, sex="f", mood="bright", sun=0.75, face="heart", nose="straight", eyes="almond", lips="full"),
+    "yoezer": dict(age=39, sex="m", mood="dour", sun=1.0, scars=[((2.6, -6.2), (3.4, -7.0), 0.09)], hair="crop", face="long", nose="convex", eyes="deep", lips="thin"),
     # Old Hanina: has read the lake for sixty years.
-    "hanina": dict(age=76, sex="m", mood="shrewd-old", sun=1.0),
-    "nikanor": dict(age=48, sex="m", mood="salesman", sun=0.4),
+    "hanina": dict(age=76, sex="m", mood="shrewd-old", sun=1.0, face="diamond", nose="aquiline", eyes="hooded", lips="thin"),
+    "nikanor": dict(age=48, sex="m", mood="salesman", sun=0.4, face="round", nose="bulbous", eyes="almond", lips="full"),
     # Shifra: a mother, frightened for her small son on the lake.
-    "shifra": dict(age=31, sex="f", mood="anxious", sun=0.45),
+    "shifra": dict(age=31, sex="f", mood="anxious", sun=0.45, face="long", nose="straight", eyes="round", lips="medium"),
     # Ami: "Ami is so little."
-    "ami": dict(age=6, sex="m", mood="wide-eyed", sun=0.15, curl=0.08),
-    "oded": dict(age=28, sex="m", mood="wry", sun=0.5),
-    "dinah": dict(age=52, sex="f", mood="thoughtful", sun=0.85),
+    "ami": dict(age=6, sex="m", mood="wide-eyed", sun=0.15, curl=0.08, face="round", nose="snub", eyes="round", lips="medium"),
+    "oded": dict(age=28, sex="m", mood="wry", sun=0.5, face="long", nose="straight", eyes="round", lips="medium"),
+    "dinah": dict(age=52, sex="f", mood="thoughtful", sun=0.85, face="square", nose="broad", eyes="hooded", lips="medium"),
     # ── Chapter 3: A Journey to Bethlehem ──────────────────────────────────
-    "tamar.journey-to-bethlehem": dict(age=36, sex="f", mood="warm", sun=0.4),
-    "amram": dict(age=74, sex="m", mood="kind", sun=0.6),
+    "tamar.journey-to-bethlehem": dict(age=36, sex="f", mood="warm", sun=0.4, face="diamond", nose="aquiline", eyes="almond", lips="full"),
+    "amram": dict(age=74, sex="m", mood="kind", sun=0.6, face="oval", nose="aquiline", eyes="hooded", lips="thin"),
     # Uncle Asa, a stonemason, has stood in the registration line since midday.
-    "asa": dict(age=40, sex="m", mood="wry-tired", sun=0.8, scars=[((-3.6, 4.4), (-3.2, 3.5), 0.08)], hair="straight"),
-    "peninah": dict(age=33, sex="f", mood="gentle", sun=0.3),
+    "asa": dict(age=40, sex="m", mood="wry-tired", sun=0.8, scars=[((-3.6, 4.4), (-3.2, 3.5), 0.08)], hair="straight", face="square", nose="aquiline", eyes="almond", lips="medium"),
+    "peninah": dict(age=33, sex="f", mood="gentle", sun=0.3, face="round", nose="straight", eyes="down", lips="medium"),
     # Kallias the clerk: "by tonight my hand will fall off".
-    "kallias": dict(age=27, sex="m", mood="harried", sun=0.1, hair="crop", recede=4.0),
+    "kallias": dict(age=27, sex="m", mood="harried", sun=0.1, hair="crop", recede=4.0, face="oval", nose="bridge", eyes="almond", lips="thin"),
     # Hagit: "I've lived in Bethlehem seventy years."
-    "hagit": dict(age=77, sex="f", mood="wonder", sun=0.7),
+    "hagit": dict(age=77, sex="f", mood="wonder", sun=0.7, face="long", nose="bulbous", eyes="deep", lips="thin"),
     # Cousin Yonatan: a young shepherd (his scarf would make the data guess a woman).
-    "yonatan": dict(age=16, sex="m", mood="open", sun=0.9),
-    "yoram": dict(age=75, sex="m", mood="kind", sun=1.0),
+    "yonatan": dict(age=16, sex="m", mood="open", sun=0.9, face="oval", nose="straight", eyes="almond", lips="full"),
+    "yoram": dict(age=75, sex="m", mood="kind", sun=1.0, face="long", nose="broad", eyes="deep", lips="medium"),
     # Zerah: a basket-maker with a lame leg, turned away from every door.
-    "zerah": dict(age=66, sex="m", mood="weary-kind", sun=0.7),
+    "zerah": dict(age=66, sex="m", mood="weary-kind", sun=0.7, face="diamond", nose="convex", eyes="down", lips="thin"),
     # ── Chapter 4: A Letter from Paul ──────────────────────────────────────
     # Ammia: proud, hurt, slow to forgive her apprentice.
-    "ammia": dict(age=69, sex="f", mood="stern", sun=0.3),
+    "ammia": dict(age=69, sex="f", mood="stern", sun=0.3, face="long", nose="bridge", eyes="deep", lips="thin"),
     # Kallias the apprentice: ashamed, hungry, working off a debt.
-    "kallias.letter-from-paul": dict(age=22, sex="m", mood="ashamed", sun=0.45),
+    "kallias.letter-from-paul": dict(age=22, sex="m", mood="ashamed", sun=0.45, face="heart", nose="straight", eyes="down", lips="medium"),
     # Zenon: a scribe, freed at thirty, dry-humoured.
-    "zenon": dict(age=48, sex="m", mood="dry", sun=0.1, hair="straight", recede=7.0),
+    "zenon": dict(age=48, sex="m", mood="dry", sun=0.1, hair="straight", recede=7.0, face="long", nose="bridge", eyes="hooded", lips="thin"),
     # Attalos: "Twenty years on this road."
-    "attalos": dict(age=43, sex="m", mood="squint-smile", sun=1.0),
-    "tatia": dict(age=35, sex="f", mood="cheerful", sun=0.4),
-    "menandros": dict(age=51, sex="m", mood="salesman", sun=0.6, hair="crop", recede=6.0),
-    "nikon": dict(age=46, sex="m", mood="firm", sun=0.5, hair="crop", recede=3.0),
+    "attalos": dict(age=43, sex="m", mood="squint-smile", sun=1.0, face="square", nose="broad", eyes="deep", lips="medium"),
+    "tatia": dict(age=35, sex="f", mood="cheerful", sun=0.4, face="heart", nose="snub", eyes="round", lips="full"),
+    "menandros": dict(age=51, sex="m", mood="salesman", sun=0.6, hair="crop", recede=6.0, face="round", nose="bulbous", eyes="almond", lips="full"),
+    "nikon": dict(age=46, sex="m", mood="firm", sun=0.5, hair="crop", recede=3.0, face="square", nose="aquiline", eyes="deep", lips="thin"),
     # Chrysis: enslaved at the dye works; guarded, dignified.
-    "chrysis": dict(age=29, sex="f", mood="guarded", sun=0.6),
+    "chrysis": dict(age=29, sex="f", mood="guarded", sun=0.6, face="oval", nose="broad", eyes="almond", lips="full"),
+    # ── The player's looks (children of about ten, neither boy nor girl) ────
+    "player-look-1": dict(face="oval", nose="straight", eyes="almond", lips="medium"),
+    "player-look-2": dict(face="round", nose="snub", eyes="round", lips="full"),
+    "player-look-3": dict(face="heart", nose="straight", eyes="almond", lips="medium"),
+    "player-look-4": dict(face="long", nose="broad", eyes="round", lips="full"),
 }
 
 # A quiet expression for each part. Values are small: a portrait is a
@@ -281,7 +289,8 @@ def params_for(pid, appearance, player=False, chapter=""):
     p.sun = float(cast.get("sun", default_sun))
     p.oil = (0.35 + r.random() * 0.4 + 0.1 * mb - 0.2 * age_t) * (1 - 0.6 * child)
     p.redness = 0.25 + r.random() * 0.3 + 0.2 * p.sun
-    p.freckles = max(0.0, r.random() * 1.2 - 0.6) * (0.4 + p.sun) + 0.4 * age_t * p.sun
+    # Freckles, and for those who work outdoors the spots of a life in the sun.
+    p.freckles = max(0.0, r.random() * 1.2 - 0.6) * (0.4 + p.sun) + (0.25 + 0.6 * age_t) * max(0.0, p.sun - 0.4)
     n_moles = r.choices((0, 1, 2, 3), (3, 3, 2, 1))[0]
     moles = []
     for _ in range(n_moles):

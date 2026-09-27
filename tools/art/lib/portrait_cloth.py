@@ -169,12 +169,16 @@ class Clothes:
             hem = np.exp(-((opening(p) / 0.55) ** 2))
             return body(p) - 0.45 - folds(p) - creases(p) - 0.12 * hem
 
-        top = notch + 6.0 * s  # nothing of the tunic above the shoulders (under the jaw)
+        # Nothing of the tunic above the shoulders, and in front of the neck
+        # nothing above the neckline (it would wrap the underside of the jaw).
+        top = notch + 6.0 * s
+        front_y = head.neck_axis_y - head._neck_radius() * 1.1
 
         def cloth_f(p):
             d = outer_f(p)
             hem = np.exp(-((opening(p) / 0.55) ** 2))
-            return np.maximum(np.maximum(d, -d - (0.34 + 0.26 * hem)), p[:, 2] - top)
+            cap = np.where(p[:, 1] < front_y, p[:, 2] - (notch + 3.0 * s), p[:, 2] - top)
+            return np.maximum(np.maximum(d, -d - (0.34 + 0.26 * hem)), cap)
 
         cloth = S.Fn(cloth_f, ((-30, -16, -45), (30, 18, -5)))
         cut = S.Subtract(cloth, S.Fn(opening, ((-12, -12, front_z - slit_len - 3), (12, 12, 20))), 0.22)
@@ -241,14 +245,23 @@ class Clothes:
         cover = S.Union([env, curtain], 3.5)
         cover = S.Union([cover, S.Clip(drape, (-40, -40, low), (40, 40, 0))], 2.5)
         # Folds: long, deep ones falling from the head, finer creases between.
-        folds = drape_folds(P.seed + 3, amp=0.8, count=9, spread=(2.5, 9.0), top=7.0)
-        fine = drape_folds(P.seed + 4, amp=0.2, count=6, spread=(1.1, 2.4), top=9.0, sway=0.12)
+        # Folds: a few broad, deep ones falling from the head and opening
+        # out toward the shoulders (MakeHuman pass: many even folds read as
+        # a pleated lampshade), a few finer creases, and cloth bunched
+        # irregularly where it rests on the head.
+        folds = drape_folds(P.seed + 3, amp=1.0, count=5, spread=(5.0, 14.0), top=3.0, sway=0.1)
+        creases = drape_folds(P.seed + 4, amp=0.12, count=4, spread=(2.0, 4.5), top=5.0, sway=0.2)
+        bunch = undulation(P.seed + 6, amp=0.28, count=7, spread=(4.0, 9.0))
+
+        def fine(p):
+            return creases(p) + bunch(p)
+
         # The opening for the face, as an angle round the head, so the hem
         # follows the cloth: an arch over the brow, edges hanging in front of
         # the ears, and open down the front onto the chest.
         # (Third pass: each person's sits a little differently.)
         top_z = (9.1 + P.veil_back) * s if kind != "hood" else (8.6 + 0.5 * P.veil_back) * s
-        face = (57.0 if kind != "scarf" else 54.0) + P.veil_open
+        face = (60.0 if kind != "scarf" else 57.0) + P.veil_open
         zc = 1.0 * s
 
         def open_f(p):

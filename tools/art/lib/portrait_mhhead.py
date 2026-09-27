@@ -145,14 +145,22 @@ def _fit_sphere(v):
     return cen.astype(F), float(math.sqrt(c[3] + (cen**2).sum()))
 
 
+# The eye's radius against MakeHuman's socket sphere (an eye is about 12 mm
+# in radius; the socket sphere about 15).
+EYE_FIT = 0.84
+
+
 class MHHead:
     """One person's head, in one expression."""
 
     CROP_Z = -36.0  # the skin is kept above this (the chest)
 
-    def __init__(self, P, expression="neutral"):
+    def __init__(self, P, expression="neutral", head_turn=0.0):
+        """`head_turn` (degrees about the vertical, + to the person's left)
+        turns the head on the neck, the shoulders staying where they are."""
         self.P = P
         self.expression = expression
+        self.head_turn = head_turn
         b = mh.Base.get()
         self.base = b
         R = Regions.get()
@@ -169,6 +177,10 @@ class MHHead:
         self.V_rest = mh.to_portrait(rest, origin)
         self.V = mh.to_portrait(posed, origin)
         self._rest_mh = rest
+        # Everything is built facing forward; the turn is applied at the end
+        # to whatever was built (portrait_person.turn_head), so masks and
+        # clothes are made on a symmetric head.
+        self.twist = self._neck_twist(head_turn) if head_turn else None
         # The skin: MakeHuman's body, above the chest.
         faces = b.faces_of("body")
         Q = b.quads[faces]
@@ -216,14 +228,61 @@ class MHHead:
         self.body_z = 1.0 - 0.16 * P.child
         self._grids = {}
 
+    def _neck_twist(self, deg):
+        """A function turning points about the neck's axis: the whole head
+        above the jaw, nothing below the collarbones, easing between."""
+        b = self.base
+        body = self.V_rest[b.verts_of("body")]
+        R = self.R
+        chin = float(self.V_rest[R.menton, 2])
+        # The neck's axis, half-way down it (before turning).
+        zmid = chin - 4.0
+        band = body[(np.abs(body[:, 2] - zmid) < 0.6) & (np.abs(body[:, 0]) < 9)]
+        ay = float((band[:, 1].min() + band[:, 1].max()) / 2)
+        lo, hi = chin - 7.5, chin - 0.5
+        a = math.radians(deg)
+
+        def twist(V, inverse=False):
+            V = np.asarray(V, F).reshape(-1, 3)
+            t = np.clip((V[:, 2] - lo) / (hi - lo), 0, 1)
+            w = (t * t * (3 - 2 * t)) * (-a if inverse else a)
+            c, s = np.cos(w), np.sin(w)
+            x, y = V[:, 0], V[:, 1] - ay
+            out = V.copy()
+            out[:, 0] = c * x - s * y
+            out[:, 1] = s * x + c * y + ay
+            return out.astype(F)
+
+        twist.axis_y = ay
+        twist.angle = a
+        return twist
+
     # ── Eyes and lids ──────────────────────────────────────────────────────
     def eye_centre(self, sx, rest=False):
         return (self._eyes_rest if rest else self._eyes)[sx][0].copy()
 
     def _lids(self):
-        """The lid margins, from MakeHuman's lash helpers (a strip along each
-        lid, which the expression moves with the lid): the row nearest the
-        eyeball is the margin, ordered from the inner corner to the outer."""
+        """The lid margins (where each lid meets the eyeball), and the eyes
+        fitted to them. MakeHuman's socket sphere is larger than an eye and
+        sits above the opening between the lids: the eye is a smaller
+        sphere that touches both lids all along their margins (fitted on
+        the rest shape: an expression moves the lids, not the eyeball)."""
+        self._margin_rest = self._margins(self.V_rest, self._eyes_rest)
+        for sx in (1, -1):
+            c0, r0 = self._eyes_rest[sx]
+            pts = np.concatenate([self._margin_rest[(sx, True)][1], self._margin_rest[(sx, False)][1][1:-1]])
+            r = EYE_FIT * r0
+            c = c0.astype(np.float64)
+            for _ in range(30):
+                d = pts - c
+                L = np.linalg.norm(d, axis=1)
+                res = L - r
+                J = -d / L[:, None]
+                step = np.linalg.lstsq(J, -res, rcond=None)[0]
+                c = c + 0.7 * step
+            self._eyes_rest[sx] = (c.astype(F), r)
+            self._eyes[sx] = (c.astype(F), r)
+        self.eye_r = float(np.mean([self._eyes[1][1], self._eyes[-1][1]]))
         self._margin = self._margins(self.V, self._eyes)
         self._margin_rest = self._margins(self.V_rest, self._eyes_rest)
 

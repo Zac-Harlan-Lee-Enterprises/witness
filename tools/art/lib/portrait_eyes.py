@@ -69,6 +69,7 @@ class Eyes:
         self.P = params
         self.col = col
         self.objects = []
+        self.pupils = {}  # side -> (centre m, pupil direction), for the gaze check
         # The eyeball fills MakeHuman's eye socket (its helper sphere), a
         # little inside it so the lids rest on the wet surface; the iris is
         # sized to the opening between the lids, as a person's is.
@@ -84,15 +85,18 @@ class Eyes:
             cornea = _cornea_mesh(f"cornea{sx}", R, iris_r, cornea_r, col, wet)
             # Shadows pass through the clear cornea, so the iris is lit.
             cornea.visible_shadow = False
-            # Aim the pupil at the camera (the eyes converge on it). The
-            # socket's sphere sits a little above the opening between the
-            # lids, so "straight ahead" is turned to look through the
-            # opening, with the upper lid just over the top of the iris.
+            # Aim the pupil at the camera. "Straight ahead" is where the
+            # pupil sits in the middle of the opening between the lids (a
+            # little high, so the upper lid just covers the top of the iris,
+            # and a touch toward the nose), whatever the socket's shape; the
+            # eye then turns from there by the camera's angle from the
+            # head's forward direction. So both pupils sit in their openings
+            # as a person's do when they look at you.
             d = (Vector(look_at) - c).normalized()
-            rest = Vector(self._opening(sx).tolist()) * CM - c
-            q0 = Vector((0.0, -1.0, 0.0)).rotation_difference(rest.normalized())
-            d = q0 @ d
+            rest = (Vector(self._opening(sx).tolist()) * CM - c).normalized()
+            d = Vector((0.0, -1.0, 0.0)).rotation_difference(rest) @ d
             q = (-d).to_track_quat("Y", "Z")
+            self.pupils[sx] = (c.copy(), d.normalized(), R * CM)
             for o in (ball, cornea):
                 o.matrix_world = Matrix.Translation(c) @ q.to_matrix().to_4x4()
                 self.objects.append(o)
@@ -103,8 +107,9 @@ class Eyes:
         the opening between the lids, a little high, and a little toward
         the nose."""
         head = self.head
-        up = head.lid_point(sx, -0.1, upper=True)
-        lo = head.lid_point(sx, -0.1, upper=False)
+        u = -0.06
+        up = head.lid_point(sx, u, upper=True, rest=True)
+        lo = head.lid_point(sx, u, upper=False, rest=True)
         return lo + (up - lo) * 0.56
 
     def _tear_lines(self):

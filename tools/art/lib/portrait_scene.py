@@ -55,7 +55,7 @@ class Studio:
         scene.cycles_curves.subdivisions = 2
         scene.view_settings.view_transform = "AgX"
         scene.view_settings.look = "AgX - Medium High Contrast"
-        scene.view_settings.exposure = 0.2
+        scene.view_settings.exposure = -0.1
         # Camera: 85 mm on full frame, far enough back to frame head and shoulders.
         cam_data = bpy.data.cameras.new("PortraitCam")
         cam_data.lens = 85.0

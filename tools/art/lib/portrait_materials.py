@@ -96,16 +96,16 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         blotch = n.noise(26.0, 4.0, 0.6, obj)
         mottle = n.noise(110.0, 3.0, 0.6, obj)
         grain = n.noise(420.0, 3.0, 0.6, obj)
-        col = _scale(n, (alb, "Color"), _range(n, (blotch, "Fac"), 0.3, 0.7, 0.93, 1.06))
-        col = _scale(n, col, _range(n, (mottle, "Fac"), 0.3, 0.7, 0.955, 1.035))
+        col = _scale(n, (alb, "Color"), _range(n, (blotch, "Fac"), 0.3, 0.7, 0.9, 1.08))
+        col = _scale(n, col, _range(n, (mottle, "Fac"), 0.3, 0.7, 0.94, 1.05))
         col = _scale(n, col, _range(n, (grain, "Fac"), 0.3, 0.7, 0.97, 1.03))
         # Hue, not only brightness: patches a little redder, others a little
         # more olive, at a centimetre or two.
         rb = n.noise(48.0, 3.0, 0.55, obj)
-        redder = _range(n, (rb, "Fac"), 0.4, 0.7, 0.0, 0.4)
+        redder = _range(n, (rb, "Fac"), 0.4, 0.7, 0.0, 0.5)
         cred = n.mix(redder, col, (0.95, 0.66, 0.62, 1.0), "MULTIPLY")
         ob = n.noise(17.0, 2.0, 0.5, obj)
-        olive = _range(n, (ob, "Fac"), 0.45, 0.7, 0.0, 0.3)
+        olive = _range(n, (ob, "Fac"), 0.42, 0.7, 0.0, 0.4)
         col = (n.mix(olive, (cred, 2), (0.9, 0.93, 0.8, 1.0), "MULTIPLY"), 2)
         # Freckles and age spots: round marks of different sizes and depths,
         # only where the freckle map allows.
@@ -151,7 +151,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         for part in (h_net, h_wav, h_un, h_st, h_sc):
             h = n.math("ADD", (h, "Value"), (part, "Value"))
         # About a tenth of a millimetre per unit.
-        disp = n.math("MULTIPLY", (h, "Value"), 0.0001 * detail * (1 - 0.4 * child))
+        disp = n.math("MULTIPLY", (h, "Value"), 0.00014 * detail * (1 - 0.4 * child))
         # Lip lines: narrow grooves across the red, irregularly spaced, deeper with age.
         lw = n.new("ShaderNodeTexWave", Scale=400.0, Distortion=6.0, Detail=3.0, Vector=obj, _wave_type="BANDS", _bands_direction="X")
         inv = n.math("SUBTRACT", 1.0, (lw, "Fac"))
@@ -186,7 +186,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         uz = n.math("MULTIPLY", (sep, "Z"), 2 * math.pi / 0.0032)
         uz = n.math("ADD", (uz, "Value"), (n.math("MULTIPLY", wobble, 1.5), "Value"))
         g_u = _groove(n, (uz, "Value"), 6)
-        for g, amap, depth in ((g_f, "wf", 0.00026), (g_g, "wg", 0.00022), (g_c, "wc", 0.0002), (g_u, "wu", 0.00008)):
+        for g, amap, depth in ((g_f, "wf", 0.00034), (g_g, "wg", 0.0003), (g_c, "wc", 0.00026), (g_u, "wu", 0.0001)):
             a = _attr(n, amap)
             dd = n.math("MULTIPLY", (g, "Value"), (a, "Fac"))
             dd = n.math("MULTIPLY", (dd, "Value"), -depth * (1 - 0.8 * child))
@@ -243,24 +243,28 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
 
 
 def teeth(age=0.0, child=0.0):
-    """Enamel: off-white, a little translucent at the edges, wet."""
+    """Enamel: ivory, never white; each tooth a shade different, more yellow
+    with age; a little translucent; wet."""
 
     def build():
         n = Nodes(f"teeth-{age:.2f}")
         obj = n.coords("Object")
-        base = _lin("#e2d6bf" if age < 0.4 else "#cdbb97")
-        nz = n.noise(900.0, 3.0, 0.5, obj)
-        col = n.mix(_range(n, (nz, "Fac"), 0.3, 0.7, 0.0, 0.25), base, tuple(c * 0.85 for c in base[:3]) + (1.0,))
+        base = _lin("#d6c6a1" if age < 0.35 else ("#c9b58a" if age < 0.7 else "#b9a276"))
+        # Tooth to tooth (about a centimetre) and within a tooth.
+        per = n.noise(95.0, 1.0, 0.5, obj)
+        fine = n.noise(900.0, 3.0, 0.5, obj)
+        c1 = n.mix(_range(n, (per, "Fac"), 0.3, 0.7, 0.0, 0.6), base, tuple(c * 0.8 for c in base[:3]) + (1.0,))
+        c2 = n.mix(_range(n, (fine, "Fac"), 0.3, 0.7, 0.0, 0.2), (c1, 2), (base[0] * 0.9, base[1] * 0.85, base[2] * 0.7, 1.0))
         n.bsdf(
             **{
-                "Base Color": (col, 2),
-                "Roughness": 0.22,
-                "Subsurface Weight": 0.35,
-                "Subsurface Radius": (1.0, 0.85, 0.6),
+                "Base Color": (c2, 2),
+                "Roughness": 0.3,
+                "Subsurface Weight": 0.4,
+                "Subsurface Radius": (1.0, 0.8, 0.5),
                 "Subsurface Scale": 0.0008,
-                "Specular IOR Level": 0.5,
-                "Coat Weight": 0.5,
-                "Coat Roughness": 0.08,
+                "Specular IOR Level": 0.45,
+                "Coat Weight": 0.35,
+                "Coat Roughness": 0.12,
             }
         )
         return n.mat

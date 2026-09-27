@@ -137,7 +137,8 @@ def build(head, P, col, mats):
         for side in (-1, 1):
             pos = 0.0
             for k, (kind, w, h, th) in enumerate(table):
-                w, h, th = w * scale * fit, h * scale, th * scale
+                # No two teeth quite alike: a little wider or narrower, longer or shorter.
+                w, h, th = w * scale * fit * rng.uniform(0.94, 1.06), h * scale * rng.uniform(0.93, 1.05), th * scale
                 centre_s = mid + side * (pos + w / 2)
                 pos += w + 0.02
                 if centre_s < 0 or centre_s > total:
@@ -169,9 +170,9 @@ def build(head, P, col, mats):
                 if np.dot(y_ax, outward) < 0:
                     y_ax = -y_ax
                 M = np.stack([x_ax, y_ax, zdir], 1)
-                base_pt = np.array([p[0], p[1], edge_z], F) - zdir * h + outward * 0.05
+                base_pt = np.array([p[0], p[1], edge_z], F) - zdir * (h + rng.uniform(-0.05, 0.04)) + outward * (0.05 + rng.uniform(-0.03, 0.03))
                 # A little irregularity: each tooth turned and set a fraction differently.
-                rot = Matrix.Rotation(rng.uniform(-0.06, 0.06), 3, "Z")
+                rot = Matrix.Rotation(rng.uniform(-0.1, 0.1), 3, "Z") @ Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, "X")
                 Vt = (np.array([rot @ Vector(v) for v in verts.tolist()], F) @ M.T) + base_pt
                 bv = [bm.verts.new(v.tolist()) for v in Vt]
                 for q in quads:

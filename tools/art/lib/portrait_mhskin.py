@@ -271,7 +271,7 @@ def maps(head, V, base_idx, cav, skin_hex, beard=False):
     # Subsurface scattering saturates colour; start a little greyer so the
     # rendered skin lands on the appearance's colour.
     lum = (alb * np.array([0.2126, 0.7152, 0.0722], F)).sum(1, keepdims=True)
-    grey = 0.32 + 0.12 * dk
+    grey = 0.14 + 0.1 * dk
     alb = alb * (1 - grey) + lum * grey
 
     # Finish: oily T-zone, drier cheeks; lips a little smoother; the inside of the mouth wet.
@@ -288,11 +288,11 @@ def maps(head, V, base_idx, cav, skin_hex, beard=False):
     # Wrinkles: how deep each family may be at rest (age, sun, a life of
     # squinting); expressions deepen them (portrait_person adds the strain).
     lined = (1 - 0.95 * c) * (1 - lips) * (1 - mouth)
-    wf = forehead * (0.15 + 0.9 * age + 0.3 * sun) * lined
+    wf = forehead * (0.04 + 0.9 * age + 0.3 * max(0.0, sun - 0.3)) * lined * (0.7 if P.sex == "f" else 1.0)
     crow = sum(_g(V, head.lid_point(sx, 1.0, rest=True) + np.array([sx * 1.2, 0.6, -0.1], F), (1.1, 1.4, 1.1)) for sx in (-1, 1))
     wc = crow * (0.1 + 1.0 * age + 0.5 * sun) * lined
     gl = _g(V, (0, L["glabella"][1], L["glabella"][2] - 0.3), (0.9, 1.2, 1.0))
-    wg = gl * (0.1 + 0.7 * age) * lined
+    wg = gl * (0.03 + 0.7 * age) * lined * (0.6 if P.sex == "f" else 1.0)
     wu = under * (0.1 + 0.9 * age + 0.2 * sun) * lined
     return {
         "albedo": alb.astype(F),

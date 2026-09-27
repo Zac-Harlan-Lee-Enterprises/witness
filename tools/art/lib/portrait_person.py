@@ -36,7 +36,8 @@ import portrait_scene
 import portrait_sdf as S
 import portrait_teeth
 
-TURN_DEG = -22.0  # the camera stands this far round to the person's right: they face screen right
+TURN_DEG = -24.0  # the camera stands this far round to the person's right: they face screen right
+HEAD_FOLLOW = 0.5  # how much of the way to the camera the head turns on the neck
 FRAME_CM = 28.0  # height of the picture at the face
 MANTLE = ("#6e6452", "#4c4436")  # undyed wool with darker stripes, as the world's elders wear
 # How much each wrinkle family deepens where the expression bunches the skin.
@@ -103,7 +104,10 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
     P = portrait_params.params_for(pid, appearance, player=player, chapter=chapter)
     log(portrait_params.describe(P), "expression", expression)
     a = appearance
-    head = portrait_mhhead.MHHead(P, expression)
+    # The head turns part of the way toward the camera on the neck (the
+    # shoulders stay three-quarter on), so the eyes need not strain toward it.
+    sitting = TURN_DEG + P.pose_turn if (aim is None and elev is None and turn == TURN_DEG) else turn
+    head = portrait_mhhead.MHHead(P, expression, head_turn=HEAD_FOLLOW * sitting)
     V, Vr, Q, uv, used = head.skin_mesh()
     log("head", len(V), "vertices", f"{time.time() - t0:.1f}s")
 
@@ -204,7 +208,12 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
         elev_cm += P.pose_elev
         roll = P.pose_roll
     cam = camera_position(turn_deg=turn, frame_cm=frame, centre=centre, elev_cm=elev_cm)
-    portrait_eyes.Eyes(head, P, col, gaze_target(head, portrait_face.gaze(expression, P), cam))
+    # Everything so far faces forward; the head turns on the neck at the end
+    # (turn_head). The eyes aim at where the camera is from the unturned head.
+    seen_from = cam
+    if head.twist is not None:
+        seen_from = Vector(head.twist(np.array(cam * 100.0, np.float32), inverse=True)[0].tolist()) * 0.01
+    eyes_obj = portrait_eyes.Eyes(head, P, col, gaze_target(head, portrait_face.gaze(expression, P), seen_from))
     focus = Vector(head.eye_centre(-1 if turn < 0 else 1).tolist()) * 0.01 if aim is None else Vector(aim) * 0.01
     studio = portrait_scene.Studio(scene, focus=focus, turn_deg=turn, frame_cm=frame, centre=centre, size=size, samples=samples, elev_cm=elev_cm, roll_deg=roll)
     if clay:
@@ -220,8 +229,245 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
         "eyes": ((eyes[0][0] + eyes[1][0]) / 2, (eyes[0][1] + eyes[1][1]) / 2),
         "mouth": px(head.stomion.tolist()),
         "studio": studio,
+        "skin": obj,
+        "head": head,
+        "px": px,
+        "gaze": gaze_check(head, eyes_obj, seen_from),
     }
+    if head.twist is not None:
+        turn_head(head.twist, col)
     return scene, P, marks
+
+
+def _is_identity(M, eps=1e-6):
+    return all(abs(M[i][j] - (1.0 if i == j else 0.0)) < eps for i in range(4) for j in range(4))
+
+
+def turn_head(twist, col):
+    """Turn the head on the neck: every object built (skin, eyes, teeth,
+    hair, clothes) is moved by the twist, which turns the head rigidly above
+    the jaw, leaves the shoulders, and eases between."""
+    for o in col.objects:
+        M = o.matrix_world.copy()
+        Mi = M.inverted()
+        if o.type == "MESH" and not _is_identity(M):
+            # Placed objects (the eyes): moved whole, as the twist moves
+            # their centre, so the patterns drawn in their own frame (the
+            # iris) move with them.
+            p0 = np.array(M.translation, np.float32) * 100.0
+            p1 = twist(p0)[0]
+            a = math.atan2(p1[1] - twist.axis_y, p1[0]) - math.atan2(p0[1] - twist.axis_y, p0[0])
+            pivot = Vector((0.0, twist.axis_y * 0.01, 0.0))
+            o.matrix_world = Matrix.Translation(pivot) @ Matrix.Rotation(a, 4, "Z") @ Matrix.Translation(-pivot) @ M
+            continue
+        if o.type == "MESH":
+            me = o.data
+            n = len(me.vertices)
+            co = np.empty(n * 3, np.float32)
+            me.vertices.foreach_get("co", co)
+            co = co.reshape(n, 3)
+            world = (np.asarray(M, np.float32)[:3, :3] @ co.T).T + np.asarray(M.translation, np.float32)
+            moved = twist(world * 100.0) * 0.01
+            # How far each vertex turned, to turn its normal with it.
+            ang = np.arctan2(moved[:, 1] - twist.axis_y * 0.01, moved[:, 0]) - np.arctan2(world[:, 1] - twist.axis_y * 0.01, world[:, 0])
+            local = (np.asarray(Mi, np.float32)[:3, :3] @ moved.T).T + np.asarray(Mi.translation, np.float32)
+            me.vertices.foreach_set("co", local.astype(np.float32).ravel())
+            if me.has_custom_normals:
+                nrm = np.empty(n * 3, np.float32)
+                me.vertices.foreach_get("normal", nrm)
+                nrm = nrm.reshape(n, 3)
+                c, s = np.cos(ang), np.sin(ang)
+                nx = c * nrm[:, 0] - s * nrm[:, 1]
+                ny = s * nrm[:, 0] + c * nrm[:, 1]
+                me.normals_split_custom_set_from_vertices(np.stack([nx, ny, nrm[:, 2]], 1))
+            me.update()
+        elif o.type == "CURVES":
+            cv = o.data
+            n = len(cv.position_data)
+            co = np.empty(n * 3, np.float32)
+            cv.position_data.foreach_get("vector", co)
+            moved = twist(co.reshape(n, 3) * 100.0) * 0.01
+            cv.position_data.foreach_set("vector", moved.astype(np.float32).ravel())
+            cv.update_tag()
+
+
+def gaze_check(head, eyes, cam):
+    """Where each eye looks and where its pupil sits: `yaw` is how far
+    (degrees) each eye's line of sight passes beside the camera, left or
+    right (both near 0: the eyes converge on it); `across` is where the
+    pupil is from the inner corner (0) to the outer (1); `height` how far down
+    the opening between the lids the pupil is (0 at the upper lid, 1 at
+    the lower: about a half means neither lid hides the iris)."""
+    out = {"yaw": [], "across": [], "height": []}
+    for sx in (-1, 1):
+        c, d, R = eyes.pupils[sx]
+        to_cam = (cam - c).normalized()
+        a = math.degrees(math.atan2(d.x, -d.y) - math.atan2(to_cam.x, -to_cam.y))
+        out["yaw"].append(round(float(a), 2))
+        pupil = np.array((c + d * R) * 100.0, np.float32)
+        inner = head.lid_point(sx, -1.0)
+        outer = head.lid_point(sx, 1.0)
+        # Across the eye as the lid points are measured (the head faces
+        # forward here: the check runs before it turns).
+        t = float((sx * pupil[0] - sx * inner[0]) / max(sx * outer[0] - sx * inner[0], 1e-6))
+        out["across"].append(round(float(t), 3))
+        u = max(-1.0, min(1.0, 2 * t - 1))
+        up = head.lid_point(sx, u, upper=True)[2]
+        lo = head.lid_point(sx, u, upper=False)[2]
+        out["height"].append(round(float((up - pupil[2]) / max(up - lo, 1e-6)), 3))
+    return out
+
+
+def _srgb_to_lin(c):
+    c = np.asarray(c, np.float64)
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def _lab(rgb):
+    """CIE L*a*b* (D65) of an sRGB colour (0-1)."""
+    r, g, b = _srgb_to_lin(rgb)
+    X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+    Y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+
+    def f(t):
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+
+    return (116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z)))
+
+
+def delta_e(a, b):
+    la, lb = _lab(a), _lab(b)
+    return float(math.sqrt(sum((x - y) ** 2 for x, y in zip(la, lb))))
+
+
+def hex_rgb01(h):
+    h = h.lstrip("#")
+    return [int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4)]
+
+
+def rgb01_hex(c):
+    return "#" + "".join(f"{int(round(max(0, min(1, v)) * 255)):02x}" for v in c)
+
+
+def _quick(scene, path, size, samples, transparent=False, holdout=()):
+    """A small render to a PNG, the scene's settings left as they were."""
+    import imageio
+
+    r = scene.render
+    saved = (r.resolution_x, r.resolution_y, scene.cycles.samples, r.film_transparent, r.image_settings.color_mode)
+    held = [(o, o.is_holdout) for o in holdout]
+    try:
+        r.resolution_x = r.resolution_y = size
+        scene.cycles.samples = samples
+        r.film_transparent = transparent
+        for o, _ in held:
+            o.is_holdout = True
+        r.image_settings.file_format = "PNG"
+        r.image_settings.color_mode = "RGBA" if transparent else "RGB"
+        r.filepath = path
+        bpy.ops.render.render(write_still=True)
+        return imageio.load(path)
+    finally:
+        r.resolution_x, r.resolution_y, scene.cycles.samples, r.film_transparent, r.image_settings.color_mode = saved
+        for o, v in held:
+            o.is_holdout = v
+
+
+def skin_tone(px):
+    """The colour a person's skin reads as in a picture: the mean of its
+    middle and lit tones (between the 40th and 80th percentiles of
+    brightness), as one would pick it from a photograph; not the shadow
+    side, not the highlights."""
+    lum = px @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    lo, hi = np.percentile(lum, 40), np.percentile(lum, 80)
+    m = (lum >= lo) & (lum <= hi)
+    return [float(v) for v in px[m].mean(0)]
+
+
+def face_region(marks, size, full):
+    """A box on the face (from the brows to below the mouth, between the
+    cheeks), in pixels of a `size` picture; `full` is the render's size."""
+    k = size / full
+    ex, ey = marks["eyes"]
+    mx, my = marks["mouth"]
+    span = max(my - ey, 1.0)
+    x0, x1 = (min(ex, mx) - 0.95 * span) * k, (max(ex, mx) + 0.95 * span) * k
+    y0, y1 = (ey - 0.55 * span) * k, (my + 0.35 * span) * k
+    return int(max(0, x0)), int(max(0, y0)), int(min(size, x1)), int(min(size, y1))
+
+
+def measure_skin(scene, marks, tmp, full, size=192, samples=24, mask=None):
+    """The median colour (sRGB 0-1) of the face's visible skin in a quick
+    render, and the mask of visible skin used (reused between passes)."""
+    skin = marks["skin"]
+    if mask is None:
+        others = [o for o in scene.objects if o.type in ("MESH", "CURVES") and o is not skin]
+        m = _quick(scene, os.path.join(tmp, "mask.png"), size, 6, transparent=True, holdout=others)
+        mask = m[:, :, 3] > 0.97
+    img = _quick(scene, os.path.join(tmp, "colour.png"), size, samples)
+    x0, y0, x1, y1 = face_region(marks, size, full)
+    sel = np.zeros_like(mask)
+    sel[y0:y1, x0:x1] = True
+    sel &= mask
+    if sel.sum() < 20:
+        return None, mask
+    return skin_tone(img[sel][:, :3]), mask
+
+
+def calibrate_skin(scene, marks, target_hex, tmp, full, gain=None, rounds=2):
+    """Match the rendered skin to the person's colour in the game: measure
+    the face in a quick render and scale the skin's colour (in linear
+    light) until its median lands on `target_hex`. A known `gain` (the
+    neutral portrait's) is applied as it is, so every expression of a
+    person has the same skin. Returns (gain, measured sRGB)."""
+    skin = marks["skin"]
+    attr = skin.data.attributes["albedo"]
+    n = len(attr.data)
+    base = np.empty(n * 4, np.float32)
+    attr.data.foreach_get("color", base)
+    base = base.reshape(n, 4)
+
+    def apply(g):
+        a = base.copy()
+        a[:, :3] = np.clip(a[:, :3] * np.asarray(g, np.float32), 0, 1)
+        attr.data.foreach_set("color", a.ravel())
+        skin.data.update()
+
+    target = hex_rgb01(target_hex)
+    others = [o for o in scene.objects if o.type in ("MESH", "CURVES") and o is not skin]
+    mask = _quick(scene, os.path.join(tmp, "mask.png"), 192, 6, transparent=True, holdout=others)[:, :, 3] > 0.97
+    if gain is not None:
+        apply(gain)
+        return list(gain), None, mask
+    g = np.ones(3)
+    measured = None
+    for _ in range(rounds):
+        apply(g)
+        measured, mask = measure_skin(scene, marks, tmp, full, mask=mask)
+        if measured is None:
+            break
+        log("skin measured", rgb01_hex(measured), "target", target_hex, "gain", [round(float(v), 3) for v in g])
+        ratio = _srgb_to_lin(target) / np.maximum(_srgb_to_lin(measured), 1e-4)
+        g = np.clip(g * ratio**1.1, 0.45, 1.8)
+    apply(g)
+    return [round(float(v), 4) for v in g], measured, mask
+
+
+def face_colour(img, marks, mask, full):
+    """The median colour (sRGB 0-1) of the visible face skin in a picture
+    (reduced to the mask's size)."""
+    import portrait_finish
+
+    size = mask.shape[0]
+    small = portrait_finish.resize(img, size, sharpen=0.0)
+    x0, y0, x1, y1 = face_region(marks, size, full)
+    sel = np.zeros_like(mask)
+    sel[y0:y1, x0:x1] = True
+    sel &= mask
+    if sel.sum() < 20:
+        return None
+    return skin_tone(small[sel][:, :3])
 
 
 def render(scene, path, retries=3, wait=45.0):
