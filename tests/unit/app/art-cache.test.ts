@@ -73,5 +73,7 @@ describe('offline caching of pre-rendered art', () => {
     const files = Object.values(manifest).reduce((n, e) => n + (e.expressions?.length ?? 0) * 3, 0);
     expect(files).toBeGreaterThan(0);
     expect(files).toBeLessThan(ART_RUNTIME_CACHE_ENTRIES / 3);
-  });
+    // workbox-build is a heavy import: well under a second on an idle machine,
+    // 16 s while Blender renders alongside (it timed out at the default 5 s).
+  }, 60_000);
 });
