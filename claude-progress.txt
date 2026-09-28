@@ -399,3 +399,28 @@ NEXT   : Known gaps, none requested: phones' low ground a little soft (docs/perf
          walking in the world are the older figures (only conversation portraits rebuilt); ~13 old agent worktrees
          under .claude/worktrees can be removed (`git worktree remove`).
 BLOCKED: none.
+
+--- 2026-09-27  Claude Opus 5.5 (teaser agent) — the teaser film before Chapter 1 (feat/chapter-teaser) ---
+DONE   : A 57 s teaser film (8 shots, 24 fps, 1920x1080) rendered with EEVEE by tools/art/build_teaser.py and cut and
+         encoded with Blender's FFmpeg by tools/art/edit_teaser.py (node scripts/art-build.mjs teaser / teaser-edit):
+         the wilderness by stream-power erosion (teaser_land.py), Jerusalem and the market (teaser_city.py,
+         teaser_market.py, the game's limestone, people and loads), Aunt Miriam's table (teaser_room.py), the scene
+         below the bend from the game's own map (teaser_incident.py), walkers with planted feet (teaser_people.py),
+         a numpy grade per shot. In the game: domain TeaserSchema (film, poster, cues, score sections), the chapter's
+         `teaser`, TeaserPlayer (muted film, text cues in a polite live region, Skip by button/Esc/Enter/Space,
+         pause/play, reduced motion and failed/offline films show the poster and words stepped by Next, discreet
+         review label), App plays it before a profile's first new game and from "Watch the teaser" in chapter
+         select, profile.seenTeasers (markTeaserSeen); a score composed for the synth (film-score.ts,
+         AudioPort.playFilmScore/stopFilmScore); service worker: films network-only (TEASER_FILM), poster precached.
+         Content: rec-teaser (fiction, in-review) outside the 2026-09-26 approval; words checked against the chapter
+         and source-verification claims 1 and 21. The owner's approval of the script was relayed by the coordinator;
+         an agent may not record approvals, so recording it is left to the coordinator/owner (approvals.ts + the
+         approval log in docs/content-governance.md).
+TESTS  : Vitest 648 -> 685 (domain teaser schema/timing/profile, content teaser, score, art cache, UI player and chapter
+         select). e2e on 4485/5485: teaser.spec 6 passed; chapter, smoke, a11y, pwa, mobile 20 passed.
+         typecheck, lint, prettier, knip, content:validate clean.
+NEXT   : Record the owner's approval of rec-teaser (a person, not an agent): an entry in src/content/shared/approvals.ts
+         covering rec-teaser only (ideally holding the exact approved text) and a row in the approval log; then a
+         test that rec-teaser is approved by that entry. For more realism: re-render with `node scripts/art-build.mjs
+         teaser --shots <n>` after improving the city's houses (teaser_city.py) and the market's walls.
+BLOCKED: none (the approval is for a person to record).

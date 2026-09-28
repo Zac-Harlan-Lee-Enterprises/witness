@@ -367,5 +367,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "chapter-1-teaser",
+    "category": "functional",
+    "description": "A teaser film plays before a profile's first new game of Chapter 1 (and again from chapter select): a silent 3D film with the words as real text cued to its time, a synthesised score cued to it, Skip always available (button, Escape, Enter, Space), pause and play; under reduced motion or when the film can't load, the poster with the words stepped by Next; never replayed on its own once watched or skipped (profile.seenTeasers); the film is never cached by the service worker.",
+    "verification": "npx --no-install vitest run tests/unit/domain/teaser.test.ts tests/content/teaser.test.ts tests/ui/teaser.test.tsx tests/unit/infrastructure/film-score.test.ts tests/unit/app/art-cache.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]

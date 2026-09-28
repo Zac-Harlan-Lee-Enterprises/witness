@@ -9,6 +9,7 @@ import { ClueSchema, JournalEntrySchema } from './journal';
 import { PuzzleSchema } from './puzzles';
 import { QuestSchema } from './quests';
 import { FlagValueSchema } from './state/game-state';
+import { TeaserSchema } from './teaser';
 import { PlayerLookSchema, SceneSchema } from './world';
 
 /**
@@ -103,6 +104,8 @@ export const ChapterSchema = z.object({
   themes: z.array(ThemeSchema),
   scriptureConnection: ScriptureConnectionSchema,
   summary: SummaryConfigSchema,
+  /** A short film played before the chapter the first time a profile starts it. */
+  teaser: TeaserSchema.optional(),
 });
 export type Chapter = z.infer<typeof ChapterSchema>;
 export type ChapterInput = z.input<typeof ChapterSchema>;
@@ -115,4 +118,6 @@ export interface ChapterMeta {
   subtitle: string;
   available: boolean;
   estimatedMinutes: { min: number; max: number } | null;
+  /** The chapter has a teaser film (chapter select offers to watch it). */
+  hasTeaser?: boolean;
 }

@@ -1,5 +1,6 @@
 import type { AmbienceId, AudioPort, FootstepSurface, MusicId, SfxId } from '@/application/ports';
 import type { GameSettings } from '@/domain/settings';
+import type { FilmSection } from '@/domain/teaser';
 import type { Logger } from '@/shared/logger';
 import {
   AMBIENCE,
@@ -12,6 +13,7 @@ import {
   type MusicStyle,
   type Tone,
 } from './soundscape';
+import { composeScore, scoreFrom, type Score } from './film-score';
 
 /**
  * Original, procedurally generated audio (WebAudio), driven by the sound
@@ -56,6 +58,11 @@ export class SynthAudio implements AudioPort {
   private currentMusic: MusicId = 'none';
   private nextNoteTime = 0;
   private phrase = { index: 0, step: 0 };
+  private film: {
+    bus: GainNode;
+    timer: ReturnType<typeof setInterval>;
+    nodes: OscillatorNode[];
+  } | null = null;
 
   constructor(
     private readonly logger: Logger,
@@ -193,7 +200,75 @@ export class SynthAudio implements AudioPort {
     this.musicTimer = setInterval(() => this.scheduleNotes(style, out), 120);
   }
 
+  playFilmScore(sections: readonly FilmSection[], duration: number, from: number): void {
+    this.stopFilmScore();
+    this.setMusic('none');
+    const ctx = this.ctx;
+    const out = this.channels.get('music');
+    if (!ctx || !out || ctx.state !== 'running') return;
+    const score: Score = scoreFrom(composeScore(sections, duration), from);
+    // Film time t plays at context time start + (t - from).
+    const start = ctx.currentTime + 0.05;
+    const bus = ctx.createGain();
+    bus.gain.value = 1;
+    bus.connect(out);
+    const nodes: OscillatorNode[] = [];
+    for (const pad of score.pads) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = pad.freq;
+      const t0 = start + (pad.time - from);
+      const t1 = t0 + pad.dur;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(pad.gain, t0 + Math.min(1.5, pad.dur / 3));
+      g.gain.setValueAtTime(pad.gain, Math.max(t0 + 0.01, t1 - Math.min(1.5, pad.dur / 3)));
+      g.gain.exponentialRampToValueAtTime(0.0001, t1);
+      osc.connect(g).connect(bus);
+      osc.start(t0);
+      osc.stop(t1 + 0.05);
+      nodes.push(osc);
+    }
+    // Notes a little ahead of time, so a long score doesn't create every
+    // node at once.
+    let next = 0;
+    const schedule = (): void => {
+      const now = ctx.currentTime;
+      while (next < score.notes.length) {
+        const n = score.notes[next];
+        if (!n) break;
+        const when = start + (n.time - from);
+        if (when > now + 0.6) break;
+        this.play(n, when, bus);
+        next++;
+      }
+    };
+    schedule();
+    const timer = setInterval(schedule, 200);
+    this.film = { bus, timer, nodes };
+  }
+
+  stopFilmScore(): void {
+    const film = this.film;
+    if (!film) return;
+    this.film = null;
+    clearInterval(film.timer);
+    const ctx = this.ctx;
+    if (ctx) {
+      film.bus.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      setTimeout(() => film.bus.disconnect(), 400);
+    } else film.bus.disconnect();
+    for (const o of film.nodes) {
+      try {
+        o.stop();
+      } catch {
+        // already stopped
+      }
+    }
+  }
+
   dispose(): void {
+    this.stopFilmScore();
     this.stopAmbience();
     this.stopMusic();
     void this.ctx?.close().catch(() => undefined);
@@ -403,5 +478,7 @@ export class SilentAudio implements AudioPort {
   setAmbience(): void {}
   setMusic(): void {}
   applySettings(): void {}
+  playFilmScore(): void {}
+  stopFilmScore(): void {}
   dispose(): void {}
 }

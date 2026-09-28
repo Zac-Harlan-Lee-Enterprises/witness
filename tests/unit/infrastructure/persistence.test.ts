@@ -44,6 +44,7 @@ describe('IndexedDB repositories', () => {
       createdAt: new Date(0).toISOString(),
       lastPlayedAt: null,
       completedChapters: [],
+      seenTeasers: [],
     });
     await new IndexedDbSettingsRepository(db1).save({ ...DEFAULT_SETTINGS, highContrast: true });
     db1.close();

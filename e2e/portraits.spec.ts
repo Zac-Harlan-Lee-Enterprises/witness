@@ -17,7 +17,10 @@ test('rendered portraits load in the look picker, chapter select and conversatio
   page.on('response', (r) => {
     if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
   });
-  page.on('requestfailed', (r) => failed.push(`failed ${r.url()}`));
+  // Skipping the teaser cancels its film's download: that isn't a failure.
+  page.on('requestfailed', (r) => {
+    if (!r.url().includes('/art/teaser/')) failed.push(`failed ${r.url()}`);
+  });
   await openApp(page);
   await page.getByRole('button', { name: 'Play' }).click();
   const looks = page.getByRole('group', { name: 'Choose your look' }).locator('img.portrait');

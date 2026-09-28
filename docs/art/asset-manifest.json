@@ -561,6 +561,14 @@
       "tools": [],
       "license": "Project licence (the list); the files it names are CC0 1.0",
       "rebuild": "npm run art:fetch-makehuman"
+    },
+    {
+      "path": "public/art/teaser/chapter-1/*",
+      "what": "The teaser film that plays before Chapter 1: teaser.mp4 (H.264), teaser.webm (VP9), both without sound, and poster.webp (a still for before it plays, under reduced motion and offline). 57 s at 24 fps: Jerusalem at sunrise, Aunt Miriam's table, the market, the road down into the wilderness, the ridge path above the gorge, the broken jar below the bend, a man lying in the shade of a rock, the gorge under the title.",
+      "origin": "Rendered offline with Blender 5.2 (EEVEE) by tools/art/build_teaser.py and cut and encoded with Blender's own FFmpeg by tools/art/edit_teaser.py. Everything in it is procedural and made by code in this repository: the land (tools/art/lib/teaser_land.py: a height field shaped by stream-power erosion), the city, market, room and the scene below the bend (teaser_city.py, teaser_market.py, teaser_room.py, teaser_incident.py), and the game's own people (people.py), stones and materials (rocks.py, materials.py). No downloaded images, textures, footage, models or music; no image- or video-generation models. The words are not in the film: the game shows them as text, and its music is synthesised in the browser.",
+      "tools": ["Blender 5.2 (EEVEE, FFmpeg)"],
+      "license": "Project licence (original work)",
+      "rebuild": "node scripts/art-build.mjs teaser (then teaser-edit); about 5 hours on an M3 Pro"
     }
   ],
   "thirdPartySources": [

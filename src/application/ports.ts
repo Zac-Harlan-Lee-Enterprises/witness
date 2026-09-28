@@ -7,6 +7,7 @@ import type { GuideAnswer } from '@/domain/guide-policy';
 import type { Direction } from '@/domain/state/game-state';
 import type { Entity, Exit, LookMark, Scene, TileGrid, Weather } from '@/domain/world';
 import type { Appearance } from '@/domain/characters';
+import type { FilmSection } from '@/domain/teaser';
 
 /**
  * Ports: the interfaces the application layer depends on. Infrastructure and
@@ -180,6 +181,13 @@ export interface AudioPort {
   setAmbience(id: AmbienceId): void;
   setMusic(id: MusicId): void;
   applySettings(settings: GameSettings): void;
+  /**
+   * Play a film's score (a teaser's cue sheet) from `from` seconds, in place
+   * of any music; it follows the music volume and mute like all music.
+   */
+  playFilmScore(sections: readonly FilmSection[], duration: number, from: number): void;
+  /** Stop a film's score (paused, skipped or ended). */
+  stopFilmScore(): void;
   dispose(): void;
 }
 

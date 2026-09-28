@@ -21,6 +21,7 @@ const REGISTRY: RegistryEntry[] = [
       subtitle: 'A journey down from Jerusalem',
       available: true,
       estimatedMinutes: { min: 20, max: 30 },
+      hasTeaser: true,
     },
     load: () => import('./chapters/road-to-jericho').then((m) => m.ROAD_TO_JERICHO),
   },

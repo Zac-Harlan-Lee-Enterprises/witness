@@ -1,4 +1,5 @@
 import { APPROVALS } from '@/content/shared/approvals';
+import { TEASER_RECORD_ID } from '@/content/chapters/road-to-jericho/teaser';
 import { describe, expect, it } from 'vitest';
 import { chapterSource, parseChapter } from '@/content';
 import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
@@ -85,7 +86,9 @@ describe('Road to Jericho content', () => {
     expect(report.awaitingReview).toBe(0);
     expect(report.approved).toBe(report.educational);
     const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
-    for (const r of chapter.records) {
+    // The teaser's words came later and need their own approval
+    // (tests/content/teaser.test.ts): that approval doesn't cover them.
+    for (const r of chapter.records.filter((x) => x.id !== TEASER_RECORD_ID)) {
       expect(r.governance.status, r.id).toBe('approved');
       expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
       expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');

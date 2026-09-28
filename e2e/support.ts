@@ -101,13 +101,29 @@ export async function snap(page: Page, name: string): Promise<void> {
 /**
  * Start a new game of one chapter from chapter select. Each chapter card is
  * labelled by its title, so tests stay unambiguous as chapters are added.
+ * A first new game of a chapter with a teaser opens with the film: it is
+ * skipped here unless `{ teaser: 'keep' }` (e2e/teaser.spec.ts watches it).
  */
 export async function newGame(
   page: Page,
   title: string | RegExp = 'The Road to Jericho',
+  options: { teaser?: 'skip' | 'keep' } = {},
 ): Promise<void> {
   await page
     .getByRole('listitem', { name: title })
     .getByRole('button', { name: 'New game' })
     .click();
+  if (options.teaser !== 'keep') await skipTeaser(page);
+}
+
+/** Skip the teaser film if it opened (it only does before a first new game). */
+export async function skipTeaser(page: Page): Promise<void> {
+  const teaser = page.getByRole('dialog', { name: /teaser/i });
+  const shown = await teaser
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!shown) return;
+  await teaser.getByRole('button', { name: 'Skip' }).click();
+  await expect(teaser).toHaveCount(0);
 }

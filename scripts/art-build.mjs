@@ -14,6 +14,8 @@
  *   npm run art:portraits -- --who miriam player:look-1 --expression neutral   # just some
  *   npm run art:portraits -- --missing --jobs 3     # only what is missing or out of date
  *   node scripts/art-build.mjs probe <scene-id> x0 y0 x1 y1 [ppu]   # a quick beauty render for review
+ *   node scripts/art-build.mjs teaser [--shots 6] [--quality preview]   # the teaser film before Chapter 1
+ *   node scripts/art-build.mjs teaser-edit          # cut and encode it from frames already rendered
  *
  * Extra arguments after the job are passed to the Blender script
  * (for example --variants day, --samples 32, --only menashe~sit, --who miriam).
@@ -227,6 +229,25 @@ const jobs = {
       '48',
       '--scenes',
       ...PLACES,
+      ...rest,
+    ],
+  ],
+  // The teaser film before Chapter 1: every shot's frames (skipping frames
+  // already rendered; `--quality preview` for a quick animatic, `--shots 6`
+  // for some), then the edit and encode into public/art/teaser/chapter-1.
+  // About 5 hours at final quality on an M3 Pro.
+  teaser: () => [
+    ['tools/art/build_teaser.py', '--quality', 'final', ...rest],
+    ['tools/art/edit_teaser.py', '--quality', 'final', '--out', 'public/art/teaser/chapter-1'],
+  ],
+  // Only the edit and encode, from frames already rendered.
+  'teaser-edit': () => [
+    [
+      'tools/art/edit_teaser.py',
+      '--quality',
+      'final',
+      '--out',
+      'public/art/teaser/chapter-1',
       ...rest,
     ],
   ],

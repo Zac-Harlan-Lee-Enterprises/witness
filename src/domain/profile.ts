@@ -15,6 +15,8 @@ export const PlayerProfileSchema = z.object({
   createdAt: z.string().datetime(),
   lastPlayedAt: z.string().datetime().nullable(),
   completedChapters: z.array(z.string()),
+  /** Chapters whose teaser this profile has seen (played through or skipped). */
+  seenTeasers: z.array(z.string()).default([]),
 });
 export type PlayerProfile = z.infer<typeof PlayerProfileSchema>;
 
