@@ -18,6 +18,7 @@ import { attachKeyboard } from '@/infrastructure/input/keyboard-source';
 import { ErrorBoundary } from './ErrorBoundary';
 import { GameRuntime } from './game-runtime';
 import type { AppServices } from './services';
+import { updatesAtOnce } from './update-policy';
 
 type Screen =
   | { name: 'title' }
@@ -60,6 +61,14 @@ export function App({ services }: { services: AppServices }) {
   useEffect(() => {
     applySettingsToDocument(settings);
   }, [settings, systemReducedMotion]);
+
+  // A waiting new version is swapped in at once outside a chapter (in one, the
+  // pause menu offers it): see update-policy.ts.
+  const updateWaiting = useStore(services.notices).updateAvailable;
+  useEffect(() => {
+    if (updateWaiting && services.applyUpdate && updatesAtOnce(screen.name))
+      void services.applyUpdate();
+  }, [updateWaiting, screen.name, services]);
 
   // The gamepad drives menus and dialogue whenever the world isn't taking movement.
   const screenRef = useRef(screen);
