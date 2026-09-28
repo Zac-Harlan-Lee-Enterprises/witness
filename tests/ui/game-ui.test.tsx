@@ -54,6 +54,38 @@ describe('Dialogue overlay', () => {
     );
   });
 
+  it('moves between choices with the up and down arrows (wrapping) and picks one with Space', async () => {
+    const user = userEvent.setup();
+    const { runtime } = await makeRuntime();
+    const { container } = await renderWithServices(
+      <DialogueOverlay runtime={runtime} />,
+      await instantText(),
+    );
+    for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(container.querySelectorAll('.choice').length).toBeGreaterThan(1));
+    const choices = [...container.querySelectorAll<HTMLButtonElement>('.choice')];
+    expect(choices.length).toBeGreaterThan(1);
+    const [first, second] = choices;
+    const last = choices[choices.length - 1];
+    expect(first).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(second).toHaveFocus();
+    await user.keyboard('{ArrowUp}');
+    expect(first).toHaveFocus();
+    await user.keyboard('{ArrowUp}');
+    expect(last).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(first).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(second).toHaveFocus();
+    await user.keyboard(' ');
+    await waitFor(() =>
+      expect(
+        screen.getByText(/That’s my brave one/, { selector: '#dialogue-text-full' }),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it('announces every line through one lasting live region; number keys work only from inside the conversation', async () => {
     const user = userEvent.setup();
     const { runtime } = await makeRuntime();

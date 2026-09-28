@@ -142,8 +142,20 @@ function DialogueBox({
     // Number keys pick a choice — only while focus is inside the conversation,
     // so they never fire from elsewhere on the page (WCAG 2.1.4).
     const onKey = (event: KeyboardEvent) => {
-      if (!/^Digit[1-9]$/.test(event.code) || !done) return;
       if (!(event.target instanceof Node) || !box.current?.contains(event.target)) return;
+      // Up and down move between the choices (wrapping); Space or Enter picks
+      // the one with focus, as any button does.
+      if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && done) {
+        const buttons = [...box.current.querySelectorAll<HTMLButtonElement>('.choice')];
+        if (buttons.length === 0) return;
+        event.preventDefault();
+        const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        const next = at < 0 ? 0 : (at + step + buttons.length) % buttons.length;
+        buttons[next]?.focus();
+        return;
+      }
+      if (!/^Digit[1-9]$/.test(event.code) || !done) return;
       const choice = view.choices[Number(event.code.slice(5)) - 1];
       if (choice?.available) runtime.dialogue.choose(choice.id);
     };
