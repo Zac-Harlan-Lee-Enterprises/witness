@@ -23,7 +23,7 @@ const CSP = [
   "connect-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",
-  "media-src 'none'",
+  "media-src 'self'", // the chapter teaser film
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

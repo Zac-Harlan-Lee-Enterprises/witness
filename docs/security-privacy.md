@@ -154,7 +154,7 @@ font-src 'self';
 connect-src 'self';
 worker-src 'self';
 manifest-src 'self';
-media-src 'none';
+media-src 'self';
 object-src 'none';
 base-uri 'self';
 form-action 'self';
