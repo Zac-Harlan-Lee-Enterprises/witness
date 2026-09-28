@@ -542,8 +542,8 @@ def shot7(ctx, scene):
         R.aim(cam, eye, tgt, lens)
         u = R.ease(f / 143.0)
         # Focus follows the drag marks and stops short of him: he stays soft.
-        d = (1 - u) * (t0 - eye).length + u * 0.5 * (at - eye).length
-        R.focus(cam, d, 1.6)
+        d = (1 - u) * (t0 - eye).length + u * 0.8 * (at - eye).length
+        R.focus(cam, d, 2.8)
         TP.lying(fig, at, away, breath=0.5 + 0.5 * math.sin(t * 1.6))
 
     return Shot(animate)
