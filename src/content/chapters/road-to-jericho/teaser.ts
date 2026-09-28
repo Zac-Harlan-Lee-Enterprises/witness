@@ -21,8 +21,10 @@ import { withTeaserApproval } from '../../shared/approvals';
  * Jericho about 258 m below sea level; rec-hist-descent). "A long day's
  * walk" is the chapter's own hedged wording (claim 21; Aunt Miriam's line).
  *
- * The words await the owner's review: the blanket approval of the chapters
- * (2026-09-26) does not cover them (TEASER_APPROVALS in shared/approvals.ts).
+ * The owner approved these exact words on 2026-09-27 (TEASER_APPROVALS in
+ * shared/approvals.ts); the blanket approval of the chapters (2026-09-26) does
+ * not cover them. Changing a word needs his approval again: the approved
+ * script is pinned in tests/content/teaser.test.ts.
  */
 const CUES: TeaserInput['cues'] = [
   { at: 0.8, until: 6.6, text: 'Jerusalem. Before the heat of the day.' },

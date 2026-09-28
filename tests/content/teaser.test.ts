@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { parseChapter } from '@/content';
 import { ROAD_TO_JERICHO } from '@/content/chapters/road-to-jericho';
 import { TEASER_RECORD_ID } from '@/content/chapters/road-to-jericho/teaser';
-import { APPROVALS } from '@/content/shared/approvals';
+import { APPROVALS, TEASER_APPROVALS } from '@/content/shared/approvals';
 
 const PUBLIC = join(__dirname, '../../public');
 const chapter = parseChapter(ROAD_TO_JERICHO);
@@ -25,6 +25,35 @@ describe('the Chapter 1 teaser', () => {
     const status = record?.governance.status;
     if (status === 'approved') expect(record?.governance.reviewedAt).not.toBe(APPROVALS[0]?.date);
     else expect(['in-review', 'ai-draft', 'human-draft']).toContain(status);
+  });
+
+  it('is approved by the owner, on its own, for exactly the words he approved', () => {
+    // Zac Harlan, 2026-09-27: "script is approved". Changing any of these words
+    // needs his approval again (update TEASER_APPROVALS and this list together).
+    expect(TEASER_APPROVALS).toEqual([
+      expect.objectContaining({
+        reviewer: 'Zac Harlan',
+        date: '2026-09-27',
+        chapters: ['road-to-jericho'],
+      }),
+    ]);
+    expect(record?.governance.status).toBe('approved');
+    expect(record?.governance.reviewer).toBe('Zac Harlan');
+    expect(record?.governance.reviewedAt).toBe('2026-09-27');
+    expect((teaser?.cues ?? []).map((c) => c.text)).toEqual([
+      'Jerusalem. Before the heat of the day.',
+      'In Jericho, a boy named Natan has a fever that won’t go away.',
+      'Aunt Miriam has made a remedy. Now it’s in your hands.',
+      'In the market, everyone has advice.',
+      'Not all of it is good.',
+      'Then the road down to Jericho:',
+      'a long day’s walk, falling some 1,000 meters through the wilderness.',
+      'Travelers say robbers watch this road when it’s empty.',
+      'Below the bend, something has happened.',
+      'What you do next is up to you.',
+      'Witness',
+      'Chapter 1: The Road to Jericho',
+    ]);
   });
 
   it('keeps to the story: Natan, Miriam, the remedy, the market, the bend', () => {

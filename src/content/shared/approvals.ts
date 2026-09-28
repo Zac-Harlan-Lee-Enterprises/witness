@@ -31,7 +31,14 @@ export const APPROVALS: readonly Approval[] = [
  * them: a teaser's record stays in review until a named person approves it
  * here (and in the approval log). Only a named person adds an entry.
  */
-export const TEASER_APPROVALS: readonly Approval[] = [];
+export const TEASER_APPROVALS: readonly Approval[] = [
+  {
+    reviewer: 'Zac Harlan',
+    date: '2026-09-27',
+    chapters: ['road-to-jericho'],
+    note: 'The owner approved the Chapter 1 teaser script ("script is approved"): exactly the words pinned in tests/content/teaser.test.ts. A change to them needs his approval again.',
+  },
+];
 
 type Records = ChapterInput['records'];
 type ContentRecordInput = Records[number];
