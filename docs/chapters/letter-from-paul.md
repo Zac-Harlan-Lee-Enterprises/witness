@@ -37,8 +37,8 @@ We chose **Philemon together with Colossians 4:7–9**.
 |---|---|---|---|---|
 | **1. The news** | Ammia's workshop | Travellers from Paul are at Philemon's house, and the assembly gathers tonight. A rain-soaked letter from Kallias has arrived. | `read` starts | — |
 | **2. The letter** | Street, Zenon's table → workshop | Put the letter back in order (letter form, the sender's own hand). Read it aloud to Ammia: every word, softened, or with a plea of your own. Write down her answer. | `read` | `p-sheets` (sequence), `choice-reading` |
-| **3. Preparing** | Street → workshop | Learn the weather from Tatia, Attalos or Mount Cadmus. Optionally help Attalos with an unaddressed letter. Pack the bag (load 4). | `road` | `p-whose` (deduction, side quest), `p-pack` (packing) |
-| **4. The road** | The Laodicea road | Milestones, fields, the river. Rain sweeps down the valley. At the dye works by the bridge, read Ammia's letter to Kallias. Optionally set the alum bath so he keeps his wage. | `kallias` | `p-alum` (measuring, optional) |
+| **3. Preparing** | Street → workshop | Learn the weather from Tatia, Attalos or Mount Cadmus. Optionally help Attalos with an unaddressed letter. Find the way on Ammia's sketch, then pack the bag (load 4, a plain choice in conversation). | `road` | `p-whose` (deduction, side quest), `p-pack` (map reading) |
+| **4. The road** | The Laodicea road | Milestones, fields, the river. Rain sweeps down the valley. At the dye works by the bridge, read Ammia's letter to Kallias. Optionally match the buyer's shade so he keeps his wage. | `kallias` | `p-alum` (colour mixing, optional) |
 | **5. The decision** | The dye works | Answer his worry about the debt, then decide: bring him home now, write down and carry his answer, or leave the next step to him. | `kallias` → `home` | `choice-debt`, `choice-kallias` |
 | **6. The gathering** | Philemon's house, at lamp-lighting | The consequences show on the people around you. The letters are read aloud as labelled paraphrase, then the Scripture Connection. | `gathering` | — |
 | **7. Reflection and summary** | Panels | Private reflection, then the summary. | complete | — |
@@ -49,14 +49,14 @@ We chose **Philemon together with Colossians 4:7–9**.
 flowchart LR
   W["Ammia's dye workshop<br/>ammia-workshop 22×12 · indoor · home"] -- "workshop-door<br/>needs q-letters active" --> S["A street in Colossae<br/>colossae-street 38×22 · outdoor · city"]
   S -- "to-workshop" --> W
-  S -- "west-gate<br/>needs p-pack · +1 h" --> R["The Laodicea road<br/>lycus-road 46×28 · outdoor · oasis · rain"]
+  S -- "west-gate<br/>needs p-pack and packed · +1 h" --> R["The Laodicea road<br/>lycus-road 46×28 · outdoor · oasis · rain"]
   R -- "to-colossae · +2 h" --> S
   R -. "come-now: dialogue walks you home (+3 h, or +2 h by mule)" .-> S
   S -- "to-philemon<br/>needs back-in-town · hour set to 18" --> H["Philemon's house<br/>philemon-house 26×18 · indoor · home"]
   H -- "to-street (after the ending)" --> S
 ```
 
-- **Ammia's workshop** (`ammia-workshop`): plastered room, rows of dye vats in madder red, woad blue and purple, drying wool, amphorae, a loom, a rug. Includes the travel bag (packing), the spoiled batch Ammia kept, and baskets of madder root.
+- **Ammia's workshop** (`ammia-workshop`): plastered room, rows of dye vats in madder red, woad blue and purple, drying wool, amphorae, a loom, a rug. Includes the travel bag (packing, in conversation: `d-bag`), the spoiled batch Ammia kept, and baskets of madder root.
 - **A street in Colossae** (`colossae-street`): a composite. Terracotta roofs, a stoa (colonnade) with shop doorways, and Zenon's writing table under it. Also a potter's stall, a fountain, Tatia's fullery yard (vats, white clay, drying cloth), Philemon's gate, the west gate, and Mount Cadmus's foothills to the south.
 - **The Laodicea road** (`lycus-road`): a kerbed Roman highway with two milestones (IIII, V), fields and fig trees. North of it are the river Lycus with reeds and a stone bridge, and far across the valley the white travertine of Hierapolis. There is also a dye works (shed, vats, amphorae, drying skeins) and a waystation with a yard and trough. The weather is clear, then rain (`rain-began`).
 - **Philemon's house** (`philemon-house`): a reconstruction. It has a peristyle garden ringed by columns, with a fountain; a triclinium with couches in a U on a mosaic floor; bronze lampstands (they light the room); a guest room with mats laid out (Phm 22); and storerooms.
@@ -100,8 +100,8 @@ Every interactive thing and exit is reachable from every spawn (`npm run content
 
 **Main: *Carried by Hand*** (`q-letters`). The stages are:
 1. `read`: put the letter in order (`p-sheets`) and read it aloud (`choice-reading`).
-2. `road`: optionally learn the weather; pack (`p-pack`); leave by the west gate.
-3. `kallias`: find him; read him the letter (`read-to-kallias`); optionally set the alum bath (`p-alum`); decide (`choice-kallias`).
+2. `road`: optionally learn the weather; ask Ammia the way (`p-pack`); pack the bag (`packed`); leave by the west gate.
+3. `kallias`: find him; read him the letter (`read-to-kallias`); optionally match the buyer's shade (`p-alum`); decide (`choice-kallias`).
 4. `home`: return (`back-in-town`).
 5. `gathering`: arrive, and finish the Scripture Connection (`seen:scripture-connection`).
 
@@ -119,8 +119,9 @@ The outcomes are **Home together** (`come-now`), **An answer carried home** (`ca
 | Puzzle | Type | Rules | Evidence and fairness |
 |---|---|---|---|
 | `p-sheets` *Kallias's Letter* | sequence | Order five sheets: greeting → good wishes → confession → request → farewell "in my own hand". Then a conclusion: what is he asking, and where is he? | Zenon explains letter form (optional). The last sheet is in a different, clumsier hand. The conclusion admits that the milestone number washed away. |
-| `p-pack` *Ready for the Road* | packing | Load ≤ 4. **If you know rain is coming** (`clue-rain-coming`), bring the case or the hooded cloak. | Knowledge adds a responsibility. Without it you can pack anything, and the letter blurs in the rain (a visible, harmless consequence). A test checks that every item a rule asks for is offered by the packing screen. |
-| `p-alum` *The Alum Bath* | measuring | Make exactly 6 in a 9-jar using a 4-jar. | The solution saves a leftover 1. The measures are invented; the record on madder and alum says so. |
+| `p-pack` *The Way to the Bridge* | map reading (Chapter 4's own type) | Ammia's sketch of the valley, north at the top. Her written directions: out of the west gate, count four milestones, take the first turning on the **left** (south, since you are walking west) to the river, turn **right** (west) past the waystation to the dye works by the stone bridge — this side of the river. The walk buttons (or the arrow keys) walk to the next landmark or junction; where you are, which way you face and where the road goes are always written out. | Kallias's letter lost the milestone number, and there is more than one dye works by a bridge. Each likely mistake (turning after the third milestone, turning right onto the hill, left at the river, crossing the bridge, walking on to Laodicea) ends at a named wrong place with its own feedback (content test). The road, milestones and dye works are invented, as `rec-rec-road` says. |
+| The travel bag (`d-bag`) | a choice, not a puzzle | One thing at a time into a bag that holds 4 (Kallias's old cloak 2, hooded cloak 2, bread 1, tablets 1, letter case 1); things that don't fit are shown with the reason. **If you know rain is coming** (`clue-rain-coming`), the bag can't be tied without the case or the hooded cloak (shown, with the reason). | The things for the road wait beside the bag (they no longer start in the satchel). Tying the bag records `choice-packing` with the same classification as before and sets `packed`. |
+| `p-alum` *The Buyer's Shade* | colour mixing (Chapter 4's own type) | Match mulberry (red 3, blue 2) in four dips: the madder vat adds 2 red, the blue vat 2 blue, the rinsing trough takes 1 of each out (never below none). Madder → rinse → madder → blue. | The insight is rinsing while there is no blue yet. Every shade is named as well as shown and given as numbers, so nothing depends on seeing colour. Integrity checks that the target needs exactly the dips allowed. The shades and dips are invented; the record on madder and alum says so. |
 | `p-whose` *Whose Letter?* | deduction | Tatia, Zenon or Menandros. Needs 2 reliable clues; the potter's guess is unreliable. | The clues are white clay dust, the torn words "the cloaks you cleaned", a cloth merchant sender, and Zenon's denial. |
 
 Every puzzle has three hint tiers, and only the last explains the answer.
@@ -143,7 +144,7 @@ Every puzzle has three hint tiers, and only the last explains the answer.
 | Brought him home | Kallias stands beside Ammia, and she turns toward him; his place at the vat is empty |
 | Carried his answer | Your tablets lie beside Ammia; Kallias is still at the dye works |
 | Left it to him | Ammia keeps looking toward the door |
-| Set the alum bath | The measuring jars stand filled |
+| Matched the buyer's shade | The test skein hangs matched by the vats |
 | Helped Attalos | Attalos and his mule wait out the rain at the waystation |
 | Walked into the rain | Rain on the road and in the town (`data-weather`), clearing when you get home |
 
@@ -208,7 +209,7 @@ Every path arrives before lamp-lighting (at most hour 17). The HUD shows sunset 
   - biblical figures silent and non-interactive, Paul and Jesus absent;
   - no scoring language, and slavery never made a transaction or puzzle;
   - disputed questions open with sensitivity notes, fiction and reconstruction labelled, nothing self-approved;
-  - sources retrieved and used, a real choice at the dye works, and packing rules only asking for packable items;
+  - sources retrieved and used, a real choice at the dye works, and the travel bag's rules only asking for things you can pack;
   - art support: every tile kind, sprite and carry the chapter uses is painted, colonnade beams, and lampstand lights.
 - [`tests/integration/letter-from-paul-playthrough.test.ts`](../../tests/integration/letter-from-paul-playthrough.test.ts) runs five headless playthroughs:
   - *home together* (side quest, alum, coins, cloak, mule);

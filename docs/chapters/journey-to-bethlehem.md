@@ -34,8 +34,8 @@ The house, its guests and the stranger are the player's own fiction. The house i
 
 | Act | Where | What happens | Puzzle / choice |
 |---|---|---|---|
-| **1. A full house** | Tamar's house | Tamar explains the registration, a little hedged ("*They say* everyone must be written down in their own family's town"). She asks for bread and a ready guest room. | `p-bread` (measuring) |
-| **2. Making room** | Tamar's house | The guest room holds 6. Both beds (2 + 2) must go in. The loom, the barley and Asa's tools (2 each) compete for the last space. The barley may only leave the room if the player has noticed the dry corner on the roof (the ladder). | `p-room` (packing) → `choice-room` |
+| **1. A full house** | Tamar's house | Tamar explains the registration, a little hedged ("*They say* everyone must be written down in their own family's town"). She asks for bread, places set for supper, and a ready guest room. | `p-bread` (logic grid) |
+| **2. Making room** | Tamar's house | The guest room floor is a grid, five squares by three, around the water jar, the roof post and the way to the door. Both beds must go in; the loom, the barley and Asa's tools compete for the room left, and only one of them ever fits. The barley may only leave the room if the player has noticed the dry corner on the roof (the ladder). | `p-room` (floor plan) → `choice-room` |
 | **3. The crowded village** | The lanes | Saba Amram helps the clerk and tells the well story (labelled paraphrase). Uncle Asa has waited in line since midday. Hagit offers her roof "to a tired soul". Clean straw lies on the threshing floor. | Optional side quest `q-queue`: `p-register` (sequence) |
 | **4. The fold at dusk** | The fields | Yonatan counts the flock through the gate and one lamb is missing. The player can search or go home before dark. Searching means reading signs; one sighting (Uncle Asa's "lamb" with horns) is questionable. | `p-lamb` (deduction) → `choice-lamb` |
 | **5. A knock at the door** | Tamar's house, night | Zerah, an old basket-maker from Tekoa, has found every door full. The five options depend on earlier choices: a space left in the guest room, straw from the threshing floor, Hagit's offer. Unavailable options stay visible, with the reason. | `choice-stranger` |
@@ -61,7 +61,7 @@ A fictional village house built the way many scholars reconstruct one (record `r
 | Spawns | `start` (13,6); `from-lanes` (5,9) |
 | Tamar (npc) | `d-tamar`: bread → room → hands over supper, cloak and lamp → night |
 | Kneading trough and flour jar | Opens `p-bread`; becomes fresh bread once solved |
-| Ladder to the roof | Examine: sets `roof-store-known` (changes the packing rule) |
+| Ladder to the roof | Examine: sets `roof-store-known` (changes the guest room rule) |
 | Guests' things to arrange | Gives the five room items and opens `p-room` |
 | Loom, barley jars, tool bag | In the guest room or moved down to the animals, depending on `choice-room` |
 | Spare mat | Visible only if the player left a space (`made-space`) |
@@ -155,8 +155,8 @@ Everyone is fictional (`fictional: true, biblicalFigure: false`), and the conten
 
 | Puzzle | Type | Solution | Evidence in the chapter |
 |---|---|---|---|
-| `p-bread`: Three Measures of Flour | measuring | Trough 5 and basket 4 → 3 in the trough: fill basket, pour, fill basket, pour until full (basket keeps 3), empty trough, pour | Genesis 18:6 by paraphrase; the record says the seah's size is uncertain |
-| `p-room`: Room in the Guest Room | packing | Both beds plus one of barley / loom / tools, or nothing. Leaving the barley out requires knowing about the roof. | Classifies `choice-room`: `kept-grain`, `kept-loom`, `kept-tools`, `made-space` |
+| `p-bread`: Places for Supper | logic grid (Chapter 3's own type) | Four people, four places along the mat, four clues. Peninah can't be in the two places nearest the fire; Tamar is at an end beside her, so Tamar is by the door and Peninah third; Saba Amram is nearer the fire than Asa: Amram nearest the fire, Asa second. Exactly one answer, and every clue is needed (content test). Press a square to rule it out (✗), again to choose it (✓); choosing rules out the rest of that row and column. | Tamar's Abraham saying stays (Genesis 18:6 by paraphrase); the explanation uses only the hospitality record, and says the supper is made up |
+| `p-room`: Room in the Guest Room | floor plan (Chapter 3's own type) | Pieces: Asa's bedding (a row of 3), Peninah and Dodi's (a 2×2 square), the barley jars (an L of 3), the loom (a row of 3), the tools (2). Both beds plus one of barley / loom / tools fit, never two; the barley's L fits only one way, round the roof post. Leaving the barley out requires knowing about the roof. Choose a piece, turn it (R), press the square for its first cell; the floor previews where it would land and says why it won't fit. | Classifies `choice-room`: `kept-grain`, `kept-loom`, `kept-tools`, `made-space` |
 | `p-register`: Uncle Asa's Declaration | sequence + conclusion | declarant → town → members with ages → property → oath. Conclusion: to know who lives where and what they own, for taxes. | The clerk's model tablet. The order is modelled on Egyptian returns and labelled as a reconstruction. |
 | `p-lamb`: Where Did the Lamb Go? | deduction | The gully, with 2 reliable signs. Presenting Asa's sighting fails the attempt. | Solvable from the fold signs alone |
 
