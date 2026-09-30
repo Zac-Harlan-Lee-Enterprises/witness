@@ -136,4 +136,21 @@ export const CHOICES: ChoiceDefinition[] = [
       },
     ],
   },
+  {
+    id: 'choice-net',
+    prompt: 'On the still water, did you set the net on the way home?',
+    themes: ['stewardship'],
+    options: [
+      {
+        id: 'set',
+        label: 'You set the trammel net',
+        consequence: 'You came home an hour later, with a catch in the bottom of the boat.',
+      },
+      {
+        id: 'home',
+        label: 'You went straight home',
+        consequence: 'You were home an hour sooner, with the net still dry.',
+      },
+    ],
+  },
 ];

@@ -62,7 +62,7 @@ References are stored separately from displayed text ([ADR-0008](adr/0008-script
 | Date | Approver | What |
 |---|---|---|
 | 2026-09-26 | Zac Harlan (owner, editor) | Display of the stored World English Bible text (`approvedForDisplay: true`) |
-| 2026-09-26 | Zac Harlan (owner, editor) | The AI-drafted content of all four chapters. Recorded in [src/content/shared/approvals.ts](../src/content/shared/approvals.ts), which marks each record `approved` with its reviewer and date. Provenance stays `ai-assisted`. It covers only records drafted and last changed on or before 2026-09-26: anything written or revised later stays in review until a named person approves it (`coveredBy`). |
+| 2026-09-26 | Zac Harlan (owner, editor) | The AI-drafted content of all four chapters. Recorded in [src/content/shared/approvals.ts](../src/content/shared/approvals.ts), which marks each record `approved` with its reviewer and date. Provenance stays `ai-assisted`. An approval covers only records drafted, and last changed, on or before its date (every entry of the record's history; `coveredBy`): the records added to all four chapters on 2026-09-30 when the chapters were lengthened are **not** covered, and stay awaiting review until a named person approves them. |
 | 2026-09-27 | Zac Harlan (owner, editor) | The Chapter 1 teaser script (`rec-teaser`, exactly the words pinned in `tests/content/teaser.test.ts`). Recorded in `TEASER_APPROVALS` in [src/content/shared/approvals.ts](../src/content/shared/approvals.ts). A change to the words needs a new approval. |
 
 ## 4. Historical and biblical research rules

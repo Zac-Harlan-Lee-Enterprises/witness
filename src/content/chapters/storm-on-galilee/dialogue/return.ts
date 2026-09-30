@@ -20,19 +20,38 @@ export const RETURN_DIALOGUES: DialogueInput[] = [
       say('h2', 'narrator', 'Grandmother Shelomit is standing there, holding it up.', {
         next: 'h3',
       }),
-      say('h3', 'narrator', 'Talk to Grandmother Shelomit.', { kind: 'instruction' }),
+      say(
+        'h3',
+        'narrator',
+        'Talk to Grandmother Shelomit, and tell Nikanor what became of his jars.',
+        {
+          kind: 'instruction',
+        },
+      ),
     ],
   },
   {
     id: 'd-shelomit-night',
     characterId: 'shelomit',
-    entries: [{ when: flag('heard-home'), node: 'again' }],
-    start: 'w1',
+    entries: [
+      { when: flag('heard-home'), node: 'again' },
+      { when: flag('told-nikanor'), node: 'w1' },
+      { when: flag('greeted-home'), node: 'first3' },
+    ],
+    start: 'first',
     nodes: [
-      say('w1', 'shelomit', '{player}! Oh, let me look at you. Let me look at all of you.', {
+      say('first', 'shelomit', '{player}! Oh, let me look at you. Let me look at all of you.', {
         expression: 'glad',
-        next: 'w2',
+        effects: [{ type: 'setFlag', flag: 'greeted-home', value: true }],
+        next: 'first2',
       }),
+      say(
+        'first2',
+        'shelomit',
+        'Nikanor has been pacing the beach half the night, fretting about his jars. Go and tell him you’re all safe. Then come back and tell me everything.',
+      ),
+      say('first3', 'shelomit', 'Nikanor first, {player}. Put the poor man out of his misery.'),
+      say('w1', 'shelomit', 'Now. Tell me everything.', { next: 'w2' }),
       say(
         'w2',
         'shelomit',

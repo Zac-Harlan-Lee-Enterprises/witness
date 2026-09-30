@@ -3,10 +3,13 @@ import type { ChapterInput } from '@/domain/chapter';
 /**
  * Editorial approvals by named humans (mirrored in the approval log in
  * docs/content-governance.md). An approval covers every record of the
- * chapters it names that is still awaiting review and was drafted (and last
- * changed) on or before its date: each becomes `approved`,
- * naming its reviewer and date. Provenance is unchanged (the content stays
- * recorded as AI-assisted). Rejected records stay rejected.
+ * chapters it names that is still awaiting review AND was drafted, and last
+ * changed, on or before the approval's date (every entry in the record's
+ * history): each becomes `approved`, naming its reviewer and date. A record
+ * drafted or revised later (new content added to an approved chapter) is not
+ * covered: it stays awaiting review until a named person approves it.
+ * Provenance is unchanged (the content stays recorded as AI-assisted).
+ * Rejected records stay rejected.
  *
  * Only a named person adds an entry here; an agent never approves content.
  */
@@ -61,6 +64,11 @@ export function withTeaserApproval(
       reviewedAt: approval.date,
     },
   };
+}
+
+/** When a record was first drafted: the date of its first history entry. */
+export function draftedOn(record: ContentRecordInput): string {
+  return record.governance.history[0]?.date ?? '';
 }
 
 /**

@@ -385,5 +385,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "longer-chapters-1-2",
+    "category": "functional",
+    "description": "Chapters 1 and 2 play 20–30 minutes for a first-time player. Chapter 1 adds Rivka's linen (packed with the remedy; a strip can bind Menashe), Eli the shepherd boy on the ridge (bread, what he saw, Shimon's message), Whose Cloak? (a deduction at the inn) and sitting with Natan before Yair's story. Chapter 2 adds Grandmother's corner (a first net), Hodaya of the Magdala crew, Oded's Leaking Boat (a sequence puzzle whose result shows in the storm), the lamp at the stern, seeing to the others, the net on the way home and telling Nikanor. Play time is measured headlessly; content added after the owner's approval stays awaiting review.",
+    "verification": "npx --no-install vitest run tests/integration/play-time.test.ts tests/integration/playthrough.test.ts tests/integration/storm-on-galilee-playthrough.test.ts tests/content/road-to-jericho.test.ts tests/content/storm-on-galilee.test.ts tests/unit/content/approvals.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]
