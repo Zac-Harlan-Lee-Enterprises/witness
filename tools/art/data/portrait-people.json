@@ -16,7 +16,7 @@
       "chapter": "road-to-jericho",
       "name": "Aunt Miriam",
       "role": "Healer, your aunt",
-      "lines": 15,
+      "lines": 19,
       "expressions": ["glad", "worried"],
       "key": "#9a6a45|#4a3a30|#7a4b3a|#e3c27a|veil|#efe3c8|clean|adult|basket",
       "appearance": {
@@ -58,7 +58,7 @@
       "chapter": "road-to-jericho",
       "name": "Old Shimon",
       "role": "Shepherd from the wilderness",
-      "lines": 6,
+      "lines": 8,
       "expressions": [],
       "key": "#8a5a3a|#d8d0c0|#8b7a5a|#5a4a3a|scarf|#e8dcc0|beard|elder|staff",
       "appearance": {
@@ -74,12 +74,33 @@
       }
     },
     {
+      "id": "eli",
+      "character": "eli",
+      "chapter": "road-to-jericho",
+      "name": "Eli",
+      "role": "A shepherd boy, Old Shimon’s grandson",
+      "lines": 13,
+      "expressions": ["glad", "worried"],
+      "key": "#8e5c38|#241810|#a08a62|#6a4a2c|scarf|#ddd2b8|clean|child|staff",
+      "appearance": {
+        "skin": "#8a5d3c",
+        "hair": "#241810",
+        "robe": "#98876a",
+        "accent": "#70553b",
+        "headwear": "scarf",
+        "headwearColor": "#cdc3aa",
+        "beard": false,
+        "build": "child",
+        "carry": "staff"
+      }
+    },
+    {
       "id": "tobiah",
       "character": "tobiah",
       "chapter": "road-to-jericho",
       "name": "Tobiah",
       "role": "Carter",
-      "lines": 2,
+      "lines": 4,
       "expressions": ["glad", "surprised"],
       "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
       "appearance": {
@@ -100,7 +121,7 @@
       "chapter": "road-to-jericho",
       "name": "Hadassah",
       "role": "Weaver",
-      "lines": 6,
+      "lines": 9,
       "expressions": ["glad"],
       "key": "#b07a50|#2a1a12|#3f5f8f|#e8d49a|scarf|#d9b25f|clean|adult|spindle",
       "appearance": {
@@ -142,7 +163,7 @@
       "chapter": "road-to-jericho",
       "name": "Menashe",
       "role": "Samaritan oil merchant",
-      "lines": 24,
+      "lines": 27,
       "expressions": ["glad", "worried", "sad", "surprised", "afraid"],
       "key": "#8f5f3f|#1f1510|#6f5a3a|#3f6f8f|wrap|#d8c8a0|beard|adult|jar",
       "appearance": {
@@ -163,7 +184,7 @@
       "chapter": "road-to-jericho",
       "name": "Hanan",
       "role": "A young Levite",
-      "lines": 7,
+      "lines": 9,
       "expressions": [],
       "key": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
       "appearance": {
@@ -184,7 +205,7 @@
       "chapter": "road-to-jericho",
       "name": "Salome",
       "role": "Innkeeper",
-      "lines": 17,
+      "lines": 25,
       "expressions": ["glad", "worried"],
       "key": "#8a5a38|#1a1210|#8f3f2f|#e2b555|veil|#d8c8a8|clean|adult|jar",
       "appearance": {
@@ -205,7 +226,7 @@
       "chapter": "road-to-jericho",
       "name": "Rivka",
       "role": "Aunt Miriam’s friend in Jericho",
-      "lines": 12,
+      "lines": 16,
       "expressions": ["glad", "worried", "surprised"],
       "key": "#9a6a45|#2a1a10|#556b3a|#e8d49a|veil|#efe3c8|clean|adult|none",
       "appearance": {
@@ -226,7 +247,7 @@
       "chapter": "road-to-jericho",
       "name": "Natan",
       "role": "Rivka’s son",
-      "lines": 2,
+      "lines": 21,
       "expressions": ["glad"],
       "key": "#9a6a45|#2a1a10|#c9a878|#556b3a|none|#c9a878|clean|child|none",
       "appearance": {
@@ -247,7 +268,7 @@
       "chapter": "road-to-jericho",
       "name": "Yair",
       "role": "Rivka’s brother, a fig grower",
-      "lines": 11,
+      "lines": 12,
       "expressions": ["surprised"],
       "key": "#9a6040|#3a2a1c|#6b5236|#d9b25f|scarf|#c9b48a|beard|adult|basket",
       "appearance": {
@@ -268,7 +289,7 @@
       "chapter": "storm-on-galilee",
       "name": "Grandmother Shelomit",
       "role": "Your grandmother, a net-mender",
-      "lines": 23,
+      "lines": 29,
       "expressions": ["glad", "worried", "surprised"],
       "key": "#946443|#3a2e26|#5f4a6e|#d9b25f|veil|#e8dcc0|clean|elder|net",
       "appearance": {
@@ -289,7 +310,7 @@
       "chapter": "storm-on-galilee",
       "name": "Uncle Elazar",
       "role": "Master of the family boat",
-      "lines": 22,
+      "lines": 27,
       "expressions": ["glad", "worried", "surprised", "afraid"],
       "key": "#8a5634|#1f1611|#3f5f6f|#c9a45a|wrap|#d8c8a0|beard|adult|oar",
       "appearance": {
@@ -352,7 +373,7 @@
       "chapter": "storm-on-galilee",
       "name": "Old Hanina",
       "role": "A fisherman who has read the lake for sixty years",
-      "lines": 7,
+      "lines": 10,
       "expressions": ["glad"],
       "key": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
       "appearance": {
@@ -368,12 +389,33 @@
       }
     },
     {
+      "id": "hodaya",
+      "character": "hodaya",
+      "chapter": "storm-on-galilee",
+      "name": "Hodaya",
+      "role": "A young fisher from a Magdala crew",
+      "lines": 10,
+      "expressions": ["glad", "worried"],
+      "key": "#9a6844|#2a1a10|#6a5a44|#3f6f7f|scarf|#b8a27a|clean|adult|net",
+      "appearance": {
+        "skin": "#966948",
+        "hair": "#2a1a10",
+        "robe": "#6e6250",
+        "accent": "#4c767f",
+        "headwear": "scarf",
+        "headwearColor": "#ac9b7c",
+        "beard": false,
+        "build": "adult",
+        "carry": "net"
+      }
+    },
+    {
       "id": "nikanor",
       "character": "nikanor",
       "chapter": "storm-on-galilee",
       "name": "Nikanor",
       "role": "A salt-fish trader from Magdala",
-      "lines": 17,
+      "lines": 22,
       "expressions": ["glad", "sad", "surprised"],
       "key": "#a0704a|#2a1a10|#2f5f7f|#e8d49a|wrap|#efe6d2|beard|adult|basket",
       "appearance": {
@@ -394,7 +436,7 @@
       "chapter": "storm-on-galilee",
       "name": "Shifra",
       "role": "A potter’s wife from the hills",
-      "lines": 18,
+      "lines": 19,
       "expressions": ["glad", "worried", "sad", "surprised"],
       "key": "#b07a50|#2a1a12|#556b3a|#e8d49a|veil|#d8c8a8|clean|adult|basket",
       "appearance": {
@@ -436,7 +478,7 @@
       "chapter": "storm-on-galilee",
       "name": "Oded",
       "role": "Shifra’s brother, a potter",
-      "lines": 5,
+      "lines": 10,
       "expressions": ["glad"],
       "key": "#a8734a|#3a2a1c|#8a7a5c|#b8683e|band|#8a2f2f|beard|adult|oar",
       "appearance": {
