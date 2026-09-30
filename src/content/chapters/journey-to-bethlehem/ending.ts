@@ -91,6 +91,10 @@ export const SCRIPTURE_CONNECTION: ChapterInput['scriptureConnection'] = {
       when: { type: 'puzzleSolved', puzzle: 'p-register' },
       text: 'You helped a clerk write down one household. Luke says it was the emperor’s registration that brought Joseph to Bethlehem (Luke 2:1–5).',
     },
+    {
+      when: flag('heard-ruth'),
+      text: 'At supper Saba told you how Naomi came home to Bethlehem long ago, and the whole town was stirred (Ruth 1:19). Luke tells of another journey to Bethlehem: Joseph went there because he belonged to David’s family (Luke 2:4).',
+    },
   ],
 };
 
@@ -111,6 +115,10 @@ export const SUMMARY: ChapterInput['summary'] = {
       when: { type: 'puzzleSolved', puzzle: 'p-register' },
       text: 'You helped Kallias the clerk write down Uncle Asa’s household.',
     },
+    {
+      when: flag('kid-home'),
+      text: 'You put together what three people had seen, found Hagit’s runaway kid on the threshing floor, and brought home milk for Dodi.',
+    },
     { when: flag('supper-delivered'), text: 'You took Yonatan his supper at the fold.' },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-lamb' },
@@ -123,6 +131,10 @@ export const SUMMARY: ChapterInput['summary'] = {
     {
       when: chose('choice-lamb', 'left'),
       text: 'You went home at dusk and left the search to the shepherds.',
+    },
+    {
+      when: flag('supper-eaten'),
+      text: 'At nightfall the whole household ate supper together and heard about your day.',
     },
     {
       when: flag('zerah-arrived'),
@@ -173,6 +185,31 @@ export const SUMMARY: ChapterInput['summary'] = {
       id: 'lamb-left',
       when: chose('choice-lamb', 'left'),
       text: 'You were home before dark. Old Yoram found the lamb in the gully near midnight, cold but safe.',
+    },
+    {
+      id: 'milk-shared',
+      when: chose('choice-milk', 'shared'),
+      text: 'Old Yoram’s newborn lamb drank half of Hagit’s milk at the fold, and Dodi had the other half in the morning.',
+    },
+    {
+      id: 'milk-kept',
+      when: all(flag('got-milk'), not(chose('choice-milk', 'shared'))),
+      text: 'Dodi had a whole jar of Hagit’s milk when he woke.',
+    },
+    {
+      id: 'loaf-zerah',
+      when: flag('zerah-bread'),
+      text: 'The loaf you kept by the oven went to Zerah, the one guest nobody had expected.',
+    },
+    {
+      id: 'loaf-yonatan',
+      when: chose('choice-loaf', 'yonatan'),
+      text: 'Yonatan had the last of the guests’ bread for breakfast at the fold.',
+    },
+    {
+      id: 'loaf-shared',
+      when: chose('choice-loaf', 'shared'),
+      text: 'The last loaf was shared round the eating mat, and Uncle Asa took the biggest piece.',
     },
     {
       id: 'zerah-own',

@@ -142,6 +142,7 @@ export const PHILEMON_HOUSE: ChapterInput['scenes'][number] = {
       x: 4,
       y: 13,
       facing: 'right',
+      interaction: { verb: 'talk', dialogue: 'd-melitta' },
     },
     // People named in the New Testament: present, silent, not interactive.
     {

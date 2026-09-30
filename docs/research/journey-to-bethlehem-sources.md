@@ -239,6 +239,8 @@ The SBLGNT (<https://ebible.org/grcsbl/>) has:
 
 **Notes:** Ruth 3:3 says "go down" to the floor, so the game does not put it on a hilltop. It sits at the windy edge of the village.
 
+**Added 2026-09-30 (in review):** Saba Amram's supper-time retelling (`rec-para-ruth`, a labelled paraphrase) was checked by an AI assistant against the WEB text of Ruth 1:1, 1:19 and 3:2 already stored in `translations.ts` (the same sources, `src-web-rut01` and `src-web-rut03`). It adds nothing the verses don't say, and Saba says in his own words that nobody knows whether the village's threshing floor is the one in the story. No new historical claim was added with it.
+
 ### 13. Village houses with animals at one end
 
 **Checked statement:** Many scholars think ordinary village houses had one main room. The family lived and slept on a raised level. Animals were brought in at night to a lower area near the door, and mangers were built into the floor or at the edge of the raised level. This is a reconstruction.

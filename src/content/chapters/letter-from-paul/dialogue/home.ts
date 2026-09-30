@@ -220,6 +220,12 @@ export const HOME_DIALOGUES: DialogueInput[] = [
           choices: [
             opt('c-cloak', 'Is that Kallias’s old cloak on the peg?', 'pack2', { once: true }),
             opt('c-far', 'How far is the bridge?', 'pack3', { once: true }),
+            opt('c-angry', 'Are you still angry with him?', 'pack-angry', { once: true }),
+            opt('c-spoiled', 'Why did you keep the spoiled wool?', 'pack-spoiled', {
+              once: true,
+              when: flag('saw-spoiled-wool'),
+            }),
+            opt('c-if', 'What if he won’t come?', 'pack-if', { once: true }),
             opt('c-way', 'Which way is Nikon’s dye works?', undefined, {
               when: not(solved('p-pack')),
               effects: [{ type: 'openPuzzle', puzzle: 'p-pack' }],
@@ -227,6 +233,24 @@ export const HOME_DIALOGUES: DialogueInput[] = [
             opt('c-ok', 'I’ll pack now.'),
           ],
         },
+      ),
+      say(
+        'pack-angry',
+        'ammia',
+        'Angry? Like a burn is hot. Less every day — but touch it and you’ll know. It isn’t the twenty coins. It’s that he looked me in the eye and blamed the madder.',
+        { expression: 'sad', next: 'pack' },
+      ),
+      say(
+        'pack-spoiled',
+        'ammia',
+        'So I’d remember that a season’s work can go in an afternoon. And so I’d remember that I said things that afternoon I can’t take back either. Wool keeps a memory better than I do.',
+        { expression: 'sad', next: 'pack' },
+      ),
+      say(
+        'pack-if',
+        'ammia',
+        'Then you’ll have done what I asked, and I’ll have said what I meant. The rest is his to carry. …Bring back whatever he says, all the same. Even if it’s nothing.',
+        { expression: 'worried', next: 'pack' },
       ),
       say(
         'pack2',
