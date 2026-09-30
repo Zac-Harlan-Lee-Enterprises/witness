@@ -1,6 +1,8 @@
 import {
+  all,
   chose,
   flag,
+  not,
   opt,
   say,
   type DialogueInput,
@@ -8,6 +10,17 @@ import {
 } from '../../road-to-jericho/dialogue/helpers';
 
 const kallias = (option: string) => chose('choice-kallias', option);
+/** You promised Chrysis a message for Melitta and haven't given it yet. */
+const messagePending = all(
+  { type: 'questStatus', quest: 'q-message', status: 'active' },
+  not(flag('message-delivered')),
+  not(flag('message-waited')),
+);
+const message = (option: string) => ({
+  type: 'recordChoice' as const,
+  choice: 'choice-message',
+  option,
+});
 const debt = (option: string) => chose('choice-debt', option);
 
 /** A line of the letter, retold in our own words and labelled as paraphrase. */
@@ -41,7 +54,16 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
           next: 'g3',
         },
       ),
-      say('g3', 'narrator', 'Find Ammia, near the couches.', { kind: 'instruction' }),
+      say('g3', 'narrator', 'Find Ammia, near the couches.', {
+        kind: 'instruction',
+        branches: [{ when: messagePending, next: 'g3m' }],
+      }),
+      say(
+        'g3m',
+        'narrator',
+        'Somewhere in this crowd is Chrysis’s sister, Melitta. Find her before the reading begins.',
+        { kind: 'instruction' },
+      ),
     ],
   },
   {
@@ -52,6 +74,35 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
     nodes: [
       say('a0', 'ammia', 'There you are!', {
         expression: 'glad',
+        branches: [
+          { when: messagePending, next: 'wait' },
+          { when: kallias('come-now'), next: 'together' },
+          { when: kallias('carry-reply'), next: 'carry' },
+        ],
+        next: 'alone',
+      }),
+      // You still have a message to give: Ammia notices, and lets you go.
+      say(
+        'wait',
+        'ammia',
+        'You’re looking round the room like someone who has lost a goat. Who is it?',
+        {
+          expression: 'surprised',
+          choices: [
+            opt('find', 'Chrysis’s sister, Melitta. I have a message for her.', 'wait-go'),
+            opt('later', 'It can wait.', 'wait-on', {
+              effects: [{ type: 'setFlag', flag: 'message-waited', value: true }],
+            }),
+          ],
+        },
+      ),
+      say(
+        'wait-go',
+        'ammia',
+        'Melitta, the baker’s wife? By the door, with the bread. Go on — Zenon is still finding his place in the letter.',
+        { expression: 'glad' },
+      ),
+      say('wait-on', 'narrator', 'Ammia pats the bench beside her.', {
         branches: [
           { when: kallias('come-now'), next: 'together' },
           { when: kallias('carry-reply'), next: 'carry' },
@@ -107,8 +158,41 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
       }),
       say('alone2', 'ammia', 'Then we wait. I’ve waited all winter.', {
         expression: 'sad',
-        next: 'hush',
+        next: 'alone3',
       }),
+      say('alone3', 'ammia', 'How did he look? Tell me the truth.', {
+        choices: [
+          opt('thin', 'Thinner. He said he hadn’t eaten since yesterday.', 'alone-thin', {
+            when: flag('shared-bread-kallias'),
+          }),
+          opt(
+            'red',
+            'Red to the elbows. And his red was clear and even — I saw a skein drying.',
+            'alone-red',
+          ),
+          opt('scared', 'Scared. He ran and hid when he saw me coming.', 'alone-scared', {
+            when: { type: 'puzzleSolved', puzzle: 'p-hiding' },
+          }),
+        ],
+      }),
+      say(
+        'alone-thin',
+        'ammia',
+        'Hasn’t eaten. Of course he hasn’t. …Well. There will be bread in this house when he comes, whatever else there is.',
+        { expression: 'sad', next: 'hush' },
+      ),
+      say(
+        'alone-red',
+        'ammia',
+        'Clear and even? Hm. Somebody down there has taught him to stay by the vat. …Good.',
+        { expression: 'surprised', next: 'hush' },
+      ),
+      say(
+        'alone-scared',
+        'ammia',
+        'Ran from you? From you, who couldn’t frighten a sparrow? …Then he is more ashamed than I thought. That is something, at least. It means he knows.',
+        { expression: 'sad', next: 'hush' },
+      ),
       say(
         'hush',
         'narrator',
@@ -336,7 +420,19 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
         'before',
         'zenon',
         'Ammia is waiting for you by the couches. They’ve asked me to read. My hands are shaking.',
-        { expression: 'worried' },
+        {
+          expression: 'worried',
+          choices: [
+            opt('why', 'Why are your hands shaking? You read all day.', 'before2', { once: true }),
+            opt('bye', 'You’ll read it well.'),
+          ],
+        },
+      ),
+      say(
+        'before2',
+        'zenon',
+        'I read bills of sale, and wills, and a hundred letters about the price of wool. I have never read out anything that people walked across town in the rain to hear.',
+        { next: 'before' },
       ),
       say(
         'after',
@@ -347,12 +443,91 @@ export const GATHERING_DIALOGUES: DialogueInput[] = [
     ],
   },
   {
+    id: 'd-melitta',
+    characterId: 'melitta',
+    entries: [
+      { when: flag('message-delivered'), node: 'after' },
+      { when: messagePending, node: 'deliver' },
+    ],
+    start: 'hello',
+    nodes: [
+      say(
+        'hello',
+        'narrator',
+        'Melitta, a baker’s wife from the far end of the street, is setting a basket of loaves down by the wall. She smiles and makes room for you on the bench.',
+      ),
+      say(
+        'deliver',
+        'narrator',
+        'You tell Melitta that you have come from the dye works by the bridge, with words from her sister.',
+        { next: 'deliver2' },
+      ),
+      say('deliver2', 'narrator', 'She sets the basket down very carefully, and waits.', {
+        choices: [
+          opt(
+            'every',
+            'Tell her every word: Chrysis is well; the master says perhaps, in two years; she still has your mother’s comb.',
+            'every',
+            { effects: [message('every-word')] },
+          ),
+          opt(
+            'soft',
+            'Tell her Chrysis is well and still has the comb, and leave out the master’s perhaps.',
+            'soft',
+            { effects: [message('softened')] },
+          ),
+        ],
+      }),
+      say(
+        'every',
+        'narrator',
+        'Melitta listens with her eyes shut. At the master’s perhaps, her mouth goes tight. At the comb, she laughs out loud and wipes her face on her sleeve.',
+        { next: 'back' },
+      ),
+      say(
+        'soft',
+        'narrator',
+        'Melitta smiles and presses your hand. She says “well, and the comb” over to herself twice, as if to keep it safe.',
+        { next: 'back' },
+      ),
+      say(
+        'back',
+        'narrator',
+        'Before you go, she asks you — if you are ever down that road again — to tell Chrysis that there is always a place for her at the baker’s table by the fountain.',
+        { effects: [{ type: 'setFlag', flag: 'message-delivered', value: true }] },
+      ),
+      say(
+        'after',
+        'narrator',
+        'Melitta is sitting very straight, one hand on the basket of bread, waiting for the reading to begin.',
+      ),
+    ],
+  },
+  {
     id: 'd-tatia-gathering',
     characterId: 'tatia',
     entries: [{ when: flag('bundle-delivered'), node: 'glad' }],
     start: 'hello',
     nodes: [
-      say('hello', 'tatia', 'Come and sit. They’ll start soon.'),
+      say('hello', 'tatia', 'Come and sit. They’ll start soon.', {
+        choices: [
+          opt('quiet', 'Why is everyone so quiet?', 'quiet', { once: true }),
+          opt('hermon', 'Who is the old man by the couches?', 'hermon', { once: true }),
+          opt('bye', 'I’ll find Ammia.'),
+        ],
+      }),
+      say(
+        'quiet',
+        'tatia',
+        'Because Philemon’s house has never been this full, and nobody wants to be the one who sneezes.',
+        { expression: 'glad', next: 'hello' },
+      ),
+      say(
+        'hermon',
+        'tatia',
+        'Hermon, the weaver. He was weaving before your grandmother was born. He says he has never had a letter read out that was meant for him, and he’s not going to miss a word.',
+        { next: 'hello' },
+      ),
       say('glad', 'tatia', 'There’s my letter-finder! Twelve cloaks, {player}. Twelve!', {
         expression: 'glad',
       }),

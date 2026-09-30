@@ -646,10 +646,22 @@ The owner asked for different puzzles in each chapter rather than jar filling ev
 | 2 | `p-patch` Seal the Seam (optional) | sequence | Seal the cracked seam of Oded's borrowed boat in an order that works. |
 | 3 A Journey to Bethlehem | `p-bread` Places for Supper | **logicGrid** | Four people, four places along the mat, four clues; mark ✗ and ✓ in a grid. |
 | 3 | `p-room` Room in the Guest Room | **floorplan** | Fit shaped pieces (bedding, jars, loom, tools) onto a floor grid around fixed things, turning them; what fits is what stays. |
+| 3 | `p-kid` The Kid's Afternoon | **logicGrid** | Four places the runaway kid went, four times (first to last), three witnesses; the last place is where she is now. |
 | 4 A Letter from Paul | `p-pack` The Way to the Bridge | **map** | Follow written directions (left, right, count the milestones) on a sketch map to the right dye works. |
 | 4 | `p-alum` The Buyer's Shade (optional) | **dyeing** | Reach a named target shade in four dips of madder, blue and rinse. |
 
 Every replacement kept its puzzle id, its place in the story and its `onSolved` effects and flags, so quests, dialogue and the ending read them as before. The loading and guest room puzzles still record `choice-load` and `choice-room` from what you chose. Chapter 4's loadout is no longer a puzzle: the travel bag is a choice made in conversation (`d-bag`), which records `choice-packing` and sets `packed` exactly as the packing puzzle did; the map puzzle sets `knows-the-way`, and the west gate needs both. All six are playable from the keyboard alone (arrow keys and Space/Enter, no dragging), announce each move to screen readers, and never rely on colour alone (the dye shades are named and numbered).
+
+### 13.6 Chapters 3 and 4 made longer (2026-09-30)
+
+The owner found Chapters 3 and 4 "playing pretty quick" against the 20–30 minute target. Each gained main-path substance, not padding, and an optional thread; the chapter documents give the acts, quests, choices and time of day in full, and a measured play-time estimate ([Chapter 3 §13](chapters/journey-to-bethlehem.md#13-play-time), [Chapter 4 §15](chapters/letter-from-paul.md#15-play-time)).
+
+| Chapter | Added on the main path | Added as options |
+|---|---|---|
+| 3 A Journey to Bethlehem | Dodi's milk: Hagit's runaway kid, found by asking three people and ordering their accounts (`p-kid`, logic grid). Supper by the fire (new stage `hearth`): the day comes back in what you tell the household, Saba retells three verses of Ruth (labelled paraphrase), and you decide about the last loaf (`choice-loaf`), which feeds Zerah if you kept it. | Half the milk for Old Yoram's newborn lamb (`choice-milk`); conversations with Zerah, Tamar, Yonatan and Kallias. |
+| 4 A Letter from Paul | Kallias runs when he sees you, and is found by deduction (`p-hiding`); a talk on the walk home, where you can tell him what you left out of his letter. | *Words for Melitta* (`q-message`): Chrysis's spoken message to her sister, passed on whole or softened (`choice-message`); more of Ammia, Tatia, Zenon, Nikon and Attalos. |
+
+Nothing new needed rendering: no new places, people, poses or props (the kid hides in an existing chaff heap). The clock doesn't move for any of it, so every place is lit as before. The new text is dated 2026-09-30 and stays in review: the owner's approval of 2026-09-26 covers only records drafted and last changed on or before that day (`coveredBy` in [`approvals.ts`](../src/content/shared/approvals.ts)).
 
 ## 14. Choices and consequences
 

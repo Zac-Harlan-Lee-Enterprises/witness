@@ -47,6 +47,9 @@ const allText = (): string[] => [
   ...chapter.choices.flatMap((c) => c.options.flatMap((o) => [o.label, o.consequence])),
 ];
 const BIBLICAL = ['philemon', 'tychicus', 'onesimus'];
+/** Records written on 2026-09-30, when the chapter was made longer. */
+const LONGER_RECORDS = ['rec-e-hiding', 'rec-e-message', 'rec-p-melitta'];
+const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
 
 describe('A Letter from Paul content', () => {
   it('passes schema and referential integrity validation', () => {
@@ -118,14 +121,75 @@ describe('A Letter from Paul content', () => {
       expect(shadeName(puzzle, shade), JSON.stringify(shade)).not.toBeNull();
   });
 
-  it('has a main quest and a genuinely optional side quest with an alternate outcome', () => {
+  it('has a main quest and two genuinely optional side quests, each with an alternate outcome', () => {
     expect(chapter.quests.find((q) => q.kind === 'main')?.id).toBe(chapter.mainQuest);
     const side = chapter.quests.filter((q) => q.kind === 'side');
-    expect(side).toHaveLength(1);
-    expect(side[0]?.autoStart).toBe(false);
-    expect(side[0]?.outcomes.some((o) => o.kind === 'alternate')).toBe(true);
-    // Nothing in the main quest depends on the side quest.
-    expect(JSON.stringify(chapter.quests.find((q) => q.kind === 'main'))).not.toMatch(/q-bundle/);
+    expect(side.map((q) => q.id)).toEqual(['q-bundle', 'q-message']);
+    for (const q of side) {
+      expect(q.autoStart, q.id).toBe(false);
+      expect(
+        q.outcomes.some((o) => o.kind === 'alternate'),
+        q.id,
+      ).toBe(true);
+    }
+    // Nothing in the main quest depends on a side quest.
+    const main = JSON.stringify(chapter.quests.find((q) => q.kind === 'main'));
+    expect(main).not.toMatch(/q-bundle|q-message|message-delivered/);
+  });
+
+  it('Kallias runs when he sees you: two reliable signs find him, and the overseer’s guess does not', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-hiding');
+    if (puzzle?.type !== 'deduction') throw new Error('expected a deduction puzzle');
+    expect(puzzle.answer).toBe('bank');
+    expect(puzzle.requiredEvidence).toBe(2);
+    // Every wrong place is ruled out by a reliable sign, and every wrong answer explains itself.
+    for (const option of puzzle.options.filter((o) => o.id !== 'bank')) {
+      expect(
+        puzzle.evidence.some((e) =>
+          e.bearsOn.some((b) => b.option === option.id && b.stance === 'against'),
+        ),
+        option.id,
+      ).toBe(true);
+      expect(puzzle.wrongAnswerFeedback[option.id], option.id).toBeTruthy();
+    }
+    const guess = puzzle.evidence.find((e) => e.clueId === 'clue-nikon-guess');
+    expect(guess?.reliable).toBe(false);
+    expect(chapter.clues.find((c) => c.id === 'clue-nikon-guess')?.reliability).toBe('unreliable');
+    // He is found where the answer says, and only once it is worked out.
+    const road = chapter.scenes.find((s) => s.id === 'lycus-road');
+    const bank = road?.entities.find((e) => e.id === 'kallias-bank');
+    expect(JSON.stringify(bank?.visibleWhen)).toMatch(/p-hiding/);
+    const stage = chapter.quests
+      .find((q) => q.id === 'q-letters')
+      ?.stages.find((st) => st.id === 'kallias');
+    expect(stage?.objectives.find((o) => o.id === 'where')?.optional).toBe(false);
+  });
+
+  it('Chrysis’s message is carried as words, never as a trade, and Melitta never speaks', () => {
+    const chrysis = chapter.dialogues.find((d) => d.id === 'd-chrysis');
+    const ask = chrysis?.nodes.find((n) => n.id === 'c-m3');
+    expect(ask?.text).toMatch(/perhaps/);
+    expect(ask?.choices.map((c) => c.id)).toEqual(['promise', 'cant']);
+    // Melitta, like the other silent members of the assembly, has no lines of her own.
+    expect(nodes.filter((n) => n.speaker === 'melitta')).toEqual([]);
+    const melitta = chapter.dialogues.find((d) => d.id === 'd-melitta');
+    expect(melitta?.nodes.every((n) => n.speaker === 'narrator')).toBe(true);
+    const give = melitta?.nodes.find((n) => n.id === 'deliver2');
+    expect(give?.choices.map((c) => c.id)).toEqual(['every', 'soft']);
+    // You are never stranded with the message: Ammia notices, and lets you go.
+    const wait = chapter.dialogues
+      .find((d) => d.id === 'd-ammia-gathering')
+      ?.nodes.find((n) => n.id === 'wait');
+    expect(wait?.choices.map((c) => c.id)).toEqual(['find', 'later']);
+  });
+
+  it('has enough to do for 20–30 minutes: five puzzles and a long script', () => {
+    expect(chapter.puzzles).toHaveLength(5);
+    const script = nodes.reduce(
+      (n, x) => n + words(x.text) + x.choices.reduce((m, c) => m + words(c.text), 0),
+      0,
+    );
+    expect(script).toBeGreaterThan(5400);
   });
 
   it('never embeds verse text: Scripture records are references, retellings are labelled paraphrase', () => {
@@ -221,12 +285,25 @@ describe('A Letter from Paul content', () => {
       .forEach((r) => expect(r.scripture, r.id).toBeUndefined());
   });
 
+  it('keeps the text written for the longer chapter in review: the approval of 2026-09-26 does not cover it', () => {
+    const later = chapter.records.filter((r) =>
+      r.governance.history.some((h) => h.date > '2026-09-26'),
+    );
+    expect(later.map((r) => r.id).sort()).toEqual(LONGER_RECORDS);
+    for (const r of later) {
+      expect(r.kind, r.id).toBe('fiction');
+      expect(r.governance.status, r.id).toBe('ai-draft');
+      expect(r.governance.reviewer, r.id).toBeUndefined();
+      expect(r.governance.reviewedAt, r.id).toBeUndefined();
+    }
+  });
+
   it('is approved by a named human in the approvals log (never self-approved by an agent)', () => {
     const report = contentReport(chapter);
     expect(report.awaitingReview).toBe(0);
     expect(report.approved).toBe(report.educational);
     const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
-    for (const r of chapter.records) {
+    for (const r of chapter.records.filter((x) => !LONGER_RECORDS.includes(x.id))) {
       expect(r.governance.status, r.id).toBe('approved');
       expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
       expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');

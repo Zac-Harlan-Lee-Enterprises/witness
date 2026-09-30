@@ -81,6 +81,13 @@ export const QUESTS: ChapterInput['quests'] = [
         description: 'Find Kallias, read him Ammia’s letter, and decide what happens next.',
         objectives: [
           {
+            id: 'where',
+            description: 'Kallias ran when he saw you: work out where he went',
+            completeWhen: { type: 'puzzleSolved', puzzle: 'p-hiding' },
+            optional: false,
+            revealWhen: flag('kallias-fled'),
+          },
+          {
             id: 'find',
             description: 'Find Kallias at the dye works',
             completeWhen: { type: 'met', character: 'kallias' },
@@ -266,5 +273,53 @@ export const QUESTS: ChapterInput['quests'] = [
     eventsConsumed: ['ClueDiscovered', 'PuzzleCompleted', 'FlagChanged', 'SceneEntered'],
     eventsEmitted: [...QUEST_EMITTED_EVENTS],
     journal: { onStart: 'je-bundle' },
+  },
+  {
+    id: 'q-message',
+    name: 'Words for Melitta',
+    description:
+      'Chrysis, at the dye works, can’t write and can’t leave. She asked you to carry a message to her sister Melitta, who will be at the gathering tonight.',
+    kind: 'side',
+    autoStart: false,
+    stages: [
+      {
+        id: 'carry',
+        title: 'Carry Her Words',
+        description: 'Find Melitta at Philemon’s house and give her Chrysis’s message.',
+        objectives: [
+          {
+            id: 'tell',
+            description: 'Give Melitta her sister’s message, at the gathering',
+            completeWhen: flag('message-delivered'),
+            optional: false,
+          },
+        ],
+        onEnter: [],
+      },
+    ],
+    failWhen: flag('message-waited'),
+    failOutcome: 'unspoken',
+    outcomes: [
+      {
+        id: 'delivered',
+        kind: 'success',
+        title: 'Words delivered',
+        description: 'Melitta heard her sister’s words at the gathering.',
+        rewards: [
+          { type: 'adjustTrust', character: 'chrysis', delta: 1 },
+          { type: 'adjustTrust', character: 'melitta', delta: 1 },
+        ],
+      },
+      {
+        id: 'unspoken',
+        kind: 'alternate',
+        title: 'Carried home unspoken',
+        description: 'The reading began before you found Melitta.',
+        rewards: [],
+      },
+    ],
+    eventsConsumed: ['FlagChanged'],
+    eventsEmitted: [...QUEST_EMITTED_EVENTS],
+    journal: { onStart: 'je-message' },
   },
 ];

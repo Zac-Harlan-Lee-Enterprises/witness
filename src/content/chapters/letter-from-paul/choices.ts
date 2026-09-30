@@ -142,4 +142,21 @@ export const CHOICES: ChoiceDefinition[] = [
       },
     ],
   },
+  {
+    id: 'choice-message',
+    prompt: 'How did you give Melitta her sister’s message?',
+    themes: ['honesty', 'messengers', 'freedom'],
+    options: [
+      {
+        id: 'every-word',
+        label: 'Every word, the master’s “perhaps” included',
+        consequence: 'Melitta heard everything Chrysis had sent her, the hard part too.',
+      },
+      {
+        id: 'softened',
+        label: 'You left out the master’s “perhaps”',
+        consequence: 'Melitta heard that her sister was well and still had their mother’s comb.',
+      },
+    ],
+  },
 ];
