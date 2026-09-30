@@ -24,7 +24,7 @@ export const QUESTS: ChapterInput['quests'] = [
         objectives: [
           {
             id: 'bread',
-            description: 'Measure three measures of flour for the bread (by the oven)',
+            description: 'Bake the bread and set the places for supper (by the oven)',
             completeWhen: solved('p-bread'),
             optional: false,
           },

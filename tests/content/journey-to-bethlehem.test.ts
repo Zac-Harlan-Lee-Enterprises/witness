@@ -4,9 +4,21 @@ import { chapterSource, parseChapter } from '@/content';
 import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
+import {
+  checkFloorplan,
+  floorplanLayouts,
+  placementCells,
+  type FloorplanPuzzle,
+} from '@/domain/puzzle-floorplan';
+import {
+  checkLogicGrid,
+  logicGridSolutions,
+  type LogicGridPuzzle,
+} from '@/domain/puzzle-logic-grid';
 import { isSolidTile, parseLayout, TILE_KINDS, type TileKind } from '@/domain/world';
 import { findLights, heightOf, isLowWall, isPropTile, readSite } from '@/game/art/site';
 import { isKnownProp } from '@/game/art/props';
+import { makeState } from '../support/state';
 
 const chapter = parseChapter(JOURNEY_TO_BETHLEHEM);
 
@@ -82,14 +94,50 @@ describe('A Journey to Bethlehem content', () => {
     });
   });
 
-  it('uses all four puzzle types, each with tiered hints and an explanation', () => {
+  it('uses its own logic grid and floor plan puzzles (no packing or jar filling), each with tiered hints and an explanation', () => {
     expect(new Set(chapter.puzzles.map((p) => p.type))).toEqual(
-      new Set(['packing', 'measuring', 'deduction', 'sequence']),
+      new Set(['logicGrid', 'floorplan', 'deduction', 'sequence']),
     );
     for (const p of chapter.puzzles) {
       expect(p.hints.length, p.id).toBeGreaterThanOrEqual(2);
       expect(p.explanation.length, p.id).toBeGreaterThan(20);
     }
+  });
+
+  it('the supper places have exactly one answer, the one the full explanation gives', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-bread') as LogicGridPuzzle;
+    expect(logicGridSolutions(puzzle)).toEqual([puzzle.answer]);
+    expect(checkLogicGrid(puzzle, puzzle.answer).correct).toBe(true);
+    // Every clue is needed: drop any one and the answer is no longer the only one.
+    for (const clue of puzzle.clues) {
+      const fewer = { ...puzzle, clues: puzzle.clues.filter((c) => c.id !== clue.id) };
+      expect(logicGridSolutions(fewer).length, clue.id).toBeGreaterThan(1);
+    }
+  });
+
+  it('the guest room floor fits the beds with exactly one extra thing, and the barley only one way', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-room') as FloorplanPuzzle;
+    const beds = ['bed-asa', 'bed-peninah'];
+    expect(floorplanLayouts(puzzle, beds).length).toBeGreaterThan(4);
+    for (const extra of ['grain', 'loom', 'tools'])
+      expect(floorplanLayouts(puzzle, [...beds, extra]).length, extra).toBeGreaterThan(0);
+    for (const [a, b] of [
+      ['grain', 'loom'],
+      ['grain', 'tools'],
+      ['loom', 'tools'],
+    ] as const)
+      expect(floorplanLayouts(puzzle, [...beds, a, b]), `${a}+${b}`).toEqual([]);
+    // The worked example in the last hint: the barley's L round the post.
+    const [only] = floorplanLayouts(puzzle, ['grain', ...beds]);
+    expect(floorplanLayouts(puzzle, ['grain', ...beds])).toHaveLength(1);
+    expect(
+      only?.map((p) =>
+        placementCells(puzzle, p)
+          .map(([r, c]) => `${r}${c}`)
+          .join(' '),
+      ),
+    ).toEqual(['01 02 12', '22 23 24', '03 04 13 14']);
+    expect(checkFloorplan(puzzle, only ?? [], makeState()).valid).toBe(true);
   });
 
   it('has a main quest and a genuinely optional side quest with an alternate outcome', () => {

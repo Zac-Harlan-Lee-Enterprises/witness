@@ -4,60 +4,106 @@ import { ROOM_ITEMS } from './items';
 const flag = (name: string) => ({ type: 'flag' as const, flag: name });
 
 /**
- * Four puzzles, one of each type, each growing out of the day:
- *  1. p-bread     — three measures of flour for guests (measuring)
- *  2. p-room      — what stays in the small guest room (packing; knowledge changes what is allowed)
+ * Four puzzles, each growing out of the day:
+ *  1. p-bread     — places for supper while the guests' bread bakes (logic grid)
+ *  2. p-room      — fit the beds, and what else stays, onto the guest room floor (floor plan;
+ *                   knowledge changes what is allowed)
  *  3. p-register  — Uncle Asa's declaration in the clerk's order (sequence; optional side quest)
  *  4. p-lamb      — where did the lamb go? (deduction; one confident sighting is not what it seems)
+ *
+ * The logic grid and the floor plan are Chapter 3's own puzzle types: no
+ * other chapter uses them.
  */
 export const PUZZLES: ChapterInput['puzzles'] = [
   {
     id: 'p-bread',
-    type: 'measuring',
-    title: 'Three Measures of Flour',
+    type: 'logicGrid',
+    title: 'Places for Supper',
     intro:
-      'Tamar wants exactly 3 measures of flour in the kneading trough for the guests’ bread. The one-measure cup is lost somewhere under the guests’ bundles. The trough holds 5 measures; the grain basket holds 4. Neither has marks. Scoop from the flour jar, tip flour back, or pour one into the other.',
-    sourceLabel: 'the flour jar',
-    unit: 'measures',
-    vessels: [
-      { id: 'trough', label: 'Kneading trough', capacity: 5 },
-      { id: 'basket', label: 'Grain basket', capacity: 4 },
+      'The dough is kneaded and the bread is baking. While it bakes, Tamar wants the places set for supper: four places along the eating mat, from the one nearest the fire to the one nearest the door. Everyone has said something about where they want to sit. Work out who sits where.',
+    subjectsLabel: 'Who',
+    optionsLabel: 'Place',
+    subjects: [
+      { id: 'amram', label: 'Saba Amram' },
+      { id: 'asa', label: 'Uncle Asa' },
+      { id: 'peninah', label: 'Aunt Peninah (with Dodi)' },
+      { id: 'tamar', label: 'Tamar' },
     ],
-    goal: { vessel: 'trough', amount: 3 },
+    options: [
+      { id: 'fire', label: 'Nearest the fire', position: 1 },
+      { id: 'second', label: 'Second place', position: 2 },
+      { id: 'third', label: 'Third place', position: 3 },
+      { id: 'door', label: 'Nearest the door', position: 4 },
+    ],
+    clues: [
+      {
+        id: 'tamar-end',
+        text: 'Tamar will be up and down all evening, bringing more bread, so she sits at one end of the mat.',
+        rule: { type: 'oneOf', subject: 'tamar', options: ['fire', 'door'] },
+      },
+      {
+        id: 'dodi-fire',
+        text: 'Aunt Peninah wants little Dodi well away from the fire — not in either of the two places nearest it.',
+        rule: { type: 'noneOf', subject: 'peninah', options: ['fire', 'second'] },
+      },
+      {
+        id: 'tamar-peninah',
+        text: 'Tamar sits right beside Aunt Peninah, to help with Dodi.',
+        rule: { type: 'nextTo', a: 'tamar', b: 'peninah' },
+      },
+      {
+        id: 'amram-cold',
+        text: 'Saba Amram feels the cold in his bones: he sits nearer the fire than Uncle Asa.',
+        rule: { type: 'before', a: 'amram', b: 'asa' },
+      },
+    ],
+    answer: { amram: 'fire', asa: 'second', peninah: 'third', tamar: 'door' },
     hints: [
       {
         tier: 1,
-        text: 'You can’t pour exactly 3 straight away. What happens if you pour a full basket into a trough that already holds 4?',
+        text: 'Start with Aunt Peninah: only two places are far enough from the fire for Dodi.',
       },
       {
         tier: 2,
-        text: 'Fill the basket and pour it into the trough, then fill the basket again and pour until the trough is full. The basket keeps exactly 3. Can you get those 3 into an empty trough?',
+        text: 'Tamar must sit at an end AND right beside Aunt Peninah. Only one end is next to either of Peninah’s places — which leaves two places for the men.',
       },
       {
         tier: 3,
-        text: 'Full method: fill the basket → pour it into the trough (4) → fill the basket → pour into the trough until it is full (the basket keeps 3) → tip the trough back into the flour jar → pour the basket into the trough. The trough holds 3.',
+        text: 'Full method: Peninah can only have the third place or the one by the door. Tamar must be at an end beside her, so Tamar is by the door and Peninah third. Saba Amram is nearer the fire than Uncle Asa, so Amram sits nearest the fire and Asa second.',
       },
     ],
     explanation:
-      'The basket kept the 3 measures the full trough couldn’t take, and you poured them back into the empty trough. In Genesis 18, Abraham had bread made from three seahs of fine flour for his guests — a very generous amount. (Nobody knows exactly how big a seah was; these “measures” are simplified.)',
+      'Every clue fits: Saba Amram warm by the fire, Uncle Asa beside him, Aunt Peninah and Dodi well away from the flames, and Tamar by the door to fetch more bread. The Bible treats welcoming guests as something that matters: Abraham had cakes made from three seahs of fine flour for his visitors — a very generous amount (Genesis 18:1–8). (Tamar’s supper is made up for the game.)',
     recordIds: ['rec-hist-hospitality'],
     onSolved: [
       { type: 'adjustCounter', counter: 'hour', delta: 1 },
       { type: 'setFlag', flag: 'bread-baked', value: true },
       {
         type: 'showMessage',
-        text: 'You knead the dough and Tamar bakes it on the hot oven. Soon the whole house smells of bread.',
+        text: 'Tamar lifts the bread off the oven. Soon the whole house smells of it — and everyone will know where to sit.',
         tone: 'narration',
       },
     ],
   },
   {
     id: 'p-room',
-    type: 'packing',
+    type: 'floorplan',
     title: 'Room in the Guest Room',
     intro:
-      'The guest room has floor space for 6. Uncle Asa’s and Aunt Peninah’s beds must go in. Then choose what else stays. Anything you leave out must be moved: down to the animals’ end of the house, or somewhere else if you know a good place.',
-    capacity: 6,
+      'The guest room floor is five squares long and three wide. The big water jar, the post that holds up the roof beam and the way to the door can’t be moved or covered. Uncle Asa’s and Aunt Peninah’s bedding must go in. Then fit in whatever else you can, turning things as you need. Anything left out must be moved: down to the animals’ end of the house, or somewhere else if you know a good place.',
+    floor: ['J....', '.O...', 'DD...'],
+    fixtures: [
+      { symbol: 'J', label: 'the water jar' },
+      { symbol: 'O', label: 'the roof post' },
+      { symbol: 'D', label: 'the way to the door' },
+    ],
+    pieces: [
+      { item: 'bed-asa', label: 'Uncle Asa’s bedding', shape: ['###'] },
+      { item: 'bed-peninah', label: 'Aunt Peninah and Dodi’s bedding', shape: ['##', '##'] },
+      { item: 'grain', label: 'Jars of barley', shape: ['#.', '##'] },
+      { item: 'loom', label: 'Tamar’s loom', shape: ['###'] },
+      { item: 'tools', label: 'Uncle Asa’s tools', shape: ['##'] },
+    ],
     choiceId: 'choice-room',
     rules: [
       {
@@ -72,12 +118,6 @@ export const PUZZLES: ChapterInput['puzzles'] = [
         },
         failureHint:
           'Uncle Asa and Aunt Peninah walked all day to be registered here. Their beds go in first.',
-      },
-      {
-        id: 'capacity',
-        description: 'Everything fits on the floor',
-        rule: { type: 'withinCapacity' },
-        failureHint: 'Too much! There would be no floor left to lie down on. Take something out.',
       },
       {
         id: 'grain',
@@ -102,19 +142,19 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     hints: [
       {
         tier: 1,
-        text: 'The two beds take 4 of the 6 spaces. That leaves room for one more thing — or for nothing at all.',
+        text: 'The two beds fit in many ways, but most of them leave no room for anything else — and only one more thing will ever fit beside them. Try placing that first.',
       },
       {
         tier: 2,
-        text: 'The barley must stay dry. Unless you find a dry place for it somewhere else, it has to stay in the guest room. Have you looked at the ladder by the back wall?',
+        text: 'The barley jars make an L of three. It fits in just one place: tucked round the roof post, in the top row next to the water jar. Unless you find a dry place for the barley somewhere else — have you looked at the ladder by the back wall?',
       },
       {
         tier: 3,
-        text: 'Any arrangement works if both beds are in, it fits in 6, and the barley is either in the guest room or you know about the dry corner on the roof. What you leave out is moved — and a free space might matter tonight.',
+        text: 'Full method: put the barley’s L in the top row beside the water jar, wrapped round the roof post; Aunt Peninah’s square in the top-right corner; and Uncle Asa’s bedding along the bottom row, from the middle to the right-hand wall. If you know about the dry corner on the roof, you can keep the loom or the tools instead of the barley — or leave the space free.',
       },
     ],
     explanation:
-      'Both guests have their beds and the barley is safe. Whatever you left out has been moved — and whether the guest room is full or has a space left may matter later tonight.',
+      'Both guests have their beds and the barley is safe. Whatever you left out has been moved — and whether the guest room is full or has a space left may matter later tonight. (Tamar’s house and its guest room are fictional.)',
     recordIds: ['rec-recon-house'],
     onSolved: [
       // The room is arranged; the things themselves stay where you put them.
