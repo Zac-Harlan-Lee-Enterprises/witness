@@ -1,17 +1,15 @@
 import type { Effect } from '@/domain/effects';
+import { describePacking, packingEffects, type Packing } from '@/domain/puzzle-base';
 import {
   checkDeduction,
   checkPacking,
   checkSequence,
   classifyPacking,
-  describePacking,
   hintFor,
   isMeasureSolved,
   maxHintTier,
-  packingEffects,
   type DeductionCheck,
   type Levels,
-  type Packing,
   type PackingCheck,
   type Puzzle,
   type SequenceCheck,

@@ -10,12 +10,12 @@ import {
   hintFor,
   initialLevels,
   isMeasureSolved,
-  packingEffects,
   type DeductionPuzzle,
   type MeasuringPuzzle,
   type PackingPuzzle,
   type SequencePuzzle,
 } from '@/domain/puzzles';
+import { packingEffects } from '@/domain/puzzle-base';
 import { makeState } from '../../support/state';
 
 const chapter = parseChapter(ROAD_TO_JERICHO);
