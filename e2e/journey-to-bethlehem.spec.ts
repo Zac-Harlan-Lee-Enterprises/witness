@@ -28,7 +28,7 @@ import {
  * of each stage.
  */
 test('play A Journey to Bethlehem from a new profile to the chapter summary', async ({ page }) => {
-  test.setTimeout(timeLimit(240_000));
+  test.setTimeout(timeLimit(420_000)); // a longer chapter; generous for busy machines
   await openApp(page);
   await setFastSettings(page);
   await createProfile(page, 'Noa');
