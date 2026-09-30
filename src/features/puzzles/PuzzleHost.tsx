@@ -5,9 +5,15 @@ import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import type { GameRuntimeLike } from '../game/types';
 import { DeductionPuzzleView } from './DeductionPuzzleView';
+import { DyeingPuzzleView } from './DyeingPuzzleView';
+import { FloorplanPuzzleView } from './FloorplanPuzzleView';
+import { LogicGridPuzzleView } from './LogicGridPuzzleView';
+import { MapPuzzleView } from './MapPuzzleView';
 import { MeasuringPuzzleView } from './MeasuringPuzzleView';
 import { PackingPuzzleView } from './PackingPuzzleView';
+import { NettingPuzzleView } from './NettingPuzzleView';
 import { SequencePuzzleView } from './SequencePuzzleView';
+import { TrimPuzzleView } from './TrimPuzzleView';
 
 /**
  * Hosts whichever puzzle is open. Each puzzle type has its own view
@@ -64,6 +70,12 @@ function PuzzleModal({ puzzle, runtime }: { puzzle: Puzzle; runtime: GameRuntime
           {puzzle.type === 'measuring' && <MeasuringPuzzleView puzzle={puzzle} runtime={runtime} />}
           {puzzle.type === 'deduction' && <DeductionPuzzleView puzzle={puzzle} runtime={runtime} />}
           {puzzle.type === 'sequence' && <SequencePuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'trim' && <TrimPuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'netting' && <NettingPuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'floorplan' && <FloorplanPuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'logicGrid' && <LogicGridPuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'dyeing' && <DyeingPuzzleView puzzle={puzzle} runtime={runtime} />}
+          {puzzle.type === 'map' && <MapPuzzleView puzzle={puzzle} runtime={runtime} />}
           <Hints puzzleId={puzzle.id} runtime={runtime} total={puzzle.hints.length} />
         </>
       )}

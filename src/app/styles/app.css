@@ -1252,6 +1252,356 @@ legend {
   gap: 0.3rem;
   align-items: center;
 }
+/* Trim: load the boat and keep her level */
+.trim__heading,
+.floorplan__heading,
+.map-puzzle__heading,
+.logic-grid__title {
+  font-size: 1.05rem;
+  margin-top: 0.8rem;
+}
+.trim__items,
+.trim__cargo,
+.floorplan__pieces,
+.dyeing__baths {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0;
+}
+.trim__item {
+  font: inherit;
+  font-family: var(--font-ui);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: inherit;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  text-align: left;
+}
+.trim__item[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+  font-weight: 700;
+}
+.trim__item--small {
+  min-height: 36px;
+  font-size: 0.9rem;
+}
+.trim__boat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'bow bow'
+    'port starboard'
+    'stern stern';
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+  padding: 0.6rem;
+  border: 3px solid var(--color-accent);
+  border-radius: 50% 50% 18px 18px / 30% 30% 18px 18px;
+  background: var(--color-surface-2);
+}
+.trim__place {
+  border: 2px dashed var(--color-border);
+  border-radius: 10px;
+  padding: 0.3rem 0.6rem;
+  background: var(--color-surface);
+}
+.trim__place--0 {
+  grid-area: bow;
+}
+.trim__place--1 {
+  grid-area: port;
+}
+.trim__place--2 {
+  grid-area: starboard;
+}
+.trim__place--3 {
+  grid-area: stern;
+}
+.trim__place .trim__heading {
+  margin: 0.1rem 0;
+}
+.trim__numbers {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  margin: 0.2rem 0;
+}
+.trim__load {
+  font-family: var(--font-ui);
+}
+[aria-disabled='true'].button {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Net mending and the logic grid: tables of buttons */
+.netting__grid,
+.logic-grid__table,
+.floorplan__floor {
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  margin: 0.4rem 0;
+}
+.netting__grid td,
+.logic-grid__table td,
+.floorplan__floor td {
+  padding: 1px;
+}
+.netting__clue {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0 0.3rem;
+  text-align: center;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+thead .netting__clue .netting__num {
+  display: block;
+  line-height: 1.1;
+}
+.netting__clue--done {
+  color: var(--color-good);
+}
+.net-cell,
+.logic-cell {
+  width: 40px;
+  height: 40px;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.net-cell--torn {
+  border-style: dashed;
+  border-color: var(--color-accent);
+}
+.net-cell--knot {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+.net-cell--open {
+  color: var(--color-muted);
+}
+.net-cell[aria-disabled='true'] {
+  cursor: default;
+}
+.logic-grid__table th {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  text-align: left;
+}
+.logic-grid__table thead th {
+  text-align: center;
+  vertical-align: bottom;
+  max-width: 6rem;
+}
+.logic-cell--yes {
+  background: var(--color-good);
+  color: #fff;
+  border-color: var(--color-good);
+}
+.logic-cell--no {
+  color: var(--color-danger);
+}
+.logic-grid__clues li {
+  margin: 0.25rem 0;
+}
+.logic-grid__clue--broken {
+  font-weight: 700;
+  text-decoration: underline wavy var(--color-danger);
+}
+.logic-grid__actions,
+.map-puzzle__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+
+/* Floor plan */
+.floorplan__piece {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+.floor-cell {
+  width: 56px;
+  height: 56px;
+  font: inherit;
+  font-size: 0.65rem;
+  line-height: 1.1;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 2px;
+  overflow: hidden;
+}
+.floor-cell--fixture {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-surface-2),
+    var(--color-surface-2) 5px,
+    var(--color-border) 5px,
+    var(--color-border) 7px
+  );
+  font-weight: 700;
+}
+.floor-cell--piece {
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
+  font-weight: 700;
+}
+.floor-cell--piece-0 {
+  background: #e8c9a0;
+}
+.floor-cell--piece-1 {
+  background: #cfd8b4;
+}
+.floor-cell--piece-2 {
+  background: #d9c2d6;
+}
+.floor-cell--piece-3 {
+  background: #c4d4e2;
+}
+.floor-cell--piece-4 {
+  background: #efd9a6;
+}
+.floor-cell--preview {
+  outline: 3px dashed var(--color-good);
+  outline-offset: -5px;
+}
+.floor-cell--preview-bad {
+  outline: 3px dotted var(--color-danger);
+  outline-offset: -5px;
+}
+.floor-cell__text {
+  display: block;
+  word-break: break-word;
+}
+.shape-picture {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-right: 0.2rem;
+}
+.shape-picture__row {
+  display: flex;
+  gap: 1px;
+}
+.shape-picture__cell {
+  width: 8px;
+  height: 8px;
+}
+.shape-picture__cell--on {
+  background: var(--color-accent);
+}
+
+/* Colour mixing */
+.dyeing__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.dyeing__swatch-box {
+  margin: 0;
+  flex: 1 1 10rem;
+  font-family: var(--font-ui);
+}
+.dyeing__swatch {
+  height: 3.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 0.3rem;
+}
+.dyeing__dips {
+  font-family: var(--font-ui);
+}
+.dyeing__baths {
+  flex-direction: column;
+}
+
+/* Map reading */
+.map-puzzle__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.map-grid {
+  display: grid;
+  flex: 1 1 18rem;
+  max-width: 34rem;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: #e7dcb9;
+  padding: 4px;
+  gap: 0;
+}
+.map-cell {
+  position: relative;
+  aspect-ratio: 1;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.map-cell--road {
+  background: #b89a6a;
+}
+.map-cell--landmark {
+  background: #8a6a3e;
+  color: #fff;
+  font-weight: 700;
+}
+.map-cell--you {
+  background: var(--color-focus);
+  color: #fff;
+  font-weight: 700;
+  z-index: 1;
+}
+.map-cell__label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  line-height: 1;
+  color: var(--color-text);
+  white-space: nowrap;
+  font-weight: 400;
+  pointer-events: none;
+}
+.map-puzzle__controls {
+  flex: 1 1 14rem;
+}
+.map-puzzle__where {
+  font-family: var(--font-ui);
+  font-weight: 700;
+}
+.compass {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
 .table-scroll {
   max-width: 100%;
   overflow-x: auto;
