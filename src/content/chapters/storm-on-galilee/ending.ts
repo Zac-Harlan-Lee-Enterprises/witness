@@ -11,6 +11,8 @@ const storm = (option: string): Condition => ({
   option,
 });
 const ami = (option: string): Condition => ({ type: 'choiceMade', choice: 'choice-ami', option });
+/** You helped the little boat get ready before anyone knew a storm was coming. */
+const READIED = any(flag('boat-patched'), flag('oded-bailer'));
 
 /**
  * Act 6 — the Scripture Connection — and Act 7 — the summary.
@@ -81,6 +83,10 @@ export const SCRIPTURE_CONNECTION: ChapterInput['scriptureConnection'] = {
       when: any(ami('room'), ami('made-room')),
       text: 'Before the storm, you found room for Ami in your boat. Small choices made on the shore can matter a great deal out on the water.',
     },
+    {
+      when: READIED,
+      text: 'On a calm afternoon, you helped a family you had only just met get their little boat ready. Mark gives the other boats a few words and no names; your story gave one of them a sealed seam and a better bailer.',
+    },
   ],
 };
 
@@ -90,8 +96,20 @@ export const SUMMARY: ChapterInput['summary'] = {
       text: 'Your grandmother sent you out as crew on the family boat for the first time, to carry Nikanor’s jars across the lake.',
     },
     {
+      when: { type: 'puzzleSolved', puzzle: 'p-corner' },
+      text: 'Before you went, you tied the last knots of the family’s mark in Grandmother’s net.',
+    },
+    {
       when: { type: 'puzzleSolved', puzzle: 'p-sky' },
       text: 'On the jetty, you weighed Hanina’s warning and the signs along the shore, and read the sky.',
+    },
+    {
+      when: flag('helped-hodaya'),
+      text: 'You helped Hodaya’s Magdala crew haul their boat high up the shingle.',
+    },
+    {
+      when: flag('boat-patched'),
+      text: 'You sealed the cracked seam of Oded’s borrowed boat with pitch from Nikanor.',
     },
     {
       when: flag('brine-done'),
@@ -111,9 +129,14 @@ export const SUMMARY: ChapterInput['summary'] = {
       text: 'In the storm, you decided what to do for the little boat alongside.',
     },
     { when: flag('great-calm'), text: 'Then the wind stopped — all at once.' },
+    { when: flag('net-set'), text: 'On the still water, you set the trammel net on the way home.' },
     {
       when: flag('returned'),
       text: 'Your family turned for home, and Grandmother was waiting on the jetty with a lamp.',
+    },
+    {
+      when: flag('told-nikanor'),
+      text: 'You told Nikanor that everyone was safe, and what had become of his jars.',
     },
   ],
   consequences: [
@@ -134,8 +157,38 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       id: 'shifra-alone',
-      when: storm('hold-course'),
+      when: all(storm('hold-course'), not(READIED)),
       text: 'You kept your own boat afloat. When the wind dropped, you found the little boat swamped but afloat, with everyone in it.',
+    },
+    {
+      id: 'shifra-alone-afloat',
+      when: all(storm('hold-course'), READIED),
+      text: 'You kept your own boat afloat. When the wind dropped, you found the little boat low in the water but still afloat, with everyone in it.',
+    },
+    {
+      id: 'seam',
+      when: flag('boat-patched'),
+      text: 'The seam you sealed on Oded’s boat held through the storm: not a drop came up through it.',
+    },
+    {
+      id: 'bailer',
+      when: flag('oded-bailer'),
+      text: 'Shifra bailed through the storm with the old scoop you brought her from the Magdala crew.',
+    },
+    {
+      id: 'leak-open',
+      when: { type: 'questStatus', quest: 'q-leak', status: 'failed' },
+      text: 'Oded’s boat put out with a rag still stuffed in its cracked seam.',
+    },
+    {
+      id: 'lamp',
+      when: flag('followed-lamp'),
+      text: 'Shifra’s family kept your lamp in sight all through the storm.',
+    },
+    {
+      id: 'catch',
+      when: flag('net-set'),
+      text: 'The trammel net came home full, and Nikanor will buy the catch for salting.',
     },
     {
       id: 'ami-with-you',

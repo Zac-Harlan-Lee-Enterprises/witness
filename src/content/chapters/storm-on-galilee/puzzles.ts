@@ -1,7 +1,7 @@
 import type { ChapterInput } from '@/domain/chapter';
 
 /**
- * Four puzzles, each growing out of the story:
+ * Six puzzles, each growing out of the story:
  *  1. p-sky    — what is the sky saying? (deduction: weigh testimony and signs; an answer that admits uncertainty)
  *  2. p-load   — load and trim the boat (trim: the fee against safety, gear and room for others —
  *                and where it all goes, so she sits level)
@@ -9,6 +9,10 @@ import type { ChapterInput } from '@/domain/chapter';
  *  4. p-brine  — mend Nikanor's jar net (netting, a picture logic grid; optional side quest that
  *                changes what counts as "enough jars"). The id is kept from when it was a brine
  *                puzzle, because saves and the story's flags name it.
+ *  5. p-corner — Grandmother's corner (netting): tie the last knots of the family's mark before
+ *                you go; it teaches how a mending pattern reads.
+ *  6. p-patch  — seal the seam of Oded's leaking boat (sequence; optional side quest that changes
+ *                how the little boat fares in the storm).
  *
  * Trim and netting are Chapter 2's own puzzle types: no other chapter uses them.
  */
@@ -348,5 +352,134 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       'Every row and column matches, and Nikanor’s fish is whole again. (The jar net and its mark are made up for the game.) Salting fish let them keep for months, so they could be sold far from the lake.',
     recordIds: ['rec-hist-salting'],
     onSolved: [{ type: 'setFlag', flag: 'brine-measured', value: true }],
+  },
+  {
+    id: 'p-corner',
+    type: 'netting',
+    title: 'Grandmother’s Corner',
+    intro:
+      'The family’s mark is knotted into Grandmother’s net: a little boat under sail. One corner of it has pulled loose. The numbers beside each row and above each column are the runs of knots in that line, in order: “1 2” means one knot, a gap, then two together. Tie the loose part so every row and column matches.',
+    // The family's mark: a mast with its sail, over a hull.
+    pattern: ['..#..', '..##.', '..#..', '#####', '.###.'],
+    // Columns 2–4 have pulled loose; the edges are still whole.
+    torn: ['.???.', '.???.', '.???.', '.???.', '.???.'],
+    hints: [
+      {
+        tier: 1,
+        text: 'Start with the line that leaves no choice: the middle column’s number is 5, so every cell in it is a knot.',
+      },
+      {
+        tier: 2,
+        text: 'Row 4 is a 5 as well: the whole row is knotted. Row 5 is a 3 with its ends open, so its three knots sit in the middle.',
+      },
+      {
+        tier: 3,
+        text: 'Full method: tie column 3 all the way down; column 4 in rows 2, 4 and 5; and column 2 in rows 4 and 5. Everything else in the loose part stays open.',
+      },
+    ],
+    explanation:
+      'Every row and column matches, and the little boat is whole again. Grandmother runs her thumb along your knots: tight and even. (The family’s mark is made up for the game.)',
+    recordIds: ['rec-hist-nets'],
+    onSolved: [
+      { type: 'setFlag', flag: 'mended-with-grandmother', value: true },
+      {
+        type: 'showMessage',
+        text: '“Tight and even,” Grandmother says. “Now go and find Hanina.”',
+        tone: 'narration',
+      },
+    ],
+  },
+  {
+    id: 'p-patch',
+    type: 'sequence',
+    title: 'Seal the Seam',
+    intro:
+      'Oded’s borrowed boat is tipped on its side on the shingle, with a rag stuffed in a cracked seam. You have pitch and tow from Nikanor. Put the jobs in the order that works — then decide what the patch can and can’t do.',
+    cards: [
+      {
+        id: 'rag',
+        text: 'Pull out the rag Oded stuffed in the crack.',
+        clueId: 'clue-elazar-seam',
+        reasoning: 'Nothing new can go into a crack that is already full of wet cloth.',
+      },
+      {
+        id: 'dry',
+        text: 'Let the seam dry in the sun.',
+        clueId: 'clue-elazar-seam',
+        reasoning: 'Pitch won’t stick to wet wood, so the seam has to dry before anything else.',
+      },
+      {
+        id: 'tow',
+        text: 'Press the tow deep into the crack.',
+        clueId: 'clue-elazar-seam',
+        reasoning: 'The tow fills the gap. The pitch goes over it, so the tow has to be in first.',
+      },
+      {
+        id: 'pitch',
+        text: 'Smear warm pitch over the seam.',
+        clueId: 'clue-elazar-seam',
+        reasoning: 'The pitch seals the packed tow in and keeps the water out.',
+      },
+      {
+        id: 'set',
+        text: 'Let it set before the boat goes back in the water.',
+        clueId: 'clue-elazar-seam',
+        reasoning:
+          'Soft pitch would wash straight out. It has to harden first, so this comes last.',
+      },
+    ],
+    correctOrder: ['rag', 'dry', 'tow', 'pitch', 'set'],
+    initialOrder: ['pitch', 'set', 'rag', 'tow', 'dry'],
+    conclusion: {
+      question: 'Will the patch hold tonight?',
+      options: [
+        {
+          id: 'forever',
+          text: 'It will hold for good. Oded can leave his cup behind.',
+          correct: false,
+          explanation: 'No patch is perfect, and a rough night finds every weak place.',
+        },
+        {
+          id: 'mostly',
+          text: 'It should keep most of the water out — but they should still bail, and stay close to the other boats.',
+          correct: true,
+          explanation:
+            'Yes. A sealed seam lets in far less water than a stuffed rag. But water can still come over the side, so they will still need to bail.',
+        },
+        {
+          id: 'useless',
+          text: 'It won’t make any difference.',
+          correct: false,
+          explanation:
+            'It will. A crack packed and pitched lets in far less water than a rag does.',
+        },
+      ],
+    },
+    hints: [
+      {
+        tier: 1,
+        text: 'What has to come out of the crack before anything new can go in?',
+      },
+      {
+        tier: 2,
+        text: 'Pitch won’t stick to wet wood, and it has to harden before the boat goes back in the water.',
+      },
+      {
+        tier: 3,
+        text: 'Uncle Elazar’s order: pull out the rag, let the seam dry, press in the tow, smear on the pitch, and let it set.',
+      },
+    ],
+    explanation:
+      'Each job makes the next one work: an empty crack can dry, a dry crack takes the tow, and warm pitch over the tow seals it once it has set. (How the seam is sealed is simplified for the game.)',
+    recordIds: [],
+    onSolved: [
+      { type: 'setFlag', flag: 'boat-patched', value: true },
+      { type: 'takeItem', item: 'pitch' },
+      {
+        type: 'showMessage',
+        text: 'The seam is sealed, and the pitch is setting in the sun. Oded runs his thumb along it and grins.',
+        tone: 'narration',
+      },
+    ],
   },
 ];

@@ -476,7 +476,7 @@ describe('Road to Jericho — full playthroughs', () => {
     expect(h.state().quests['q-message']?.status).toBe('active');
     await collectLinen(p);
     await packAndLeave(p, { remedy: 1, 'linen-bundle': 1, 'water-skin': 1, bread: 1, lamp: 1 });
-    await forkAndRidge(p, (q) => meetEli(q, 'share', 'message', 'saw'));
+    await forkAndRidge(p, (q) => meetEli(q, 'share', 'message'));
     expect(h.state().inventory.bread).toBeUndefined(); // Eli ate it
     expect(h.state().clues).toContain('clue-eli-men');
     expect(h.state().quests['q-message']?.status).toBe('completed');
@@ -544,7 +544,7 @@ describe('Road to Jericho — full playthroughs', () => {
     await askShimonAboutWater(p);
     await collectLinen(p);
     await packAndLeave(p, { remedy: 1, 'linen-bundle': 1, 'water-skin': 1, bread: 1, lamp: 1 });
-    await forkAndRidge(p, (q) => meetEli(q, 'keep', 'saw'));
+    await forkAndRidge(p, (q) => meetEli(q, 'keep'));
     await investigate(p);
     // What Eli saw is part of the careful reading of the scene.
     await p.interact('menashe-road');

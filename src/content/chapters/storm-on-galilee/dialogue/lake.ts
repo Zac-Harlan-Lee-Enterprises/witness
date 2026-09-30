@@ -25,6 +25,9 @@ const AMI_FROM_SHORE: Condition = any(
 );
 const storm = (option: string): Condition => chose('choice-storm', option);
 const NO_CLOAK_GIVEN = not(chose('choice-cloak'));
+const PATCHED = flag('boat-patched');
+const BAILER = flag('oded-bailer');
+const SAW_TO_OTHERS = [{ type: 'setFlag' as const, flag: 'saw-to-others', value: true }];
 
 /**
  * Out on the lake (Acts 3–5). The player's boat is one of the "other boats"
@@ -150,7 +153,38 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
       say(
         'sb1',
         'narrator',
-        'Across a gap of black water, the little boat is sitting lower with every wave. One of its oars has snapped, and a woman is bailing with a cup.',
+        'Across a gap of black water, the little boat is wallowing in the waves. One of its oars has snapped.',
+        {
+          branches: [
+            { when: all(PATCHED, BAILER), next: 'sb-both' },
+            { when: PATCHED, next: 'sb-patched' },
+            { when: BAILER, next: 'sb-bailer' },
+          ],
+          next: 'sb-cup',
+        },
+      ),
+      say(
+        'sb-cup',
+        'narrator',
+        'It sits lower with every wave, and a woman is bailing with a cup.',
+        { branches: [{ when: HEAVY, next: 'sb2-heavy' }], next: 'sb2-light' },
+      ),
+      say(
+        'sb-patched',
+        'narrator',
+        'Your patch is holding — the water comes over the side, not up through the seam — but the woman is still bailing with a cup.',
+        { branches: [{ when: HEAVY, next: 'sb2-heavy' }], next: 'sb2-light' },
+      ),
+      say(
+        'sb-bailer',
+        'narrator',
+        'The woman is bailing hard with the Magdala crew’s old scoop, but water is still seeping up through the stuffed crack.',
+        { branches: [{ when: HEAVY, next: 'sb2-heavy' }], next: 'sb2-light' },
+      ),
+      say(
+        'sb-both',
+        'narrator',
+        'Your patch is holding, and the woman is throwing water out with the Magdala crew’s old scoop. They’re low in the water — but still afloat.',
         { branches: [{ when: HEAVY, next: 'sb2-heavy' }], next: 'sb2-light' },
       ),
       say(
@@ -253,6 +287,7 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
       say('after', 'narrator', 'The storm is still roaring. There’s nothing to do but bail.'),
       // After the calm: what your choice looks like now.
       say('after-calm', 'narrator', 'The little boat is there, on the still water.', {
+        effects: SAW_TO_OTHERS,
         branches: [
           { when: storm('take-aboard'), next: 'calm-aboard' },
           { when: storm('tow'), next: 'calm-tow' },
@@ -271,23 +306,48 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         'narrator',
         'It is close alongside, the man at the oars still gripping your spare oar.',
       ),
+      say('calm-hold', 'narrator', 'It comes gliding towards you out of the dark.', {
+        branches: [{ when: any(PATCHED, BAILER), next: 'calm-hold-afloat' }],
+        next: 'calm-hold-swamped',
+      }),
       say(
-        'calm-hold',
+        'calm-hold-swamped',
         'narrator',
-        'It comes gliding towards you out of the dark, swamped to the rails — the man rowing with one oar, the woman bailing, the boy between them. Everyone is there.',
+        'It is swamped to the rails — the man rowing with one oar, the woman bailing, the boy between them. Everyone is there.',
+        { branches: [{ when: flag('lamp-hung'), next: 'calm-lamp' }] },
+      ),
+      say(
+        'calm-hold-afloat',
+        'narrator',
+        'It is low in the water but still afloat — the man rowing with one oar, the woman bailing, the boy between them. Everyone is there.',
+        { branches: [{ when: flag('lamp-hung'), next: 'calm-lamp' }] },
+      ),
+      say(
+        'calm-lamp',
+        'narrator',
+        'The man is pointing at your stern. All through the storm, they kept your lamp in sight.',
+        { effects: [{ type: 'setFlag', flag: 'followed-lamp', value: true }] },
       ),
       say('after-ami', 'narrator', 'The little boat is close alongside now, on the still water.', {
+        effects: SAW_TO_OTHERS,
         branches: [
           { when: storm('tow'), next: 'ami-cold' },
           { when: storm('oar'), next: 'ami-cold' },
         ],
         next: 'ami-cold-hold',
       }),
+      say('ami-cold-hold', 'narrator', 'It came back out of the dark with everyone still in it.', {
+        branches: [{ when: flag('lamp-hung'), next: 'ami-lamp' }],
+        next: 'ami-cold',
+      }),
       say(
-        'ami-cold-hold',
+        'ami-lamp',
         'narrator',
-        'It came back out of the dark, swamped to the rails, with everyone still in it.',
-        { next: 'ami-cold' },
+        'The man is pointing at your stern. All through the storm, they kept your lamp in sight.',
+        {
+          effects: [{ type: 'setFlag', flag: 'followed-lamp', value: true }],
+          next: 'ami-cold',
+        },
       ),
       say('ami-cold', 'narrator', 'The boy is huddled between the others, soaked and shivering.', {
         choices: [
@@ -355,9 +415,18 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         expression: 'glad',
         choices: [
           opt('ahead', 'Is that the teacher’s boat ahead?', 'e2', { once: true }),
+          opt('lamp', 'Should I hang my lamp at the stern?', 'e4', {
+            when: all(has('lamp'), not(flag('lamp-hung'))),
+          }),
           opt('ok', 'It’s beautiful out here.', 'e3'),
         ],
       }),
+      say(
+        'e4',
+        'elazar',
+        'Yes — on the sternpost, low, out of the wind. Then the little boats behind can see where we are.',
+        { effects: [{ type: 'setFlag', flag: 'lamp-hung', value: true }] },
+      ),
       say(
         'e2',
         'elazar',
@@ -373,7 +442,10 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
       say('calm', 'elazar', 'What was that? I’ve never… Wind doesn’t stop like that.', {
         expression: 'surprised',
         choices: [
-          opt('home', 'Can we go home?', 'c2'),
+          opt('home', 'Can we go home?', 'c2', {
+            requires: flag('saw-to-others'),
+            unavailableText: 'First see to the others, at the port rail.',
+          }),
           opt('wait', 'Not yet — I want to see to the others.'),
         ],
       }),
@@ -381,14 +453,43 @@ export const LAKE_DIALOGUES: DialogueInput[] = [
         'c2',
         'elazar',
         'Home. I won’t cross the rest of this lake in a half-swamped boat in the dark. The far shore can wait for another night — and so can Nikanor’s jars.',
+        { branches: [{ when: has('net'), next: 'net' }], next: 'go' },
+      ),
+      say(
+        'net',
+        'elazar',
+        'We’ve the trammel net aboard. The lake’s as flat as oil now, and it’s a night net anyway. Shall we set it on the way home?',
         {
-          effects: [
-            { type: 'setFlag', flag: 'returned', value: true },
-            { type: 'setCounter', counter: 'hour', value: 26 },
-            { type: 'transition', scene: 'capernaum-shore', spawn: 'from-lake' },
+          choices: [
+            opt('set', 'Let’s set it.', 'net2', {
+              effects: [{ type: 'recordChoice', choice: 'choice-net', option: 'set' }],
+            }),
+            opt('home', 'Let’s just go home.', 'go', {
+              effects: [{ type: 'recordChoice', choice: 'choice-net', option: 'home' }],
+            }),
           ],
         },
       ),
+      say(
+        'net2',
+        'narrator',
+        'You pay the net out in a long curve behind the boat, wait, and haul it in hand over hand. It comes up heavy and silver, fish flapping in the bottom of the boat.',
+        { effects: [{ type: 'setFlag', flag: 'net-set', value: true }], next: 'go-late' },
+      ),
+      say('go', 'narrator', 'Tamar and Yoezer bring her round, and you row for home.', {
+        effects: [
+          { type: 'setFlag', flag: 'returned', value: true },
+          { type: 'setCounter', counter: 'hour', value: 26 },
+          { type: 'transition', scene: 'capernaum-shore', spawn: 'from-lake' },
+        ],
+      }),
+      say('go-late', 'narrator', 'Then Tamar and Yoezer bring her round, and you row for home.', {
+        effects: [
+          { type: 'setFlag', flag: 'returned', value: true },
+          { type: 'setCounter', counter: 'hour', value: 27 },
+          { type: 'transition', scene: 'capernaum-shore', spawn: 'from-lake' },
+        ],
+      }),
     ],
   },
   {

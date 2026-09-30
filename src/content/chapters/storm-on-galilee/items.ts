@@ -91,6 +91,28 @@ export const ITEMS: ChapterInput['items'] = [
     description: 'A warm wool cloak. Nights on the water are cold, especially when you are wet.',
   },
   {
+    id: 'spare-bailer',
+    name: 'The Magdala crew’s old bailer',
+    kind: 'tool',
+    weight: 1,
+    maxStack: 1,
+    essential: false,
+    icon: '🥣',
+    description:
+      'A wooden bailing scoop with a cracked handle, given to you by Hodaya of the Magdala crew. It still throws water.',
+  },
+  {
+    id: 'pitch',
+    name: 'Pitch and tow',
+    kind: 'supply',
+    weight: 0,
+    maxStack: 1,
+    essential: false,
+    icon: '🫙',
+    description:
+      'A little pot of Nikanor’s pitch, warmed at his fire, and a hank of old rope teased out into tow: enough to seal one seam.',
+  },
+  {
     id: 'water-skin',
     name: 'Water skin',
     kind: 'water',

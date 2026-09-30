@@ -250,6 +250,18 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       onceFlag: 'inn-arrival',
       effects: [{ type: 'startDialogue', dialogue: 'd-inn-arrival' }],
     },
+    // Once you've arrived, the striped cloak by the gate catches your eye (Whose Cloak?).
+    {
+      id: 'cloak-seen',
+      onceFlag: 'noticed-cloak',
+      when: flag('inn-arrival'),
+      effects: [
+        {
+          type: 'showMessage',
+          text: 'On the sacks by the inn gate lies a good wool cloak with a blue stripe — and a strip torn out of its hem.',
+        },
+      ],
+    },
   ],
   ambience: 'oasis',
   mood: 'oasis',

@@ -442,16 +442,24 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       ),
       say('shared', 'eli', 'Dates too! You’re the best traveler who ever came up our path.', {
         expression: 'glad',
-        next: 'e3',
+        next: 'intro',
       }),
       say(
         'kept',
         'eli',
         'That’s all right. Grandfather says a traveler who gives everything away is hungry by noon.',
-        { next: 'e3' },
+        { next: 'intro' },
       ),
-      say('none', 'eli', 'Nobody ever does. I’ll eat when the flock goes home.', { next: 'e3' }),
-      say('e3', 'eli', 'I’m Eli. I mind Grandfather Shimon’s sheep up here.', {
+      say('none', 'eli', 'Nobody ever does. I’ll eat when the flock goes home.', {
+        next: 'intro',
+      }),
+      say(
+        'intro',
+        'eli',
+        'I’m Eli. I mind Grandfather Shimon’s sheep up here. Are you going down to the road? Then listen.',
+        { next: 'w1' },
+      ),
+      say('e3', 'eli', 'Anything else? I’ve got all day. So have the sheep.', {
         choices: [
           opt(
             'message',
@@ -462,7 +470,6 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
             },
           ),
           opt('sheep', 'Where’s your flock?', 's1', { once: true }),
-          opt('saw', 'Have you seen anyone else up here today?', 'w1', { once: true }),
           opt('bye', 'I have to keep going.', 'b1'),
         ],
       }),

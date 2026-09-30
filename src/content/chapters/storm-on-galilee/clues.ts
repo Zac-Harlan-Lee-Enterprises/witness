@@ -72,6 +72,15 @@ export const CLUES: ChapterInput['clues'] = [
     text: 'Tamar’s rule: first take the wind out of the sail by hauling up the brails; then lower the yard and lash it; then oars out and keep the bow to the waves; then bail, and keep bailing.',
     recordIds: ['rec-recon-boat-handling'],
   },
+  // ── Sealing a leaking seam (side quest) ──────────────────────────────
+  {
+    id: 'clue-elazar-seam',
+    title: 'Uncle Elazar’s way to seal a seam',
+    kind: 'witness',
+    source: 'Uncle Elazar',
+    reliability: 'reliable',
+    text: 'Out with whatever is stuffed in the crack, and let the seam dry — pitch won’t stick to wet wood. Pack it tight with tow, smear warm pitch over it, and let it set before the boat goes back in the water.',
+  },
 ];
 
 export const SKY_CLUES = [
