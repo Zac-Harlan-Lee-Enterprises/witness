@@ -20,9 +20,10 @@ import {
 /**
  * Chapter 4 end to end, through the accessible UI only: a new profile →
  * chapter select → the opening conversation → the letter puzzle → reading
- * aloud → packing → the Laodicea road in the rain → the decision at the dye
- * works → the gathering → the letters read as labelled paraphrase → the
- * Scripture Connection → reflection → summary.
+ * aloud → packing → the Laodicea road in the rain → Kallias runs, and is
+ * found by deduction → the decision at the dye works → the walk home → the
+ * gathering → the letters read as labelled paraphrase → the Scripture
+ * Connection → reflection → summary.
  */
 const dialogueBox = (page: Page) => page.locator('section.dialogue');
 
@@ -134,7 +135,27 @@ test('play A Letter from Paul from a new profile to the chapter summary', async 
   await goTo(page, /Go to the west gate/);
   await expectScene(page, 'The Laodicea road');
   await snap(page, 'lfp-05-road');
-  await goTo(page, 'Talk to Kallias');
+
+  // Kallias runs when he sees you coming: work out where he went.
+  await goTo(page, 'Examine Kallias’s vat');
+  await endDialogue(page);
+  await goTo(page, 'Examine Footprints by the vat');
+  await goTo(page, 'Talk to Chrysis');
+  await choose(page, 'Kallias ran off when he saw me. Did you see which way he went?');
+  await choose(page, 'I should find him.');
+  await endDialogue(page);
+  await goTo(page, 'Examine Kallias’s vat');
+  await choose(page, 'Decide now.');
+  await endDialogue(page);
+  const hiding = page.getByRole('dialog', { name: 'Where Did Kallias Go?' });
+  await hiding.getByLabel(/Down on the riverbank by the bridge/).check();
+  await hiding.getByLabel(/Red footprints/).check();
+  await hiding.getByLabel(/Which way he went/).check();
+  await snap(page, 'lfp-05b-hiding');
+  await hiding.getByRole('button', { name: 'Present my reasoning' }).click();
+  await expect(hiding.getByText('Solved!')).toBeVisible();
+  await hiding.getByRole('button', { name: 'Continue' }).click();
+  await goTo(page, 'Talk to Kallias, on the riverbank');
   await choose(page, 'Your letter reached her. She has answered it.');
   // The rain has come down the valley (the world records the weather).
   await expect(page.locator('.viewport canvas')).toHaveAttribute('data-weather', 'rain');
@@ -154,6 +175,9 @@ test('play A Letter from Paul from a new profile to the chapter summary', async 
   await goTo(page, 'Talk to Kallias');
   await choose(page, /Come home with me now/);
   await choose(page, /Ammia kept your old cloak/);
+  // On the walk home he talks, so that he won't turn round.
+  await choose(page, 'Why did you run when you saw me?');
+  await choose(page, 'Let’s keep walking.');
   await continueDialogue(page);
 
   // Home through the west gate as the rain eases; on to the gathering.

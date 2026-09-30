@@ -21,9 +21,11 @@ import {
 /**
  * Chapter 3 in a real browser: a new profile → chapter select → A Journey
  * to Bethlehem → the opening → all four kinds of puzzle on the main path and
- * the side quest skipped → the lost lamb → a stranger at the door → the
- * shepherds' news as labelled paraphrase → Scripture Connection → reflection
- * → summary (with no score language). E2E_SHOTS=1 saves a picture of each stage.
+ * the side quest skipped → Hagit's runaway kid (a second logic grid) for
+ * Dodi's milk → the lost lamb → supper by the fire → a stranger at the door →
+ * the shepherds' news as labelled paraphrase → Scripture Connection →
+ * reflection → summary (with no score language). E2E_SHOTS=1 saves a picture
+ * of each stage.
  */
 test('play A Journey to Bethlehem from a new profile to the chapter summary', async ({ page }) => {
   test.setTimeout(timeLimit(240_000));
@@ -86,8 +88,45 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await snap(page, 'bethlehem-04-lanes');
   await goTo(page, 'Talk to Hagit');
   await choose(page, 'Is your house full of guests too?');
+  await choose(page, 'Mother asks if you could spare a jar of milk for little Dodi.');
   await choose(page, 'Goodbye, Hagit.');
   await endDialogue(page);
+
+  // Hagit's kid is out: three people each saw part of her afternoon.
+  await goTo(page, 'Talk to Saba Amram');
+  await choose(page, 'Have you seen Hagit’s little white kid?');
+  await choose(page, 'Goodbye, Saba.');
+  await endDialogue(page);
+  await goTo(page, 'Talk to Uncle Asa, waiting in line');
+  await choose(page, 'Have you seen a little white goat kid?');
+  await choose(page, 'Hang in there, Uncle.');
+  await endDialogue(page);
+  await goTo(page, 'Talk to Kallias the clerk');
+  await choose(page, 'Did you see a little white goat go past?');
+  await choose(page, 'Goodbye.');
+  await endDialogue(page);
+  await goTo(page, 'Talk to Hagit');
+  await choose(page, 'I think I know where your kid went.');
+  await endDialogue(page);
+  const kid = page.getByRole('dialog', { name: 'The Kid’s Afternoon' });
+  await expect(kid).toBeVisible();
+  await chooseInGrid(kid, [
+    ['The travellers’ cart', 'First'],
+    ['The washing by the square', 'Second'],
+    ['The trough by the well', 'Third'],
+    ['The threshing floor', 'Last'],
+  ]);
+  await snap(page, 'bethlehem-04b-kid');
+  await kid.getByRole('button', { name: 'Check my answer' }).click();
+  await expect(kid.getByText('Solved!')).toBeVisible();
+  await kid.getByRole('button', { name: 'Continue' }).click();
+  await goTo(page, 'Take Something chewing in the chaff heap');
+  await goTo(page, 'Talk to Hagit');
+  await choose(page, 'Goodbye, Hagit.');
+  await endDialogue(page);
+  await page.getByRole('button', { name: /^Satchel/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Satchel' })).toContainText('Jar of goat’s milk');
+  await page.keyboard.press('Escape');
   await goTo(page, 'Take Heap of clean straw');
   await goTo(page, /Go to the east gate/);
   await expectScene(page, 'The fold below Bethlehem');
@@ -121,6 +160,11 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await expectScene(page, 'The lanes of Bethlehem');
   await goTo(page, 'Go to Tamar’s house');
   await expectScene(page, 'Tamar’s house, Bethlehem');
+  // Supper by the fire: tell them about the day, and keep the last loaf for whoever knocks.
+  await choose(page, 'I found Yonatan’s lost lamb, down in the gully.');
+  await snap(page, 'bethlehem-07b-supper');
+  await choose(page, 'I’m full.');
+  await choose(page, 'Keep it by the oven, in case anyone else comes tonight.');
   await continueDialogue(page);
   await snap(page, 'bethlehem-08-stranger');
   await choose(page, 'There’s a space in the guest room.');
@@ -154,6 +198,7 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await snap(page, 'bethlehem-11-summary');
   await expect(summary).toContainText('Zerah slept in the guest room');
   await expect(summary).toContainText('The speckled lamb spent the night back beside its mother.');
+  await expect(summary).toContainText('The loaf you kept by the oven went to Zerah');
   await expect(summary.getByRole('heading', { name: 'Scripture references' })).toBeVisible();
   await expect(summary).toContainText('Luke 2:1–20');
   await expect(summary).not.toContainText(/score|points|holiness/i);

@@ -307,8 +307,8 @@ The owner found the chapter "playing pretty quick" against a target of 20–30 m
 
 | Path | Before (2026-09-26) | After (2026-09-30) |
 |---|---|---|
-| Least: straight through, nothing optional | 1,700 words, 2 puzzles | 2,680 words, 3 puzzles |
-| Typical: the lamb searched for | 1,920 words, 3 puzzles | 3,060 words, 4 puzzles |
-| Thorough: side quest, lamb, milk shared, every supper topic | 2,690 words, 4 puzzles | 4,070 words, 5 puzzles |
+| Least: straight through, nothing optional | 1,700 words, 2 puzzles | 2,730 words, 3 puzzles |
+| Typical: the lamb searched for | 1,920 words, 3 puzzles | 3,110 words, 4 puzzles |
+| Thorough: side quest, lamb, milk shared, every supper topic | 2,690 words, 4 puzzles | 4,130 words, 5 puzzles |
 
-At a brisk adult pace (about 300 words a minute, a little over a minute a puzzle, instant travel, two minutes for the ending), that is **about 13 → 18 minutes** at the least, **15 → 21** typically and **19 → 25** thoroughly. A first-time younger player (about 200 words a minute, two minutes a puzzle, walking rather than instant travel) takes about a third longer. Supper by the fire and the kid are on the main path, so even a player who skips everything optional sees them.
+At a brisk adult pace (about 300 words a minute, a little over a minute a puzzle, instant travel, two minutes for the ending), that is **about 13 → 18 minutes** at the least, **15 → 20** typically and **19 → 25** thoroughly. A first-time younger player (about 200 words a minute, two minutes a puzzle, walking rather than instant travel) takes about a third longer. Supper by the fire and the kid are on the main path, so even a player who skips everything optional sees them.
