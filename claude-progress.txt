@@ -424,3 +424,30 @@ NEXT   : Record the owner's approval of rec-teaser (a person, not an agent): an 
          test that rec-teaser is approved by that entry. For more realism: re-render with `node scripts/art-build.mjs
          teaser --shots <n>` after improving the city's houses (teaser_city.py) and the market's walls.
 BLOCKED: none (the approval is for a person to record).
+
+--- 2026-09-30  Claude Opus 5.5 (longer-chapters agent) — Chapters 1 and 2 made longer (feat/longer-ch1-ch2) ---
+DONE   : Measured play time first (tests/support/play-time.ts + tests/integration/play-time.test.ts: counts what a
+         headless player is shown; steady 230 wpm and brisk 320 wpm readers; direct and curious runs). Before:
+         Ch1 direct 16/10 min (steady/brisk), curious 29/19; Ch2 direct 19/12, curious 30/20. After: Ch1 19/12,
+         38/26; Ch2 23/15, 39/26. Ch1: Rivka's linen (Miriam's errand via Hadassah; essential in the satchel; cut a
+         strip to bind Menashe, choice-bandage; Rivka's answer), Eli (new pre-rendered character on the ridge: bread
+         choice-eli, what he saw at dawn, Shimon's message side quest q-message changes who finds Menashe), Whose
+         Cloak? (q-cloak, deduction p-cloak at the inn), a new main-quest stage sitting with Natan before Yair,
+         Tobiah pressed, Hanan's extra question, Miriam's greeting to Salome. Ch2: Grandmother's corner (netting
+         p-corner, required before the door), Hodaya of the Magdala crew (new pre-rendered character; old bailer for
+         Oded), Oded's Leaking Boat (q-leak, sequence p-patch; results shown in the storm and at night), lamp at the
+         stern, see to the others before home (required), net on the way home (choice-net, home at 27), tell Nikanor
+         before Grandmother (required), Hanina awake at night. Governance: withApprovals now covers only records
+         drafted on or before the approval date (draftOn, LONGER_CHAPTERS_DRAFTED = 2026-09-30); new records
+         (LATER_RECORDS in both chapters) stay ai-draft. No new historical claims or sources. Art: Eli and Hodaya
+         people sheets + portraits (neutral/glad/worried) rendered under the render lock; no place re-rendered.
+         Docs: game-design.md (acts, scenes, quests, puzzles, choices, time model note, new §17 How long it plays),
+         chapters/storm-on-galilee.md (§13), README, executive summary, content-governance approval log,
+         testing-strategy, feature_list.json.
+TESTS  : Vitest 723 -> 748 (69 -> 71 files). e2e on 4489/5489: chapter, storm-on-galilee, a11y, smoke, mobile: 21 passed,
+         1 skipped. typecheck, lint, prettier, knip, content:validate clean. origin/main (PR #16) merged.
+NEXT   : The owner reviews the new content in the game and, if he approves it, a person adds an approval dated on or
+         after 2026-09-30 in src/content/shared/approvals.ts (and the approval log); then update the "keeps what was
+         added after the approval ... awaiting review" tests in tests/content/{road-to-jericho,storm-on-galilee}.test.ts.
+         Merge origin/main once PR #16 (feat/new-puzzle-types) lands.
+BLOCKED: none.
