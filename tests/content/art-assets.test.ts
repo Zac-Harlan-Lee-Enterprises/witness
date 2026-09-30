@@ -536,6 +536,33 @@ describe('the half-resolution set phones load', () => {
   }
 });
 
+describe("the lake's story sails", () => {
+  // The other boats' sails are story sprites (shown until the squall), so they
+  // must carry their own shadow; for a while they carried none, and the set
+  // sails lost their moon shadow on the water (2026-09-26 → 2026-09-30).
+  it('carry their own shadow, caught on the water rather than the lake bed', () => {
+    const boats = readFileSync(join(ROOT, 'tools', 'art', 'lib', 'lake_boats.py'), 'utf8');
+    const yard = boats.slice(boats.indexOf('def _story_yard'), boats.indexOf('def _furled'));
+    expect(yard).toContain('"shadow": True');
+    expect(yard).toContain('"catch": "water"');
+    const build = readFileSync(join(ROOT, 'tools', 'art', 'build_place.py'), 'utf8');
+    expect(build).toContain('def catcher_at');
+  });
+
+  it('are wider than the sail alone in the night set (their shadow lies beside them)', () => {
+    const { art } = parsePlaceArt(
+      JSON.parse(readFileSync(join(ART, 'open-lake', 'manifest.json'), 'utf8')),
+    );
+    const sprites = art?.variants.night?.sprites ?? [];
+    for (const id of ['entity:teacher-boat-sail', 'entity:fishing-boat-sail']) {
+      const s = sprites.find((x) => x.id === id);
+      expect(s, id).toBeDefined();
+      // Rendered without a shadow these were 308 and 359 px wide.
+      expect(s?.w ?? 0, id).toBeGreaterThan(440);
+    }
+  });
+});
+
 describe("Chapter 4's dye works", () => {
   // The hot vats' stoke-holes were once flat white slabs; they are coals now,
   // each with a small flickering light at the vat's foot. The Laodicea road
