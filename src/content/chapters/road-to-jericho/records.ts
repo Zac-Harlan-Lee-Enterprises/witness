@@ -1,6 +1,6 @@
 import type { ChapterInput } from '@/domain/chapter';
 import type { ScriptureRef } from '@/domain/scripture';
-import { aiDraft, FICTION } from '../../shared/governance';
+import { aiDraft, draftOn, FICTION, LONGER_CHAPTERS_DRAFTED } from '../../shared/governance';
 
 /**
  * Content records for "The Road to Jericho".
@@ -43,6 +43,64 @@ const fiction = (id: string, title: string, body: string): ChapterInput['records
   sources: [],
   governance: FICTION,
 });
+
+/**
+ * Fiction added when the chapter was made longer (new people, errands and a
+ * puzzle). Drafted after the owner's approval of 2026-09-26, which does not
+ * cover it: it stays an AI draft until a named person approves it.
+ */
+const LATER_FICTION = draftOn(
+  LONGER_CHAPTERS_DRAFTED,
+  'Drafted to make Chapter 1 longer and richer: Rivka’s linen, Eli on the ridge, the striped cloak at the inn and the time with Natan. Needs human review.',
+  { confidence: 'not-applicable' },
+);
+
+const laterFiction = (
+  id: string,
+  title: string,
+  body: string,
+): ChapterInput['records'][number] => ({
+  id,
+  kind: 'fiction',
+  title,
+  body,
+  sources: [],
+  governance: LATER_FICTION,
+});
+
+/** The records added when the chapter was made longer (see LATER_FICTION). */
+export const LATER_RECORDS: ChapterInput['records'] = [
+  laterFiction(
+    'rec-p-eli',
+    'Eli',
+    'Old Shimon’s grandson, who minds the family’s sheep on the ridge above the Jericho road. He eats his bread too early, watches hawks instead of the sun, and notices far more than he lets on.',
+  ),
+  laterFiction(
+    'rec-e-linen',
+    'Rivka’s linen',
+    'Rivka had asked Aunt Miriam for linen: cool sheets for Natan’s bed, because down in Jericho it is too warm for wool. Hadassah the weaver had them ready, already paid for, and you carried them down the road with the remedy.',
+  ),
+  laterFiction(
+    'rec-e-message',
+    'A message for Eli',
+    'Old Shimon asked you to tell his grandson Eli, minding the flock on the ridge, to bring the sheep down the gully before the sun was low.',
+  ),
+  laterFiction(
+    'rec-e-eli',
+    'A boy on the ridge',
+    'By the shepherds’ cistern you met Eli. Early that morning, lying flat behind the rocks, he had watched four men with nothing to carry go down the gully toward the bend.',
+  ),
+  laterFiction(
+    'rec-e-cloak',
+    'Whose cloak?',
+    'At the inn, Salome had a good cloak with a blue stripe that a goatherd found thrown down in the rocks north of the road. Its torn hem, the smell of oil and where it was found all pointed to the robbed traveler.',
+  ),
+  laterFiction(
+    'rec-e-natan',
+    'While the remedy steeped',
+    'While Rivka prepared Aunt Miriam’s remedy, you sat with Natan and told him about the road: what you saw, who you met, and whether you were scared.',
+  ),
+];
 
 export const RECORDS: ChapterInput['records'] = [
   // ── Scripture references ─────────────────────────────────────────────
@@ -418,4 +476,5 @@ export const RECORDS: ChapterInput['records'] = [
     'The route down',
     'From Jerusalem’s east gate the road runs to a fork. The main road squeezes through a narrow bend between red cliffs. A dry wadi runs south-east and ends at a sudden drop. A shepherds’ path climbs the ridge, passes a cistern marked by cairns of three stones, and rejoins the road below the bend. From there it is a short walk to the inn and to Jericho. (The route details are fictional.)',
   ),
+  ...LATER_RECORDS,
 ];

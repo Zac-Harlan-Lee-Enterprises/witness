@@ -2,6 +2,7 @@ import { all, any, chose, flag, has, not, opt, say, type DialogueInput } from '.
 
 const traveler = (option: string) => chose('choice-traveler', option);
 const helpedHere = any(traveler('tend-walk'), traveler('tend-caravan'));
+const clue = (id: string) => ({ type: 'clueFound' as const, clue: id });
 
 /**
  * Jericho: consequences play out at the inn; the remedy is delivered; and
@@ -71,6 +72,15 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         {
           expression: 'glad',
           choices: [
+            opt('cloak', 'Where did the striped cloak on the sacks come from?', 'c1', {
+              when: not(clue('clue-cloak-found')),
+            }),
+            opt('whose', 'I know whose that striped cloak is.', 'ct1', {
+              when: all(flag('cloak-identified'), not(flag('cloak-returned'))),
+            }),
+            opt('miriam', 'Aunt Miriam sends her greetings. She still thinks of you.', 'g1', {
+              when: all(flag('miriam-greeting'), not(flag('greeted-salome'))),
+            }),
             opt('far', 'How far is it to Jericho?', 'general2', { once: true }),
             opt('news', 'Any news of the man who was hurt on the road?', 'news', {
               when: all(any(traveler('send-help'), traveler('hurry-on')), flag('asher-sent')),
@@ -80,6 +90,80 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('general2', 'salome', 'Just past the palms. Follow the road east.', { next: 'general' }),
+      // The striped cloak (side quest: Whose Cloak?)
+      say(
+        'c1',
+        'salome',
+        'That? A goatherd brought it in this morning. He found it thrown down in the rocks north of the road, below the bend, and asked if I’d give him bread for it. Good wool — a pity about the hem.',
+        {
+          effects: [
+            { type: 'discoverClue', clue: 'clue-cloak-found' },
+            { type: 'startQuest', quest: 'q-cloak' },
+          ],
+          choices: [
+            opt('bend', 'Below the bend? That’s where the robbed man was lying.', 'c2', {
+              when: flag('incident-seen'),
+            }),
+            opt('look', 'Can I have a look at it?', 'c2'),
+          ],
+        },
+      ),
+      say(
+        'c2',
+        'salome',
+        'Look all you like. Though I’ll tell you now: half the cloaks in Jericho have a blue stripe.',
+        {
+          effects: [{ type: 'discoverClue', clue: 'clue-blue-stripes' }],
+          next: 'general',
+        },
+      ),
+      say('ct1', 'salome', 'Do you, now? Whose, then?', {
+        choices: [opt('menashe', 'The man who was robbed below the bend. Menashe.', 'ct2')],
+      }),
+      say(
+        'ct2',
+        'salome',
+        'The torn hem, the oil… and found just where they robbed him. Yes. I’d say you’re right.',
+        {
+          effects: [{ type: 'setFlag', flag: 'cloak-returned', value: true }],
+          branches: [
+            { when: helpedHere, next: 'ct-here' },
+            { when: flag('asher-sent'), next: 'ct-asher' },
+          ],
+          next: 'ct-keep',
+        },
+      ),
+      say(
+        'ct-here',
+        'salome',
+        'Then he shall have it back this minute. A man should sleep in his own cloak — and the bread was only bread.',
+        { expression: 'glad', next: 'general' },
+      ),
+      say(
+        'ct-asher',
+        'salome',
+        'Then it’ll be lying on his mat when Asher brings him in. And the bread was only bread.',
+        { expression: 'glad', next: 'general' },
+      ),
+      say(
+        'ct-keep',
+        'salome',
+        'Then I’ll keep it folded for him. Someone will bring him in before long — they usually do, on this road.',
+        { next: 'general' },
+      ),
+      say(
+        'g1',
+        'salome',
+        'Miriam! Bless her. She came out in the middle of the night to set my husband’s arm, years ago, when no one else would. Tell her the inn by the palms is hers whenever she wants it.',
+        {
+          expression: 'glad',
+          effects: [
+            { type: 'setFlag', flag: 'greeted-salome', value: true },
+            { type: 'adjustTrust', character: 'salome', delta: 1 },
+          ],
+          next: 'general',
+        },
+      ),
       say(
         'news',
         'salome',
@@ -249,9 +333,36 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
   {
     id: 'd-menashe-inn',
     characterId: 'menashe',
-    entries: [{ when: chose('choice-cloak', 'given'), node: 'cloak' }],
+    entries: [
+      { when: all(flag('cloak-returned'), not(flag('menashe-has-cloak'))), node: 'own' },
+      { when: chose('choice-cloak', 'given'), node: 'cloak' },
+    ],
     start: 'mi1',
     nodes: [
+      say(
+        'own',
+        'menashe',
+        'Salome brought me my own cloak! Torn at the hem and smelling of my own oil — but mine. How did anyone know it was mine?',
+        {
+          expression: 'surprised',
+          effects: [{ type: 'setFlag', flag: 'menashe-has-cloak', value: true }],
+          choices: [
+            opt('evidence', 'The torn hem matched a strip on a thornbush below the bend.', 'own2'),
+            opt('guess', 'A lucky guess.', 'own2'),
+          ],
+        },
+      ),
+      say('own2', 'menashe', 'Then you see more than most people on that road.', {
+        expression: 'glad',
+        branches: [{ when: chose('choice-cloak', 'given'), next: 'own3' }],
+        next: 'mi2',
+      }),
+      say(
+        'own3',
+        'menashe',
+        'I’ll still bring yours back to Jerusalem, I promise. Tonight I’m sleeping under both.',
+        { expression: 'glad', next: 'mi2' },
+      ),
       say(
         'mi1',
         'menashe',
@@ -354,15 +465,53 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         effects: [{ type: 'setFlag', flag: 'remedy-morning', value: true }],
         next: 'deliver',
       }),
-      say('deliver', 'narrator', 'You hand Rivka the jar and Aunt Miriam’s letter.', {
+      say('deliver', 'narrator', 'You hand Rivka the jar, Aunt Miriam’s letter and the linen.', {
         effects: [
           { type: 'takeItem', item: 'remedy' },
           { type: 'takeItem', item: 'letter' },
+          { type: 'takeItem', item: 'linen-bundle' },
           { type: 'setFlag', flag: 'remedy-delivered', value: true },
         ],
-        branches: [{ when: flag('remedy-morning'), next: 'natan-dawn' }],
-        next: 'natan-day',
+        branches: [{ when: flag('cut-bundle'), next: 'linen-cut' }],
+        next: 'linen-whole',
       }),
+      say(
+        'linen-whole',
+        'rivka',
+        'And Hadassah’s linen! Natan has been sweating under wool all week. Oh, feel how fine this is.',
+        {
+          expression: 'glad',
+          branches: [{ when: flag('remedy-morning'), next: 'natan-dawn' }],
+          next: 'natan-day',
+        },
+      ),
+      say(
+        'linen-cut',
+        'rivka',
+        'And Hadassah’s linen — but one of the sheets has a long strip cut out of it?',
+        {
+          expression: 'surprised',
+          choices: [
+            opt('explain', 'I used it to bind a hurt man’s wounds on the road.', 'linen-cut2'),
+            opt(
+              'sorry',
+              'I’m sorry. A man on the road was bleeding, and I had nothing else.',
+              'linen-cut2',
+            ),
+          ],
+        },
+      ),
+      say(
+        'linen-cut2',
+        'rivka',
+        'Sorry? Then it has already done more good than any bed sheet. I’ll hem the edge myself, and Natan can sleep under the sheet that bound a stranger’s wounds.',
+        {
+          expression: 'glad',
+          effects: [{ type: 'setFlag', flag: 'rivka-knows-linen', value: true }],
+          branches: [{ when: flag('remedy-morning'), next: 'natan-dawn' }],
+          next: 'natan-day',
+        },
+      ),
       say(
         'natan-day',
         'rivka',
@@ -397,25 +546,28 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'told-helped',
         'rivka',
         'And you stopped for him? On that road? Miriam raised you well.',
-        { expression: 'glad', next: 'yair' },
+        { expression: 'glad', next: 'steep' },
       ),
-      say('told-sent', 'rivka', 'And you found a way to get help to him. Good.', { next: 'yair' }),
+      say('told-sent', 'rivka', 'And you found a way to get help to him. Good.', { next: 'steep' }),
       say(
         'told-hurried',
         'rivka',
         'Oh, child. That road frightens grown men. I’m glad you’re safe.',
-        { next: 'yair' },
+        { next: 'steep' },
       ),
       say('long', 'rivka', 'It always is. Downhill all day — your knees will complain tomorrow.', {
-        next: 'yair',
+        next: 'steep',
       }),
       say(
-        'yair',
+        'steep',
         'rivka',
-        'My brother Yair is here. He’s been telling a story all week — about that very road. Yair! Come tell {player} what you heard.',
-        {
-          effects: [{ type: 'startDialogue', dialogue: 'd-yair' }],
-        },
+        'Now, I’ll go and prepare this the way Miriam says — it wants time to steep. Will you sit with Natan while I do? He’s been asking all week for someone new to talk to.',
+        { next: 'steep2' },
+      ),
+      say(
+        'steep2',
+        'rivka',
+        'My brother Yair will be back from the orchard soon. He’s been telling a story all week — about that very road.',
       ),
       say(
         'after',
@@ -431,6 +583,7 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
     entries: [
       { when: flag('heard-yair'), node: 'again' },
       { when: not(flag('remedy-delivered')), node: 'wait' },
+      { when: not(flag('sat-with-natan')), node: 'natan-first' },
     ],
     start: 'y1',
     nodes: [
@@ -438,6 +591,11 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
         'wait',
         'yair',
         'You must be Miriam’s {player}! Go on in to Rivka first — she’s been watching the road all day.',
+      ),
+      say(
+        'natan-first',
+        'yair',
+        'Rivka has you on guard duty, I see. Go and sit with the boy — I’ll come in once I’ve washed the dust off these figs.',
       ),
       say(
         'y1',
@@ -539,7 +697,10 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
   {
     id: 'd-natan',
     characterId: 'natan',
-    entries: [{ when: flag('remedy-delivered'), node: 'after' }],
+    entries: [
+      { when: flag('sat-with-natan'), node: 'after' },
+      { when: flag('remedy-delivered'), node: 'sit1' },
+    ],
     start: 'before',
     nodes: [
       say(
@@ -550,9 +711,153 @@ export const JERICHO_DIALOGUES: DialogueInput[] = [
           choices: [opt('ok', 'The road is dangerous — but I made it.')],
         },
       ),
+      // Keeping Natan company while the remedy steeps (a main-quest stage).
+      say('sit1', 'natan', 'Mama says you walked all the way from Jerusalem. By yourself?', {
+        choices: [
+          opt('alone', 'All the way, by myself.', 'n-alone'),
+          opt('eli', 'Not quite. I met a shepherd boy on the ridge — Eli.', 'n-eli', {
+            when: { type: 'met', character: 'eli' },
+          }),
+        ],
+      }),
+      say(
+        'n-alone',
+        'natan',
+        'I’m not even allowed past the spring by myself. Mama says that road eats people. It didn’t eat you!',
+        { expression: 'glad', next: 'sit2' },
+      ),
+      say(
+        'n-eli',
+        'natan',
+        'A shepherd? With a real staff? When I’m better I’m going to be a shepherd. Or a fig grower. Or both.',
+        { expression: 'glad', next: 'sit2' },
+      ),
+      say('sit2', 'natan', 'Did you see robbers? Uncle Yair says the road is full of them.', {
+        choices: [
+          opt('robbed', 'No robbers. But I found a man they had robbed.', 'r1', {
+            when: flag('incident-seen'),
+          }),
+          opt('none', 'No robbers. Just dust and hills.', 'r-none'),
+        ],
+      }),
+      say('r-none', 'natan', 'Uncle Yair will be so disappointed.', {
+        expression: 'glad',
+        next: 'sit5',
+      }),
+      say('r1', 'natan', 'Really? Was he hurt? Who was he?', {
+        choices: [
+          opt('name', 'His name is Menashe. He sells olive oil. He’s a Samaritan.', 'r2'),
+          opt('stranger', 'A traveler. A stranger, like me.', 'r2b'),
+        ],
+      }),
+      say('r2', 'natan', 'A Samaritan? What are Samaritans like?', {
+        choices: [
+          opt('anyone', 'Like anyone. He was hurt, and frightened, and thirsty.', 'r3'),
+          opt('oil', 'Kind. He gave me a flask of his oil for the road.', 'r3', {
+            when: flag('dispute-settled'),
+          }),
+        ],
+      }),
+      say('r3', 'natan', 'Menashe. I’ll remember his name.', {
+        effects: [{ type: 'setFlag', flag: 'natan-knows-menashe', value: true }],
+        next: 'r4',
+      }),
+      say('r2b', 'natan', 'Like you? Then I hope someone was kind to him.', { next: 'r4' }),
+      say('r4', 'natan', 'Did you help him?', {
+        branches: [
+          { when: helpedHere, next: 'r-helped' },
+          { when: traveler('send-help'), next: 'r-sent' },
+        ],
+        next: 'r-hurried',
+      }),
+      say('r-helped', 'player', 'I bound his wounds, and we got him to the inn by the palms.', {
+        next: 'r-helped2',
+      }),
+      say(
+        'r-helped2',
+        'natan',
+        'That’s what Mama would do. She says Aunt Miriam taught her how to bind a cut.',
+        { expression: 'glad', next: 'sit5' },
+      ),
+      say('r-sent', 'player', 'I left him what I could and ran ahead to send help from the inn.', {
+        next: 'r-sent2',
+      }),
+      say('r-sent2', 'natan', 'Running for help is clever. I’d have got lost.', { next: 'sit5' }),
+      say('r-hurried', 'natan', 'Did you?', {
+        choices: [
+          opt('honest', 'No. I was too frightened to stop.', 'r-honest'),
+          opt('quiet', 'I’d rather not talk about it.', 'r-quiet'),
+        ],
+      }),
+      say('r-honest', 'natan', 'I’d be frightened too. Is someone helping him now?', {
+        branches: [{ when: flag('asher-sent'), next: 'r-asher' }],
+        next: 'r-hope',
+      }),
+      say('r-asher', 'player', 'Yes. Salome at the inn sent her son to bring him in.', {
+        next: 'sit5',
+      }),
+      say('r-hope', 'player', 'I hope so.', { next: 'sit5' }),
+      say('r-quiet', 'natan', 'All right. Mama says some days are like that.', { next: 'sit5' }),
+      say('sit5', 'natan', 'Were you scared, on the road?', {
+        choices: [opt('yes', 'Yes. More than once.', 's-yes'), opt('no', 'Not really.', 's-no')],
+      }),
+      say(
+        's-yes',
+        'natan',
+        'Mama says brave isn’t the same as not scared. Brave is being scared and still doing the next thing.',
+        { next: 'sit6' },
+      ),
+      say('s-no', 'natan', 'I would be. I’m scared of the dark, and that’s only our courtyard.', {
+        next: 'sit6',
+      }),
+      say(
+        'sit6',
+        'narrator',
+        'Natan’s eyes are drooping. Then the gate creaks, and a man comes in with a basket of figs on his hip.',
+        { effects: [{ type: 'setFlag', flag: 'sat-with-natan', value: true }], next: 'sit7' },
+      ),
+      say('sit7', 'natan', 'Uncle Yair! Miriam’s {player} walked the whole road!', {
+        expression: 'glad',
+        effects: [{ type: 'startDialogue', dialogue: 'd-yair' }],
+      }),
       say('after', 'natan', 'Mama says the medicine tastes terrible. That means it works, right?', {
         expression: 'glad',
       }),
+    ],
+  },
+  // ── The striped cloak on the sacks by the inn (side quest: Whose Cloak?) ──
+  {
+    id: 'd-cloak',
+    entries: [
+      { when: flag('cloak-returned'), node: 'gone' },
+      { when: flag('cloak-identified'), node: 'known' },
+      { when: { type: 'conversationDone', dialogue: 'd-cloak' }, node: 'think' },
+    ],
+    start: 'look',
+    nodes: [
+      say(
+        'look',
+        'narrator',
+        'A good wool cloak with a blue stripe, folded on the sacks by the inn gate. A long strip is torn out of its hem. One side is stiff with a dark stain, and it smells of olive oil.',
+        {
+          effects: [
+            { type: 'discoverClue', clue: 'clue-cloak-hem' },
+            { type: 'discoverClue', clue: 'clue-cloak-oil' },
+            { type: 'startQuest', quest: 'q-cloak' },
+          ],
+          next: 'think',
+        },
+      ),
+      say('think', 'narrator', 'Whose cloak could this be?', {
+        choices: [
+          opt('now', 'Think it through.', undefined, {
+            effects: [{ type: 'openPuzzle', puzzle: 'p-cloak' }],
+          }),
+          opt('later', 'Ask Salome about it first.'),
+        ],
+      }),
+      say('known', 'narrator', 'Menashe’s cloak, you’re almost sure. Tell Salome.'),
+      say('gone', 'narrator', 'Salome has taken the cloak to keep for its owner.'),
     ],
   },
 ];

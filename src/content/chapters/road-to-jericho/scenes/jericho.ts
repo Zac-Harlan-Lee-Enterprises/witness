@@ -173,6 +173,16 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       interaction: { verb: 'examine', dialogue: 'd-night' },
     },
     {
+      id: 'striped-cloak',
+      kind: 'feature',
+      label: 'A cloak with a blue stripe, on the sacks',
+      sprite: 'none',
+      x: 1,
+      y: 6,
+      solid: true,
+      interaction: { verb: 'examine', dialogue: 'd-cloak' },
+    },
+    {
       id: 'spring',
       kind: 'sign',
       label: 'The spring',

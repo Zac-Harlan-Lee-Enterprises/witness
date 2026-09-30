@@ -1,4 +1,4 @@
-import { all, opt, say, solved, type DialogueInput } from './helpers';
+import { all, flag, not, opt, say, solved, type DialogueInput } from './helpers';
 
 const objectiveDone = (objective: string) => ({
   type: 'objectiveDone' as const,
@@ -66,8 +66,14 @@ export const HOME_DIALOGUES: DialogueInput[] = [
             { type: 'giveItem', item: 'letter' },
             { type: 'startQuest', quest: 'q-remedy' },
           ],
-          next: 'n8',
+          next: 'n7b',
         },
+      ),
+      say(
+        'n7b',
+        'miriam',
+        'And one more thing. Rivka asked me for linen — sheets for Natan’s bed. Down in Jericho it’s far too warm for wool. Hadassah the weaver has them ready at her stall in the market. They’re paid for; just collect them.',
+        { next: 'n8' },
       ),
       say(
         'n8',
@@ -76,9 +82,16 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         {
           choices: [
             opt('c-what', 'What’s in the remedy?', 'n9', { once: true }),
+            opt('c-rivka', 'Tell me about Rivka.', 'n9b', { once: true }),
             opt('c-go', 'I’ll head to the market.', 'n10'),
           ],
         },
+      ),
+      say(
+        'n9b',
+        'miriam',
+        'We grew up two doors apart, here in Jerusalem. Then she married and went down to Jericho, where it’s warm all winter, and her brother Yair went with her to grow figs. She writes that the palms are taller than the Temple walls. She exaggerates.',
+        { expression: 'glad', next: 'n8' },
       ),
       say(
         'n9',
@@ -99,7 +112,11 @@ export const HOME_DIALOGUES: DialogueInput[] = [
     characterId: 'miriam',
     entries: [
       { when: solved('p-satchel'), node: 'bye' },
-      { when: all(inStage('prepare'), objectiveDone('ask-road')), node: 'pack' },
+      {
+        when: all(inStage('prepare'), objectiveDone('ask-road'), objectiveDone('collect-linen')),
+        node: 'pack',
+      },
+      { when: all(inStage('prepare'), objectiveDone('ask-road')), node: 'linen' },
     ],
     start: 'ask',
     nodes: [
@@ -119,6 +136,11 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'miriam',
         'Try Malik, the Nabataean trader near the east gate. Old Shimon the shepherd often sits there too — he knows the wilderness paths better than anyone.',
         { next: 'ask' },
+      ),
+      say(
+        'linen',
+        'miriam',
+        'You’ve heard about the road — good. Now, Rivka’s linen: Hadassah’s stall is just across the square. Bring it here and pack it with everything else.',
       ),
       say(
         'pack',
@@ -146,8 +168,18 @@ export const HOME_DIALOGUES: DialogueInput[] = [
           choices: [
             opt('will', 'I will.'),
             opt('worried', 'Are you worried?', 'bye2', { once: true }),
+            opt('salome', 'Is there anyone I should look for on the way?', 'bye3', {
+              once: true,
+              when: not(flag('miriam-greeting')),
+            }),
           ],
         },
+      ),
+      say(
+        'bye3',
+        'miriam',
+        'There’s a wayside inn by the palms, just before Jericho. Salome keeps it. If you pass, greet her for me — tell her Miriam still thinks of her.',
+        { effects: [{ type: 'setFlag', flag: 'miriam-greeting', value: true }], next: 'bye' },
       ),
       say(
         'bye2',
