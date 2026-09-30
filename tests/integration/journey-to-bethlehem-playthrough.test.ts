@@ -160,7 +160,6 @@ async function fetchTheMilk(p: Player, asaAt: 'line' | 'home' = 'line'): Promise
   expect(h.state().inventory.milk).toBe(1);
   expect(h.state().flags['kid-home']).toBe(true);
   expect(shown(h, 'kid')).toBeUndefined();
-  expect(shown(h, 'kid-home')).toBeDefined();
 }
 
 async function toFieldsAndDeliver(p: Player): Promise<void> {

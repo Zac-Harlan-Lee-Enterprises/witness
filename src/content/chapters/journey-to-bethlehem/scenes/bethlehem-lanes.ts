@@ -254,15 +254,6 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
     },
     { id: 'goat-1', kind: 'feature', label: 'Hagit’s goat', sprite: 'goat', x: 4, y: 19 },
     { id: 'goat-2', kind: 'feature', label: 'Hagit’s goat', sprite: 'goat', x: 6, y: 18 },
-    {
-      id: 'kid-home',
-      kind: 'feature',
-      label: 'Hagit’s white kid, home again',
-      sprite: 'goat',
-      x: 3,
-      y: 20,
-      visibleWhen: flag('kid-home'),
-    },
     // ── Where Hagit's kid has been (the kid puzzle's places) ───────────
     {
       id: 'cart-barley',
@@ -301,12 +292,14 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
       },
     },
     {
+      // Burrowed into the heap of chaff (so there is nothing to draw but the heap).
       id: 'kid',
       kind: 'feature',
-      label: 'Hagit’s white kid',
-      sprite: 'goat',
+      label: 'Something chewing in the chaff heap',
+      sprite: 'none',
       x: 29,
-      y: 20,
+      y: 22,
+      solid: false,
       visibleWhen: all(
         { type: 'puzzleSolved', puzzle: 'p-kid' },
         not(flag('carrying-kid')),
@@ -319,7 +312,7 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
           { type: 'setFlag', flag: 'saw-threshing', value: true },
           {
             type: 'showMessage',
-            text: 'The kid is up to her knees in chaff at the edge of the threshing floor, chewing. She lets you pick her up without a fuss — she’s had a very full afternoon. Take her back to Hagit.',
+            text: 'Two small white ears stick up out of the heap of chaff, and the heap is chewing. You dig Hagit’s kid out. She lets you pick her up without a fuss — she’s had a very full afternoon. Take her back to Hagit.',
           },
         ],
       },
