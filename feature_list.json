@@ -376,5 +376,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "puzzle-variety",
+    "category": "functional",
+    "description": "Each later chapter has two puzzle types of its own instead of packing and jar filling: Chapter 2 trim (load the boat level) and netting (mend a net by its row and column numbers); Chapter 3 logicGrid (places for supper) and floorplan (fit shaped pieces on the guest room floor); Chapter 4 map (follow written directions on a sketch) and dyeing (reach a named shade in limited dips). Each is a Zod schema plus pure checker, integrity-checked for one fair answer, keyboard-playable with every move announced, and keeps the old puzzle's id, place and effects.",
+    "verification": "npx --no-install vitest run tests/unit/domain/new-puzzle-types.test.ts tests/content/puzzle-variety.test.ts tests/ui/new-puzzles.test.tsx tests/integration/storm-on-galilee-playthrough.test.ts tests/integration/journey-to-bethlehem-playthrough.test.ts tests/integration/letter-from-paul-playthrough.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]

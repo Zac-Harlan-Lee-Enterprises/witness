@@ -1306,7 +1306,8 @@ legend {
   margin: 0.6rem 0;
   padding: 0.6rem;
   border: 3px solid var(--color-accent);
-  border-radius: 50% 50% 18px 18px / 30% 30% 18px 18px;
+  border-radius: 50% 50% 18px 18px / 2.2rem 2.2rem 18px 18px;
+  padding-top: 1.6rem;
   background: var(--color-surface-2);
 }
 .trim__place {
