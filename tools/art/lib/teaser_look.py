@@ -369,7 +369,10 @@ def ground(name="judean-ground", palette=None):
         x_, y_, _ = g.xyz(pos)
         joints = g.voronoi(g.vmath("MULTIPLY", pos, (1.0, 1.0, 0.12)), 0.22, 1.0, "Distance", "DISTANCE_TO_EDGE")
         joint = g.map(joints, 0.0, 0.05, 1.0, 0.0)
-        rock_col = g.mix(g.mul(joint, 0.6), rock_col, "#5e5044")
+        # Only on the cliffs themselves: on a merely steep slope the joints
+        # drew a net of polygons over the ground.
+        cliff = g.smooth(slope, 1.3, 2.2)
+        rock_col = g.mix(g.mul(g.mul(joint, cliff), 0.6), rock_col, "#5e5044")
         varnish = g.noise(g.vmath("MULTIPLY", pos, (1.6, 1.6, 0.08)), 0.5, 4.0, 0.6)
         rock_col = g.mix(g.mul(g.smooth(varnish, 0.5, 0.72), 0.55), rock_col, "#6a5a4a", "MULTIPLY")
         scar = g.smooth(g.noise(g.vmath("ADD", pos, (40.0, 7.0, 3.0)), 1.0 / 7.0, 3.0, 0.6), 0.64, 0.7)
@@ -379,20 +382,23 @@ def ground(name="judean-ground", palette=None):
         col = g.mix(g.mul(wet, 0.5), col, pal["gully"])
         col = g.mix(g.smooth(gorge, 0.82, 0.96), col, pal["floor"])
         # Sheep tracks along the contours: broken, irregular, pale.
-        tr = g.math("FRACT", g.math("DIVIDE", g.add(z, g.mul(mid, 2.2)), 1.3))
+        # (Contours of gentle, uneven ground close into rings and cells: on
+        # slopes under about 0.3 the tracks drew a net over the hills, so they
+        # keep to the steeper grazing, fewer and more broken.)
+        tr = g.math("FRACT", g.math("DIVIDE", g.add(z, g.mul(mid, 1.2)), 1.8))
         line = g.map(tr, 0.0, 0.16, 1.0, 0.0)
-        broken = g.smooth(g.noise(pos, 1.0 / 30.0, 2.0, 0.5), 0.42, 0.58)
-        tracks_base = g.mul(g.mul(line, broken), g.mul(g.smooth(slope, 0.18, 0.38), g.smooth(slope, 0.62, 0.8, 1.0, 0.0)))
+        broken = g.smooth(g.noise(pos, 1.0 / 30.0, 2.0, 0.5), 0.5, 0.62)
+        tracks_base = g.mul(g.mul(line, broken), g.mul(g.smooth(slope, 0.3, 0.5), g.smooth(slope, 0.62, 0.8, 1.0, 0.0)))
         tracks = g.mul(tracks_base, g.fade(200.0, 520.0))
         # For relief the mask (built from the mesh's slope attribute) only
         # scales the bump's strength: in the height its kinks at every
         # triangle edge showed as a faint grid over the slopes.
         tracks_line = g.mul(line, broken)
-        tracks_mask = g.mul(g.mul(g.smooth(slope, 0.18, 0.38), g.smooth(slope, 0.62, 0.8, 1.0, 0.0)), g.fade(15.0, 70.0))
+        tracks_mask = g.mul(g.mul(g.smooth(slope, 0.3, 0.5), g.smooth(slope, 0.62, 0.8, 1.0, 0.0)), g.fade(15.0, 70.0))
         col = g.mix(g.mul(tracks, 0.4), col, pal["track"])
         # Each track's riser, just below it, a line of shade: from afar the
         # tracks read as the fine contour lines of every Judean hillside.
-        riser = g.mul(g.mul(g.map(tr, 0.16, 0.22, 0.0, 1.0), g.map(tr, 0.3, 0.42, 1.0, 0.0)), g.mul(broken, g.mul(g.smooth(slope, 0.18, 0.38), g.fade(40.0, 520.0))))
+        riser = g.mul(g.mul(g.map(tr, 0.16, 0.22, 0.0, 1.0), g.map(tr, 0.3, 0.42, 1.0, 0.0)), g.mul(broken, g.mul(g.smooth(slope, 0.3, 0.5), g.fade(40.0, 520.0))))
         col = g.mix(g.mul(riser, 0.25), col, "#7a6650")
         # Far off, where the mesh no longer carries them: hard beds of rock
         # cropping out along the contours in broken pale bands with a shaded
@@ -435,7 +441,7 @@ def ground(name="judean-ground", palette=None):
         # Stones lying on the slopes at every distance: each stone's own
         # size decides how far off it still shows (big ones far, grit near),
         # so no slope reads as clean sand.
-        for scale, near_, far_, amount, tone in ((1.6, 25.0, 140.0, 0.55, "#e0d3b6"), (5.0, 8.0, 50.0, 0.5, "#8a7560"), (0.45, 60.0, 400.0, 0.4, "#d8cbae")):
+        for scale, near_, far_, amount, tone in ((1.6, 25.0, 140.0, 0.6, "#9c8e7a"), (5.0, 8.0, 50.0, 0.5, "#7d6a58"), (0.45, 60.0, 400.0, 0.45, "#a8987f")):
             cells = g.voronoi(pos, scale, 1.0, "Distance")
             pick = g.xyz(g.voronoi(pos, scale, 1.0, "Color"))[0]
             stone = g.mul(g.map(cells, 0.12, 0.3, 1.0, 0.0), g.math("GREATER_THAN", pick, 0.55))
@@ -468,7 +474,7 @@ def ground(name="judean-ground", palette=None):
         normal = g.bump(h, 0.35, 0.05)
         normal = g.bump(g.math("ABSOLUTE", tracks_line), g.mul(tracks_mask, 0.5), -0.075, normal=normal)
         normal = g.bump(crust_h, g.mul(crust_mask, 0.3), -0.05, normal=normal)
-        normal = g.bump(joints, g.mul(rock_f, 0.5), 0.3, normal=normal)
+        normal = g.bump(joints, g.mul(cliff, 0.5), 0.3, normal=normal)
         normal = g.bump(fine_h, 0.6, 0.002, normal=normal)
         g.principled(col, rough, 0.12, normal)
         return g.mat

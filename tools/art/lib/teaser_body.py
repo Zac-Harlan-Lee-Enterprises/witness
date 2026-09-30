@@ -80,15 +80,15 @@ def wool(name, color, accent):
         col = g.mix(g.map(g.noise(pos, 7.0, 4.0), 0.3, 0.7), g.hsv(color, 0.5, 1.0, 0.85), g.hsv(color, 0.5, 0.95, 1.1))
         stripe = g.mul(g.smooth(restx, 0.45, 0.5), g.smooth(restx, 0.85, 0.8))
         # Woad on wool, faded by sun and washing.
-        col = g.mix(g.mul(stripe, 0.85), col, g.hsv(accent, 0.5, 0.55, 0.62))
+        col = g.mix(g.mul(stripe, 0.85), col, g.hsv(accent, 0.5, 0.5, 0.45))
         weave = g.wave(g.vmath("MULTIPLY", pos, (1.0, 1.0, 1.0)), 900.0, 2.0, 1.0, "BANDS", "Z")
         col = g.mix(g.mul(g.map(weave, 0.3, 1.0), 0.12), col, "#2e241a", "MULTIPLY")
         dust = g.smooth(g.noise(g.vmath("ADD", pos, (2.0, 5.0, 1.0)), 5.0, 4.0, 0.6), 0.45, 0.72)
-        col = g.mix(g.mul(dust, 0.5), col, "#b8a384")
+        col = g.mix(g.mul(dust, 0.22), col, "#9c8a6e")
         stain = g.smooth(g.noise(g.vmath("ADD", pos, (7.0, 1.0, 3.0)), 3.0, 3.0), 0.64, 0.7)
         col = g.mix(g.mul(stain, 0.5), col, "#3a2a20")
         fuzz = g.noise(pos, 300.0, 4.0, 0.7)
-        g.principled(col, 0.95, 0.25, g.bump(g.add(g.mul(weave, 0.5), fuzz), 0.3, 0.0012), **{"Sheen Weight": 0.6, "Sheen Roughness": 0.5})
+        g.principled(col, 0.95, 0.25, g.bump(g.add(g.mul(weave, 0.5), fuzz), 0.3, 0.0012), **{"Sheen Weight": 0.15, "Sheen Roughness": 0.6, "Sheen Tint": (0.7, 0.6, 0.5, 1.0)})
         return g.mat
 
     return C._cached(name, build)

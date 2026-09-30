@@ -63,12 +63,12 @@ def fired_clay(name, base="#b0724a", reduced="#6e5a4a", pale="#caa27e", dust=0.3
         col = g.mix(g.add(low, g.mul(pores, 0.18)), col, "#cdb898")
         # The wheel's rings, wavering round the pot.
         wave = g.add(g.mul(z, 6.2832 / (ring_pitch * scale)), g.mul(g.noise(p, 8.0, 2.0), 3.0))
-        rings = g.mul(g.math("SINE", wave), g.map(g.noise(p, 5.0, 2.0), 0.3, 0.7, 0.3, 1.0))
-        col = g.mix(g.mul(g.map(rings, -1.0, 1.0), 0.14), col, "#8a5a3a", "MULTIPLY")
+        rings = g.mul(g.math("SINE", wave), g.map(g.noise(p, 5.0, 2.0), 0.35, 0.75, 0.05, 1.0))
+        col = g.mix(g.mul(g.map(rings, -1.0, 1.0), 0.06), col, "#8a5a3a", "MULTIPLY")
         h = g.add(g.mul(rings, 0.5), g.add(g.mul(g.noise(p, 90.0, 4.0, 0.6), 0.4), g.mul(pits, -1.2)))
         h = g.add(h, g.mul(lime, g.mul(lime_pick, 0.4)))
         rough = g.map(slip, 0.0, 1.0, 0.86 - sheen, 0.78 - sheen)
-        g.principled(col, rough, 0.3, g.bump(h, 0.7, 0.001 * scale))
+        g.principled(col, rough, 0.3, g.bump(h, 0.45, 0.0008 * scale))
         return g.mat
 
     return C._cached(name, build)

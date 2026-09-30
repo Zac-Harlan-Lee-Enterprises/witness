@@ -649,7 +649,9 @@ def grid_slope(X, Y, Z):
 
 
 def land_attributes(land, X, Y, Z, slope=None):
-    sl = land.slope(X, Y) if slope is None else slope
+    # A mesh's own slope, smoothed over its neighbours: point to point it is
+    # noisy, and thresholds on it drew the triangles into the colours.
+    sl = land.slope(X, Y) if slope is None else N.blur(slope, 1)
     wet = land.wetness(X, Y)
     gd = land.gorge_distance(X, Y)
     road = land.road.mask(X, Y).reshape(X.shape) if land.road is not None else np.zeros_like(X)

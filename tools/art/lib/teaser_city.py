@@ -82,6 +82,10 @@ def masonry(name="city-masonry", ashlar=False):
         wash = g.mul(washed, g.sub(1.0, flake))
         wash_col = g.mix(g.map(g.noise(pos, 1.5, 3.0), 0.3, 0.7), "#d9c7a6", "#cbb593")
         wash_col = g.mix(g.mul(g.smooth(g.noise(pos, 0.35, 3.0), 0.5, 0.7), 0.5), wash_col, "#b89f7e")
+        # Each house its own plaster: lime-white, pinkish, ochre, mud-brown.
+        tint = g.ramp(g.math("FRACT", g.mul(rnd, 7.3)), [(0.0, "#e2d6c2"), (0.3, "#d6bfa2"), (0.55, "#cdb08a"), (0.8, "#b9a07f"), (1.0, "#d9cbb3")])
+        wash_col = g.mix(0.7, wash_col, tint, "MULTIPLY")
+        wash_col = g.hsv(wash_col, 0.5, 1.0, 1.45)
         col = g.mix(wash, col, wash_col)
         base = g.attr("zbase")
         top = g.attr("ztop")
@@ -116,6 +120,10 @@ def roofs(name="city-roofs"):
         col = g.mix(g.map(big, 0.35, 0.65), "#c9b99b", "#ddd0b6")
         col = g.mix(g.mul(g.smooth(g.noise(pos, 0.9, 4.0), 0.6, 0.72), 0.5), col, "#a8977a")
         col = g.mix(g.mul(rnd, 0.3), col, "#bfae8e")
+        # Many roofs are bare rolled earth, grey-brown; some freshly limed.
+        earth = g.mix(g.map(big, 0.3, 0.7), "#9c8a70", "#b3a084")
+        col = g.mix(g.map(rnd, 0.35, 0.4), earth, col)
+        col = g.mix(g.mul(g.smooth(g.noise(pos, 2.0, 3.0), 0.55, 0.7), 0.4), col, "#7d6e5a")
         h = g.add(g.noise(pos, 4.0, 5.0, 0.6), g.mul(g.noise(pos, 30.0, 3.0), 0.3))
         g.principled(col, 0.93, 0.15, g.bump(h, 0.25, 0.02))
         return g.mat
@@ -310,7 +318,7 @@ class City:
             self._house(lot, walls, tops)
         # Rubble walls, some lime-washed; roofs of rolled earth and lime.
         self.objects.append(walls.finish(masonry(), bevel=0.05))
-        self.objects.append(tops.finish(M.plaster("#d6c2a2", "teaser-roof-plaster")))
+        self.objects.append(tops.finish(roofs()))
         self.objects.append(self.holes.finish(plain("city-dark", "#1a130d", 0.95)))
         self.objects.append(self.timber.finish(wood("city-wood", "#5e4630"), bevel=0.01))
         self.objects.append(self.dressed.finish(masonry("city-dressed", ashlar=True), bevel=0.012))
