@@ -216,7 +216,7 @@ export function ChapterSummary({
           className="button"
           onClick={() => runtime.controller.panelFinished('summary')}
         >
-          Keep exploring Jericho
+          Keep exploring
         </button>
         <button type="button" className="button button--primary" onClick={onReturnToTitle}>
           Return to title

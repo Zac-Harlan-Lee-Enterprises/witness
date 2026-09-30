@@ -358,6 +358,9 @@ describe('Chapter ending', () => {
     ).toBeInTheDocument();
     expect(dialog).toHaveTextContent('Shepherds found Menashe near sunset');
     expect(dialog.textContent).not.toMatch(/score|grade|points|holiness|faith level/i);
+    // The same screen ends every chapter: it must not name one chapter's place
+    // (it said "Keep exploring Jericho" at the end of the Galilee chapter).
+    expect(within(dialog).getByRole('button', { name: 'Keep exploring' })).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
 });
