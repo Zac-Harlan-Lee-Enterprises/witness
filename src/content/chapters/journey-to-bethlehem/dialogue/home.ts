@@ -97,11 +97,11 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say(
         'bread',
         'tamar',
-        'The flour jar and the kneading trough are by the oven. Three measures, remember — the guest measure.',
+        'The flour jar and the kneading trough are by the oven. Three measures, remember — the guest measure. And while the bread bakes, set the places for supper.',
         {
           choices: [
             opt('three', 'Why three?', 'three', { once: true }),
-            opt('cup', 'Where is the one-measure cup?', 'cup', { once: true }),
+            opt('places', 'Who sits where?', 'places', { once: true }),
             opt('ok', 'I’ll do it now.'),
           ],
         },
@@ -113,15 +113,15 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         paraphrase('rec-para-abraham', { next: 'bread' }),
       ),
       say(
-        'cup',
+        'places',
         'tamar',
-        'Under one of Uncle Asa’s bundles, I expect. You’ll have to manage with the trough and the grain basket.',
+        'Everyone has told me where they’d like to sit, and I can’t keep it all in my head. You work it out — you’re good at that.',
         { next: 'bread' },
       ),
       say(
         'room',
         'tamar',
-        'The bread smells wonderful. Now the guest room: Asa’s and Peninah’s beds must go in. The rest… we’ll see what fits.',
+        'The bread smells wonderful. Now the guest room: Asa’s and Peninah’s beds must go in. Mind the water jar and the roof post, and keep the way to the door clear. The rest… we’ll see what fits.',
         {
           expression: 'glad',
           choices: [

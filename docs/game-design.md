@@ -522,7 +522,7 @@ flowchart TD
 
 ## 13. Puzzle specifications
 
-Four puzzle types, each growing out of the story. Checkers are pure functions that return feedback about the reasoning ([`src/domain/puzzles.ts`](../src/domain/puzzles.ts)). Every puzzle has **three hint tiers**: early tiers nudge, and only the last one explains the answer. Attempts and hints are counted only for optional anonymous statistics. **There is no penalty and no score.** After solving, an explanation says *why* the answer is right.
+Chapter 1 uses the four original puzzle types, each growing out of the story; each later chapter has two puzzle types of its own (see §13.5). Checkers are pure functions that return feedback about the reasoning ([`src/domain/puzzles.ts`](../src/domain/puzzles.ts) and one `src/domain/puzzle-*.ts` module per newer type). Every puzzle has **three hint tiers**: early tiers nudge, and only the last one explains the answer. Attempts and hints are counted only for optional anonymous statistics. **There is no penalty and no score.** After solving, an explanation says *why* the answer is right.
 
 ### 13.1 `p-satchel`: Pack the Satchel (packing, resource allocation)
 
@@ -579,6 +579,22 @@ Four puzzle types, each growing out of the story. Checkers are pure functions th
 | **Explanation** | Reading tracks in order is how you know the drag marks came last. A careful conclusion says what the evidence supports and admits what it can't prove. |
 | **On success** | Flag `scene-understood`. **This unlocks the decision:** Menashe's conversation moves to the narrator's summary ("the danger has passed — though you can't be completely sure") and then to the choice. |
 | **How prior choices change it** | Which clues were examined determines which cards are backed by evidence. Because the puzzle comes before the decision, the choice to stop is made with an honest, uncertain reading of the risk rather than a guarantee of safety. |
+
+### 13.5 Puzzle types across the chapters
+
+The owner asked for different puzzles in each chapter rather than jar filling everywhere. Chapter 1 keeps the four originals. In Chapters 2–4 the packing and measuring puzzles were replaced by two new types per chapter, each used in only one chapter; deduction and sequence puzzles appear in every chapter. A content test ([`tests/content/puzzle-variety.test.ts`](../tests/content/puzzle-variety.test.ts)) pins this.
+
+| Chapter | Puzzle | Type | How it plays |
+|---|---|---|---|
+| 1 The Road to Jericho | `p-satchel`, `p-measure`, `p-route`, `p-what-happened` | packing, measuring, deduction, sequence | As above (§13.1–13.4). |
+| 2 A Storm on Galilee | `p-load` Load the Boat | **trim** | Choose what goes aboard and where (bow, port, starboard, stern), so the boat sits level with her crew in their places, within 10 loads. |
+| 2 | `p-brine` Nikanor's Jar Net (optional) | **netting** | A picture logic grid: tie the torn knots so every row and column matches its runs of knots. |
+| 3 A Journey to Bethlehem | `p-bread` Places for Supper | **logicGrid** | Four people, four places along the mat, four clues; mark ✗ and ✓ in a grid. |
+| 3 | `p-room` Room in the Guest Room | **floorplan** | Fit shaped pieces (bedding, jars, loom, tools) onto a floor grid around fixed things, turning them; what fits is what stays. |
+| 4 A Letter from Paul | `p-pack` The Way to the Bridge | **map** | Follow written directions (left, right, count the milestones) on a sketch map to the right dye works. |
+| 4 | `p-alum` The Buyer's Shade (optional) | **dyeing** | Reach a named target shade in four dips of madder, blue and rinse. |
+
+Every replacement kept its puzzle id, its place in the story and its `onSolved` effects and flags, so quests, dialogue and the ending read them as before. The loading and guest room puzzles still record `choice-load` and `choice-room` from what you chose. Chapter 4's loadout is no longer a puzzle: the travel bag is a choice made in conversation (`d-bag`), which records `choice-packing` and sets `packed` exactly as the packing puzzle did; the map puzzle sets `knows-the-way`, and the west gate needs both. All six are playable from the keyboard alone (arrow keys and Space/Enter, no dragging), announce each move to screen readers, and never rely on colour alone (the dye shades are named and numbered).
 
 ## 14. Choices and consequences
 

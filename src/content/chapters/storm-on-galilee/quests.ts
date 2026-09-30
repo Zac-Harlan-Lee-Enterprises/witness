@@ -157,20 +157,20 @@ export const QUESTS: ChapterInput['quests'] = [
   },
   {
     id: 'q-brine',
-    name: 'Nikanor’s Brine',
+    name: 'Nikanor’s Jar Net',
     description:
-      'Nikanor’s apprentice has gone to hear the teacher, and the brine tub needs exactly seven measures of lake water.',
+      'Nikanor’s apprentice has gone to hear the teacher, leaving the torn net that carries Nikanor’s jars unmended.',
     kind: 'side',
     autoStart: false,
     stages: [
       {
         id: 'measure',
-        title: 'Measure the Brine',
-        description: 'Use the big jar and the small jar to measure exactly 7.',
+        title: 'Mend the Net',
+        description: 'Tie the torn knots so the net matches its pattern again.',
         objectives: [
           {
             id: 'measure',
-            description: 'Measure exactly 7 in the big jar (by the brine tubs)',
+            description: 'Mend the jar net (by the salting tubs)',
             completeWhen: { type: 'puzzleSolved', puzzle: 'p-brine' },
             optional: false,
           },
@@ -181,7 +181,7 @@ export const QUESTS: ChapterInput['quests'] = [
       {
         id: 'tell',
         title: 'Tell Nikanor',
-        description: 'Show Nikanor the measure.',
+        description: 'Show Nikanor the mended net.',
         objectives: [
           {
             id: 'tell',
@@ -205,9 +205,9 @@ export const QUESTS: ChapterInput['quests'] = [
       {
         id: 'finished',
         kind: 'success',
-        title: 'The brine is ready',
+        title: 'The net is mended',
         description:
-          'You measured the brine for Nikanor, and he agreed that fewer jars need cross tonight.',
+          'You mended Nikanor’s jar net, and he agreed that fewer jars need cross tonight.',
         rewards: [
           { type: 'adjustTrust', character: 'nikanor', delta: 2 },
           { type: 'setFlag', flag: 'nikanor-agreed', value: true },
@@ -218,7 +218,7 @@ export const QUESTS: ChapterInput['quests'] = [
         id: 'unfinished',
         kind: 'alternate',
         title: 'Left for the morning',
-        description: 'You cast off before the brine was measured.',
+        description: 'You cast off before the net was mended.',
         rewards: [],
       },
     ],

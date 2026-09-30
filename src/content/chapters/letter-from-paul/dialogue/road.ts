@@ -128,7 +128,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say(
         'k10-alum',
         'kallias',
-        'Unless tomorrow’s alum bath is ready. Then Nikon might let me go and still pay me. I’ve been trying to measure it all morning, but my head is somewhere else.',
+        'Unless the test skein for tomorrow’s order matches the buyer’s sample. Then Nikon might let me go and still pay me. I’ve been dipping it all morning, but my head is somewhere else.',
         {
           effects: [{ type: 'setFlag', flag: 'alum-task', value: true }],
           next: 'decide',
@@ -141,12 +141,12 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say(
         'alum-done',
         'kallias',
-        'Nikon says the bath is right — six measures exactly. You didn’t have to do that.',
+        'Nikon says the skein matches the sample to the thread. You didn’t have to do that.',
         { expression: 'glad', next: 'decide' },
       ),
       say('decide', 'narrator', 'Kallias waits to hear what you’ll say.', {
         choices: [
-          opt('help', 'Let me help with the alum bath first.', 'help', {
+          opt('help', 'Let me help with the test skein first.', 'help', {
             when: all(flag('alum-task'), not(solved('p-alum'))),
           }),
           opt('bread', 'Share some bread with me first?', 'bread', {
@@ -168,7 +168,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
           }),
         ],
       }),
-      say('help', 'narrator', 'The measuring jars stand by the water channel, next to the vats.'),
+      say('help', 'narrator', 'The test skein hangs by the vats, next to the water channel.'),
       say(
         'bread',
         'narrator',
@@ -195,7 +195,7 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say(
         'come-paid',
         'narrator',
-        'Nikon looks at the alum bath, nods, and counts Kallias’s day’s wage into his hand.',
+        'Nikon holds the test skein against the sample, nods, and counts Kallias’s day’s wage into his hand.',
         {
           effects: [{ type: 'setFlag', flag: 'kallias-paid', value: true }],
           next: 'come-cloak',
@@ -338,9 +338,9 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say(
         'task',
         'nikon',
-        'Tomorrow’s alum bath wants six measures of water in the big jar — exactly six. If it’s set before he goes, he’s earned his day. If not, not.',
+        'Tomorrow’s buyer wants mulberry, and nothing goes in the big vats until the test skein matches his sample. If it matches before he goes, he’s earned his day. If not, not.',
       ),
-      say('done', 'nikon', 'Six measures, exactly. Somebody in this yard can count.', {
+      say('done', 'nikon', 'Mulberry, to the thread. Somebody in this yard has an eye.', {
         expression: 'glad',
       }),
     ],

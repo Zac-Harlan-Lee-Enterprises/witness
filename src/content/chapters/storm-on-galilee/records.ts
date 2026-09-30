@@ -259,7 +259,7 @@ export const RECORDS: ChapterInput['records'] = [
       'src-magdala-salted',
       'src-hanson-fishing',
     ],
-    body: 'Fish were salted or dried so they would keep and could be sold far from the lake. The Greek geographer Strabo wrote that “at the place called Taricheae the lake supplies excellent fish for pickling.” Most scholars identify Taricheae with Magdala, on the western shore, though some disagree. Its Greek name is linked to a word for preserved fish, and the Babylonian Talmud calls the town Magdala Nunayya, “Tower of the Fishes.” Archaeologists at Magdala have found a large harbour, hundreds of fishing weights, and small pools that may have been used for salting fish. The brine recipe in this game is made up.',
+    body: 'Fish were salted or dried so they would keep and could be sold far from the lake. The Greek geographer Strabo wrote that “at the place called Taricheae the lake supplies excellent fish for pickling.” Most scholars identify Taricheae with Magdala, on the western shore, though some disagree. Its Greek name is linked to a word for preserved fish, and the Babylonian Talmud calls the town Magdala Nunayya, “Tower of the Fishes.” Archaeologists at Magdala have found a large harbour, hundreds of fishing weights, and small pools that may have been used for salting fish. Nikanor’s jar net in this game is made up.',
     governance: draft({
       confidence: 'probable',
       sourced: true,

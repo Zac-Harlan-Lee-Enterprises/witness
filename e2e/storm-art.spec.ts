@@ -11,6 +11,7 @@ import {
   openApp,
   setFastSettings,
   waitForWorld,
+  trimBoat,
 } from './support';
 import { artDetails } from './world-probe';
 
@@ -135,14 +136,15 @@ for (const vp of VIEWPORTS) {
       await choose(page, 'Load the boat.');
       await endDialogue(page);
       const load = page.getByRole('dialog', { name: 'Load the Boat' });
-      const pack = (name: string) => load.getByRole('button', { name: `Pack one ${name}` }).click();
-      await pack('Bailing scoop');
-      for (let i = 0; i < 4; i++) await pack('Jar of salted fish');
-      await pack('Coil of rope');
-      await pack('Spare oar');
-      await pack('Your cloak');
-      await pack('Clay lamp');
-      await load.getByRole('button', { name: 'Finish packing' }).click();
+      await trimBoat(load, [
+        ...Array.from({ length: 4 }, () => ['Jar of salted fish', 'bow'] as const),
+        ['Bailing scoop', 'stern'],
+        ['Clay lamp', 'stern'],
+        ['Spare oar', 'port side'],
+        ['Coil of rope', 'starboard side'],
+        ['Your cloak', 'starboard side'],
+      ]);
+      await load.getByRole('button', { name: 'Finish loading' }).click();
       await load.getByRole('button', { name: 'Continue' }).click();
       // Evening: the sun sets while the boats put out, and the shore
       // changes to its night set.

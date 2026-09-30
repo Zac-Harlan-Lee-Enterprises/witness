@@ -1,5 +1,6 @@
 import {
   all,
+  flag,
   has,
   not,
   opt,
@@ -107,7 +108,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
     id: 'd-ammia',
     characterId: 'ammia',
     entries: [
-      { when: solved('p-pack'), node: 'bye' },
+      { when: all(solved('p-pack'), flag('packed')), node: 'bye' },
       { when: has('ammia-letter'), node: 'pack' },
       { when: all(solved('p-sheets'), not(readingChosen)), node: 'read' },
     ],
@@ -207,7 +208,7 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say(
         'sign2',
         'ammia',
-        'Pack the travel bag first. It’s a long walk down the valley, and back again before lamp-lighting.',
+        'Pack the travel bag first, and ask me the way before you go. It’s a long walk down the valley, and back again before lamp-lighting.',
       ),
 
       // ── Packing ─────────────────────────────────────────────────────────
@@ -219,6 +220,10 @@ export const HOME_DIALOGUES: DialogueInput[] = [
           choices: [
             opt('c-cloak', 'Is that Kallias’s old cloak on the peg?', 'pack2', { once: true }),
             opt('c-far', 'How far is the bridge?', 'pack3', { once: true }),
+            opt('c-way', 'Which way is Nikon’s dye works?', undefined, {
+              when: not(solved('p-pack')),
+              effects: [{ type: 'openPuzzle', puzzle: 'p-pack' }],
+            }),
             opt('c-ok', 'I’ll pack now.'),
           ],
         },
@@ -243,13 +248,22 @@ export const HOME_DIALOGUES: DialogueInput[] = [
   },
   {
     id: 'd-gate-blocked',
-    entries: [{ when: not(has('ammia-letter')), node: 'no-letter' }],
+    entries: [
+      { when: not(has('ammia-letter')), node: 'no-letter' },
+      { when: not(solved('p-pack')), node: 'way' },
+    ],
     start: 'pack',
     nodes: [
       say(
         'no-letter',
         'narrator',
         'Not yet. You don’t even know what Kallias’s letter says. Zenon first, then Ammia.',
+      ),
+      say(
+        'way',
+        'narrator',
+        'There’s more than one dye works by a bridge down that valley, and you don’t know which is Nikon’s. Go home and ask Ammia the way.',
+        { effects: [{ type: 'setFlag', flag: 'tried-gate', value: true }] },
       ),
       say(
         'pack',

@@ -12,6 +12,9 @@ import {
   snap,
   waitForWorld,
   timeLimit,
+  packBag,
+  walkMap,
+  checkPuzzleA11y,
 } from './support';
 
 /**
@@ -93,18 +96,38 @@ test('play A Letter from Paul from a new profile to the chapter summary', async 
   await expect(page.getByRole('dialog', { name: 'Satchel' })).toContainText('Ammia’s answer');
   await page.keyboard.press('Escape');
 
-  // Packing: rain is coming, so the letter must be kept dry.
+  // Map reading: Ammia's directions to Nikon's dye works, followed on her sketch.
+  await goTo(page, 'Talk to Ammia');
+  await choose(page, 'Which way is Nikon’s dye works?');
+  await endDialogue(page);
+  const way = page.getByRole('dialog', { name: 'The Way to the Bridge' });
+  await expect(way).toBeVisible();
+  await checkPuzzleA11y(page, 'map puzzle');
+  await walkMap(way, [
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowLeft',
+  ]);
+  await snap(page, 'lfp-04-map');
+  await expect(way.getByText('Solved!')).toBeVisible();
+  await way.getByRole('button', { name: 'Continue' }).click();
+
+  // Packing, one thing at a time: rain is coming, so the letter must be kept dry.
   await goTo(page, 'Use Travel bag');
-  const bag = page.getByRole('dialog', { name: 'Ready for the Road' });
-  await bag.getByRole('button', { name: 'Pack one Kallias’s old cloak' }).click();
-  await bag.getByRole('button', { name: 'Pack one Writing tablets and stylus' }).click();
-  await bag.getByRole('button', { name: 'Finish packing' }).click();
-  await expect(bag.locator('.feedback--problem')).toContainText('dry');
-  await bag.getByRole('button', { name: 'Pack one Leather letter case' }).click();
-  await snap(page, 'lfp-04-packing');
-  await bag.getByRole('button', { name: 'Finish packing' }).click();
-  await expect(bag.getByText('Solved!')).toBeVisible();
-  await bag.getByRole('button', { name: 'Continue' }).click();
+  await choose(page, 'Put in Kallias’s old cloak');
+  await choose(page, 'Put in the writing tablets');
+  await expect(
+    page.locator('section.dialogue .choice').filter({ hasText: 'Tie the bag shut' }),
+  ).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('section.dialogue')).toContainText('keep it dry');
+  await snap(page, 'lfp-05-packing');
+  await packBag(page, ['the leather letter case']);
 
   // Down the Laodicea road.
   await goTo(page, 'Go to the street');
@@ -117,6 +140,18 @@ test('play A Letter from Paul from a new profile to the chapter summary', async 
   await expect(page.locator('.viewport canvas')).toHaveAttribute('data-weather', 'rain');
   await snap(page, 'lfp-06-dye-works');
   await choose(page, /I’ll speak for you/);
+  // Colour mixing: match the buyer's shade so Kallias keeps his wage.
+  await choose(page, 'Let me help with the test skein first.');
+  await endDialogue(page);
+  await goTo(page, 'Use The test skein and the vats');
+  const dye = page.getByRole('dialog', { name: 'The Buyer’s Shade' });
+  await expect(dye).toContainText('mulberry (red 3, blue 2)');
+  await checkPuzzleA11y(page, 'dyeing puzzle');
+  for (const bath of ['the madder vat', 'the rinsing trough', 'the madder vat', 'the blue vat'])
+    await dye.getByRole('button', { name: `Dip in ${bath}` }).click();
+  await expect(dye.getByText('Solved!')).toBeVisible();
+  await dye.getByRole('button', { name: 'Continue' }).click();
+  await goTo(page, 'Talk to Kallias');
   await choose(page, /Come home with me now/);
   await choose(page, /Ammia kept your old cloak/);
   await continueDialogue(page);

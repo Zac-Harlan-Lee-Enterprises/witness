@@ -21,6 +21,17 @@ import type { DomainEvent } from '@/domain/events';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import type { GameState } from '@/domain/state/game-state';
 import type { LookMark, Weather } from '@/domain/world';
+import { floorplanLayouts, type PiecePlacement } from '@/domain/puzzle-floorplan';
+import type { LogicAssignment } from '@/domain/puzzle-logic-grid';
+import { walk, type Direction, type MapPosition } from '@/domain/puzzle-map';
+import { initialNet, isTorn, nettingSolutions, type NetCell } from '@/domain/puzzle-netting';
+import {
+  checkTrim,
+  trimDifference,
+  trimPlaces,
+  type TrimLoad,
+  type TrimPuzzle,
+} from '@/domain/puzzle-trim';
 import { SilentAudio } from '@/infrastructure/audio/synth-audio';
 import { TypedEventBus } from '@/shared/event-bus';
 import { createLogger } from '@/shared/logger';
@@ -196,6 +207,43 @@ export async function createHarness(
   };
 }
 
+/**
+ * Where to put a chosen load so a trim puzzle is satisfied (places' room and
+ * balance), found by trying each piece of cargo in each place. Null if no
+ * arrangement of that load sits level.
+ */
+export function arrangeTrim(
+  puzzle: TrimPuzzle,
+  packed: Readonly<Record<string, number>>,
+  weightOf: (itemId: string) => number,
+): TrimLoad | null {
+  const units = Object.entries(packed)
+    .flatMap(([id, q]) => Array.from({ length: q }, () => id))
+    .sort((a, b) => weightOf(b) - weightOf(a) || a.localeCompare(b));
+  const load: Record<string, Record<string, number>> = {};
+  const room = (place: string) =>
+    Object.entries(load[place] ?? {}).reduce((s, [id, q]) => s + weightOf(id) * q, 0);
+  const search = (i: number): boolean => {
+    const item = units[i];
+    if (item === undefined) {
+      const places = trimPlaces(puzzle, load, weightOf);
+      return puzzle.balance.every(
+        (b) => Math.abs(trimDifference(places, b.between)) <= b.tolerance,
+      );
+    }
+    for (const place of puzzle.places) {
+      if (room(place.id) + weightOf(item) > place.limit) continue;
+      const cargo = (load[place.id] ??= {});
+      cargo[item] = (cargo[item] ?? 0) + 1;
+      if (search(i + 1)) return true;
+      cargo[item] = (cargo[item] ?? 0) - 1;
+      load[place.id] = Object.fromEntries(Object.entries(cargo).filter(([, q]) => q > 0));
+    }
+    return false;
+  };
+  return search(0) ? load : null;
+}
+
 /** Scripted player actions built on the real application layer. */
 export class Player {
   constructor(readonly h: Harness) {}
@@ -257,6 +305,64 @@ export class Player {
   async step(x: number, y: number): Promise<void> {
     this.h.controller.handleWorldEvent({ type: 'tileEntered', x, y });
     await flush();
+  }
+
+  // ── Puzzles (the open puzzle's own submit, driven like a player would) ──
+
+  /** Load and trim the boat: choose what goes aboard; the arrangement is worked out. */
+  loadAndTrim(puzzleId: string, packed: Readonly<Record<string, number>>) {
+    const puzzle = this.h.puzzles.find(puzzleId);
+    if (puzzle?.type !== 'trim') throw new Error(`${puzzleId} is not a trim puzzle`);
+    const load = arrangeTrim(puzzle, packed, this.h.puzzles.weightOf);
+    if (!load) {
+      const flat = { bow: { ...packed } };
+      return checkTrim(puzzle, flat, this.h.session.state, this.h.puzzles.weightOf);
+    }
+    return this.h.puzzles.submitTrim(puzzleId, load);
+  }
+
+  /** Mend a net by tying exactly the knots of its one solution. */
+  mendNet(puzzleId: string) {
+    const puzzle = this.h.puzzles.find(puzzleId);
+    if (puzzle?.type !== 'netting') throw new Error(`${puzzleId} is not a netting puzzle`);
+    const [solution] = nettingSolutions(puzzle, 1);
+    const net: NetCell[][] = initialNet(puzzle).map((row, r) =>
+      row.map((cell, c) =>
+        isTorn(puzzle, r, c) ? (solution?.[r]?.[c] === '#' ? 'knot' : 'open') : cell,
+      ),
+    );
+    return this.h.puzzles.submitNetting(puzzleId, net);
+  }
+
+  /** Lay out exactly these pieces on the floor (the first layout that fits). */
+  furnish(puzzleId: string, items: readonly string[]) {
+    const puzzle = this.h.puzzles.find(puzzleId);
+    if (puzzle?.type !== 'floorplan') throw new Error(`${puzzleId} is not a floor plan puzzle`);
+    const [layout] = floorplanLayouts(puzzle, items, 1);
+    const placements: PiecePlacement[] = layout ?? [];
+    if (!layout) throw new Error(`${items.join(', ')} don’t fit on the floor of ${puzzleId}`);
+    return this.h.puzzles.submitFloorplan(puzzleId, placements);
+  }
+
+  matchUp(puzzleId: string, assignment: LogicAssignment) {
+    return this.h.puzzles.submitLogicGrid(puzzleId, assignment);
+  }
+
+  dye(puzzleId: string, dips: readonly string[]) {
+    return this.h.puzzles.submitDyeing(puzzleId, dips);
+  }
+
+  /** Walk a map puzzle by compass directions from its start, then stop there. */
+  followMap(puzzleId: string, directions: readonly Direction[]) {
+    const puzzle = this.h.puzzles.find(puzzleId);
+    if (puzzle?.type !== 'map') throw new Error(`${puzzleId} is not a map puzzle`);
+    let at: MapPosition = puzzle.start;
+    for (const d of directions) {
+      const next = walk(puzzle, at, d);
+      if (!next) throw new Error(`No road ${d} from ${at.x},${at.y} on ${puzzleId}`);
+      at = next.position;
+    }
+    return this.h.puzzles.submitMapStop(puzzleId, at);
   }
 
   busy() {

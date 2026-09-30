@@ -4,6 +4,12 @@ import { checkRecordIntegrity } from './content-records';
 import { danglingNodeRefs, RESERVED_SPEAKERS } from './dialogue';
 import type { Effect } from './effects';
 import { ALL_EVENT_TYPES } from './events';
+import { packRuleItems, type LoadoutRule, type PackRule } from './puzzle-base';
+import { shortestDyeings } from './puzzle-dyeing';
+import { floorplanLayouts } from './puzzle-floorplan';
+import { logicGridSolutions, logicRuleRefs } from './puzzle-logic-grid';
+import { exitsFrom, isRoad, walk } from './puzzle-map';
+import { nettingSolutions } from './puzzle-netting';
 import { isSolidTile, parseLayout, tileAt, type TileGrid } from './world';
 
 /**
@@ -248,21 +254,156 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
       add(`journal ${j.id}`, `unknown character '${j.characterId}'`);
   });
 
+  const checkLoadout = (
+    where: string,
+    p: {
+      choiceId: string;
+      classifications: Array<{ option: string; rule: PackRule }>;
+      rules: LoadoutRule[];
+    },
+  ): void => {
+    const choice = ids.choices.get(p.choiceId);
+    if (!choice) add(where, `unknown choice '${p.choiceId}'`);
+    else
+      p.classifications.forEach(
+        (c) =>
+          !choice.options.some((o) => o.id === c.option) &&
+          add(where, `classification option '${c.option}' is not an option of '${p.choiceId}'`),
+      );
+    [...p.rules.map((r) => r.rule), ...p.classifications.map((c) => c.rule)]
+      .flatMap(packRuleItems)
+      .forEach((item) => !ids.items.has(item) && add(where, `unknown item '${item}'`));
+  };
+
   // Puzzles
   chapter.puzzles.forEach((p) => {
     const where = `puzzle ${p.id}`;
     p.recordIds.forEach((r) => checkRecord(where, r));
     checkEffects(where, p.onSolved);
     switch (p.type) {
-      case 'packing': {
-        const choice = ids.choices.get(p.choiceId);
-        if (!choice) add(where, `unknown choice '${p.choiceId}'`);
-        else
-          p.classifications.forEach(
-            (c) =>
-              !choice.options.some((o) => o.id === c.option) &&
-              add(where, `classification option '${c.option}' is not an option of '${p.choiceId}'`),
+      case 'packing':
+        checkLoadout(where, p);
+        break;
+      case 'trim': {
+        checkLoadout(where, p);
+        const places = new Set(p.places.map((pl) => pl.id));
+        p.crew.forEach(
+          (c) =>
+            !places.has(c.place) && add(where, `crew '${c.id}' sits in unknown place '${c.place}'`),
+        );
+        p.balance.forEach((b) =>
+          b.between.forEach(
+            (pl) => !places.has(pl) && add(where, `balance '${b.id}' names unknown place '${pl}'`),
+          ),
+        );
+        if (p.places.reduce((s, pl) => s + pl.limit, 0) < p.capacity)
+          add(where, 'the places together have less room than the capacity');
+        break;
+      }
+      case 'netting': {
+        const width = p.pattern[0]?.length ?? 0;
+        if (p.pattern.some((r) => r.length !== width) || p.torn.some((r) => r.length !== width))
+          add(where, 'every pattern and torn row must be the same width');
+        if (p.torn.length !== p.pattern.length)
+          add(where, 'torn must have a row for every pattern row');
+        if (!p.torn.some((r) => r.includes('?'))) add(where, 'nothing is torn');
+        const solutions = nettingSolutions(p);
+        if (solutions.length !== 1)
+          add(
+            where,
+            `the numbers allow ${solutions.length === 0 ? 'no' : 'more than one'} mended net`,
           );
+        break;
+      }
+      case 'floorplan': {
+        checkLoadout(where, p);
+        const width = p.floor[0]?.length ?? 0;
+        if (p.floor.some((r) => r.length !== width))
+          add(where, 'every floor row must be the same width');
+        const symbols = new Set(p.fixtures.map((f) => f.symbol));
+        [...p.floor.join('')].forEach(
+          (ch) =>
+            ch !== '.' && !symbols.has(ch) && add(where, `floor symbol '${ch}' has no fixture`),
+        );
+        p.pieces.forEach(
+          (piece) => !ids.items.has(piece.item) && add(where, `unknown item '${piece.item}'`),
+        );
+        p.pieces.forEach(
+          (piece) =>
+            floorplanLayouts(p, [piece.item], 1).length === 0 &&
+            add(where, `'${piece.item}' fits nowhere on the floor`),
+        );
+        break;
+      }
+      case 'logicGrid': {
+        const subjects = new Set(p.subjects.map((x) => x.id));
+        const options = new Set(p.options.map((x) => x.id));
+        p.clues.forEach((c) => {
+          const refs = logicRuleRefs(c.rule);
+          refs.subjects.forEach(
+            (x) => !subjects.has(x) && add(where, `clue '${c.id}': unknown subject '${x}'`),
+          );
+          refs.options.forEach(
+            (x) => !options.has(x) && add(where, `clue '${c.id}': unknown option '${x}'`),
+          );
+        });
+        if (p.subjects.length !== p.options.length)
+          add(where, 'there must be exactly one option for each subject');
+        const solutions = logicGridSolutions(p);
+        const answer = p.subjects.map((x) => p.answer[x.id]).join();
+        if (solutions.length !== 1)
+          add(where, `the clues allow ${solutions.length} answers, not exactly one`);
+        else if (p.subjects.map((x) => solutions[0]?.[x.id]).join() !== answer)
+          add(where, 'the answer does not keep every clue');
+        break;
+      }
+      case 'dyeing': {
+        const colours = new Set(p.colours.map((c) => c.id));
+        const levels = [
+          p.target,
+          ...p.baths.map((b) => b.change),
+          ...p.shades.map((sh) => sh.levels),
+        ];
+        levels.forEach((l) =>
+          Object.keys(l).forEach((k) => !colours.has(k) && add(where, `unknown colour '${k}'`)),
+        );
+        if (Object.values(p.target).some((v) => v > p.max))
+          add(where, 'the target is darker than the maximum');
+        const shortest = shortestDyeings(p);
+        if (shortest.length === 0) add(where, `the target can't be reached in ${p.maxDips} dips`);
+        else if ((shortest[0]?.length ?? 0) < p.maxDips)
+          add(where, `the target can be reached in fewer than ${p.maxDips} dips; lower maxDips`);
+        break;
+      }
+      case 'map': {
+        const width = p.map[0]?.length ?? 0;
+        if (p.map.some((r) => r.length !== width))
+          add(where, 'every map row must be the same width');
+        p.landmarks.forEach(
+          (l) => !isRoad(p, l.x, l.y) && add(where, `landmark '${l.id}' is not on a road`),
+        );
+        if (!p.landmarks.some((l) => l.id === p.goal))
+          add(where, `goal '${p.goal}' is not a landmark`);
+        Object.keys(p.wrongStops).forEach(
+          (k) =>
+            !p.landmarks.some((l) => l.id === k) &&
+            add(where, `wrong stop '${k}' is not a landmark`),
+        );
+        if (!isRoad(p, p.start.x, p.start.y)) add(where, 'the start is not on a road');
+        // The goal must be reachable by walking.
+        const goal = p.landmarks.find((l) => l.id === p.goal);
+        const seen = new Set<string>();
+        const queue = [{ ...p.start }];
+        while (queue.length > 0) {
+          const at = queue.shift();
+          if (!at || seen.has(`${at.x},${at.y}`)) continue;
+          seen.add(`${at.x},${at.y}`);
+          for (const d of exitsFrom(p, at.x, at.y)) {
+            const next = walk(p, at, d);
+            if (next) queue.push(next.position);
+          }
+        }
+        if (goal && !seen.has(`${goal.x},${goal.y}`)) add(where, 'the goal cannot be reached');
         break;
       }
       case 'measuring':

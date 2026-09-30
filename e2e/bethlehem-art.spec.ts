@@ -12,6 +12,8 @@ import {
   openApp,
   setFastSettings,
   waitForWorld,
+  chooseInGrid,
+  placePiece,
 } from './support';
 import { artDetails } from './world-probe';
 
@@ -63,11 +65,6 @@ async function canvasInfo(page: Page): Promise<string> {
   return `${scene ?? '?'}\tart=${art ?? '?'}\ttextureMb=${mb ?? '?'}`;
 }
 
-async function vessel(page: Page, name: string, action: string): Promise<void> {
-  const puzzle = page.getByRole('dialog', { name: 'Three Measures of Flour' });
-  await puzzle.getByRole('region', { name }).getByRole('button', { name: action }).click();
-}
-
 for (const vp of VIEWPORTS) {
   for (const route of ROUTES) {
     test.describe(`${vp.name} ${route}`, () => {
@@ -102,13 +99,14 @@ for (const vp of VIEWPORTS) {
         await shot('house', SETTLE_MS);
 
         await goTo(page, 'Use Kneading trough and flour jar');
-        await vessel(page, 'Grain basket', 'Fill');
-        await vessel(page, 'Grain basket', 'Pour into kneading trough');
-        await vessel(page, 'Grain basket', 'Fill');
-        await vessel(page, 'Grain basket', 'Pour into kneading trough');
-        await vessel(page, 'Kneading trough', 'Pour back into the flour jar');
-        await vessel(page, 'Grain basket', 'Pour into kneading trough');
-        const bread = page.getByRole('dialog', { name: 'Three Measures of Flour' });
+        const bread = page.getByRole('dialog', { name: 'Places for Supper' });
+        await chooseInGrid(bread, [
+          ['Saba Amram', 'Nearest the fire'],
+          ['Uncle Asa', 'Second place'],
+          ['Aunt Peninah (with Dodi)', 'Third place'],
+          ['Tamar', 'Nearest the door'],
+        ]);
+        await bread.getByRole('button', { name: 'Check my answer' }).click();
         await expect(bread.getByText('Solved!')).toBeVisible();
         await bread.getByRole('button', { name: 'Continue' }).click();
         await goTo(page, 'Examine The stone mangers');
@@ -116,7 +114,9 @@ for (const vp of VIEWPORTS) {
         await goTo(page, 'Examine Ladder to the roof');
         await goTo(page, 'Use Guests’ things to arrange');
         const room = page.getByRole('dialog', { name: 'Room in the Guest Room' });
-        await room.getByRole('button', { name: 'Finish packing' }).click();
+        await placePiece(room, /Aunt Peninah and Dodi’s bedding/, 0, [1, 4]);
+        await placePiece(room, /Uncle Asa’s bedding/, 0, [3, 3]);
+        await room.getByRole('button', { name: 'The room is ready' }).click();
         await expect(room.getByText('Solved!')).toBeVisible();
         await room.getByRole('button', { name: 'Continue' }).click();
         await shot('house-guest-room', 1500);

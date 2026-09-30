@@ -1,9 +1,10 @@
 import type { ChapterInput } from '@/domain/chapter';
 
 /**
- * Items. The things for the guest room carry WEIGHT = floor space (the room
- * holds 6); everything you carry around the village weighs nothing, so the
- * only packing decision is the room itself (see puzzles.ts, p-room).
+ * Items. The things for the guest room carry WEIGHT (they are pieces of the
+ * guest room floor plan, p-room, whose shapes are set in puzzles.ts);
+ * everything you carry around the village weighs nothing, so the only
+ * decision about space is the room itself.
  */
 export const ROOM_ITEMS = ['bed-asa', 'bed-peninah', 'loom', 'grain', 'tools'] as const;
 
@@ -48,7 +49,7 @@ export const ITEMS: ChapterInput['items'] = [
     essential: false,
     icon: '🏺',
     description:
-      'Two big jars of this year’s barley. Grain has to stay dry — and away from hungry animals.',
+      'Three big jars of this year’s barley. Grain has to stay dry — and away from hungry animals.',
   },
   {
     id: 'tools',

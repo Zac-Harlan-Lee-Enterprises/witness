@@ -96,7 +96,7 @@ export const TAMAR_HOUSE: ChapterInput['scenes'][number] = {
       interaction: {
         verb: 'use',
         requires: questActive,
-        blockedText: 'The kneading trough, the flour jar and the old grain basket.',
+        blockedText: 'The kneading trough and the flour jar, by the oven.',
         effects: [{ type: 'openPuzzle', puzzle: 'p-bread' }],
       },
     },

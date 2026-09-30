@@ -248,7 +248,10 @@ export const COLOSSAE_STREET: ChapterInput['scenes'][number] = {
       w: 1,
       h: 2,
       to: { scene: 'lycus-road', spawn: 'from-colossae' },
-      requires: { type: 'puzzleSolved', puzzle: 'p-pack' },
+      requires: {
+        type: 'all',
+        of: [{ type: 'puzzleSolved', puzzle: 'p-pack' }, flag('packed')],
+      },
       blockedDialogue: 'd-gate-blocked',
       effects: [{ type: 'adjustCounter', counter: 'hour', delta: 1 }],
     },

@@ -95,7 +95,7 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       when: flag('brine-done'),
-      text: 'You measured Nikanor’s brine for him, exactly.',
+      text: 'You mended Nikanor’s jar net for him.',
     },
     { when: { type: 'puzzleSolved', puzzle: 'p-load' }, text: 'You loaded the boat.' },
     {
@@ -165,12 +165,12 @@ export const SUMMARY: ChapterInput['summary'] = {
     {
       id: 'brine',
       when: flag('brine-done'),
-      text: 'Nikanor’s brine was ready for the morning’s catch.',
+      text: 'Nikanor’s jar net was mended and ready for the morning.',
     },
     {
       id: 'brine-open',
       when: { type: 'questStatus', quest: 'q-brine', status: 'failed' },
-      text: 'Nikanor’s brine was left unmeasured when you cast off.',
+      text: 'Nikanor’s jar net was left torn when you cast off.',
     },
     {
       id: 'always',

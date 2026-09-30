@@ -5,6 +5,8 @@ import { STORM_ON_GALILEE } from '@/content/chapters/storm-on-galilee';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
 import { evaluate } from '@/domain/conditions';
+import { nettingSolutions, type NettingPuzzle } from '@/domain/puzzle-netting';
+import { checkTrim, type TrimPuzzle } from '@/domain/puzzle-trim';
 import { weatherOf } from '@/domain/weather';
 import { isSolidTile, parseLayout, type TileKind } from '@/domain/world';
 import { groundColor } from '@/game/art/terrain';
@@ -47,14 +49,42 @@ describe('A Storm on Galilee — content', () => {
     expect(loaded.title).toBe('A Storm on Galilee');
   });
 
-  it('uses all four puzzle types, each with tiered hints and an explanation', () => {
+  it('uses its own trim and net-mending puzzles (no packing or jar filling), each with tiered hints and an explanation', () => {
     expect(new Set(chapter.puzzles.map((p) => p.type))).toEqual(
-      new Set(['packing', 'measuring', 'deduction', 'sequence']),
+      new Set(['trim', 'netting', 'deduction', 'sequence']),
     );
     for (const p of chapter.puzzles) {
       expect(p.hints.length, p.id).toBeGreaterThanOrEqual(3);
       expect(p.explanation.length, p.id).toBeGreaterThan(40);
     }
+  });
+
+  it('the trim puzzle’s worked example (its last hint) loads a level boat', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-load') as TrimPuzzle;
+    const weight = (id: string) => chapter.items.find((i) => i.id === id)?.weight ?? 0;
+    const load = {
+      bow: { 'fish-jar': 4 },
+      stern: { bailer: 1, lamp: 1 },
+      port: { 'spare-oar': 1 },
+      starboard: { rope: 1, cloak: 1 },
+    };
+    const result = checkTrim(puzzle, load, makeState(), weight);
+    expect(result.failures).toEqual([]);
+    expect(result.places.map((p) => [p.id, p.total])).toEqual([
+      ['bow', 6],
+      ['port', 5],
+      ['starboard', 4],
+      ['stern', 5],
+    ]);
+    // All the cargo in the bow: over its room, and nose-down.
+    const nose = checkTrim(puzzle, { bow: { 'fish-jar': 4, bailer: 1 } }, makeState(), weight);
+    expect(nose.failures.map((f) => f.ruleId)).toEqual(['room:bow', 'fore-aft']);
+  });
+
+  it('the net has exactly one mending, the one the full explanation describes', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-brine') as NettingPuzzle;
+    expect(nettingSolutions(puzzle)).toEqual([puzzle.pattern]);
+    expect(puzzle.hints.at(-1)?.text).toMatch(/row 2 at columns 2, 4 and 5/);
   });
 
   it('has a main quest and a genuinely optional side quest with an alternate outcome', () => {

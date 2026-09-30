@@ -193,7 +193,7 @@ export const LYCUS_ROAD: ChapterInput['scenes'][number] = {
     {
       id: 'alum-jars',
       kind: 'feature',
-      label: 'The measuring jars',
+      label: 'The test skein and the vats',
       sprite: 'vessels',
       x: 14,
       y: 11,
@@ -202,14 +202,14 @@ export const LYCUS_ROAD: ChapterInput['scenes'][number] = {
         verb: 'use',
         requires: flag('alum-task'),
         blockedText:
-          'A big jar and a small one by the water channel. Someone is in the middle of a job.',
+          'A skein of wool hangs by the madder vat, half dyed. Someone is in the middle of a job.',
         effects: [{ type: 'openPuzzle', puzzle: 'p-alum' }],
       },
     },
     {
       id: 'alum-bath',
       kind: 'feature',
-      label: 'Tomorrow’s alum bath, set',
+      label: 'The test skein, matched',
       sprite: 'vessels',
       x: 14,
       y: 11,

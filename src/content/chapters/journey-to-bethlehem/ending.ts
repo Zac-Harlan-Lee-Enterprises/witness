@@ -101,11 +101,11 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-bread' },
-      text: 'You measured three measures of flour for the guests’ bread.',
+      text: 'You baked the guests’ bread and worked out who would sit where for supper.',
     },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-room' },
-      text: 'You decided what stayed in the small guest room.',
+      text: 'You fitted the beds into the small guest room, and decided what else stayed.',
     },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-register' },

@@ -3,6 +3,7 @@ import { CHARACTERS } from './characters';
 import { CHOICES, THEMES } from './choices';
 import { CLUES } from './clues';
 import { GATHERING_DIALOGUES } from './dialogue/gathering';
+import { BAG_DIALOGUES } from './dialogue/bag';
 import { HOME_DIALOGUES } from './dialogue/home';
 import { ROAD_DIALOGUES } from './dialogue/road';
 import { STREET_DIALOGUES } from './dialogue/street';
@@ -45,14 +46,8 @@ export const LETTER_FROM_PAUL: ChapterInput = {
   initial: {
     flags: {},
     counters: { hour: 8 },
-    inventory: {
-      coins: 3,
-      bread: 1,
-      'hooded-cloak': 1,
-      'spare-cloak': 1,
-      tablets: 1,
-      'letter-case': 1,
-    },
+    // The things for the road wait by the travel bag: you take them when you pack (d-bag).
+    inventory: { coins: 3 },
   },
   opening: [{ type: 'startDialogue', dialogue: 'd-opening' }],
   timeCounter: 'hour',
@@ -71,7 +66,13 @@ export const LETTER_FROM_PAUL: ChapterInput = {
   characters: CHARACTERS,
   items: ITEMS,
   scenes: [AMMIA_WORKSHOP, COLOSSAE_STREET, LYCUS_ROAD, PHILEMON_HOUSE],
-  dialogues: [...HOME_DIALOGUES, ...STREET_DIALOGUES, ...ROAD_DIALOGUES, ...GATHERING_DIALOGUES],
+  dialogues: [
+    ...HOME_DIALOGUES,
+    ...BAG_DIALOGUES,
+    ...STREET_DIALOGUES,
+    ...ROAD_DIALOGUES,
+    ...GATHERING_DIALOGUES,
+  ],
   quests: QUESTS,
   clues: CLUES,
   puzzles: PUZZLES,

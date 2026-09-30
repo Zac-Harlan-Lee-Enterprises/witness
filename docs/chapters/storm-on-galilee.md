@@ -22,8 +22,8 @@ They share the storm and the calm, but they never see or hear what happens in th
 | Act | Where | What happens | Puzzle / choice |
 |---|---|---|---|
 | **1. The errand** | Grandmother Shelomit's house | Grandmother explains the crossing: six of Nikanor's jars to the far shore; the fee pays much of what the family owes. Ask Old Hanina about the sky before loading. She gives a lamp, bread, a cloak and a water skin. | — |
-| **2. The fishing quarter** | The shore at Capernaum (afternoon, westerly wind) | Gear from Uncle Elazar, jars from Nikanor, Tamar's rule for a squall, Hanina's warning, signs along the shore, the crowd listening to the teacher offshore, Shifra's family planning to follow in a borrowed boat. Optional: measure Nikanor's brine. | `p-brine` (optional), `p-sky` |
-| **3. Loading, and evening** | The jetty | Load the boat within ten loads. Evening: the teacher's disciples leave the crowd and take him across, and other boats go with them. Shifra asks if Ami can cross in your boat. | `p-load` → `choice-load`; `choice-ami` |
+| **2. The fishing quarter** | The shore at Capernaum (afternoon, westerly wind) | Gear from Uncle Elazar, jars from Nikanor, Tamar's rule for a squall, Hanina's warning, signs along the shore, the crowd listening to the teacher offshore, Shifra's family planning to follow in a borrowed boat. Optional: mend Nikanor's torn jar net. | `p-brine` (optional), `p-sky` |
+| **3. Loading, and evening** | The jetty | Load the boat within ten loads, and trim her level. Evening: the teacher's disciples leave the crowd and take him across, and other boats go with them. Shifra asks if Ami can cross in your boat. | `p-load` → `choice-load`; `choice-ami` |
 | **4. The crossing** | Out on the lake (night) | Calm, then a cold wind off the eastern hills: shorten sail in the right order. The storm breaks; the teacher's boat vanishes in the spray. The little boat off the port side is swamping. | `p-sail`; `choice-storm` |
 | **5. The calm and home** | The lake; the shore at night | The wind stops all at once. See to the others (the cloak), then turn for home. Grandmother waits on the jetty with a lamp; Nikanor, Shifra's family and the crew respond to what you did. | `choice-cloak` |
 | **6. Scripture Connection** | Full-screen panel | Mark's passage (placeholder text plus a labelled paraphrase), the parallels, the world of the story, echoes of older Scripture, and how Christians have read it, with comparisons that respond to your choices. | — |
@@ -58,20 +58,27 @@ All fictional (`fictional: true, biblicalFigure: false`). Names are ordinary nam
 | Tamar | Cousin, rower | Teaches the order for a squall (the clue for `p-sail`). |
 | Yoezer | Hired man (compare Mark 1:20) | Rows; "I listen to old Hanina." |
 | Old Hanina | Retired fisherman | The reliable witness: the worst winds come off the eastern heights, at night too. |
-| Nikanor | Salt-fish trader from Magdala | Gives the jars; confidently claims the lake is never rough at night (unreliable: he hardly ever crosses); the optional brine side quest. |
+| Nikanor | Salt-fish trader from Magdala | Gives the jars; confidently claims the lake is never rough at night (unreliable: he hardly ever crosses); the optional jar-net side quest. |
 | Shifra, Ami, Oded | A potter's family from the hills | Came to hear the teacher; follow him across in a borrowed rowing boat that leaks. |
 | Dinah | A farmer's wife in the crowd | Mentions the parable of the sower (labelled paraphrase). |
 | Three listeners | The crowd | Non-speaking. |
 
-## 5. Loading the boat (`p-load`, packing)
+## 5. Loading the boat (`p-load`, trim)
 
-Capacity **10** loads. On offer (16): six jars of salted fish (1 each), bailer 1, rope 1, spare oar 2, trammel net 2, lamp 1, bread 1, cloak 1, water skin 1.
+Chapter 2's own puzzle type (with net mending): no other chapter uses it. You choose what goes aboard **and where it goes**, so the boat sits level. Capacity **10** loads besides the crew. On offer (16): six jars of salted fish (1 each), bailer 1, rope 1, spare oar 2, trammel net 2, lamp 1, bread 1, cloak 1, water skin 1.
+
+The boat has four places, each with its own room: **bow** 4, **port side** 3, **starboard side** 3, **stern** 2. The crew are already sitting and count toward the balance (not the cargo): you in the bow (2), Yoezer to port (3), Tamar to starboard (2), Uncle Elazar steering in the stern (3). Pick something up (from the jetty or a place), then choose where it goes; the arrow keys move between the places. Each place shows its cargo and weight in numbers, and each pair of opposite places says in words whether she sits level.
 
 | Rule | Detail |
 |---|---|
 | Bailer | Must go. |
 | Within capacity | ≤ 10. |
-| Enough jars | At least 4 jars — or at least 2 if you finished Nikanor's brine (he agrees the rest can go with the Magdala boats). |
+| Enough jars | At least 4 jars — or at least 2 if you mended Nikanor's jar net (he agrees the rest can go with the Magdala boats). |
+| Room | No place holds more cargo than its room. |
+| Bow and stern | Within 1 of each other, crew included (the bow needs more cargo than the stern). |
+| Port and starboard | Within 1 of each other, crew included (starboard needs a little more cargo than port). |
+
+The last hint gives a worked example (four jars in the bow; bailer and lamp in the stern; the spare oar to port; rope and cloak to starboard: bow 6, stern 5, port 5, starboard 4); a content test checks it.
 
 Classified into `choice-load`: **all-jars** (6) · **jars-and-gear** (≥4 and rope or oar) · **jars-and-net** (≥4 and net) · **light**. What you load decides what you can do in the storm: a rope lets you tow; the spare oar can be thrown; five or more jars means making room costs cargo; a cloak can warm Ami; the lamp lights the dark lake (the chapter's `lightItem`). Hanina laughs at carrying drinking water across a lake of sweet water.
 
@@ -81,7 +88,7 @@ Classified into `choice-load`: **all-jars** (6) · **jars-and-gear** (≥4 and r
 |---|---|---|---|
 | `p-sky` "What Is the Sky Saying?" | deduction | End of the jetty, after Hanina's warning | **A strong wind could rush down after dark**, backed by 2 reliable clues: Hanina's warning, the cold breath off the eastern hills, the Magdala crew hauling their boat up; the clear western sky rules out rain. Nikanor's claim is unreliable and spoils an argument; the afternoon wind is irrelevant evidence. The explanation admits no one can say exactly when or how strong. |
 | `p-sail` "Shorten Sail!" | sequence | On the lake, when the gust hits | Brails → yard → oars and bow to the waves → bail (Tamar's order; labelled fiction). Conclusion: keep her bow to the waves, keep bailing, stay near the other boats. |
-| `p-brine` "Nikanor's Brine" | measuring (optional) | Nikanor's measuring jars | 7 in an 8-jar using a 5-jar. Relaxes the jar rule for loading. |
+| `p-brine` "Nikanor's Jar Net" | netting (optional; Chapter 2's own type) | Nikanor's torn jar net, by the salting tubs | A picture logic grid (a nonogram) 7 wide and 5 high: Nikanor's fish mark, torn through columns 2–5. The numbers by each row and column are its runs of knots, in order; tie the torn cells so every line matches. Exactly one mending fits (checked in `chapter-integrity.ts`). Space ties a knot, again leaves it open, again clears it; arrows move. Relaxes the jar rule for loading. (The id is kept from when this was a brine-measuring puzzle.) |
 
 ## 7. Choices and what you see because of them
 
@@ -91,7 +98,7 @@ Classified into `choice-load`: **all-jars** (6) · **jars-and-gear** (≥4 and r
 | `choice-ami` (at evening, only if you met Shifra) | room (≤4 jars) · made-room (leave a jar) · no-room | Ami on your deck during the crossing, or in the little boat. |
 | `choice-storm` | take-aboard (throws 3 jars overboard if you carry 5+) · tow (needs the rope) · oar (needs the spare oar) · hold-course | Shifra's family on your deck and their empty boat; the towline to their boat (and on the beach at night); Oded with your oar (and your oar in their boat at night); jars bobbing in the water. Impossible options are shown with the reason ("You didn't bring the rope."). |
 | `choice-cloak` | given (to Ami, on your deck or passed across) | Ami wrapped in your cloak on the lake and at home; the cloak gone from your back. |
-| Side quest `q-brine` | finished · unfinished | Nikanor's words; the summary. |
+| Side quest `q-brine` (Nikanor's Jar Net) | finished · unfinished | Nikanor's words; the summary. |
 
 Main-quest outcomes: **Home, with the jars** (success) or **Home, lighter than you left** (alternate, if jars went overboard). In every branch everyone comes home: the calm comes the same way whatever you chose.
 
@@ -155,7 +162,7 @@ The storm itself is not baked: the lake is rendered calm, and the engine draws t
 ## 11. Where this is verified
 
 - **Content rules** ([`tests/content/storm-on-galilee.test.ts`](../../tests/content/storm-on-galilee.test.ts)): integrity, reachability, all four puzzle types, an optional side quest, Scripture as references with labelled paraphrase, no Jesus character or voice, no retelling of his boat in the story, no scoring or faith-reward language, nothing self-approved, every source retrieved and used, a real decision with visible constraints, story-driven weather, and that the painter knows every tile kind.
-- **Headless playthroughs** ([`tests/integration/storm-on-galilee-playthrough.test.ts`](../../tests/integration/storm-on-galilee-playthrough.test.ts)): four complete branches (tow with Ami aboard and the side quest; full cargo, leave a jar for Ami, jettison to take the family aboard; never met Shifra, hold course with nothing to share; light load after the side quest, the oar, the cloak passed across), plus loading gates, packing and sky rules, and an unfinished side quest.
+- **Headless playthroughs** ([`tests/integration/storm-on-galilee-playthrough.test.ts`](../../tests/integration/storm-on-galilee-playthrough.test.ts)): four complete branches (tow with Ami aboard and the side quest; full cargo, leave a jar for Ami, jettison to take the family aboard; never met Shifra, hold course with nothing to share; light load after the side quest, the oar, the cloak passed across), plus loading gates, loading-and-trim and sky rules, and an unfinished side quest.
 - **Browser end to end** ([`e2e/storm-on-galilee.spec.ts`](../../e2e/storm-on-galilee.spec.ts)): new profile → Chapter 2 → opening → sky → loading → the lake as `data-weather` goes `clear` → `wind` → `storm` → `clear` → decision → home → Scripture Connection → reflection → summary.
 
 ## 12. Known gaps

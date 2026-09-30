@@ -1,10 +1,25 @@
 import { z } from 'zod';
-import { ConditionSchema, evaluate, type Condition } from './conditions';
-import { EffectSchema, type Effect } from './effects';
+import {
+  classifyLoadout,
+  LoadoutChoice,
+  LoadoutRuleSchema,
+  loadoutFailures,
+  packRuleHolds,
+  PuzzleBase,
+  type LoadoutFailure,
+  type Packing,
+} from './puzzle-base';
+import { DyeingPuzzleSchema } from './puzzle-dyeing';
+import { FloorplanPuzzleSchema } from './puzzle-floorplan';
+import { LogicGridPuzzleSchema } from './puzzle-logic-grid';
+import { MapPuzzleSchema } from './puzzle-map';
+import { NettingPuzzleSchema } from './puzzle-netting';
+import { TrimPuzzleSchema } from './puzzle-trim';
 import type { GameState } from './state/game-state';
 
 /**
- * Four puzzle types, each emerging from the story rather than bolted on:
+ * Puzzle types, each emerging from the story rather than bolted on. The
+ * four originals live here (Chapter 1 uses all four):
  *
  *  packing    — resource allocation under a capacity limit, where knowledge
  *               gathered earlier changes what counts as "enough"
@@ -13,72 +28,29 @@ import type { GameState } from './state/game-state';
  *  sequence   — order events so they agree with physical evidence, then
  *               draw a conclusion that states its own uncertainty
  *
+ * Six more each belong to one later chapter, in their own modules:
+ *  trim (puzzle-trim.ts), netting (puzzle-netting.ts)        — Chapter 2
+ *  floorplan (puzzle-floorplan.ts), logicGrid (puzzle-logic-grid.ts) — Chapter 3
+ *  dyeing (puzzle-dyeing.ts), map (puzzle-map.ts)             — Chapter 4
+ *
  * Every checker is pure and returns reasoning-oriented feedback. Hints are
  * tiered: early tiers nudge reasoning; only the last tier explains the answer.
  */
-const HintSchema = z.object({ tier: z.number().int().positive(), text: z.string().min(1) });
-
-const PuzzleBase = {
-  id: z.string().min(1),
-  title: z.string().min(1),
-  intro: z.string().min(1),
-  hints: z.array(HintSchema).min(2),
-  /** Shown after solving: WHY the answer is right. */
-  explanation: z.string().min(1),
-  /** ContentRecords backing any factual claim in the puzzle. */
-  recordIds: z.array(z.string()).default([]),
-  onSolved: z.array(EffectSchema).default([]),
-};
 
 // ── Packing ────────────────────────────────────────────────────────────────
-export type PackRule =
-  | { type: 'includes'; item: string; min?: number }
-  | { type: 'withinCapacity' }
-  | { type: 'state'; condition: Condition }
-  | { type: 'allOf'; of: PackRule[] }
-  | { type: 'anyOf'; of: PackRule[] };
-
-const PackRuleSchema: z.ZodType<PackRule> = z.lazy(() =>
-  z.discriminatedUnion('type', [
-    z.object({
-      type: z.literal('includes'),
-      item: z.string(),
-      min: z.number().int().positive().optional(),
-    }),
-    z.object({ type: z.literal('withinCapacity') }),
-    z.object({ type: z.literal('state'), condition: ConditionSchema }),
-    z.object({ type: z.literal('allOf'), of: z.array(PackRuleSchema) }),
-    z.object({ type: z.literal('anyOf'), of: z.array(PackRuleSchema) }),
-  ]),
-);
-
 export const PackingPuzzleSchema = z.object({
   ...PuzzleBase,
   type: z.literal('packing'),
   capacity: z.number().int().positive(),
-  rules: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        description: z.string().min(1),
-        rule: PackRuleSchema,
-        failureHint: z.string().min(1),
-      }),
-    )
-    .min(1),
-  /** Choice id to record the final packing under (for consequences/summary). */
-  choiceId: z.string().min(1),
-  /** Classify the final packing into a choice option; first matching rule wins. */
-  classifications: z.array(z.object({ option: z.string().min(1), rule: PackRuleSchema })).min(1),
+  rules: z.array(LoadoutRuleSchema).min(1),
+  ...LoadoutChoice,
 });
 export type PackingPuzzle = z.infer<typeof PackingPuzzleSchema>;
-
-export type Packing = Readonly<Record<string, number>>;
 
 export interface PackingCheck {
   weight: number;
   valid: boolean;
-  failures: Array<{ ruleId: string; description: string; hint: string }>;
+  failures: LoadoutFailure[];
 }
 
 export function checkPacking(
@@ -88,10 +60,8 @@ export function checkPacking(
   weightOf: (itemId: string) => number,
 ): PackingCheck {
   const weight = packingWeight(packed, weightOf);
-  const holds = packRuleHolds(puzzle, packed, state, weight);
-  const failures = puzzle.rules
-    .filter((r) => !holds(r.rule))
-    .map((r) => ({ ruleId: r.id, description: r.description, hint: r.failureHint }));
+  const holds = packRuleHolds(packed, state, weight <= puzzle.capacity);
+  const failures = loadoutFailures(puzzle.rules, holds);
   return { weight, valid: failures.length === 0, failures };
 }
 
@@ -106,56 +76,11 @@ export function classifyPacking(
   state: GameState,
   weightOf: (itemId: string) => number,
 ): string {
-  const holds = packRuleHolds(puzzle, packed, state, packingWeight(packed, weightOf));
-  const match = puzzle.classifications.find((c) => holds(c.rule));
-  return (match ?? puzzle.classifications[puzzle.classifications.length - 1])?.option ?? 'packed';
-}
-
-function packRuleHolds(
-  puzzle: PackingPuzzle,
-  packed: Packing,
-  state: GameState,
-  weight: number,
-): (rule: PackRule) => boolean {
-  const holds = (rule: PackRule): boolean => {
-    switch (rule.type) {
-      case 'includes':
-        return (packed[rule.item] ?? 0) >= (rule.min ?? 1);
-      case 'withinCapacity':
-        return weight <= puzzle.capacity;
-      case 'state':
-        return evaluate(rule.condition, state);
-      case 'allOf':
-        return rule.of.every(holds);
-      case 'anyOf':
-        return rule.of.some(holds);
-    }
-  };
-  return holds;
-}
-
-/**
- * Effects that make the inventory match the packing: anything with weight
- * that was not packed stays behind at home.
- */
-export function packingEffects(
-  owned: Readonly<Record<string, number>>,
-  packed: Packing,
-  weightOf: (itemId: string) => number,
-): Effect[] {
-  return Object.entries(owned)
-    .filter(([id]) => weightOf(id) > 0)
-    .flatMap(([id, qty]) => {
-      const leave = qty - Math.min(qty, packed[id] ?? 0);
-      return leave > 0 ? [{ type: 'takeItem' as const, item: id, quantity: leave }] : [];
-    });
-}
-
-export function describePacking(packed: Packing): string[] {
-  return Object.entries(packed)
-    .filter(([, q]) => q > 0)
-    .flatMap(([id, q]) => Array.from({ length: q }, () => id))
-    .sort();
+  const weight = packingWeight(packed, weightOf);
+  return classifyLoadout(
+    puzzle.classifications,
+    packRuleHolds(packed, state, weight <= puzzle.capacity),
+  );
 }
 
 // ── Measuring ──────────────────────────────────────────────────────────────
@@ -364,6 +289,12 @@ export const PuzzleSchema = z.discriminatedUnion('type', [
   MeasuringPuzzleSchema,
   DeductionPuzzleSchema,
   SequencePuzzleSchema,
+  TrimPuzzleSchema,
+  NettingPuzzleSchema,
+  FloorplanPuzzleSchema,
+  LogicGridPuzzleSchema,
+  DyeingPuzzleSchema,
+  MapPuzzleSchema,
 ]);
 export type Puzzle = z.infer<typeof PuzzleSchema>;
 /** @public Domain-model type (chapter-authoring API). */

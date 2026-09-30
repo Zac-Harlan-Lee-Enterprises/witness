@@ -94,8 +94,8 @@ export const JOURNAL: ChapterInput['journal'] = [
   {
     id: 'je-brine',
     category: 'events',
-    title: 'Nikanor’s brine',
-    summary: 'Seven measures, exactly',
+    title: 'Nikanor’s jar net',
+    summary: 'Every knot where it should be',
     recordIds: ['rec-p-nikanor'],
     order: 2,
   },

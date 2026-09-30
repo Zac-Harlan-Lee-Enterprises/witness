@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { JOURNEY_TO_BETHLEHEM } from '@/content/chapters/journey-to-bethlehem';
 import { buildChapterSummary } from '@/domain/chapter-summary';
-import { applyMeasure, initialLevels, type MeasuringPuzzle } from '@/domain/puzzles';
 import { createHarness, flush, loadChapter, Player, type Harness } from '../support/harness';
 
 /**
@@ -38,20 +37,19 @@ async function opening(p: Player): Promise<void> {
 async function bakeBread(p: Player): Promise<void> {
   await p.interact('kneading');
   expect(p.h.ui.getState().puzzleId).toBe('p-bread');
-  const puzzle = p.h.puzzles.find('p-bread') as MeasuringPuzzle;
-  let levels = initialLevels(puzzle);
-  expect(p.h.puzzles.submitMeasure('p-bread', levels)).toBe(false);
-  for (const step of [
-    { type: 'fill', vessel: 'basket' },
-    { type: 'pour', from: 'basket', to: 'trough' },
-    { type: 'fill', vessel: 'basket' },
-    { type: 'pour', from: 'basket', to: 'trough' },
-    { type: 'empty', vessel: 'trough' },
-    { type: 'pour', from: 'basket', to: 'trough' },
-  ] as const)
-    levels = applyMeasure(puzzle, levels, step);
-  expect(levels.trough).toBe(3);
-  expect(p.h.puzzles.submitMeasure('p-bread', levels)).toBe(true);
+  // Not every place filled in, then a wrong seating, then the one that keeps every clue.
+  expect(p.matchUp('p-bread', { amram: 'fire' })?.complete).toBe(false);
+  const wrong = p.matchUp('p-bread', {
+    amram: 'fire',
+    asa: 'second',
+    peninah: 'door',
+    tamar: 'third',
+  });
+  expect(wrong?.broken).toEqual(['tamar-end']);
+  expect(
+    p.matchUp('p-bread', { amram: 'fire', asa: 'second', peninah: 'third', tamar: 'door' })
+      ?.correct,
+  ).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
 }
@@ -59,9 +57,8 @@ async function bakeBread(p: Player): Promise<void> {
 async function arrangeRoom(p: Player, keep: 'grain' | 'loom' | 'tools' | null): Promise<void> {
   await p.interact('bedding');
   expect(p.h.ui.getState().puzzleId).toBe('p-room');
-  const packed: Record<string, number> = { 'bed-asa': 1, 'bed-peninah': 1 };
-  if (keep) packed[keep] = 1;
-  const result = p.h.puzzles.submitPacking('p-room', packed);
+  const pieces = ['bed-asa', 'bed-peninah', ...(keep ? [keep] : [])];
+  const result = p.furnish('p-room', pieces);
   expect(result?.valid, JSON.stringify(result?.failures)).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
@@ -287,16 +284,13 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await bakeBread(p);
     // Without knowing about the roof, the barley has to stay in the guest room.
     await p.interact('bedding');
-    const noGrain = h.puzzles.submitPacking('p-room', { 'bed-asa': 1, 'bed-peninah': 1 });
+    const noGrain = p.furnish('p-room', ['bed-asa', 'bed-peninah']);
     expect(noGrain?.valid).toBe(false);
     expect(noGrain?.failures.map((f) => f.ruleId)).toEqual(['grain']);
-    const tooMuch = h.puzzles.submitPacking('p-room', {
-      'bed-asa': 1,
-      'bed-peninah': 1,
-      grain: 1,
-      loom: 1,
-    });
-    expect(tooMuch?.failures.map((f) => f.ruleId)).toEqual(['capacity']);
+    // Two more things never fit beside the beds.
+    expect(() => p.furnish('p-room', ['bed-asa', 'bed-peninah', 'grain', 'tools'])).toThrow(
+      /don’t fit/,
+    );
     h.controller.closePuzzle();
     await flush();
     await arrangeRoom(p, 'grain');

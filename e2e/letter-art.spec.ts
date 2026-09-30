@@ -11,6 +11,8 @@ import {
   openApp,
   setFastSettings,
   waitForWorld,
+  packBag,
+  walkMap,
 } from './support';
 import { artDetails } from './world-probe';
 
@@ -149,14 +151,29 @@ for (const vp of VIEWPORTS) {
         await goTo(page, 'Talk to Ammia');
         await choose(page, 'Read every word, just as he wrote it.');
         await endDialogue(page);
+        await goTo(page, 'Talk to Ammia');
+        await choose(page, 'Which way is Nikon’s dye works?');
+        await endDialogue(page);
+        const way = page.getByRole('dialog', { name: 'The Way to the Bridge' });
+        await walkMap(way, [
+          'ArrowLeft',
+          'ArrowLeft',
+          'ArrowLeft',
+          'ArrowLeft',
+          'ArrowLeft',
+          'ArrowLeft',
+          'ArrowDown',
+          'ArrowLeft',
+          'ArrowLeft',
+        ]);
+        await expect(way.getByText('Solved!')).toBeVisible();
+        await way.getByRole('button', { name: 'Continue' }).click();
         await goTo(page, 'Use Travel bag');
-        const bag = page.getByRole('dialog', { name: 'Ready for the Road' });
-        if (home) await bag.getByRole('button', { name: 'Pack one Kallias’s old cloak' }).click();
-        await bag.getByRole('button', { name: 'Pack one Writing tablets and stylus' }).click();
-        await bag.getByRole('button', { name: 'Pack one Leather letter case' }).click();
-        await bag.getByRole('button', { name: 'Finish packing' }).click();
-        await expect(bag.getByText('Solved!')).toBeVisible();
-        await bag.getByRole('button', { name: 'Continue' }).click();
+        await packBag(page, [
+          ...(home ? ['Kallias’s old cloak'] : []),
+          'the writing tablets',
+          'the leather letter case',
+        ]);
         await shot('workshop-packed', 1500);
 
         await goTo(page, 'Go to the street');

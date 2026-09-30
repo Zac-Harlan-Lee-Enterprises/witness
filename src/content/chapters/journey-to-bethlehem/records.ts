@@ -381,7 +381,7 @@ export const RECORDS: ChapterInput['records'] = [
     title: 'Welcoming guests',
     scripture: [ref('Genesis', 18, 1, 8), ref('Leviticus', 19, 34), ref('Luke', 7, 44)],
     sources: ['src-web-gen18', 'src-wiki-seah', 'src-web-lev19', 'src-web-luk07'],
-    body: 'The Bible treats welcoming guests as something that matters. Abraham runs to meet three visitors, offers water to wash their feet and has cakes made from three seahs of fine flour — a very generous amount (Genesis 18:1–8). Nobody knows exactly how big a seah was; estimates run from about 7 liters to more than 14. Israel was told to love the foreigner living among them as themselves (Leviticus 19:34), and Jesus once noticed that his host had given him no water for his feet (Luke 7:44). The “measures” in the bread puzzle are simplified for the game.',
+    body: 'The Bible treats welcoming guests as something that matters. Abraham runs to meet three visitors, offers water to wash their feet and has cakes made from three seahs of fine flour — a very generous amount (Genesis 18:1–8). Nobody knows exactly how big a seah was; estimates run from about 7 liters to more than 14. Israel was told to love the foreigner living among them as themselves (Leviticus 19:34), and Jesus once noticed that his host had given him no water for his feet (Luke 7:44). Tamar’s supper in this game is made up.',
     governance: draft({
       confidence: 'established',
       sourced: true,
