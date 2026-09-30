@@ -20,6 +20,8 @@ describe('Title screen', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Witness: A Journey Through Scripture' }),
     ).toBeInTheDocument();
+    // All four chapters, not just the first.
+    expect(screen.getByText(/Jericho, Galilee, Bethlehem, Colossae/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Play' }));
     expect(onPlay).toHaveBeenCalled();
     const about = screen.getByRole('button', { name: 'About this game' });
