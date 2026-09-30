@@ -101,14 +101,15 @@ def city_pad(city):
 
 def rim_path(land, x0, x1, margin=10.0, step=6.0):
     """A shepherds' path along the gorge's north rim: just back from the lip
-    of its top cliff band (teaser_land.Land.WALL), wandering with it."""
+    of its top cliff (Land.rim_distance), wandering with it round the heads
+    of the chutes."""
     xs = np.arange(x0, x1, step)
-    top = sum(run for run, _ in land.WALL[:-1])
-    ds = []
-    for x in xs:
-        w0 = 9.0 + 5.0 * float(N.perlin(np.array([x / 400.0]), 3.1, land.seed + 5)[0])
-        ds.append(w0 + top + margin)
-    ds = np.array(ds)
+    ds = land.rim_distance(xs, 1.0, margin)
+    # Round the heads of the chutes, never into them: the widest reach
+    # nearby, then smoothed.
+    pad = np.pad(ds, 4, mode="edge")
+    ds = np.max(np.stack([pad[k : k + len(ds)] for k in range(9)]), axis=0)
+    ds = N.blur(ds[None, :], 2)[0]
     return np.stack([xs, land.gorge_y(xs) + ds], axis=1)
 
 
@@ -202,7 +203,7 @@ def shot4(ctx, scene):
     t_gate = Vector((city.gx + 600.0, city.gy, gz - 15.0))
     move = R.Move([e0, e1, e2], [t_gate, t0, t2], lens=[24.0, 28.0], ease_in=0.35, ease_out=1.0, shake=0.01)
     LK.eevee(scene, preview=ctx.preview)
-    LK.sky(scene, -40.0, 30.0, sun_strength=5.0, sky_strength=0.2, aerosol=1.6)
+    LK.sky(scene, -40.0, 30.0, sun_strength=5.0, sky_strength=0.2, aerosol=1.6, bounce=0.3, bounce_color="#e6bc92", clouds=dict(kind="both", cover=0.35, color="#fff3e4", shade="#c3c3c8", brightness=2.0, scale=1.1, wind=25.0, seed=3.0))
     LK.haze(scene, 0.00006, "#dcd5ca", ground=gz - 300.0, scale_height=1000.0, centre=(p0[0], p0[1]))
     scene.view_settings.exposure = -1.5
     cam = R.camera(scene, lens=24.0)
@@ -231,7 +232,7 @@ def shot5(ctx, scene):
     fig = TP.Figure(ctx.appearance("player:look-1"), "walker", marks=("water-skin", "cloak-roll"))
     walker = TP.Walker(fig, path.poly, z, cadence=0.92, start=start)
     LK.eevee(scene, preview=ctx.preview)
-    LK.sky(scene, -55.0, 42.0, sun_strength=5.4, sky_strength=0.2, aerosol=1.5)
+    LK.sky(scene, -55.0, 42.0, sun_strength=5.4, sky_strength=0.2, aerosol=1.5, clouds=dict(kind="cirrus", cover=0.45, color="#fff6ea", shade="#c6c8ce", brightness=2.0, scale=1.0, wind=-10.0, seed=4.0))
     LK.haze(scene, 0.00006, "#dcd5ca", ground=z(a[0], a[1]) - 250.0, scale_height=900.0, centre=(a[0], a[1]))
     scene.view_settings.exposure = -1.6
     cam = R.camera(scene, lens=32.0)
@@ -269,7 +270,7 @@ def shot8(ctx, scene):
     t0 = Vector((x0 + 1600.0, float(land.gorge_y(x0 + 1600.0)), rim - 150.0))
     move = R.Move([e0, e1], [t0, t0 + Vector((0, 0, -20.0))], lens=30.0, ease_in=0.3, ease_out=1.0)
     LK.eevee(scene, preview=ctx.preview)
-    LK.sky(scene, 205.0, 5.5, sun_strength=4.2, sky_strength=0.35, color="#ffc27a", aerosol=2.4, angle=0.6)
+    LK.sky(scene, 205.0, 5.5, sun_strength=4.2, sky_strength=0.35, color="#ffc27a", aerosol=2.4, angle=0.6, clouds=dict(kind="both", cover=0.4, color="#ffc98f", shade="#9d8c99", brightness=2.3, scale=0.9, wind=15.0, seed=6.0))
     LK.haze(scene, 0.00009, "#e6c9a8", ground=rim - 300.0, scale_height=700.0, centre=(x0, y0), anisotropy=0.7)
     scene.view_settings.exposure = -1.2
     cam = R.camera(scene, lens=30.0)
@@ -285,7 +286,7 @@ def city_set(ctx, scene, market=True, heading=0.0, fov=math.radians(150), shrubs
     land = ctx.land()
     city = ctx.city
     city.build()
-    mk = MK.Market(city, preview=ctx.preview).build() if market else None
+    mk = MK.Market(city, preview=ctx.preview).build().yard_trees(40 if ctx.preview else 90) if market else None
     land_set(ctx, scene, (city.gx - 150.0, city.gy), heading, fov=fov, shrubs=shrubs, far=700.0)
     return land, city, mk
 
@@ -352,7 +353,7 @@ def shot1(ctx, scene):
     t2 = Vector((gx - 20.0, gy, gz + 1.0))
     move = R.Move([e0, e1, e2], [t0, t1, t2], lens=[30.0, 32.0], ease_in=0.8, ease_out=1.0)
     LK.eevee(scene, preview=ctx.preview, volume_end=6000.0)
-    LK.sky(scene, -8.0, 8.0, sun_strength=3.6, sky_strength=0.45, color="#ffae68", aerosol=3.0, angle=0.7, bounce=0.22, horizon_amount=0.3, horizon_color="#f0cfa8")
+    LK.sky(scene, -8.0, 8.0, sun_strength=3.6, sky_strength=0.45, color="#ffae68", aerosol=3.0, angle=0.7, bounce=0.36, bounce_color="#e8b88c", horizon_amount=0.3, horizon_color="#f0cfa8", clouds=dict(kind="alto", cover=0.45, color="#ffd0a2", shade="#a79ca8", brightness=1.8, scale=1.2, wind=30.0, seed=1.0))
     LK.haze(scene, 0.00016, "#ead2b8", ground=gz - 120.0, scale_height=450.0, centre=(gx, gy), anisotropy=0.72)
     scene.view_settings.exposure = -1.35
     cam = R.camera(scene, lens=30.0)
@@ -380,7 +381,7 @@ def shot3(ctx, scene):
         at.z = city.z(at.x, at.y)
         doves.append((p, at, rng.uniform(0, math.tau), rng.uniform(0, 10), k >= 5))
     LK.eevee(scene, preview=ctx.preview, volume_end=600.0)
-    LK.sky(scene, -4.0, 11.0, sun_strength=4.2, sky_strength=0.35, color="#ffc990", aerosol=2.2, angle=0.6, bounce=0.3)
+    LK.sky(scene, -4.0, 11.0, sun_strength=4.2, sky_strength=0.35, color="#ffc990", aerosol=2.2, angle=0.6, bounce=0.42, bounce_color="#e9bd8e", clouds=dict(kind="cirrus", cover=0.3, color="#ffe0c0", shade="#b3aab2", brightness=1.8, scale=1.0, wind=40.0, seed=2.0))
     LK.haze(scene, 0.00005, "#e6d2bc", ground=gz - 100.0, scale_height=500.0, centre=(gx, gy))
     LK.dust(scene, (gx - 170.0, gy - 8.0, gz - 1.0), (gx - 5.0, gy + 8.0, gz + 12.0), density=0.0015, color="#ecdcc4", anisotropy=0.3)
     scene.view_settings.exposure = -1.1
@@ -492,7 +493,7 @@ def incident_set(ctx, scene, eye_ab, look_ab, sun_el=46.0, sun_off=15.0):
     # road going down, so the rocks' shade falls toward the road.
     sun_az = math.degrees(inc.heading) + sun_off
     LK.eevee(scene, preview=ctx.preview, volume_end=3000.0)
-    LK.sky(scene, sun_az, sun_el, sun_strength=6.0, sky_strength=0.2, color="#fff4e4", aerosol=1.4, bounce=0.12)
+    LK.sky(scene, sun_az, sun_el, sun_strength=6.0, sky_strength=0.2, color="#fff4e4", aerosol=1.4, bounce=0.12, clouds=dict(kind="cirrus", cover=0.3, color="#fff8ee", shade="#c8cad0", brightness=2.0, scale=1.0, wind=20.0, seed=5.0))
     return land, inc
 
 
@@ -524,9 +525,9 @@ def shot7(ctx, scene):
     land, inc = incident_set(ctx, scene, (2.2, 0.4), (4.2, -3.4), sun_el=33.0, sun_off=5.0)
     LK.haze(scene, 0.00007, "#ddd6ca", ground=inc.z(0, 0) - 200.0, scale_height=900.0, centre=tuple(inc.O))
     scene.view_settings.exposure = -1.75
+    import teaser_body as TB
+
     (ma, mb), turn = inc.man_place
-    # His jar is broken and his cloak gone: nothing in his hands.
-    fig = TP.Figure(dict(ctx.appearance("menashe"), carry="none"), "man")
     at = inc.P(ma - 0.35, mb + 0.25, 0.0)
     cam = R.camera(scene, lens=40.0)
     e0 = inc.P(2.3, 0.5, 1.5)
@@ -534,17 +535,24 @@ def shot7(ctx, scene):
     t0 = inc.P(3.05, -1.4, 0.0)
     t1 = inc.P(ma - 0.1, mb + 0.1, 0.15)
     move = R.Move([e0, e1], [t0, t1], lens=[38.0, 42.0], ease_in=0.6, ease_out=1.0, shake=0.004)
-    # Feet toward the camera, head away (and into the deepest shade).
+    # Feet toward the camera, head away (and into the deepest shade). His
+    # jar is broken and his cloak gone: nothing in his hands.
     away = math.atan2(at.y - e1.y, at.x - e1.x) + turn
+    head = Vector((math.cos(away), math.sin(away), 0.0))
+    body_at = at - head * 0.35
+    TB.LyingMan(dict(ctx.appearance("menashe"), carry="none"), "man", preview=ctx.preview).build((body_at.x, body_at.y), away, lambda X, Y: land.height(X, Y))
+    # The ground half a metre short of his feet (about 0.85 m from his
+    # middle, toward the camera) is what the lens settles on.
+    before = body_at - head * 1.35
 
     def animate(f, t):
         eye, tgt, lens = move.at(f / 143.0, t)
         R.aim(cam, eye, tgt, lens)
         u = R.ease(f / 143.0)
-        # Focus follows the drag marks and stops short of him: he stays soft.
-        d = (1 - u) * (t0 - eye).length + u * 0.8 * (at - eye).length
+        # Focus follows the drag marks and stops on the ground before him:
+        # he stays soft, as if the eye would rather not look.
+        d = (1 - u) * (t0 - eye).length + u * (before - eye).length
         R.focus(cam, d, 2.8)
-        TP.lying(fig, at, away, breath=0.5 + 0.5 * math.sin(t * 1.6))
 
     return Shot(animate)
 
@@ -564,10 +572,10 @@ def placeholder(label):
 GRADE_LAND = {"contrast": 1.08, "saturation": 1.05, "vignette": 0.2}
 
 SHOTS = {
-    1: Spec("jerusalem-sunrise", 168, shot1, lambda u: lerp_grade({"contrast": 1.06, "balance": (0.97, 0.98, 1.03), "saturation": 0.92, "vignette": 0.25}, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.0, "vignette": 0.22}, u)),
+    1: Spec("jerusalem-sunrise", 168, shot1, lambda u: lerp_grade({"contrast": 1.06, "balance": (0.97, 0.98, 1.03), "saturation": 0.92, "vignette": 0.25, "shadows": (0.01, 0.003, -0.006)}, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.0, "vignette": 0.22, "shadows": (0.012, 0.004, -0.008)}, u)),
     2: Spec("miriam-room", 168, shot2, {"contrast": 1.06, "balance": (1.02, 1.0, 0.97), "saturation": 1.0, "vignette": 0.3, "bloom": 0.2, "bloom_threshold": 0.7}),
-    3: Spec("market", 192, shot3, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.02, "vignette": 0.22, "bloom": 0.12}),
-    4: Spec("gate-and-wilderness", 192, shot4, {"contrast": 1.1, "saturation": 1.05, "balance": (1.03, 1.0, 0.96), "vignette": 0.22}),
+    3: Spec("market", 192, shot3, {"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.02, "vignette": 0.22, "bloom": 0.12, "shadows": (0.012, 0.004, -0.008)}),
+    4: Spec("gate-and-wilderness", 192, shot4, {"contrast": 1.1, "saturation": 1.05, "balance": (1.03, 1.0, 0.96), "vignette": 0.22, "shadows": (0.01, 0.003, -0.006)}),
     5: Spec("ridge-path", 168, shot5, {"contrast": 1.12, "saturation": 0.95, "balance": (1.04, 1.0, 0.95), "vignette": 0.22}),
     6: Spec("below-the-bend", 168, shot6, {"contrast": 1.12, "balance": (1.03, 1.0, 0.95), "saturation": 0.92, "vignette": 0.28}),
     7: Spec("the-man", 144, shot7, {"contrast": 1.15, "balance": (0.98, 1.0, 1.02), "saturation": 0.85, "vignette": 0.32, "lift": (0.0, 0.004, 0.012)}),

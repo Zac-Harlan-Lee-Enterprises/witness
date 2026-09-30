@@ -22,6 +22,7 @@ from mathutils import noise as mnoise
 import common
 import materials as M
 import teaser_city as C
+import teaser_clay as TC
 from teaser_nodes import Graph
 
 TABLE_Z = 0.42
@@ -190,13 +191,14 @@ class Room:
     def _remedy(self, at):
         """The remedy: a small round-bodied clay flask, its mouth stopped with a
         twist of cloth and tied round the neck with cord."""
-        clay = M.terracotta("#a86a44", 0.15)
-        prof = [(0.001, 0.0), (0.03, 0.002), (0.052, 0.02), (0.058, 0.045), (0.05, 0.075), (0.028, 0.098), (0.017, 0.112), (0.016, 0.135), (0.021, 0.14), (0.019, 0.145)]
-        flask = common.lathe("remedy-flask", prof, 36, clay, None)
+        clay = TC.fired_clay("remedy-clay", "#a86a44", reduced="#6a5446", pale="#c09474", dust=0.12, sheen=0.05, ring_pitch=0.005)
+        prof = [(0.001, 0.0), (0.024, 0.001), (0.036, 0.004), (0.048, 0.014), (0.056, 0.03), (0.058, 0.045), (0.055, 0.062), (0.047, 0.078), (0.036, 0.09), (0.026, 0.1), (0.019, 0.11), (0.0165, 0.12), (0.016, 0.133), (0.0185, 0.138), (0.0215, 0.141), (0.02, 0.1455), (0.0165, 0.146)]
+        flask = common.lathe("remedy-flask", prof, 48, clay, None)
+        TC.wobble(flask, 0.0007, 0.02, seed=3)
         flask.location = at
         common.add_modifier(flask, "SUBSURF", levels=1, render_levels=2)
         self.objects.append(flask)
-        cloth = M.cloth("#d9ccb0", None, "linen")
+        cloth = M.cloth("#b8a98c", None, "linen")
         plug = self._blob("remedy-plug", at + Vector((0.0, 0.0, 0.152)), (0.022, 0.022, 0.018), cloth, 3, 0.25)
         self.objects.append(plug)
         tail = common.lathe("remedy-cloth", [(0.0, 0.0), (0.024, 0.004), (0.028, 0.02), (0.02, 0.03), (0.0, 0.034)], 16, cloth, None)
@@ -247,7 +249,7 @@ class Room:
     def _oil_lamp(self, at):
         """A clay oil lamp: a round body with a filling hole and a nozzle, its
         wick burning."""
-        clay = M.terracotta("#9a5e3c", 0.05)
+        clay = TC.fired_clay("lamp-clay", "#9a5e3c", reduced="#5a4a40", pale="#b88a66", dust=0.05, sheen=0.04, ring_pitch=0.004)
         body = self._blob("lamp-body", at + Vector((0, 0, 0.022)), (0.045, 0.045, 0.022), clay, 1, 0.02)
         self.objects.append(body)
         nozzle = self._blob("lamp-nozzle", at + Vector((0.05, 0.0, 0.026)), (0.03, 0.018, 0.012), clay, 2, 0.02)
@@ -313,7 +315,7 @@ class Room:
         for o in (blade, handle):
             o.rotation_euler = (0, 0, 0.0)
             self.objects.append(o)
-        bowl = common.lathe("leaf-bowl", [(0.02, 0.0), (0.05, 0.012), (0.065, 0.03), (0.062, 0.034), (0.045, 0.014)], 24, M.terracotta("#a96a44", 0.1), None)
+        bowl = common.lathe("leaf-bowl", [(0.02, 0.0), (0.05, 0.012), (0.065, 0.03), (0.062, 0.034), (0.045, 0.014)], 24, TC.fired_clay("bowl-clay", "#a96a44", dust=0.15), None)
         bowl.location = (-0.36, 0.1, TABLE_Z)
         self.objects.append(bowl)
         self.objects.append(self._blob("bowl-leaves", Vector((-0.36, 0.1, TABLE_Z + 0.026)), (0.05, 0.05, 0.012), herb_material("#6a6a44", "#8e8656"), 7, 0.3))
@@ -363,11 +365,11 @@ class Room:
         niche = common.box("niche", (0.9, 0.3, 0.6), (-0.5, y1 + 0.1, 1.25), M.plain("#2a2018", 0.9), None)
         self.objects.append(niche)
         for k in range(3):
-            j = common.lathe("niche-jar", [(0.03, 0.0), (0.09, 0.05), (0.1, 0.14), (0.05, 0.24), (0.045, 0.28)], 20, M.terracotta("#a86a44", 0.2), None)
+            j = common.lathe("niche-jar", [(0.03, 0.0), (0.09, 0.05), (0.1, 0.14), (0.05, 0.24), (0.045, 0.28)], 20, TC.fired_clay("niche-clay", "#a86a44", dust=0.25, scale=1.5), None)
             j.location = (-0.8 + k * 0.28, y1 + 0.05, 0.96)
             self.objects.append(j)
         for k in range(3):
-            j = common.lathe("floor-jar", [(0.08, 0.0), (0.2, 0.15), (0.22, 0.4), (0.12, 0.6), (0.1, 0.66)], 24, M.terracotta("#9e6a48", 0.3), None)
+            j = common.lathe("floor-jar", [(0.08, 0.0), (0.2, 0.15), (0.22, 0.4), (0.12, 0.6), (0.1, 0.66)], 24, TC.fired_clay("floor-jar-clay", "#9e6a48", dust=0.4, scale=2.5), None)
             j.location = (1.4 + k * 0.5, y1 - 0.35, 0.0)
             self.objects.append(j)
         basket = common.lathe("basket", [(0.15, 0.0), (0.22, 0.2), (0.23, 0.3)], 28, M.straw("#b39463"), None)

@@ -27,47 +27,81 @@ STOREY = 3.3
 
 
 # ── materials ────────────────────────────────────────────────────────────────
-def _brick(g, pos, n, scale, mortar, row_h=0.42):
-    """Coursed ashlar on vertical faces: brick texture projected along the
-    face's own axis (x-facing faces use y, y-facing use x)."""
-    x, y, z = g.xyz(pos)
-    ax = g.math("ABSOLUTE", g.xyz(n)[0])
-    u = g.mixf(g.map(ax, 0.45, 0.55), x, y)
-    uv = g.vec(u, z, 0.0)
-    b = g.node("ShaderNodeTexBrick", {"Vector": uv, "Scale": 1.0, "Mortar Size": mortar, "Mortar Smooth": 0.3, "Bias": 0.0, "Brick Width": 0.9 * scale, "Row Height": row_h * scale, "Color1": (1, 1, 1, 1), "Color2": (0.7, 0.7, 0.7, 1), "Mortar": (0, 0, 0, 1)}, offset=0.5, squash=1.0)
-    return b.outputs["Fac"], b.outputs["Color"]
+def masonry(name="city-masonry", ashlar=False):
+    """Walls as a builder would lay them in first-century Jerusalem, seen
+    close enough to count the stones.
 
-
-def stone_walls(name="city-walls", light="#d6c7a6", dark="#b09c7c", plaster="#e3d8c2"):
-    """House walls: limestone blocks, some houses lime-washed (face attribute
-    'rand' picks), weathered darker toward the ground and streaked."""
+    Most houses are rubble: rough limestone blocks of every size in uneven
+    courses (cells of a voronoi squashed flat, so each is a block wider
+    than tall), set in grey-white lime mortar, each block its own tone
+    (cream, honey, pinkish, grey), chipped and pitted. Some are lime-washed
+    and the wash has flaked away in patches. The city wall and gate
+    (`ashlar`) are dressed blocks in courses, each with its drafted margin.
+    Weather marks them all: dark streaks run down from the roof's edge
+    (face attribute `ztop`), rain splash and dust darken the foot of the
+    wall (`zbase`). The stone is a warm, faintly pink cream: in shade, lit
+    by the blue sky, a yellower stone read grey-green."""
 
     def build():
         g = Graph(name)
         pos = g.position()
         n = g.normal()
+        x, y, z = g.xyz(pos)
         rnd = g.attr("rand")
-        mortar, bcol = _brick(g, pos, n, 1.0, 0.03)
-        blk = g.mix(g.map(g.noise(pos, 1.3, 2.0), 0.3, 0.7), dark, light)
-        blk = g.mix(g.mul(g.sub(1.0, g.xyz(bcol)[0]), 0.9), blk, "#a8987a")
-        stone = g.mix(mortar, blk, "#8f8068")
-        washed = g.map(rnd, 0.62, 0.64)
-        col = g.mix(washed, stone, g.mix(g.map(g.noise(pos, 0.8, 3.0), 0.3, 0.7), plaster, "#d3c6ab"))
-        _, _, z = g.xyz(pos)
+        ax = g.math("ABSOLUTE", g.xyz(n)[0])
+        u = g.mixf(g.map(ax, 0.45, 0.55), x, y)
+        if ashlar:
+            b = g.node("ShaderNodeTexBrick", {"Vector": g.vec(u, z, 0.0), "Scale": 1.0, "Mortar Size": 0.012, "Mortar Smooth": 0.2, "Bias": 0.0, "Brick Width": 1.6, "Row Height": 0.62, "Color1": (1, 1, 1, 1), "Color2": (0.0, 0.0, 0.0, 1), "Mortar": (0, 0, 0, 1)}, offset=0.5, squash=1.0)
+            joint = b.outputs["Fac"]
+            tone = g.xyz(b.outputs["Color"])[0]
+            # The drafted margin round each face, and its rough boss.
+            b2 = g.node("ShaderNodeTexBrick", {"Vector": g.vec(u, z, 0.0), "Scale": 1.0, "Mortar Size": 0.07, "Mortar Smooth": 1.0, "Bias": 0.0, "Brick Width": 1.6, "Row Height": 0.62, "Color1": (1, 1, 1, 1), "Color2": (1, 1, 1, 1), "Mortar": (0, 0, 0, 1)}, offset=0.5, squash=1.0)
+            margin = g.sub(b2.outputs["Fac"], joint)
+            boss = g.mul(g.sub(1.0, b2.outputs["Fac"]), g.noise(pos, 6.0, 4.0, 0.7))
+            relief = g.add(g.mul(joint, -1.0), g.add(g.mul(margin, -0.3), g.mul(boss, 0.6)))
+        else:
+            cells = g.vec(g.mul(u, 2.2), g.mul(g.add(z, g.mul(g.noise(pos, 0.7, 2.0), 0.2)), 3.8), g.mul(rnd, 37.0))
+            vor = g.node("ShaderNodeTexVoronoi", {"Vector": cells, "Scale": 1.0, "Randomness": 0.85}, feature="DISTANCE_TO_EDGE", distance="EUCLIDEAN", voronoi_dimensions="3D")
+            vc = g.node("ShaderNodeTexVoronoi", {"Vector": cells, "Scale": 1.0, "Randomness": 0.85}, feature="F1", distance="EUCLIDEAN", voronoi_dimensions="3D")
+            edge = vor.outputs["Distance"]
+            joint = g.map(edge, 0.0, 0.045, 1.0, 0.0)
+            tone = g.xyz(vc.outputs["Color"])[0]
+            # Each block bulges a little, rougher toward its edges.
+            relief = g.add(g.map(edge, 0.0, 0.2, -1.0, 0.0), g.mul(g.noise(pos, 7.0, 4.0, 0.7), 0.35))
+        stone = g.ramp(tone, [(0.0, "#c3a584"), (0.3, "#d2b995"), (0.55, "#d9c3a0"), (0.8, "#cbb08e"), (1.0, "#c9b49a")])
+        stone = g.mix(g.mul(g.smooth(g.noise(pos, 4.0, 4.0, 0.6), 0.55, 0.8), 0.5), stone, "#a89a88")
+        pits = g.map(g.voronoi(pos, 60.0), 0.0, 0.18, 1.0, 0.0)
+        stone = g.mix(g.mul(pits, 0.35), stone, "#8a7a68")
+        mortar = g.mix(g.map(g.noise(pos, 3.0, 3.0), 0.3, 0.7), "#b39c7e", "#c9b596")
+        col = g.mix(joint, stone, mortar)
+        # Most houses are plastered with mud and lime; where it has fallen
+        # away (more of it low down) the rubble shows.
+        low_z = g.map(g.sub(z, g.attr("zbase")), 0.0, 1.5, 1.0, 0.0)
+        washed = 0.0 if ashlar else g.map(rnd, 0.3, 0.32)
+        flake = g.smooth(g.add(g.noise(pos, 0.9, 4.0, 0.6), g.mul(low_z, 0.15)), 0.55, 0.59)
+        wash = g.mul(washed, g.sub(1.0, flake))
+        wash_col = g.mix(g.map(g.noise(pos, 1.5, 3.0), 0.3, 0.7), "#d9c7a6", "#cbb593")
+        wash_col = g.mix(g.mul(g.smooth(g.noise(pos, 0.35, 3.0), 0.5, 0.7), 0.5), wash_col, "#b89f7e")
+        col = g.mix(wash, col, wash_col)
         base = g.attr("zbase")
-        low = g.map(g.sub(z, base), 0.0, 1.2, 1.0, 0.0)
-        col = g.mix(g.mul(low, 0.35), col, "#8a7a62")
-        streak = g.noise(g.vmath("MULTIPLY", pos, (2.0, 2.0, 0.25)), 1.0, 3.0, 0.6)
-        col = g.mix(g.mul(g.smooth(streak, 0.55, 0.75), 0.25), col, "#7e725f", "MULTIPLY")
-        col = g.mix(g.mul(g.sub(rnd, 0.5), 0.3), col, "#c9b690")
+        top = g.attr("ztop")
+        # Splash and dust at the foot of the wall.
+        low = g.map(g.sub(z, base), 0.0, 0.9, 1.0, 0.0)
+        low = g.mul(low, g.map(g.noise(pos, 3.0, 3.0), 0.3, 0.7, 0.6, 1.0))
+        col = g.mix(g.mul(low, 0.45), col, "#9c8468")
+        # Rain streaks from the roof's edge, fading downward.
+        streak = g.noise(g.vmath("MULTIPLY", pos, (3.0, 3.0, 0.12)), 1.0, 3.0, 0.6)
+        below = g.map(g.sub(top, z), 0.0, 2.6, 1.0, 0.0)
+        col = g.mix(g.mul(g.mul(g.smooth(streak, 0.5, 0.72), below), 0.5), col, "#857563", "MULTIPLY")
         # Doors and windows are faces marked rand = -1: deep shade.
         opening = g.math("LESS_THAN", rnd, -0.5)
         col = g.mix(opening, col, "#17110c")
-        h = g.add(g.mul(g.sub(1.0, mortar), 0.6), g.mul(g.noise(pos, 9.0, 4.0), 0.3))
-        g.principled(col, 0.9, g.map(opening, 0.0, 1.0, 0.2, 0.0), g.bump(h, 0.4, 0.02))
+        h = g.add(g.mul(relief, g.sub(1.0, wash)), g.mul(g.noise(pos, 20.0, 4.0), 0.25))
+        normal = g.bump(g.mul(pits, -1.0), 0.3, 0.004, normal=g.bump(h, 0.55, 0.035))
+        g.principled(col, g.map(joint, 0.0, 1.0, 0.86, 0.95), g.map(opening, 0.0, 1.0, 0.25, 0.0), normal)
         return g.mat
 
-    return _cached(name, build)
+    return _cached(f"{name}-{ashlar}", build)
 
 
 def roofs(name="city-roofs"):
@@ -172,17 +206,35 @@ def _cached(name, build):
 
 # ── mesh helpers ─────────────────────────────────────────────────────────────
 class Builder:
-    """Collects boxes into one mesh, with a random value and base height per face."""
+    """Collects boxes into one mesh, with a random value, base and top height
+    per face (for the shader: which stone, where the splash and the streaks
+    reach)."""
 
     def __init__(self, name):
         self.name = name
         self.bm = bmesh.new()
         self.rand = self.bm.faces.layers.float.new("rand")
         self.zbase = self.bm.faces.layers.float.new("zbase")
+        self.ztop = self.bm.faces.layers.float.new("ztop")
 
-    def box(self, x0, y0, z0, x1, y1, z1, r=0.5, zb=None, skip_bottom=True):
+    def box(self, x0, y0, z0, x1, y1, z1, r=0.5, zb=None, skip_bottom=True, zt=None, jitter=None, batter=0.0):
+        """A box; `jitter` (a random.Random) nudges its corners a few
+        centimetres (no wall is laid true), `batter` leans its faces in
+        toward the top."""
         bm = self.bm
-        v = [bm.verts.new((x, y, z)) for z in (z0, z1) for y in (y0, y1) for x in (x0, x1)]
+        corners = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)]
+        v = []
+        for k, z in enumerate((z0, z1)):
+            for cx, cy in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+                dx = dy = 0.0
+                if jitter is not None:
+                    dx = jitter.uniform(-0.05, 0.05)
+                    dy = jitter.uniform(-0.05, 0.05)
+                if k == 1 and batter:
+                    dx += batter if cx == x0 else -batter
+                    dy += batter if cy == y0 else -batter
+                v.append(bm.verts.new((cx + dx, cy + dy, z)))
+        _ = corners
         faces = [(4, 5, 7, 6), (0, 1, 5, 4), (2, 6, 7, 3), (0, 4, 6, 2), (1, 3, 7, 5)]
         if not skip_bottom:
             faces.append((0, 2, 3, 1))
@@ -190,23 +242,28 @@ class Builder:
             face = bm.faces.new([v[i] for i in f])
             face[self.rand] = r
             face[self.zbase] = z0 if zb is None else zb
+            face[self.ztop] = z1 if zt is None else zt
 
-    def quad(self, pts, r=0.5, zb=0.0):
+    def quad(self, pts, r=0.5, zb=0.0, zt=None):
         face = self.bm.faces.new([self.bm.verts.new(p) for p in pts])
         face[self.rand] = r
         face[self.zbase] = zb
+        face[self.ztop] = max(p[2] for p in pts) if zt is None else zt
 
-    def finish(self, material, collection=None, smooth=False):
+    def finish(self, material, collection=None, smooth=False, bevel=0.0):
         me = bpy.data.meshes.new(self.name)
         self.bm.normal_update()
         self.bm.to_mesh(me)
-        # Face layers become attributes; copy them to point-free FACE attributes the shader reads.
         self.bm.free()
         obj = bpy.data.objects.new(self.name, me)
         (collection or bpy.context.scene.collection).objects.link(obj)
         me.materials.append(material)
         for p in me.polygons:
             p.use_smooth = smooth
+        if bevel:
+            # Lime-plastered arrises are rounded, never knife-edged.
+            mod = common.add_modifier(obj, "BEVEL", width=bevel, segments=2, limit_method="ANGLE")
+            mod.harden_normals = False
         return obj
 
 
@@ -239,21 +296,24 @@ class City:
         self.rng = random.Random(self.seed)
         self.objects = []
         self.roofs_at = []
+        self.yards = []
         walls = Builder("city-houses")
         tops = Builder("city-roofs")
         self.holes = Builder("city-openings")
         self.timber = Builder("city-timber")
+        self.dressed = Builder("city-dressed")
         self.clutter = []
         streets = self._streets()
         lots = self._lots(streets)
         self.lots = lots
         for lot in lots:
             self._house(lot, walls, tops)
-        # The game's own Jerusalem limestone (the market's houses) and roof plaster.
-        self.objects.append(walls.finish(M.limestone("#d6c09a", "teaser-ashlar", worn=0.6)))
-        self.objects.append(tops.finish(M.plaster("#d2bf99", "teaser-roof-plaster")))
+        # Rubble walls, some lime-washed; roofs of rolled earth and lime.
+        self.objects.append(walls.finish(masonry(), bevel=0.05))
+        self.objects.append(tops.finish(M.plaster("#d6c2a2", "teaser-roof-plaster")))
         self.objects.append(self.holes.finish(plain("city-dark", "#1a130d", 0.95)))
-        self.objects.append(self.timber.finish(M.wood("#5e4630", 4.0)))
+        self.objects.append(self.timber.finish(wood("city-wood", "#5e4630"), bevel=0.01))
+        self.objects.append(self.dressed.finish(masonry("city-dressed", ashlar=True), bevel=0.012))
         self._roof_clutter()
         self._city_wall()
         self._street_ground(streets)
@@ -295,6 +355,8 @@ class City:
                 w = cell * (1 if rng.random() < 0.7 else 2)
                 d = cell * (1 if rng.random() < 0.75 else 2)
                 if rng.random() < 0.35:
+                    # An open yard: a tree may grow here.
+                    self.yards.append((x0 + cell / 2, y0 + cell / 2))
                     continue
                 x1, y1 = x0 + w, y0 + d
                 if any(not (x1 <= a or x0 >= c or y1 <= b or y0 >= e) for a, b, c, e in streets):
@@ -326,38 +388,58 @@ class City:
         return lots
 
     def _house(self, lot, walls, tops):
+        """A house on its lot: rubble walls leaning in a little, a parapet
+        of uneven height (broken down in places), roof beams showing under
+        it, water spouts, sometimes an upper room, outside stairs, a
+        lean-to; doors and windows with lintels and wooden leaves."""
         rng = self.rng
         x0, y0, x1, y1 = lot
-        inset = 0.15
-        x0, y0, x1, y1 = x0 + inset, y0 + inset, x1 - inset, y1 - inset
+        inset = 0.15 + rng.random() * 0.25
+        x0, y0, x1, y1 = x0 + inset, y0 + inset * rng.random(), x1 - inset * rng.random(), y1 - inset
         if x1 - x0 < 2.5 or y1 - y0 < 2.5:
             return
         zb = min(self.z(x0, y0), self.z(x1, y1), self.z(x0, y1), self.z(x1, y0)) - 0.3
         storeys = 1 if rng.random() < 0.55 else 2
         h = storeys * STOREY + rng.random() * 0.6
         r = rng.random()
-        walls.box(x0, y0, zb, x1, y1, zb + h, r, zb)
         roof_z = zb + h
+        walls.box(x0, y0, zb, x1, y1, roof_z, r, zb, zt=roof_z, jitter=rng, batter=0.04 + 0.05 * rng.random())
         # Roof deck, a little below the parapet.
-        tops.quad([(x0 + 0.25, y0 + 0.25, roof_z - 0.02), (x1 - 0.25, y0 + 0.25, roof_z - 0.02), (x1 - 0.25, y1 - 0.25, roof_z - 0.02), (x0 + 0.25, y1 - 0.25, roof_z - 0.02)], r, roof_z)
-        p = 0.55 + rng.random() * 0.3
-        t = 0.25
-        for bx0, by0, bx1, by1 in ((x0, y0, x1, y0 + t), (x0, y1 - t, x1, y1), (x0, y0, x0 + t, y1), (x1 - t, y0, x1, y1)):
-            walls.box(bx0, by0, roof_z, bx1, by1, roof_z + p, r, zb)
+        tops.quad([(x0 + 0.3, y0 + 0.3, roof_z - 0.02), (x1 - 0.3, y0 + 0.3, roof_z - 0.02), (x1 - 0.3, y1 - 0.3, roof_z - 0.02), (x0 + 0.3, y1 - 0.3, roof_z - 0.02)], r, roof_z)
+        t = 0.3
+        for side, (bx0, by0, bx1, by1) in enumerate(((x0, y0, x1, y0 + t), (x0, y1 - t, x1, y1), (x0, y0, x0 + t, y1), (x1 - t, y0, x1, y1))):
+            p = 0.45 + rng.random() * 0.45
+            if side < 2 and rng.random() < 0.18:
+                # Broken down along part of its length.
+                cut = bx0 + (bx1 - bx0) * rng.uniform(0.3, 0.7)
+                walls.box(bx0 + 0.04, by0 + 0.04, roof_z - 0.05, cut, by1 - 0.04, roof_z + p, r, zb, jitter=rng)
+                walls.box(cut, by0 + 0.04, roof_z - 0.05, bx1 - 0.04, by1 - 0.04, roof_z + p * 0.35, r, zb, jitter=rng)
+                continue
+            walls.box(bx0 + 0.04, by0 + 0.04, roof_z - 0.05, bx1 - 0.04, by1 - 0.04, roof_z + p, r, zb, jitter=rng)
+        # Water spouts through the parapet: a wooden gutter.
+        tb = self.timber
+        for k in range(rng.randrange(1, 3)):
+            if rng.random() < 0.5:
+                sx = rng.uniform(x0 + 0.8, x1 - 0.8)
+                tb.box(sx - 0.07, y0 - 0.45, roof_z + 0.02, sx + 0.07, y0 + 0.3, roof_z + 0.12, 0.5, zb)
+            else:
+                sy = rng.uniform(y0 + 0.8, y1 - 0.8)
+                tb.box(x1 - 0.3, sy - 0.07, roof_z + 0.02, x1 + 0.45, sy + 0.07, roof_z + 0.12, 0.5, zb)
         # An upper room on some roofs.
         if rng.random() < 0.3 and (x1 - x0) > 5 and (y1 - y0) > 5:
             ux1 = x0 + (x1 - x0) * (0.45 + rng.random() * 0.2)
             uy1 = y0 + (y1 - y0) * (0.45 + rng.random() * 0.2)
-            walls.box(x0 + 0.3, y0 + 0.3, roof_z, ux1, uy1, roof_z + 2.6, r, roof_z)
-            tops.quad([(x0 + 0.3, y0 + 0.3, roof_z + 2.62), (ux1, y0 + 0.3, roof_z + 2.62), (ux1, uy1, roof_z + 2.62), (x0 + 0.3, uy1, roof_z + 2.62)], r, roof_z)
+            walls.box(x0 + 0.3, y0 + 0.3, roof_z, ux1, uy1, roof_z + 2.6, r, roof_z, jitter=rng, batter=0.04)
+            tops.quad([(x0 + 0.34, y0 + 0.34, roof_z + 2.62), (ux1 - 0.04, y0 + 0.34, roof_z + 2.62), (ux1 - 0.04, uy1 - 0.04, roof_z + 2.62), (x0 + 0.34, uy1 - 0.04, roof_z + 2.62)], r, roof_z)
+            self._opening(0, (x0 + 0.3 + ux1) / 2, 0.8, roof_z + 0.05, roof_z + 1.85, (x0 + 0.3, y0 + 0.3, ux1, uy1), roof_z, door=True)
         # Roof beams: their ends show in a row just under the parapet.
-        tb = self.timber
         for side in (0, 1):
-            y = y0 - 0.12 if side == 0 else y1
+            y = y0 - 0.14 if side == 0 else y1 - 0.02
             x = x0 + 0.5
             while x < x1 - 0.4:
-                tb.box(x - 0.07, y, roof_z - 0.3, x + 0.07, y + 0.12, roof_z - 0.14, 0.5, zb)
-                x += 0.55 + rng.random() * 0.15
+                dz = rng.uniform(-0.03, 0.03)
+                tb.box(x - 0.08, y, roof_z - 0.32 + dz, x + 0.08, y + 0.16, roof_z - 0.15 + dz, 0.5, zb)
+                x += 0.5 + rng.random() * 0.2
         # Outside stairs up to the roof on some houses.
         if rng.random() < 0.3 and (x1 - x0) > 4.0:
             n = int(h / 0.25)
@@ -365,51 +447,79 @@ class City:
                 sx = x0 + 0.2 + k * 0.28
                 if sx + 0.3 > x1:
                     break
-                walls.box(sx, y0 - 0.9, zb, sx + 0.3, y0, zb + (k + 1) * 0.25, r, zb)
-        # Doors and windows: dark recesses on the faces toward streets; a
-        # wooden door in some doorways.
-        self._openings(self.holes, (x0, y0, x1, y1), zb, storeys, r)
+                walls.box(sx, y0 - 0.9, zb, sx + 0.3, y0, zb + (k + 1) * 0.25, r, zb, zt=zb + (k + 1) * 0.25, jitter=rng)
+        # A lean-to or yard wall against one side.
+        if rng.random() < 0.25:
+            lh = 1.6 + rng.random() * 0.8
+            if rng.random() < 0.5:
+                walls.box(x0 + 0.2, y1, zb, min(x1, x0 + 3.5), y1 + 2.2, zb + lh, r, zb, jitter=rng, batter=0.03)
+            else:
+                walls.box(x0 - 0.35, y0 + 0.5, zb, x0, y1 - 0.5, zb + lh * 0.8, r, zb, jitter=rng)
+        # Doors and windows toward the lanes.
+        self._openings((x0, y0, x1, y1), zb, storeys, r)
         self.roofs_at.append((x0, y0, x1, y1, roof_z))
 
-    def _openings(self, b, box, zb, storeys, r):
+    def _openings(self, box, zb, storeys, r):
         rng = self.rng
         x0, y0, x1, y1 = box
-        dark = 0.02
         for side in range(4):
             if rng.random() < 0.35:
                 continue
-            if side in (0, 1):
-                y = y0 - dark if side == 0 else y1 + dark
-                span = (x0, x1)
-            else:
-                x = x0 - dark if side == 2 else x1 + dark
-                span = (y0, y1)
+            span = (x0, x1) if side in (0, 1) else (y0, y1)
             L = span[1] - span[0]
             if L < 3:
                 continue
             c = span[0] + L * (0.3 + rng.random() * 0.4)
-            # Door.
-            w, hgt = 1.0, 2.0
-            self._recess(b, side, c, w, zb + 0.05, zb + 0.05 + hgt, box, r)
+            self._opening(side, c, 0.9 + rng.random() * 0.25, zb + 0.35, zb + 0.35 + 1.85 + rng.random() * 0.2, box, zb, door=True)
             for k in range(storeys):
                 for j in range(1 + (L > 7)):
                     cw = span[0] + L * (0.15 + 0.7 * rng.random())
                     wz = zb + k * STOREY + 2.1 + rng.random() * 0.3
                     if k == 0 and abs(cw - c) < 1.3:
                         continue
-                    self._recess(b, side, cw, 0.45, wz, wz + 0.6, box, r)
+                    self._opening(side, cw, 0.4 + rng.random() * 0.15, wz, wz + 0.55 + rng.random() * 0.15, box, zb, door=False)
 
-    def _recess(self, b, side, c, w, z0, z1, box, r):
+    def _opening(self, side, c, w, z0, z1, box, zb, door):
+        """A door or window on one face of a house: the dark of the room
+        within, a stone lintel or wooden beam over it, dressed jambs and a
+        threshold (a door) or a sill (a window), and a wooden leaf, shutter
+        or bars."""
+        rng = self.rng
         x0, y0, x1, y1 = box
-        e = 0.03
-        if side == 0:
-            b.quad([(c - w / 2, y0 - e, z0), (c + w / 2, y0 - e, z0), (c + w / 2, y0 - e, z1), (c - w / 2, y0 - e, z1)], -1.0, z0)
-        elif side == 1:
-            b.quad([(c + w / 2, y1 + e, z0), (c - w / 2, y1 + e, z0), (c - w / 2, y1 + e, z1), (c + w / 2, y1 + e, z1)], -1.0, z0)
-        elif side == 2:
-            b.quad([(x0 - e, c + w / 2, z0), (x0 - e, c - w / 2, z0), (x0 - e, c - w / 2, z1), (x0 - e, c + w / 2, z1)], -1.0, z0)
+        e = 0.06  # proud of the wall (which leans in a little as it rises)
+
+        def face_box(a0, a1, h0, h1, out0, out1, builder, r=0.5):
+            # Along the face a0..a1, heights h0..h1, from out0 to out1 outside it.
+            if side == 0:
+                builder.box(a0, y0 - out1, h0, a1, y0 - out0, h1, r, zb)
+            elif side == 1:
+                builder.box(a0, y1 + out0, h0, a1, y1 + out1, h1, r, zb)
+            elif side == 2:
+                builder.box(x0 - out1, a0, h0, x0 - out0, a1, h1, r, zb)
+            else:
+                builder.box(x1 + out0, a0, h0, x1 + out1, a1, h1, r, zb)
+
+        face_box(c - w / 2, c + w / 2, z0, z1, e - 0.01, e, self.holes, -1.0)
+        stone = rng.random() < 0.6
+        lintel = self.dressed if stone else self.timber
+        face_box(c - w / 2 - 0.22, c + w / 2 + 0.22, z1, z1 + (0.26 if stone else 0.16), 0.0, e + 0.05, lintel, rng.random())
+        if door:
+            for sgn in (-1, 1):
+                a = c + sgn * (w / 2 + 0.09)
+                face_box(a - 0.09, a + 0.09, z0 - 0.05, z1, 0.0, e + 0.03, self.dressed, rng.random())
+            face_box(c - w / 2 - 0.1, c + w / 2 + 0.1, z0 - 0.35, z0, 0.0, e + 0.25, self.dressed, rng.random())
+            # The door leaf of planks, often ajar (a strip of the dark beside it).
+            lw = w * (0.78 if rng.random() < 0.4 else 1.0)
+            face_box(c - w / 2, c - w / 2 + lw, z0 + 0.02, z1 - 0.02, e, e + 0.05, self.timber, rng.random())
         else:
-            b.quad([(x1 + e, c - w / 2, z0), (x1 + e, c + w / 2, z0), (x1 + e, c + w / 2, z1), (x1 + e, c - w / 2, z1)], -1.0, z0)
+            face_box(c - w / 2 - 0.06, c + w / 2 + 0.06, z0 - 0.1, z0, 0.0, e + 0.08, self.dressed, rng.random())
+            if rng.random() < 0.5:
+                if rng.random() < 0.5:
+                    face_box(c - w / 2, c + w / 2, z0, z1, e, e + 0.03, self.timber, rng.random())
+                else:
+                    for k in range(3):
+                        a = c - w / 2 + (k + 0.5) * w / 3
+                        face_box(a - 0.02, a + 0.02, z0, z1, e, e + 0.03, self.timber, 0.5)
 
     def _city_wall(self):
         """The east wall, its towers and the gate: two towers either side of a
@@ -448,7 +558,7 @@ class City:
             while yy < ty + 4.4:
                 b.box(gx + 4.1, yy, top + 4.0, gx + 5.0, yy + 1.1, top + 5.2, 0.4, top + 4.0)
                 yy += 2.0
-        obj = b.finish(M.limestone("#d2bb92", "teaser-wall-stone", worn=0.75))
+        obj = b.finish(masonry("city-wall", ashlar=True), bevel=0.03)
         self.objects.append(obj)
         self.wall_top = top
 
