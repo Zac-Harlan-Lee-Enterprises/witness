@@ -449,5 +449,5 @@ TESTS  : Vitest 723 -> 748 (69 -> 71 files). e2e on 4489/5489: chapter, storm-on
 NEXT   : The owner reviews the new content in the game and, if he approves it, a person adds an approval dated on or
          after 2026-09-30 in src/content/shared/approvals.ts (and the approval log); then update the "keeps what was
          added after the approval ... awaiting review" tests in tests/content/{road-to-jericho,storm-on-galilee}.test.ts.
-         Merge origin/main once PR #16 (feat/new-puzzle-types) lands.
+         Then open a PR for feat/longer-ch1-ch2 (already merged with main after PR #16).
 BLOCKED: none.
