@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   choose,
   continueDialogue,
@@ -13,6 +13,9 @@ import {
   snap,
   waitForWorld,
   timeLimit,
+  chooseInGrid,
+  placePiece,
+  checkPuzzleA11y,
 } from './support';
 
 /**
@@ -22,11 +25,6 @@ import {
  * shepherds' news as labelled paraphrase → Scripture Connection → reflection
  * → summary (with no score language). E2E_SHOTS=1 saves a picture of each stage.
  */
-async function vessel(page: Page, name: string, action: string): Promise<void> {
-  const puzzle = page.getByRole('dialog', { name: 'Three Measures of Flour' });
-  await puzzle.getByRole('region', { name }).getByRole('button', { name: action }).click();
-}
-
 test('play A Journey to Bethlehem from a new profile to the chapter summary', async ({ page }) => {
   test.setTimeout(timeLimit(240_000));
   await openApp(page);
@@ -45,27 +43,32 @@ test('play A Journey to Bethlehem from a new profile to the chapter summary', as
   await expect(page.getByRole('dialog', { name: 'Quests' })).toContainText('Room for Everyone');
   await page.keyboard.press('Escape');
 
-  // Measuring: three measures of flour with a 5 and a 4.
+  // Logic grid: who sits where for supper, from four clues.
   await goTo(page, 'Use Kneading trough and flour jar');
-  const bread = page.getByRole('dialog', { name: 'Three Measures of Flour' });
+  const bread = page.getByRole('dialog', { name: 'Places for Supper' });
   await expect(bread).toBeVisible();
-  await vessel(page, 'Grain basket', 'Fill');
-  await vessel(page, 'Grain basket', 'Pour into kneading trough');
-  await vessel(page, 'Grain basket', 'Fill');
-  await snap(page, 'bethlehem-02-flour');
-  await vessel(page, 'Grain basket', 'Pour into kneading trough');
-  await vessel(page, 'Kneading trough', 'Pour back into the flour jar');
-  await vessel(page, 'Grain basket', 'Pour into kneading trough');
+  await checkPuzzleA11y(page, 'logic grid');
+  await chooseInGrid(bread, [
+    ['Saba Amram', 'Nearest the fire'],
+    ['Uncle Asa', 'Second place'],
+    ['Aunt Peninah (with Dodi)', 'Third place'],
+    ['Tamar', 'Nearest the door'],
+  ]);
+  await snap(page, 'bethlehem-02-supper');
+  await bread.getByRole('button', { name: 'Check my answer' }).click();
   await expect(bread.getByText('Solved!')).toBeVisible();
   await bread.getByRole('button', { name: 'Continue' }).click();
 
-  // Packing: noticing the dry corner on the roof lets you leave a space.
+  // Floor plan: noticing the dry corner on the roof lets you leave a space.
   await goTo(page, 'Examine Ladder to the roof');
   await goTo(page, 'Use Guests’ things to arrange');
   const room = page.getByRole('dialog', { name: 'Room in the Guest Room' });
   await expect(room).toBeVisible();
+  await placePiece(room, /Aunt Peninah and Dodi’s bedding/, 0, [1, 4]);
+  await placePiece(room, /Uncle Asa’s bedding/, 0, [3, 3]);
+  await checkPuzzleA11y(page, 'floor plan');
   await snap(page, 'bethlehem-03-room');
-  await room.getByRole('button', { name: 'Finish packing' }).click();
+  await room.getByRole('button', { name: 'The room is ready' }).click();
   await expect(room.getByText('Solved!')).toBeVisible();
   await room.getByRole('button', { name: 'Continue' }).click();
 

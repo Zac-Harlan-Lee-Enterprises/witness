@@ -12,6 +12,9 @@ import {
   snap,
   waitForWorld,
   timeLimit,
+  trimBoat,
+  checkPuzzleA11y,
+  mendNet,
 } from './support';
 
 /** The weather the story has asked the world to show (recorded on the canvas). */
@@ -78,9 +81,27 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await choose(page, 'Not yet.');
   await endDialogue(page);
   await goTo(page, 'Talk to Nikanor the salt-fish trader');
-  await choose(page, 'I’ll take them down to the boat.');
+  // The side quest: mend Nikanor's torn jar net (a picture logic grid).
+  await choose(page, 'You look busy. Can I help?');
+  await choose(page, 'I’ll try.');
   await endDialogue(page);
   await snap(page, 'storm-03-salting-racks');
+  await goTo(page, 'Use Nikanor’s torn jar net');
+  const net = page.getByRole('dialog', { name: 'Nikanor’s Jar Net' });
+  await expect(net).toBeVisible();
+  await checkPuzzleA11y(page, 'net mending');
+  await mendNet(net, [
+    [1, 3], [1, 4], [1, 5],
+    [2, 2], [2, 4], [2, 5],
+    [3, 2], [3, 3], [3, 4], [3, 5],
+    [4, 2], [4, 3], [4, 4], [4, 5],
+    [5, 3], [5, 4], [5, 5],
+  ]); // prettier-ignore
+  await expect(net.getByText('Solved!')).toBeVisible();
+  await net.getByRole('button', { name: 'Continue' }).click();
+  await goTo(page, 'Talk to Nikanor the salt-fish trader');
+  await expect(dialogueBox(page)).toContainText('my fish is whole again');
+  await endDialogue(page);
 
   // Reading the sky (deduction).
   await goTo(page, 'Talk to Old Hanina');
@@ -99,21 +120,25 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await expect(sky.getByText('Solved!')).toBeVisible();
   await sky.getByRole('button', { name: 'Continue' }).click();
 
-  // Loading the boat (packing): four jars leaves room for a rope, the spare oar, a cloak and a lamp.
+  // Loading the boat (trim): four jars leaves room for a rope, the spare oar, a cloak and a
+  // lamp — placed so she sits level, with Uncle Elazar steering from the stern.
   await goTo(page, 'Use The family boat');
   await choose(page, 'Load the boat.');
   await endDialogue(page);
   const load = page.getByRole('dialog', { name: 'Load the Boat' });
   await expect(load).toBeVisible();
-  const pack = (name: string) => load.getByRole('button', { name: `Pack one ${name}` }).click();
-  await pack('Bailing scoop');
-  for (let i = 0; i < 4; i++) await pack('Jar of salted fish');
-  await pack('Coil of rope');
-  await pack('Spare oar');
-  await pack('Your cloak');
-  await pack('Clay lamp');
+  await trimBoat(load, [
+    ...Array.from({ length: 4 }, () => ['Jar of salted fish', 'bow'] as const),
+    ['Bailing scoop', 'stern'],
+    ['Clay lamp', 'stern'],
+    ['Spare oar', 'port side'],
+    ['Coil of rope', 'starboard side'],
+    ['Your cloak', 'starboard side'],
+  ]);
+  await expect(load.getByText(/Bow and stern about the same: Bow 6, Stern 5/)).toBeVisible();
+  await checkPuzzleA11y(page, 'trim puzzle');
   await snap(page, 'storm-05-loading');
-  await load.getByRole('button', { name: 'Finish packing' }).click();
+  await load.getByRole('button', { name: 'Finish loading' }).click();
   await expect(load.getByText('Solved!')).toBeVisible();
   await load.getByRole('button', { name: 'Continue' }).click();
 

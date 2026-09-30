@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * E2E helpers. They drive the game only through the accessible HTML UI —
@@ -126,4 +127,96 @@ export async function skipTeaser(page: Page): Promise<void> {
   if (!shown) return;
   await teaser.getByRole('button', { name: 'Skip' }).click();
   await expect(teaser).toHaveCount(0);
+}
+
+// ── The later chapters' own puzzles, played through their accessible UI ──
+
+/**
+ * An open puzzle passes axe in the browser (colour contrast included) and
+ * fits a 320 px-wide phone screen without sideways scrolling. The window is
+ * put back to its size afterwards.
+ */
+export async function checkPuzzleA11y(page: Page, label: string): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  const summary = results.violations.map(
+    (v) =>
+      `${v.id}: ${v.help} — ${v.nodes
+        .slice(0, 3)
+        .map((n) => n.target.join(' '))
+        .join(' | ')}`,
+  );
+  expect(summary, `${label}\n${summary.join('\n')}`).toEqual([]);
+  const size = page.viewportSize();
+  await page.setViewportSize({ width: 320, height: 640 });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow, `${label} at 320 px`).toBeLessThanOrEqual(1);
+  if (size) await page.setViewportSize(size);
+}
+
+/** Load and trim the boat: [item name, place] for each thing, one at a time. */
+export async function trimBoat(
+  puzzle: Locator,
+  loads: ReadonlyArray<readonly [item: string, place: string]>,
+): Promise<void> {
+  for (const [item, place] of loads) {
+    const pick = puzzle
+      .locator('.trim__jetty')
+      .getByRole('button', { name: new RegExp(`^${item}`) });
+    // Pressing what you already hold would put it down again.
+    if ((await pick.getAttribute('aria-pressed')) !== 'true') await pick.click();
+    await puzzle.getByRole('button', { name: `Put the ${item} in the ${place}` }).click();
+  }
+}
+
+/** Mend a net: tie a knot in each [row, column] (1-based), with the keyboard. */
+export async function mendNet(
+  puzzle: Locator,
+  knots: ReadonlyArray<readonly [row: number, col: number]>,
+): Promise<void> {
+  for (const [r, c] of knots) {
+    await puzzle.getByRole('button', { name: new RegExp(`^Row ${r}, column ${c}:`) }).focus();
+    await puzzle.page().keyboard.press('Space');
+  }
+}
+
+/** Choose a floor plan piece, turn it (R), and put its first square on [row, column] (1-based). */
+export async function placePiece(
+  puzzle: Locator,
+  piece: string | RegExp,
+  turns: number,
+  [row, col]: readonly [number, number],
+): Promise<void> {
+  await puzzle.locator('.floorplan__pieces').getByRole('button', { name: piece }).click();
+  await puzzle.getByRole('button', { name: new RegExp(`^Row ${row}, column ${col}:`) }).focus();
+  for (let i = 0; i < turns; i++) await puzzle.page().keyboard.press('r');
+  await puzzle.page().keyboard.press('Enter');
+}
+
+/** Choose one option per subject in a logic grid (a square pressed twice is chosen). */
+export async function chooseInGrid(
+  puzzle: Locator,
+  picks: ReadonlyArray<readonly [subject: string, option: string]>,
+): Promise<void> {
+  for (const [subject, option] of picks) {
+    await puzzle.getByRole('button', { name: `${subject}, ${option}: not decided` }).click();
+    await puzzle.getByRole('button', { name: `${subject}, ${option}: ruled out` }).click();
+  }
+}
+
+/** Walk a map puzzle with the arrow keys (the walk buttons take them), then stop there. */
+export async function walkMap(puzzle: Locator, arrows: readonly string[]): Promise<void> {
+  await puzzle.getByRole('button', { name: /Walk west/ }).focus();
+  for (const key of arrows) await puzzle.page().keyboard.press(key);
+  await puzzle.getByRole('button', { name: 'This is the place' }).click();
+}
+
+/** Put things into the travel bag (choices in the packing conversation), then tie it shut. */
+export async function packBag(page: Page, things: readonly string[]): Promise<void> {
+  for (const thing of things) await choose(page, `Put in ${thing}`);
+  await choose(page, 'That’s everything. Tie the bag shut.');
+  await endDialogue(page);
 }
