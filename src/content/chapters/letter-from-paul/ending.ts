@@ -113,7 +113,7 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-alum' },
-      text: 'At the dye works, you helped Kallias set tomorrow’s alum bath.',
+      text: 'At the dye works, you helped Kallias match the buyer’s shade.',
     },
     { when: flag('read-to-kallias'), text: 'You read Ammia’s letter to Kallias yourself.' },
     {
@@ -165,7 +165,7 @@ export const SUMMARY: ChapterInput['summary'] = {
     {
       id: 'kallias-paid',
       when: flag('kallias-paid'),
-      text: 'Because the alum bath was set, Kallias left with his day’s wage.',
+      text: 'Because the test skein matched, Kallias left with his day’s wage.',
     },
     {
       id: 'kallias-unpaid',

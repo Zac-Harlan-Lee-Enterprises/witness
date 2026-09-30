@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LETTER_FROM_PAUL } from '@/content/chapters/letter-from-paul';
 import { buildChapterSummary } from '@/domain/chapter-summary';
-import { applyMeasure, initialLevels, type MeasuringPuzzle } from '@/domain/puzzles';
 import { createHarness, flush, loadChapter, Player, type Harness } from '../support/harness';
 
 /**
@@ -63,16 +62,55 @@ async function readToAmmia(p: Player, how: 'every' | 'soften' | 'plea'): Promise
   expect(p.h.state().quests['q-letters']?.stageId).toBe('road');
 }
 
-async function pack(p: Player, packed: Record<string, number>): Promise<void> {
+/** Ask Ammia the way, and follow her directions on the sketch (one wrong turn first). */
+async function findTheWay(p: Player): Promise<void> {
   expect(p.scene()).toBe('ammia-workshop');
-  await p.interact('bag');
+  await p.interact('ammia');
+  await p.choose('c-way');
+  await p.finish();
   expect(p.h.ui.getState().puzzleId).toBe('p-pack');
-  // Only what the packing screen offers (things with weight); the letter always comes.
-  const result = p.h.puzzles.submitPacking('p-pack', packed);
-  expect(result?.valid, JSON.stringify(result?.failures)).toBe(true);
+  // Turning left after the third milestone finds the wrong dye works.
+  const early = p.followMap('p-pack', ['west', 'west', 'west', 'west', 'south', 'east']);
+  expect(early?.correct).toBe(false);
+  expect(early?.feedback).toMatch(/before the fourth milestone/);
+  const right = p.followMap('p-pack', WAY_TO_NIKON);
+  expect(right?.correct).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
+  expect(p.h.state().flags['knows-the-way']).toBe(true);
+}
+
+/** Four milestones west, left (south) to the river, right (west) past the waystation. */
+const WAY_TO_NIKON = [
+  'west',
+  'west',
+  'west',
+  'west',
+  'west',
+  'west',
+  'south',
+  'west',
+  'west',
+] as const;
+
+/** Pack the travel bag, one thing at a time, and tie it shut. */
+async function pack(p: Player, packed: readonly string[]): Promise<void> {
+  expect(p.scene()).toBe('ammia-workshop');
+  await p.interact('bag');
+  expect(p.dialogueView?.dialogueId).toBe('d-bag');
+  for (const item of packed) await p.choose(`in-${item}`);
+  await p.choose('tie');
+  await p.finish();
+  expect(p.h.state().flags['packed']).toBe(true);
+  // What went in is what you carry; the rest stays at home. The letter always comes.
+  for (const item of packed) expect(p.h.state().inventory[item], item).toBe(1);
   expect(p.h.state().inventory['ammia-letter']).toBe(1);
+}
+
+/** Ready for the road: the way, then the bag. */
+async function prepare(p: Player, packed: readonly string[]): Promise<void> {
+  await findTheWay(p);
+  await pack(p, packed);
 }
 
 async function toTheBridge(p: Player): Promise<void> {
@@ -97,23 +135,10 @@ async function meetKallias(p: Player): Promise<void> {
 }
 
 function solveAlum(h: Harness): void {
-  const puzzle = h.puzzles.find('p-alum') as MeasuringPuzzle;
-  let levels = initialLevels(puzzle);
-  const steps = [
-    { type: 'fill', vessel: 'big' },
-    { type: 'pour', from: 'big', to: 'small' },
-    { type: 'empty', vessel: 'small' },
-    { type: 'pour', from: 'big', to: 'small' },
-    { type: 'empty', vessel: 'small' },
-    { type: 'pour', from: 'big', to: 'small' },
-    { type: 'fill', vessel: 'big' },
-    { type: 'pour', from: 'big', to: 'small' },
-  ] as const;
-  steps.forEach((s) => {
-    levels = applyMeasure(puzzle, levels, s);
-  });
-  expect(levels.big).toBe(6);
-  expect(h.puzzles.submitMeasure('p-alum', levels)).toBe(true);
+  const p = new Player(h);
+  // Two madder dips and a blue make wine, not mulberry: the red must come out first.
+  expect(p.dye('p-alum', ['madder', 'madder', 'blue'])?.solved).toBe(false);
+  expect(p.dye('p-alum', ['madder', 'rinse', 'madder', 'blue'])?.solved).toBe(true);
 }
 
 async function helpTheMuleDriver(p: Player): Promise<void> {
@@ -179,7 +204,7 @@ describe('A Letter from Paul — full playthroughs', () => {
     await helpTheMuleDriver(p);
     await sortLetter(p);
     await readToAmmia(p, 'every');
-    await pack(p, { 'spare-cloak': 1, tablets: 1, 'letter-case': 1 });
+    await prepare(p, ['spare-cloak', 'tablets', 'letter-case']);
     expect(h.state().inventory['hooded-cloak']).toBeUndefined(); // left at home
     expect(playerMarks(h)).toEqual(['letter-case', 'cloak-roll']);
     await toTheBridge(p);
@@ -235,18 +260,30 @@ describe('A Letter from Paul — full playthroughs', () => {
     expect(h.state().clues).toContain('clue-rain-coming');
     await sortLetter(p);
     await readToAmmia(p, 'soften');
+    await findTheWay(p);
+    // The gate stays shut until the bag is packed, even once you know the way.
+    await p.exit('workshop-door');
+    await p.exit('west-gate');
+    expect(p.dialogueView?.nodeId).toBe('pack');
+    await p.finish();
+    await p.exit('to-workshop');
     await p.interact('bag');
-    const wet = h.puzzles.submitPacking('p-pack', { tablets: 1, bread: 1 });
-    expect(wet?.failures.map((f) => f.ruleId)).toEqual(['dry']);
-    const heavy = h.puzzles.submitPacking('p-pack', {
-      'hooded-cloak': 1,
-      'spare-cloak': 1,
-      tablets: 1,
-    });
-    expect(heavy?.failures.map((f) => f.ruleId)).toEqual(['capacity']);
-    h.controller.closePuzzle();
-    await flush();
-    await pack(p, { 'hooded-cloak': 1, tablets: 1, bread: 1 });
+    const choice = (id: string) => p.dialogueView?.choices.find((c) => c.id === id);
+    await p.choose('in-tablets');
+    await p.choose('in-bread');
+    // Rain is coming and nothing keeps the letter dry: the bag can't be tied yet.
+    expect(choice('tie')?.available).toBe(false);
+    expect(choice('tie')?.unavailableText).toMatch(/keep it dry/);
+    await p.choose('in-hooded-cloak');
+    // Four is full: two cloaks don't fit.
+    expect(choice('in-spare-cloak')?.available).toBe(false);
+    expect(p.dialogueView?.nodeId).toBe('load-4');
+    await p.choose('tie');
+    await p.finish();
+    expect(h.state().choices.find((c) => c.choiceId === 'choice-packing')?.optionId).toBe(
+      'for-writing',
+    );
+    expect(h.state().inventory['spare-cloak']).toBeUndefined(); // left at home
     await toTheBridge(p);
     expect(h.state().flags['letter-wet']).toBeUndefined(); // under the hooded cloak
     expect(shown(h, 'attalos-road')).toBeUndefined(); // you didn't help him
@@ -282,7 +319,7 @@ describe('A Letter from Paul — full playthroughs', () => {
     await p.finish();
     await sortLetter(p);
     await readToAmmia(p, 'plea');
-    await pack(p, { bread: 1 }); // nobody mentioned rain, so nothing forces a cover
+    await prepare(p, ['bread']); // nobody mentioned rain, so nothing forces a cover
     await toTheBridge(p);
     expect(h.state().flags['letter-wet']).toBe(true);
     expect(h.state().quests['q-bundle']?.status).toBe('failed');
@@ -326,7 +363,7 @@ describe('A Letter from Paul — full playthroughs', () => {
     await opening(p);
     await sortLetter(p);
     await readToAmmia(p, 'soften');
-    await pack(p, { 'spare-cloak': 1, 'letter-case': 1 });
+    await prepare(p, ['spare-cloak', 'letter-case']);
     await toTheBridge(p);
     await meetKallias(p);
     await p.choose('speak');

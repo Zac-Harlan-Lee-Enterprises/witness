@@ -45,7 +45,7 @@ export const QUESTS: ChapterInput['quests'] = [
         id: 'road',
         title: 'Down the Laodicea Road',
         description:
-          'Ammia has answered. Pack for the road, then take her letter to Kallias at the dye works by the bridge.',
+          'Ammia has answered. Find out the way, pack for the road, then take her letter to Kallias at the dye works by the bridge.',
         objectives: [
           {
             id: 'weather',
@@ -54,9 +54,15 @@ export const QUESTS: ChapterInput['quests'] = [
             optional: true,
           },
           {
+            id: 'way',
+            description: 'Ask Ammia the way to the dye works',
+            completeWhen: { type: 'puzzleSolved', puzzle: 'p-pack' },
+            optional: false,
+          },
+          {
             id: 'pack',
             description: 'Pack the travel bag at home',
-            completeWhen: { type: 'puzzleSolved', puzzle: 'p-pack' },
+            completeWhen: flag('packed'),
             optional: false,
           },
           {
@@ -88,7 +94,7 @@ export const QUESTS: ChapterInput['quests'] = [
           },
           {
             id: 'alum',
-            description: 'Optional: help Kallias finish the alum bath',
+            description: 'Optional: help Kallias match the buyer’s shade',
             completeWhen: { type: 'puzzleSolved', puzzle: 'p-alum' },
             optional: true,
             revealWhen: flag('alum-task'),

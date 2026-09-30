@@ -191,7 +191,7 @@ export const RECORDS: ChapterInput['records'] = [
     kind: 'historical',
     title: 'Madder and alum',
     sources: ['src-lp-pliny-19', 'src-lp-pliny-35', 'src-lp-stockholm'],
-    body: 'Red dye from the root of the madder plant was used on wool in the Roman world: Pliny the Elder called madder necessary for dyeing wool and leather. Dyers also used a mineral salt Pliny called alumen for bright colours, and a later Egyptian recipe book (the Stockholm Papyrus, around AD 300) brightens madder red with alum so it will not fade. Ancient “alumen” was not always the same as modern alum. The measures in the game’s alum puzzle are invented.',
+    body: 'Red dye from the root of the madder plant was used on wool in the Roman world: Pliny the Elder called madder necessary for dyeing wool and leather. Dyers also used a mineral salt Pliny called alumen for bright colours, and a later Egyptian recipe book (the Stockholm Papyrus, around AD 300) brightens madder red with alum so it will not fade. Ancient “alumen” was not always the same as modern alum. The shades and dips in the game’s dye puzzle are invented.',
     governance: draft({ confidence: 'probable', sourced: true }),
   },
   {

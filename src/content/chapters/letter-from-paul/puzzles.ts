@@ -3,9 +3,15 @@ import type { ChapterInput } from '@/domain/chapter';
 /**
  * Four puzzles, each growing out of the story:
  *  1. p-sheets  — put a rain-soaked letter back in order (sequence; how ancient letters were built)
- *  2. p-pack    — what to carry down the road (packing; knowing about the rain changes what's needed)
- *  3. p-alum    — set the alum bath so Kallias can leave with his wage (measuring; optional)
+ *  2. p-pack    — the way to the bridge on Ammia's sketch (map reading). What you carry is
+ *                 now a plain choice at the travel bag (dialogue/bag.ts); the id is kept
+ *                 because saves and the story name it.
+ *  3. p-alum    — match the buyer's shade so Kallias can leave with his wage (colour
+ *                 mixing; optional)
  *  4. p-whose   — whose letter lost its name in the rain? (deduction; optional side quest)
+ *
+ * Map reading and colour mixing are Chapter 4's own puzzle types: no other
+ * chapter uses them.
  */
 export const PUZZLES: ChapterInput['puzzles'] = [
   {
@@ -101,119 +107,165 @@ export const PUZZLES: ChapterInput['puzzles'] = [
   },
   {
     id: 'p-pack',
-    type: 'packing',
-    title: 'Ready for the Road',
+    type: 'map',
+    title: 'The Way to the Bridge',
     intro:
-      'The travel bag holds a load of 4. Ammia’s letter weighs nothing and goes with you whatever you pack. It is a long walk down the valley to the bridge — and back before lamp-lighting. What else will you need, and what might Kallias need?',
-    capacity: 4,
-    choiceId: 'choice-packing',
-    rules: [
-      {
-        id: 'capacity',
-        description: 'Stay within what the bag can hold',
-        rule: { type: 'withinCapacity' },
-        failureHint:
-          'Too much. A bag that drags on your shoulder all day slows you down. Take something out.',
-      },
-      {
-        id: 'dry',
-        description: 'Keep the letter dry if rain is coming',
-        rule: {
-          type: 'anyOf',
-          of: [
-            {
-              type: 'state',
-              condition: {
-                type: 'not',
-                condition: { type: 'clueFound', clue: 'clue-rain-coming' },
-              },
-            },
-            { type: 'includes', item: 'letter-case' },
-            { type: 'includes', item: 'hooded-cloak' },
-          ],
-        },
-        failureHint:
-          'You heard that rain is coming down the valley this afternoon. Ammia’s letter is ink on papyrus. How will you keep it dry?',
-      },
+      'Kallias’s letter says the dye works by the bridge, past a milestone whose number the rain washed away — and there is more than one dye works by a bridge in this valley. Ammia knows the way to Nikon’s. She sketches the valley on a wax tablet and tells you how to get there. Follow her directions on the sketch, and stop where she means.',
+    // Ammia's sketch, north at the top: the town gate on the right, the road
+    // running west down the valley, and the river along the bottom.
+    map: [
+      '...H..F........',
+      '...#..#........',
+      'L####4#3###2#1G',
+      '...#..#........',
+      '...#..#........',
+      '.WA#K.###V.....',
+      '.B.......b.....',
+      '.X.......Y.....',
     ],
-    classifications: [
-      { option: 'for-kallias', rule: { type: 'includes', item: 'spare-cloak' } },
-      { option: 'for-writing', rule: { type: 'includes', item: 'tablets' } },
-      {
-        option: 'for-rain',
-        rule: {
-          type: 'anyOf',
-          of: [
-            { type: 'includes', item: 'letter-case' },
-            { type: 'includes', item: 'hooded-cloak' },
-          ],
-        },
-      },
-      { option: 'food', rule: { type: 'includes', item: 'bread' } },
-      { option: 'light-load', rule: { type: 'withinCapacity' } },
+    landmarks: [
+      { id: 'gate', label: 'the west gate of Colossae', x: 14, y: 2 },
+      { id: 'mile-1', label: 'a milestone', x: 13, y: 2 },
+      { id: 'mile-2', label: 'a milestone', x: 11, y: 2 },
+      { id: 'mile-3', label: 'a milestone', x: 7, y: 2 },
+      { id: 'mile-4', label: 'a milestone', x: 5, y: 2 },
+      { id: 'laodicea', label: 'the road on to Laodicea', x: 0, y: 2 },
+      { id: 'hut', label: 'a shepherd’s hut', x: 3, y: 0 },
+      { id: 'farm', label: 'a farm', x: 6, y: 0 },
+      { id: 'waystation', label: 'the waystation', x: 2, y: 5 },
+      { id: 'nikon', label: 'a dye works by a stone bridge', x: 1, y: 5 },
+      { id: 'kiln', label: 'a potter’s kiln', x: 4, y: 5 },
+      { id: 'works-foot', label: 'a dye works by a footbridge', x: 9, y: 5 },
+      { id: 'stone-bridge', label: 'the stone bridge', x: 1, y: 6 },
+      { id: 'footbridge', label: 'the footbridge', x: 9, y: 6 },
+      { id: 'works-across', label: 'a dye works across the river', x: 1, y: 7 },
+      { id: 'tannery', label: 'a tannery across the river', x: 9, y: 7 },
     ],
+    start: { x: 14, y: 2, facing: 'west' },
+    goal: 'nikon',
+    directions: [
+      'Go out through the west gate and follow the paved road down the valley.',
+      'Count the milestones as you pass them. After the fourth, take the first turning on your left, down toward the river.',
+      'Where that track meets the river, turn right.',
+      'Go past the waystation. Nikon’s dye works is next, by the bridge — on this side of the river. Don’t cross.',
+    ],
+    wrongStops: {
+      'works-foot':
+        'A dye works by a footbridge. Did you turn off the road before the fourth milestone? Count them again.',
+      'works-across':
+        'Ammia said Nikon’s dye works is on this side of the river. You’ve crossed the bridge.',
+      kiln: 'A potter’s kiln, not a dye works. Walking south to the river, which way is your right hand?',
+      hut: 'A shepherd’s hut, up the hill. Walking west down the road, your left hand is to the south — toward the river.',
+      farm: 'A farm, up the hill and away from the river. The turning you want is on your left.',
+      laodicea:
+        'This road goes on to Laodicea. You’ve walked past the turning — count the milestones again.',
+      waystation: 'The waystation. Ammia said Nikon’s dye works is just past it.',
+      tannery: 'A tannery, across the river. Nikon’s dye works is on this side.',
+    },
     hints: [
       {
         tier: 1,
-        text: 'Ammia’s letter weighs nothing and always comes with you. Start with what the letter needs, then what Kallias might need.',
+        text: 'On the sketch, north is at the top and you start at the gate on the right, walking west. Count every milestone you pass.',
       },
       {
         tier: 2,
-        text: 'Did anyone say anything about the weather today? If rain is coming, something has to keep the letter dry — the letter case is lighter than the hooded cloak.',
+        text: 'Walking west, your left hand is to the south. After the fourth milestone the first turning to the south is the one you want. At the river you are walking south, so turning right means going west.',
       },
       {
         tier: 3,
-        text: 'There is no single right answer. Any load of 4 or less works — as long as, if you know rain is coming, it includes the letter case or the hooded cloak. Think about what Kallias might need: his old cloak, bread, or tablets to write his answer on.',
+        text: 'Full method: walk west past four milestones (and the crossroads between the third and fourth), then keep going west to the next crossroads and turn south. At the river turn west, past the waystation, and stop at the dye works by the stone bridge.',
       },
     ],
     explanation:
-      'You packed within the limit, and Ammia’s letter goes with you. Whatever you chose will shape what you can offer Kallias at the bridge.',
-    recordIds: ['rec-hist-materials'],
+      'You followed Ammia’s directions: four milestones, the first turning on the left, right at the river and past the waystation to the dye works by the stone bridge. Left and right depend on which way you are facing; north on a map doesn’t. (The road, its milestones, the bridge and the dye works are made up for the game.)',
+    recordIds: ['rec-rec-road'],
     onSolved: [
-      { type: 'setFlag', flag: 'packed', value: true },
+      { type: 'setFlag', flag: 'knows-the-way', value: true },
       {
         type: 'showMessage',
-        text: 'The bag is packed. Whatever you left out stays at home.',
+        text: 'You know the way now: four milestones, left to the river, right past the waystation.',
         tone: 'narration',
       },
     ],
   },
   {
     id: 'p-alum',
-    type: 'measuring',
-    title: 'The Alum Bath',
+    type: 'dyeing',
+    title: 'The Buyer’s Shade',
     intro:
-      'Before wool goes into the red dye, it soaks in alum water so the colour holds. Nikon wants exactly 6 measures of water in the big jar for tomorrow’s alum bath. The big jar holds 9 and the small jar holds 4, and neither has marks in between. Water comes from the channel off the river.',
-    sourceLabel: 'the river channel',
-    unit: 'measures',
-    vessels: [
-      { id: 'big', label: 'Big jar', capacity: 9 },
-      { id: 'small', label: 'Small jar', capacity: 4 },
+      'Nikon won’t start tomorrow’s big batch until a test skein matches the buyer’s sample: mulberry, a deep reddish purple. The skein has already soaked in alum, so the colour will hold. Each dip in the madder vat adds red; each dip in the blue vat adds blue; a dip in the rinsing trough takes a little of both out again. Four dips, and then the skein is spoiled.',
+    colours: [
+      { id: 'red', label: 'red' },
+      { id: 'blue', label: 'blue' },
     ],
-    goal: { vessel: 'big', amount: 6 },
+    max: 4,
+    baths: [
+      {
+        id: 'madder',
+        label: 'The madder vat',
+        description: 'Adds 2 red.',
+        change: { red: 2 },
+      },
+      { id: 'blue', label: 'The blue vat', description: 'Adds 2 blue.', change: { blue: 2 } },
+      {
+        id: 'rinse',
+        label: 'The rinsing trough',
+        description: 'Takes out 1 red and 1 blue (never less than none).',
+        change: { red: -1, blue: -1 },
+      },
+    ],
+    target: { red: 3, blue: 2 },
+    maxDips: 4,
+    shades: [
+      { name: 'undyed cream', levels: { red: 0, blue: 0 } },
+      { name: 'pale pink', levels: { red: 1, blue: 0 } },
+      { name: 'rose', levels: { red: 2, blue: 0 } },
+      { name: 'red', levels: { red: 3, blue: 0 } },
+      { name: 'deep red', levels: { red: 4, blue: 0 } },
+      { name: 'pale grey-blue', levels: { red: 0, blue: 1 } },
+      { name: 'sky blue', levels: { red: 0, blue: 2 } },
+      { name: 'blue', levels: { red: 0, blue: 3 } },
+      { name: 'deep blue', levels: { red: 0, blue: 4 } },
+      { name: 'pale lilac', levels: { red: 1, blue: 1 } },
+      { name: 'dusty rose', levels: { red: 2, blue: 1 } },
+      { name: 'raspberry', levels: { red: 3, blue: 1 } },
+      { name: 'crimson', levels: { red: 4, blue: 1 } },
+      { name: 'lavender', levels: { red: 1, blue: 2 } },
+      { name: 'purple', levels: { red: 2, blue: 2 } },
+      { name: 'mulberry', levels: { red: 3, blue: 2 } },
+      { name: 'wine', levels: { red: 4, blue: 2 } },
+      { name: 'cornflower', levels: { red: 1, blue: 3 } },
+      { name: 'violet', levels: { red: 2, blue: 3 } },
+      { name: 'deep purple', levels: { red: 3, blue: 3 } },
+      { name: 'plum', levels: { red: 4, blue: 3 } },
+      { name: 'blue-violet', levels: { red: 1, blue: 4 } },
+      { name: 'indigo', levels: { red: 2, blue: 4 } },
+      { name: 'dark violet', levels: { red: 3, blue: 4 } },
+      { name: 'near-black purple', levels: { red: 4, blue: 4 } },
+    ],
     hints: [
       {
         tier: 1,
-        text: 'Fill the big jar and pour it into the small one. What is left in the big jar? What if you do that again?',
+        text: 'The madder and blue vats each add 2 at a time, so on their own they only ever make even numbers. How could you end up with 3 red?',
       },
       {
         tier: 2,
-        text: 'After pouring off the small jar twice, the big jar holds exactly 1. Keep that 1 in the small jar — then the small jar only has room for 3 more.',
+        text: 'The rinsing trough takes 1 of each colour out — but never below none. Rinse while there is still no blue in the skein, and only red comes out.',
       },
       {
         tier: 3,
-        text: 'Fill the big jar → pour into the small → empty the small → pour into the small again (the big jar now holds 1) → empty the small → pour the 1 into the small → fill the big jar → pour into the small until it is full (3 go). The big jar now holds 6.',
+        text: 'Full method: the madder vat (red 2, rose) → the rinsing trough (red 1, pale pink) → the madder vat again (red 3, red) → the blue vat (red 3, blue 2): mulberry.',
       },
     ],
     explanation:
-      'You measured exactly 6 with a 9-jar and a 4-jar by saving a leftover 1. Dyers needed their measures right: too little alum and the colour washes out.',
+      'Four dips, and the test skein matches the sample: red 3, blue 2. Red dye from the madder root was used on wool in the Roman world, and dyers used alum so that bright colours would hold. (The vats, shades and dips here are made up for the game.)',
     recordIds: ['rec-hist-dyeing'],
     onSolved: [
       { type: 'setFlag', flag: 'alum-set', value: true },
       { type: 'adjustCounter', counter: 'hour', delta: 1 },
       {
         type: 'showMessage',
-        text: 'The alum bath is set for tomorrow. Nikon nods: Kallias has earned his day’s pay.',
+        text: 'The test skein matches. Nikon nods: Kallias has earned his day’s pay.',
         tone: 'narration',
       },
     ],

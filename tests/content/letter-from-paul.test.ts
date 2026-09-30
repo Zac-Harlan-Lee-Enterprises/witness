@@ -5,6 +5,23 @@ import { LETTER_FROM_PAUL } from '@/content/chapters/letter-from-paul';
 import { contentReport, reachabilityIssues } from '@/content/validation';
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
 import { PLAYER_APPEARANCES } from '@/domain/characters';
+import {
+  applyDip,
+  checkDyeing,
+  shadeName,
+  shortestDyeings,
+  undyed,
+  type DyeingPuzzle,
+  type Shade,
+} from '@/domain/puzzle-dyeing';
+import {
+  checkMapStop,
+  landmarkAt,
+  walk,
+  type Direction,
+  type MapPosition,
+  type MapPuzzle,
+} from '@/domain/puzzle-map';
 import { parseLayout, type TileKind } from '@/domain/world';
 import { nextColumn, paintBuildings } from '@/game/art/architecture';
 import { LOOKS } from '@/game/art/direction';
@@ -48,10 +65,57 @@ describe('A Letter from Paul content', () => {
     expect(loaded.scenes).toHaveLength(4);
   });
 
-  it('uses all four puzzle types', () => {
+  it('uses its own map-reading and colour-mixing puzzles (no packing or jar filling)', () => {
     expect(new Set(chapter.puzzles.map((p) => p.type))).toEqual(
-      new Set(['sequence', 'packing', 'measuring', 'deduction']),
+      new Set(['sequence', 'map', 'dyeing', 'deduction']),
     );
+  });
+
+  it('Ammia’s directions lead to Nikon’s dye works, and each likely mistake to a named wrong place', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-pack') as MapPuzzle;
+    const go = (dirs: readonly Direction[]) =>
+      dirs.reduce<MapPosition | null>(
+        (at, d) => (at ? (walk(puzzle, at, d)?.position ?? null) : null),
+        puzzle.start,
+      );
+    const stopAt = (dirs: readonly Direction[]) => {
+      const at = go(dirs);
+      return at ? landmarkAt(puzzle, at.x, at.y)?.id : null;
+    };
+    const w = 'west' as const;
+    expect(stopAt([w, w, w, w, w, w, 'south', w, w])).toBe('nikon');
+    expect(
+      checkMapStop(puzzle, go([w, w, w, w, w, w, 'south', w, w]) ?? puzzle.start).correct,
+    ).toBe(true);
+    // Turning off after the third milestone; turning right instead of left;
+    // turning left at the river; crossing the bridge; walking too far.
+    expect(stopAt([w, w, w, w, 'south', 'east'])).toBe('works-foot');
+    expect(stopAt([w, w, w, w, w, w, 'north'])).toBe('hut');
+    expect(stopAt([w, w, w, w, w, w, 'south', 'east'])).toBe('kiln');
+    expect(stopAt([w, w, w, w, w, w, 'south', w, w, 'south', 'south'])).toBe('works-across');
+    expect(stopAt([w, w, w, w, w, w, w])).toBe('laodicea');
+    for (const id of ['works-foot', 'hut', 'kiln', 'works-across', 'laodicea'])
+      expect(puzzle.wrongStops[id], id).toBeDefined();
+    // The milestones carry no numbers: counting them is the point.
+    expect(puzzle.landmarks.filter((l) => l.label === 'a milestone')).toHaveLength(4);
+  });
+
+  it('the buyer’s shade needs all four dips, and the full explanation is one way to get it', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-alum') as DyeingPuzzle;
+    const shortest = shortestDyeings(puzzle);
+    expect(shortest.every((d) => d.length === 4)).toBe(true);
+    expect(shortest).toContainEqual(['madder', 'rinse', 'madder', 'blue']);
+    expect(checkDyeing(puzzle, ['madder', 'rinse', 'madder', 'blue']).solved).toBe(true);
+    expect(shadeName(puzzle, puzzle.target)).toBe('mulberry');
+    // Every shade the skein can reach within four dips has a name, as well as its numbers.
+    let shades: Shade[] = [undyed(puzzle)];
+    for (let i = 0; i < puzzle.maxDips; i++)
+      shades = [
+        ...shades,
+        ...shades.flatMap((s) => puzzle.baths.map((b) => applyDip(puzzle, s, b.id))),
+      ];
+    for (const shade of shades)
+      expect(shadeName(puzzle, shade), JSON.stringify(shade)).not.toBeNull();
   });
 
   it('has a main quest and a genuinely optional side quest with an alternate outcome', () => {

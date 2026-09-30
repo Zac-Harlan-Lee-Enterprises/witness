@@ -64,13 +64,13 @@ export const AMMIA_WORKSHOP: ChapterInput['scenes'][number] = {
       sprite: 'pack',
       x: 4,
       y: 8,
-      visibleWhen: { type: 'not', condition: { type: 'puzzleSolved', puzzle: 'p-pack' } },
+      visibleWhen: { type: 'not', condition: { type: 'flag', flag: 'packed' } },
       interaction: {
         verb: 'use',
         requires: { type: 'hasItem', item: 'ammia-letter' },
         blockedText:
           'The travel bag. There’s nothing to carry anywhere yet — first find out what Kallias’s letter says.',
-        effects: [{ type: 'openPuzzle', puzzle: 'p-pack' }],
+        effects: [{ type: 'startDialogue', dialogue: 'd-bag' }],
       },
     },
     {
