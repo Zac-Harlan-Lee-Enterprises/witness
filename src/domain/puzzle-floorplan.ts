@@ -60,7 +60,9 @@ export function shapeCells(shape: readonly string[], turns: number): Cell[] {
   for (let i = 0; i < ((turns % 4) + 4) % 4; i++) cells = cells.map(([r, c]) => [c, -r] as const);
   const minR = Math.min(...cells.map(([r]) => r));
   const minC = Math.min(...cells.map(([, c]) => c));
-  return cells.map(([r, c]) => [r - minR, c - minC] as const);
+  return cells
+    .map(([r, c]) => [r - minR + 0, c - minC + 0] as const)
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 }
 
 export function placementCells(puzzle: FloorplanPuzzle, placement: PiecePlacement): Cell[] {

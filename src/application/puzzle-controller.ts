@@ -14,6 +14,27 @@ import {
   type Puzzle,
   type SequenceCheck,
 } from '@/domain/puzzles';
+import { checkDyeing, type DyeingCheck } from '@/domain/puzzle-dyeing';
+import {
+  checkFloorplan,
+  classifyFloorplan,
+  type FloorplanCheck,
+  type PiecePlacement,
+} from '@/domain/puzzle-floorplan';
+import {
+  checkLogicGrid,
+  type LogicAssignment,
+  type LogicGridCheck,
+} from '@/domain/puzzle-logic-grid';
+import { checkMapStop, type MapCheck } from '@/domain/puzzle-map';
+import { checkNetting, type NetGrid, type NettingCheck } from '@/domain/puzzle-netting';
+import {
+  checkTrim,
+  classifyTrim,
+  trimAboard,
+  type TrimCheck,
+  type TrimLoad,
+} from '@/domain/puzzle-trim';
 import type { Logger } from '@/shared/logger';
 import type { GameSession } from './game-session';
 import type { UiStore } from './ui-store';
@@ -101,6 +122,100 @@ export class PuzzleController {
         { type: 'recordChoice', choice: puzzle.choiceId, option },
       ]);
     }
+    return result;
+  }
+
+  checkTrim(puzzleId: string, load: TrimLoad): TrimCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'trim') return null;
+    return checkTrim(puzzle, load, this.session.state, this.weightOf);
+  }
+
+  /** Load the boat: what is aboard is what you keep; the rest stays on the jetty. */
+  submitTrim(puzzleId: string, load: TrimLoad): TrimCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'trim') return null;
+    const result = checkTrim(puzzle, load, this.session.state, this.weightOf);
+    this.recordAttempt(puzzleId, result.valid);
+    if (result.valid) {
+      const aboard = trimAboard(load);
+      const option = classifyTrim(puzzle, load, this.session.state, this.weightOf);
+      const solution = Object.entries(load).flatMap(([place, cargo]) =>
+        describePacking(cargo).map((item) => `${place}:${item}`),
+      );
+      this.complete(puzzle, solution, [
+        ...packingEffects(this.session.state.inventory, aboard, this.weightOf),
+        { type: 'recordChoice', choice: puzzle.choiceId, option },
+      ]);
+    }
+    return result;
+  }
+
+  submitNetting(puzzleId: string, net: NetGrid): NettingCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'netting') return null;
+    const result = checkNetting(puzzle, net);
+    this.recordAttempt(puzzleId, result.solved);
+    if (result.solved)
+      this.complete(
+        puzzle,
+        net.map((row) => row.map((c) => (c === 'knot' ? '#' : '.')).join('')),
+        [],
+      );
+    return result;
+  }
+
+  checkFloorplan(puzzleId: string, placements: readonly PiecePlacement[]): FloorplanCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'floorplan') return null;
+    return checkFloorplan(puzzle, placements, this.session.state);
+  }
+
+  submitFloorplan(puzzleId: string, placements: readonly PiecePlacement[]): FloorplanCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'floorplan') return null;
+    const result = checkFloorplan(puzzle, placements, this.session.state);
+    this.recordAttempt(puzzleId, result.valid);
+    if (result.valid) {
+      const option = classifyFloorplan(puzzle, placements, this.session.state);
+      this.complete(
+        puzzle,
+        placements.map((p) => `${p.item}@${p.row},${p.col}/${p.turns}`),
+        [{ type: 'recordChoice', choice: puzzle.choiceId, option }],
+      );
+    }
+    return result;
+  }
+
+  submitLogicGrid(puzzleId: string, assignment: LogicAssignment): LogicGridCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'logicGrid') return null;
+    const result = checkLogicGrid(puzzle, assignment);
+    this.recordAttempt(puzzleId, result.correct);
+    if (result.correct)
+      this.complete(
+        puzzle,
+        puzzle.subjects.map((s) => `${s.id}:${assignment[s.id] ?? ''}`),
+        [],
+      );
+    return result;
+  }
+
+  submitDyeing(puzzleId: string, dips: readonly string[]): DyeingCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'dyeing') return null;
+    const result = checkDyeing(puzzle, dips);
+    this.recordAttempt(puzzleId, result.solved);
+    if (result.solved) this.complete(puzzle, [...dips], []);
+    return result;
+  }
+
+  submitMapStop(puzzleId: string, at: { x: number; y: number }): MapCheck | null {
+    const puzzle = this.find(puzzleId);
+    if (puzzle?.type !== 'map') return null;
+    const result = checkMapStop(puzzle, at);
+    this.recordAttempt(puzzleId, result.correct);
+    if (result.correct) this.complete(puzzle, [`${at.x},${at.y}`], []);
     return result;
   }
 
