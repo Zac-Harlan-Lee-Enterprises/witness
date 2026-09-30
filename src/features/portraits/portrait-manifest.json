@@ -31,6 +31,7 @@
   },
   "dinah": {
     "appearance": "#9a6a45|#2a1a10|#7a4b3a|#e3c27a|scarf|#d9b25f|clean|adult|basket",
+    "expressions": [],
     "kind": "character"
   },
   "elazar": {
@@ -55,6 +56,7 @@
   },
   "hanan": {
     "appearance": "#a57550|#2a1a10|#efe6d2|#3f5f8f|none|#efe6d2|clean|adult|none",
+    "expressions": [],
     "kind": "character"
   },
   "hanina": {
@@ -119,18 +121,22 @@
   },
   "player-look-1": {
     "appearance": "#a8734a|#2b1d14|#3f6f8f|#d9b25f|wrap|#e8dcc0|clean|child|satchel",
+    "expressions": [],
     "kind": "player"
   },
   "player-look-2": {
     "appearance": "#8d5a3a|#1f1611|#7a3b2e|#e3c27a|scarf|#c96f3b|clean|child|satchel",
+    "expressions": [],
     "kind": "player"
   },
   "player-look-3": {
     "appearance": "#c08a5e|#3a2a1c|#556b3a|#f0e0b0|band|#8a2f2f|clean|child|satchel",
+    "expressions": [],
     "kind": "player"
   },
   "player-look-4": {
     "appearance": "#6f4630|#141010|#6b5a8e|#e8d49a|none|#6b5a8e|clean|child|satchel",
+    "expressions": [],
     "kind": "player"
   },
   "rivka": {

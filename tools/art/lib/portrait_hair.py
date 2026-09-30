@@ -176,6 +176,43 @@ def _tangent(d, n):
     return _norm(d - (d * n).sum(1, keepdims=True) * n)
 
 
+def shaped_hair(P):
+    """Whose hair is cut to a shape (fifth pass): children's, and young men's
+    uncovered hair that is longer than a close crop."""
+    if P.hair_style == "child":
+        return True
+    return P.hair_style == "short" and P.age < 25 and P.hair_cut != "crop" and P.head_style in ("none", "band")
+
+
+def shaped_groom(P, style, length, curl, lift, clump, az, el):
+    """A child's or young man's haircut: (length, curl, lift, clump, shape),
+    where shape holds each root's length and volume factors.
+
+    - Length: full on the crown and at the front, about half over the ears
+      and at the nape, easing between (a cut, not a shell of even depth).
+    - Volume: most on the crown, close at the sides and nape.
+    - Locks: soft (little drawn together at the tips), each its own volume;
+      tightly clumped tips read as wet spikes. The strands are also finer
+      and more of them (Hair._scalp, _groom)."""
+    a = np.abs(az)
+    top = np.clip((el - 12.0) / 36.0, 0.0, 1.0)
+    top = top * top * (3 - 2 * top)
+    side = np.clip((a - 55.0) / 30.0, 0.0, 1.0)
+    nape = np.clip((a - 120.0) / 40.0, 0.0, 1.0) * np.clip((20.0 - el) / 30.0, 0.0, 1.0)
+    L = 1.0 - side * (1.0 - top) * 0.42 - nape * 0.25
+    V = 1.0 - side * (1.0 - top) * 0.45 - nape * 0.3
+    if style == "child":
+        curl = (curl[0] * 0.9, curl[1])
+        clump = 0.32
+        lift = (lift[0], lift[1] * 0.85)
+    else:
+        # A young man's longer hair lies in soft waves, not frizz.
+        clump = 0.3
+        curl = (curl[0] * 0.55, curl[1] * 1.25)
+        lift = (lift[0], lift[1] * 0.7)
+    return length, curl, lift, clump, {"length": L.astype(F), "lift": V.astype(F)}
+
+
 class Groom:
     """One kind of hair: roots, a direction field, length, curl and volume."""
 
@@ -349,6 +386,10 @@ class Hair:
         # Strands per square centimetre of scalp that shows.
         density = {"long": 190.0, "child": 140.0}.get(style, 135.0)
         count = int(density * weighted_area(self.Vr, self.Q, w) * self.q)
+        if shaped_hair(P):
+            # Finer and denser (fifth pass): fewer, thicker strands with gaps
+            # between them read as straggling.
+            count = int(count * 1.7)
         if style == "long":
             # Under a veil or scarf only the hair at the front shows, swept to the sides.
             length = (7.0, 1.0)
@@ -421,7 +462,16 @@ class Hair:
                 forward = np.ones_like(forward)  # under a covering, swept back
             swept = np.stack([side, 0.8 - 1.3 * (1 - forward), 0.3 - 0.9 * (1 - forward)], 1).astype(F)
             dirs = np.where(front, swept, dirs)
-        self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003), flat=0.25 if style == "long" else 0.0, guard=True)
+        shape = None
+        if shaped_hair(P):
+            # (Fifth pass.) A child's or a young man's hair is cut to a shape,
+            # not a shell of even depth: fuller on the crown and at the front,
+            # shorter and closer over the ears and at the nape; it falls in
+            # locks that each stand a little proud or lie a little flatter,
+            # and holds together in them (the hair had read as a helmet with
+            # straggling ends).
+            length, curl, lift, clump, shape = shaped_groom(P, style, length, curl, lift, clump, az, el)
+        self._groom("scalp", roots, nrm, dirs, length, curl, lift, gravity, clump, self.mats["hair"], (0.0065, 0.003) if shape is None else (0.0048, 0.0022), flat=0.25 if style == "long" else 0.0, guard=True, shape=shape)
         if P.child > 0.3:
             self._baby_hair(w)
 
@@ -445,20 +495,33 @@ class Hair:
         strands = grow(self.field, roots, nrm, _norm(dirs + self.rng.normal(0, 0.35, dirs.shape).astype(F)), L, (0.03, 0.15), 0.3, 7, curl_r, curl_p, phase)
         self.objects.append(to_curves("baby-hair", self._clip(strands, guard=True), 0.0035, 0.0012, self.mats["hair"], self.col))
 
-    def _groom(self, name, roots, nrm, dirs, length, curl, lift, gravity, clump, mat, radius, flat=0.0, guides_every=28, guard=False):
+    def _groom(self, name, roots, nrm, dirs, length, curl, lift, gravity, clump, mat, radius, flat=0.0, guides_every=28, guard=False, shape=None):
         rng = self.rng
         n = len(roots)
         L = np.clip(rng.normal(length[0], length[1], n), length[0] * 0.3, length[0] * 1.8).astype(F)
         g_idx = rng.choice(n, max(8, n // guides_every), replace=False)
+        if shape is not None:
+            # Cut to shape: each strand's length scaled by where it grows.
+            L = (L * shape["length"]).astype(F)
         g_roots = roots[g_idx]
-        gL = np.maximum(L[g_idx], length[0])
+        gL = np.maximum(L[g_idx], length[0] * (shape["length"][g_idx] if shape is not None else 1.0))
         curl_r = np.full(len(g_idx), curl[0], F) * rng.uniform(0.7, 1.3, len(g_idx)).astype(F)
         curl_p = np.full(len(g_idx), curl[1], F) * rng.uniform(0.8, 1.25, len(g_idx)).astype(F)
         phase = rng.uniform(0, 2 * math.pi, len(g_idx)).astype(F)
-        # A little randomness in each lock's direction.
-        gd = _norm(dirs[g_idx] + rng.normal(0, 0.25, (len(g_idx), 3)).astype(F))
-        guides = grow(self.field, g_roots, nrm[g_idx], gd, gL, lift, gravity, 16, curl_r, curl_p, phase, flat)
-        strands = children(self.field, guides, g_roots, roots, nrm, L, gL, clump, rng)
+        # A little randomness in each lock's direction (less in a shaped cut,
+        # where every lock stirred at random read as a wind-blown mop).
+        gd = _norm(dirs[g_idx] + rng.normal(0, 0.25, (len(g_idx), 3)).astype(F) * (1.0 if shape is None else 0.55))
+        g_lift = lift
+        g_clump = clump
+        if shape is not None:
+            # Each lock its own volume (from a separate random stream, so
+            # everything else about the groom is as before) and closer at
+            # the sides and nape; each lock holds together.
+            sr = np.random.default_rng(self.P.seed + 409)
+            g_lift = (lift[0], (lift[1] * shape["lift"][g_idx] * sr.uniform(0.55, 1.45, len(g_idx))).astype(F))
+            g_clump = np.clip(clump + sr.normal(0.0, 0.07, len(g_idx)), 0.18, 0.6).astype(F)
+        guides = grow(self.field, g_roots, nrm[g_idx], gd, gL, g_lift, gravity, 16, curl_r, curl_p, phase, flat)
+        strands = children(self.field, guides, g_roots, roots, nrm, L, gL, g_clump, rng, jitter=0.02 if shape is None else 0.012)
         # Third pass: hairs of different thickness (a separate random stream,
         # so the second pass's groom is unchanged), and on uncovered hair a
         # few flyaways that leave their lock.
@@ -467,7 +530,7 @@ class Hair:
         kept, ok = self._clip(strands, guard, keep=True)
         self.objects.append(to_curves(name, kept, radius[0] * thick[ok], radius[1] * thick[ok], mat, self.col))
         if name == "scalp" and self.P.head_style in ("none", "band"):
-            ns = int(0.012 * n)
+            ns = int((0.012 if shape is None else 0.004) * n)
             if ns > 0:
                 idx = vr.choice(n, ns, replace=False)
                 sd = _norm(dirs[idx] + vr.normal(0, 0.8, (ns, 3)).astype(F))

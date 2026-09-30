@@ -83,6 +83,9 @@ class Params:
     veil_back: float = 0.0
     veil_open: float = 0.0
     veil_full: float = 0.0
+    # A woman's veil: how it hangs (asymmetry, folds, softness, weight, hem
+    # bands; see params_for), or None.
+    drape: dict = None
     # How each person sits for the portrait: degrees further round, cm higher
     # or lower, degrees of head tilt.
     pose_turn: float = 0.0
@@ -351,6 +354,22 @@ def params_for(pid, appearance, player=False, chapter=""):
     p.veil_back = vr.uniform(-0.4, 0.6)
     p.veil_open = vr.uniform(-4.0, 4.0)
     p.veil_full = vr.uniform(0.0, 0.5)  # (never tighter: an ear would show through)
+    # (Fifth pass.) How a woman's veil or scarf hangs: each her own, so no
+    # two read alike, and cloth, not a shell. A stream of its own, so
+    # nothing drawn before changes.
+    if female and child < 0.5:
+        dr = random.Random(seed_of(pid + ":drape"))
+        p.drape = dict(
+            asym=dr.uniform(-1.0, 1.0),  # + her left side falls lower, looser and wider of the face
+            folds=dr.randint(3, 7),  # broad folds falling from the head
+            fold_amp=dr.uniform(0.7, 1.6),
+            soft=dr.uniform(0.2, 1.0),  # how many small creases, how bunched where it rests
+            thick=dr.uniform(0.32, 0.55),  # fine linen … heavy wool (cm)
+            hang=dr.uniform(-1.0, 1.0),  # + falls further back from the shoulders
+            hem=dr.choice((0, 0, 1, 2)),  # woven bands along the edge (none, one, two)
+            show=dr.uniform(0.0, 1.0) if age < 45 else 0.0,  # how far back it sits, showing hair
+        )
+        p.veil_back += 1.1 * p.drape["show"]
     pr = random.Random(seed_of(pid + ":pose"))
     p.pose_turn = pr.uniform(-4.0, 4.0)
     p.pose_elev = pr.uniform(-1.8, 1.8)

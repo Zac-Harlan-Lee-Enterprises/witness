@@ -72,10 +72,12 @@ def _groove(n, phase, sharp):
     return n.math("POWER", (pos, "Value"), float(sharp))
 
 
-def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1.9)):
+def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1.9), fine=1.0):
     """Skin for one person. `detail` scales the fine relief (1 adult);
     `canthus` is (|x|, z) in cm of the outer corners of the eyes, where
-    crow's feet fan from."""
+    crow's feet fan from. `fine` (1 and up) is how much more texture fair
+    skin shows: deeper pores, darker pore dots, capillaries, a drier finish
+    and a shorter scattering (see fair_fine in portrait_person)."""
 
     def build():
         n = Nodes(f"skin-{key}")
@@ -127,6 +129,16 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         sd2 = n.math("MULTIPLY", (sd, "Value"), 0.7)
         scol = n.mix((sd2, "Value"), col, (0.02, 0.018, 0.018, 1.0))
         col = (scol, 2)
+        if fine > 1:
+            # Fair skin: every pore a shade darker than the skin round it, and a
+            # fine blush of capillaries and blotches at a few millimetres.
+            pv = n.new("ShaderNodeTexVoronoi", Scale=1500.0 * M, Vector=obj, _feature="F1")
+            pd = _range(n, (pv, "Distance"), 0.0, 0.3, 0.12 * (fine - 1), 0.0)
+            pcol = n.mix(pd, col, (0.55, 0.36, 0.3, 1.0), "MULTIPLY")
+            cap = n.noise(650.0, 3.0, 0.6, obj)
+            capf = _range(n, (cap, "Fac"), 0.5, 0.75, 0.0, 0.14 * (fine - 1))
+            ccol = n.mix(capf, (pcol, 2), (0.9, 0.55, 0.52, 1.0), "MULTIPLY")
+            col = (ccol, 2)
 
         # ── Relief (bump, in metres): pores, grain, fine lines, stubble, scars ─
         vor = n.new("ShaderNodeTexVoronoi", Scale=1500.0 * M, Vector=obj, _feature="F1")
@@ -148,6 +160,11 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         h_st = n.math("MULTIPLY", (sd, "Value"), 0.6)
         h_sc = n.math("MULTIPLY", (scar, "Fac"), 1.5)
         h = h_pores
+        if fine > 1:
+            # (Fifth pass) fair skin shows its texture: pores deeper and the
+            # grain sharper (at 512 px it had read smooth and waxy).
+            h = n.math("MULTIPLY", (h, "Value"), 1.0 + 0.9 * (fine - 1))
+            h_net = n.math("MULTIPLY", (h_net, "Value"), 1.0 + 0.7 * (fine - 1))
         for part in (h_net, h_wav, h_un, h_st, h_sc):
             h = n.math("ADD", (h, "Value"), (part, "Value"))
         # About a tenth of a millimetre per unit.
@@ -205,6 +222,12 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         rr = n.math("ADD", (rr, "Value"), rv2)
         rp = n.math("MULTIPLY", (pit[0], pit[1]), -0.16)
         rr = n.math("ADD", (rr, "Value"), (rp, "Value"))
+        if fine > 1:
+            # Drier, less even: waxy skin is too smooth a reflector.
+            rf = n.noise(140.0, 3.0, 0.6, obj)
+            rfv = _range(n, (rf, "Fac"), 0.3, 0.7, 0.0, 0.1 * (fine - 1))
+            rr = n.math("ADD", (rr, "Value"), 0.05 * (fine - 1))
+            rr = n.math("ADD", (rr, "Value"), rfv)
         on = n.noise(35.0, 3.0, 0.6, obj)
         ov = _range(n, (on, "Fac"), 0.35, 0.65, 0.55, 1.15)
         coat = n.math("MULTIPLY", (oil, "Fac"), (ov[0], ov[1]))
@@ -221,7 +244,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
                 "Roughness": (rr, "Value"),
                 "Subsurface Weight": sss_w,
                 "Subsurface Radius": (1.0, 0.37, 0.19),
-                "Subsurface Scale": 0.003 * (1 - 0.45 * dark) * (1 - 0.2 * child),
+                "Subsurface Scale": 0.003 * (1 - 0.45 * dark) * (1 - 0.2 * child) * (1 - 0.38 * (fine - 1)),
                 "Subsurface IOR": 1.4,
                 "Subsurface Anisotropy": 0.8,
                 "Specular IOR Level": 0.5,
@@ -239,7 +262,7 @@ def skin(key, child=0.0, sss=1.0, detail=1.0, dark=0.0, age=0.0, canthus=(3.9, 1
         _ = mouth
         return n.mat
 
-    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2), round(age, 2), canthus), build)
+    return cached(("pskin", key, round(child, 2), sss, detail, round(dark, 2), round(age, 2), canthus, round(fine, 2)), build)
 
 
 def teeth(age=0.0, child=0.0):
@@ -500,15 +523,17 @@ def _shade(hexcol, amount):
     return _lin("#" + "".join(f"{max(0, min(255, int(round(c)))):02x}" for c in rgb))
 
 
-def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cloth", uv=None):
+def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cloth", uv=None, edge=None):
     """Hand-woven wool or linen dyed with natural dyes. The sheen takes the dye's
     own colour: an untinted sheen reflects the light's colour and greys the dye.
     Optional woven stripes (clavi) along the object's X at +/- stripe_at (m).
     `uv` names a per-vertex (along, across) attribute in cm: the weave then
-    follows the cloth (the turns of a wrap) instead of the object's axes."""
+    follows the cloth (the turns of a wrap) instead of the object's axes.
+    `edge` is (bands, colour): woven bands (one or two) running along a
+    veil's edge round the face, read from the per-vertex `edge` distance (cm)."""
 
     def build():
-        n = Nodes(f"{name}-{kind}-{color}-{stripe}-{uv}")
+        n = Nodes(f"{name}-{kind}-{color}-{stripe}-{uv}-{edge}")
         obj = n.coords("Object")
         weave_at = obj
         if uv:
@@ -535,6 +560,15 @@ def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cl
             band = n.new("ShaderNodeMapRange", Value=(d, "Value"), **{"From Min": stripe_w * 0.85, "From Max": stripe_w * 1.15, "To Min": 0.85, "To Max": 0.0})
             col = n.mix((band, "Result"), col_out, _lin(_toward(stripe, color, 0.2)))
             col_out = (col, 2)
+        if edge:
+            bands, band_col = edge
+            ea = n.new("ShaderNodeAttribute", _attribute_name="edge", _attribute_type="GEOMETRY")
+            for k, (at, w) in enumerate(((1.5, 0.28), (2.35, 0.14))[:bands]):
+                d = n.math("SUBTRACT", (ea, "Fac"), at)
+                d = n.math("ABSOLUTE", (d, "Value"))
+                b = n.new("ShaderNodeMapRange", Value=(d, "Value"), **{"From Min": w * 0.7, "From Max": w * 1.2, "To Min": 0.8, "To Max": 0.0})
+                col = n.mix((b, "Result"), col_out, _lin(band_col))
+                col_out = (col, 2)
         # Weave: warp and weft threads about a millimetre apart.
         w1 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=weave_at, _bands_direction="X")
         w2 = n.new("ShaderNodeTexWave", Scale=520.0, Distortion=1.5, Detail=1.0, Vector=weave_at, _bands_direction="Z")
@@ -555,7 +589,7 @@ def cloth(color, kind="wool", stripe=None, stripe_at=0.0, stripe_w=0.0, name="cl
         )
         return n.mat
 
-    return cached(("pcloth", color, kind, stripe, stripe_at, stripe_w, name, uv), build)
+    return cached(("pcloth", color, kind, stripe, stripe_at, stripe_w, name, uv, edge), build)
 
 
 # ── The backdrop ───────────────────────────────────────────────────────────
