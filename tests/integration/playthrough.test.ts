@@ -485,6 +485,10 @@ describe('Road to Jericho — full playthroughs', () => {
     // Walking past the cistern again doesn't start the conversation over.
     await p.step(30, 5);
     expect(p.dialogueView).toBeNull();
+    // Going back to him is a parting line, not the whole conversation again.
+    await p.interact('eli');
+    expect(p.dialogueView?.nodeId).toBe('b1');
+    await p.finish();
 
     await p.exit('to-jericho');
     await p.choose('keep');

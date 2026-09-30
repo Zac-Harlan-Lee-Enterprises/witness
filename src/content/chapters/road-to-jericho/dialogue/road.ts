@@ -403,7 +403,19 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
   {
     id: 'd-eli',
     characterId: 'eli',
-    entries: [{ when: { type: 'conversationDone', dialogue: 'd-eli' }, node: 'again' }],
+    // Going to him with "Go to…" walks through the trigger that starts this conversation, then
+    // arrives: coming back is a parting line (or the message still to give), not the whole talk.
+    entries: [
+      {
+        when: all(
+          { type: 'conversationDone', dialogue: 'd-eli' },
+          CARRYING_MESSAGE,
+          not(flag('eli-told')),
+        ),
+        node: 'again-msg',
+      },
+      { when: { type: 'conversationDone', dialogue: 'd-eli' }, node: 'b1' },
+    ],
     start: 'e1',
     nodes: [
       say(
@@ -512,12 +524,10 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         expression: 'glad',
       }),
       say(
-        'again',
-        'eli',
-        'Still here? The flock’s fine. The cairns go down the gully to the road.',
-        {
-          next: 'e3',
-        },
+        'again-msg',
+        'player',
+        'Eli — your grandfather says to bring the flock down before the sun is low.',
+        { next: 'm1' },
       ),
     ],
   },
