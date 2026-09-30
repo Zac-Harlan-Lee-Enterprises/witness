@@ -43,5 +43,5 @@ An honest inventory of what is **not** done in this vertical slice: what it is, 
 
 - **Storage can be evicted.** IndexedDB is requested as persistent (`navigator.storage.persist()`, best effort). Some browsers (notably Safari for sites not added to the Home Screen) may clear data after long inactivity. Installing the PWA reduces this risk.
 - **Private browsing** may block IndexedDB; the game then falls back to memory and shows a visible warning that progress won't be kept.
-- **Tile maps are fixed-size and hand-authored**; the camera zooms to fit phones, tablets and desktops but the maps are small by design (the chapter is 20–30 minutes).
+- **Tile maps are fixed-size and hand-authored**; the camera zooms to fit phones, tablets and desktops but the maps are small by design (a chapter is 20–30 minutes; its length comes from people, errands and puzzles, not walking).
 - **Time of day is a story counter**, not a clock: it advances with decisions and travel, never in real time (no timing pressure, by accessibility design).

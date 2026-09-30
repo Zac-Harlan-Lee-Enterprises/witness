@@ -173,6 +173,16 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       interaction: { verb: 'examine', dialogue: 'd-night' },
     },
     {
+      id: 'striped-cloak',
+      kind: 'feature',
+      label: 'A cloak with a blue stripe, on the sacks',
+      sprite: 'none',
+      x: 1,
+      y: 6,
+      solid: true,
+      interaction: { verb: 'examine', dialogue: 'd-cloak' },
+    },
+    {
       id: 'spring',
       kind: 'sign',
       label: 'The spring',
@@ -239,6 +249,18 @@ export const JERICHO: ChapterInput['scenes'][number] = {
       area: { x: 1, y: 9, w: 2, h: 3 },
       onceFlag: 'inn-arrival',
       effects: [{ type: 'startDialogue', dialogue: 'd-inn-arrival' }],
+    },
+    // Once you've arrived, the striped cloak by the gate catches your eye (Whose Cloak?).
+    {
+      id: 'cloak-seen',
+      onceFlag: 'noticed-cloak',
+      when: flag('inn-arrival'),
+      effects: [
+        {
+          type: 'showMessage',
+          text: 'On the sacks by the inn gate lies a good wool cloak with a blue stripe — and a strip torn out of its hem.',
+        },
+      ],
     },
   ],
   ambience: 'oasis',

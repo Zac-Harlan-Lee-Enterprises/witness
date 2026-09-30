@@ -25,22 +25,31 @@ const weights = (id: string) => chapter.items.find((i) => i.id === id)?.weight ?
 describe('packing puzzle', () => {
   const puzzle = get<PackingPuzzle>('p-satchel');
 
-  it('requires the remedy, enough water and a load within capacity', () => {
+  it('requires the remedy, Rivka’s linen, enough water and a load within capacity', () => {
     const s = makeState();
+    const linen = { 'linen-bundle': 1 };
     expect(
-      checkPacking(puzzle, { 'water-skin': 2 }, s, weights).failures.map((f) => f.ruleId),
+      checkPacking(puzzle, { ...linen, 'water-skin': 2 }, s, weights).failures.map((f) => f.ruleId),
     ).toEqual(['remedy']);
     expect(
-      checkPacking(puzzle, { remedy: 1, 'water-skin': 2, cloak: 1 }, s, weights).failures.map(
+      checkPacking(puzzle, { remedy: 1, 'water-skin': 2 }, s, weights).failures.map(
         (f) => f.ruleId,
       ),
+    ).toEqual(['linen']);
+    expect(
+      checkPacking(
+        puzzle,
+        { remedy: 1, ...linen, 'water-skin': 2, cloak: 1 },
+        s,
+        weights,
+      ).failures.map((f) => f.ruleId),
     ).toEqual(['capacity']);
     expect(
-      checkPacking(puzzle, { remedy: 1, 'water-skin': 1 }, s, weights).failures.map(
+      checkPacking(puzzle, { remedy: 1, ...linen, 'water-skin': 1 }, s, weights).failures.map(
         (f) => f.ruleId,
       ),
     ).toEqual(['water']);
-    expect(checkPacking(puzzle, { remedy: 1, 'water-skin': 2, bread: 1 }, s, weights).valid).toBe(
+    expect(checkPacking(puzzle, { remedy: 1, ...linen, 'water-skin': 2 }, s, weights).valid).toBe(
       true,
     );
   });
@@ -49,7 +58,7 @@ describe('packing puzzle', () => {
     const informed = makeState({ clues: ['clue-cistern'] });
     const result = checkPacking(
       puzzle,
-      { remedy: 1, 'water-skin': 1, linen: 1, oil: 1, bread: 1 },
+      { remedy: 1, 'linen-bundle': 1, 'water-skin': 1, linen: 1, oil: 1 },
       informed,
       weights,
     );

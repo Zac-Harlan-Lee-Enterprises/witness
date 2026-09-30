@@ -1,6 +1,6 @@
 # Chapter 2: "A Storm on Galilee"
 
-**Passage:** Mark 4:35–41 (parallels: Matthew 8:23–27; Luke 8:22–25). **Play time:** 20–30 minutes. **Status:** playable end to end on every major branch; every educational record is an AI-assisted draft awaiting human review ([content-governance.md](../content-governance.md)).
+**Passage:** Mark 4:35–41 (parallels: Matthew 8:23–27; Luke 8:22–25). **Play time:** 20–30 minutes for a first-time player (measured in [§13](#13-how-long-it-plays)). **Status:** playable end to end on every major branch; every educational record is an AI-assisted draft awaiting human review ([content-governance.md](../content-governance.md)).
 
 This document describes the chapter **as built**, from [`src/content/chapters/storm-on-galilee/`](../../src/content/chapters/storm-on-galilee/). The research behind it is in [research/storm-on-galilee-sources.md](../research/storm-on-galilee-sources.md). Chapter 1's [game-design.md](../game-design.md) explains the engine features used here.
 
@@ -21,11 +21,11 @@ They share the storm and the calm, but they never see or hear what happens in th
 
 | Act | Where | What happens | Puzzle / choice |
 |---|---|---|---|
-| **1. The errand** | Grandmother Shelomit's house | Grandmother explains the crossing: six of Nikanor's jars to the far shore; the fee pays much of what the family owes. Ask Old Hanina about the sky before loading. She gives a lamp, bread, a cloak and a water skin. | — |
-| **2. The fishing quarter** | The shore at Capernaum (afternoon, westerly wind) | Gear from Uncle Elazar, jars from Nikanor, Tamar's rule for a squall, Hanina's warning, signs along the shore, the crowd listening to the teacher offshore, Shifra's family planning to follow in a borrowed boat. Optional: mend Nikanor's torn jar net. | `p-brine` (optional), `p-sky` |
+| **1. The errand** | Grandmother Shelomit's house | Grandmother explains the crossing: six of Nikanor's jars to the far shore; the fee pays much of what the family owes. Ask Old Hanina about the sky before loading. She gives a lamp, bread, a cloak and a water skin — and before you go, has you tie the last knots of the family's mark in her net. | `p-corner` |
+| **2. The fishing quarter** | The shore at Capernaum (afternoon, westerly wind) | Gear from Uncle Elazar, jars from Nikanor, Tamar's rule for a squall, Hanina's warning, signs along the shore, Hodaya's Magdala crew hauling their boat up high, the crowd listening to the teacher offshore, Shifra's family planning to follow in a borrowed boat that leaks. Optional: mend Nikanor's torn jar net; help Hodaya haul (she gives you an old bailer for Oded); seal the seam of Oded's boat with pitch from Nikanor. | `p-brine`, `p-patch` (optional), `p-sky` |
 | **3. Loading, and evening** | The jetty | Load the boat within ten loads, and trim her level. Evening: the teacher's disciples leave the crowd and take him across, and other boats go with them. Shifra asks if Ami can cross in your boat. | `p-load` → `choice-load`; `choice-ami` |
-| **4. The crossing** | Out on the lake (night) | Calm, then a cold wind off the eastern hills: shorten sail in the right order. The storm breaks; the teacher's boat vanishes in the spray. The little boat off the port side is swamping. | `p-sail`; `choice-storm` |
-| **5. The calm and home** | The lake; the shore at night | The wind stops all at once. See to the others (the cloak), then turn for home. Grandmother waits on the jetty with a lamp; Nikanor, Shifra's family and the crew respond to what you did. | `choice-cloak` |
+| **4. The crossing** | Out on the lake (night) | Calm: hang your lamp at the stern for the boats behind. Then a cold wind off the eastern hills: shorten sail in the right order. The storm breaks; the teacher's boat vanishes in the spray. The little boat off the port side is swamping — or less so, if you readied it on the shore. | `p-sail`; `choice-storm` |
+| **5. The calm and home** | The lake; the shore at night | The wind stops all at once. See to the others (the cloak) before Uncle Elazar turns for home; set the trammel net on the still water if you brought it. Grandmother waits on the jetty with a lamp and sends you to tell Nikanor about his jars first; Shifra's family, Hodaya, Hanina and the crew respond to what you did. | `choice-cloak`, `choice-net` |
 | **6. Scripture Connection** | Full-screen panel | Mark's passage (placeholder text plus a labelled paraphrase), the parallels, the world of the story, echoes of older Scripture, and how Christians have read it, with comparisons that respond to your choices. | — |
 | **7. Reflection and summary** | Full-screen panels | Private reflection, then the summary. Nothing is graded. | — |
 
@@ -58,8 +58,9 @@ All fictional (`fictional: true, biblicalFigure: false`). Names are ordinary nam
 | Tamar | Cousin, rower | Teaches the order for a squall (the clue for `p-sail`). |
 | Yoezer | Hired man (compare Mark 1:20) | Rows; "I listen to old Hanina." |
 | Old Hanina | Retired fisherman | The reliable witness: the worst winds come off the eastern heights, at night too. |
-| Nikanor | Salt-fish trader from Magdala | Gives the jars; confidently claims the lake is never rough at night (unreliable: he hardly ever crosses); the optional jar-net side quest. |
-| Shifra, Ami, Oded | A potter's family from the hills | Came to hear the teacher; follow him across in a borrowed rowing boat that leaks. |
+| Nikanor | Salt-fish trader from Magdala | Gives the jars; confidently claims the lake is never rough at night (unreliable: he hardly ever crosses); the optional jar-net side quest; pitch and tow for Oded's boat; waits up at night for news of his jars. |
+| Hodaya | A young fisher from a Magdala crew | Her crew hauls their boat high and stays ashore: she gives their reading of the night in person (`clue-magdala-crew`). Help haul, and she gives you their old bailer. At night she tells how the lamps on the water went out one by one — and then the wind stopped. |
+| Shifra, Ami, Oded | A potter's family from the hills | Came to hear the teacher; follow him across in a borrowed rowing boat that leaks. Oded knows clay, not boats: the optional *Oded's Leaking Boat* seals it. |
 | Dinah | A farmer's wife in the crowd | Mentions the parable of the sower (labelled paraphrase). |
 | Three listeners | The crowd | Non-speaking. |
 
@@ -67,7 +68,7 @@ All fictional (`fictional: true, biblicalFigure: false`). Names are ordinary nam
 
 Chapter 2's own puzzle type (with net mending): no other chapter uses it. You choose what goes aboard **and where it goes**, so the boat sits level. Capacity **10** loads besides the crew. On offer (16): six jars of salted fish (1 each), bailer 1, rope 1, spare oar 2, trammel net 2, lamp 1, bread 1, cloak 1, water skin 1.
 
-The boat has four places, each with its own room: **bow** 4, **port side** 3, **starboard side** 3, **stern** 2. The crew are already sitting and count toward the balance (not the cargo): you in the bow (2), Yoezer to port (3), Tamar to starboard (2), Uncle Elazar steering in the stern (3). Pick something up (from the jetty or a place), then choose where it goes; the arrow keys move between the places. Each place shows its cargo and weight in numbers, and each pair of opposite places says in words whether she sits level.
+(If you helped Hodaya haul and kept her old bailer, it is on the jetty too: one more load.) The boat has four places, each with its own room: **bow** 4, **port side** 3, **starboard side** 3, **stern** 2. The crew are already sitting and count toward the balance (not the cargo): you in the bow (2), Yoezer to port (3), Tamar to starboard (2), Uncle Elazar steering in the stern (3). Pick something up (from the jetty or a place), then choose where it goes; the arrow keys move between the places. Each place shows its cargo and weight in numbers, and each pair of opposite places says in words whether she sits level.
 
 | Rule | Detail |
 |---|---|
@@ -88,6 +89,8 @@ Classified into `choice-load`: **all-jars** (6) · **jars-and-gear** (≥4 and r
 |---|---|---|---|
 | `p-sky` "What Is the Sky Saying?" | deduction | End of the jetty, after Hanina's warning | **A strong wind could rush down after dark**, backed by 2 reliable clues: Hanina's warning, the cold breath off the eastern hills, the Magdala crew hauling their boat up; the clear western sky rules out rain. Nikanor's claim is unreliable and spoils an argument; the afternoon wind is irrelevant evidence. The explanation admits no one can say exactly when or how strong. |
 | `p-sail` "Shorten Sail!" | sequence | On the lake, when the gust hits | Brails → yard → oars and bow to the waves → bail (Tamar's order; labelled fiction). Conclusion: keep her bow to the waves, keep bailing, stay near the other boats. |
+| `p-corner` "Grandmother's Corner" | netting (Chapter 2's own type) | Grandmother's house, before you leave (the door waits for it) | A small first net, 5 by 5: the family's mark, a little boat under sail, loose in columns 2–4. The middle column is a 5 and row 4 is a 5, so a first-timer learns how the numbers read. Exactly one mending fits. |
+| `p-patch` "Seal the Seam" | sequence (optional) | Oded's boat, once you have pitch and tow | Rag out → let it dry → press in the tow → smear warm pitch → let it set (Uncle Elazar's way; the method is labelled simplified). Conclusion: it should keep most of the water out, but they should still bail and stay near the other boats. |
 | `p-brine` "Nikanor's Jar Net" | netting (optional; Chapter 2's own type) | Nikanor's torn jar net, by the salting tubs | A picture logic grid (a nonogram) 7 wide and 5 high: Nikanor's fish mark, torn through columns 2–5. The numbers by each row and column are its runs of knots, in order; tie the torn cells so every line matches. Exactly one mending fits (checked in `chapter-integrity.ts`). Space ties a knot, again leaves it open, again clears it; arrows move. Relaxes the jar rule for loading. (The id is kept from when this was a brine-measuring puzzle.) |
 
 ## 7. Choices and what you see because of them
@@ -99,6 +102,10 @@ Classified into `choice-load`: **all-jars** (6) · **jars-and-gear** (≥4 and r
 | `choice-storm` | take-aboard (throws 3 jars overboard if you carry 5+) · tow (needs the rope) · oar (needs the spare oar) · hold-course | Shifra's family on your deck and their empty boat; the towline to their boat (and on the beach at night); Oded with your oar (and your oar in their boat at night); jars bobbing in the water. Impossible options are shown with the reason ("You didn't bring the rope."). |
 | `choice-cloak` | given (to Ami, on your deck or passed across) | Ami wrapped in your cloak on the lake and at home; the cloak gone from your back. |
 | Side quest `q-brine` (Nikanor's Jar Net) | finished · unfinished | Nikanor's words; the summary. |
+| Side quest `q-leak` (Oded's Leaking Boat) | sealed · still leaking | In the storm the little boat takes water over its side, not up through the seam; after the calm it is "low in the water but still afloat"; Oded and Shifra say so at night. |
+| Hodaya's old bailer (given to Oded) | — | Shifra bails with it in the storm, and says so at night. |
+| The lamp at the stern (`lamp-hung`) | — | If you held your own course, the little boat kept your lamp in sight through the storm. |
+| `choice-net` (if the net is aboard) | set · home | A catch in the bottom of the boat; home an hour later (3 a.m.); Nikanor buys the catch, and Uncle Elazar calls it a start on any lost jars. |
 
 Main-quest outcomes: **Home, with the jars** (success) or **Home, lighter than you left** (alternate, if jars went overboard). In every branch everyone comes home: the calm comes the same way whatever you chose.
 
@@ -112,7 +119,7 @@ Main-quest outcomes: **Home, with the jars** (success) or **Home, lighter than y
 | Gust (after talking to anyone aboard, or walking forward) | 20 | `wind` |
 | Storm breaks (after shortening sail) | 21 (+1 if you bring the family aboard) | `storm` |
 | The calm | 23 | `clear` |
-| Home | 26 (2 a.m.) | shore `clear` |
+| Home | 26 (2 a.m.), or 27 if you set the net | shore `clear` |
 
 Weather comes from `weather` + `weatherChanges` on each scene; the world reports it on the canvas as `data-weather` (drawing it is another workstream).
 
@@ -162,8 +169,9 @@ The storm itself is not baked: the lake is rendered calm, and the engine draws t
 ## 11. Where this is verified
 
 - **Content rules** ([`tests/content/storm-on-galilee.test.ts`](../../tests/content/storm-on-galilee.test.ts)): integrity, reachability, all four puzzle types, an optional side quest, Scripture as references with labelled paraphrase, no Jesus character or voice, no retelling of his boat in the story, no scoring or faith-reward language, nothing self-approved, every source retrieved and used, a real decision with visible constraints, story-driven weather, and that the painter knows every tile kind.
-- **Headless playthroughs** ([`tests/integration/storm-on-galilee-playthrough.test.ts`](../../tests/integration/storm-on-galilee-playthrough.test.ts)): four complete branches (tow with Ami aboard and the side quest; full cargo, leave a jar for Ami, jettison to take the family aboard; never met Shifra, hold course with nothing to share; light load after the side quest, the oar, the cloak passed across), plus loading gates, loading-and-trim and sky rules, and an unfinished side quest.
-- **Browser end to end** ([`e2e/storm-on-galilee.spec.ts`](../../e2e/storm-on-galilee.spec.ts)): new profile → Chapter 2 → opening → sky → loading → the lake as `data-weather` goes `clear` → `wind` → `storm` → `clear` → decision → home → Scripture Connection → reflection → summary.
+- **Headless playthroughs** ([`tests/integration/storm-on-galilee-playthrough.test.ts`](../../tests/integration/storm-on-galilee-playthrough.test.ts)): complete branches (tow with Ami aboard and the side quest; full cargo, leave a jar for Ami, jettison to take the family aboard; never met Shifra, hold course with nothing to share; light load after the side quest, the oar, the cloak passed across; Hodaya's bailer, a sealed seam, the lamp at the stern, hold course, set the net, Nikanor, Hanina and Hodaya at night; the seam left unsealed), plus loading gates, Grandmother's knots before the door, loading-and-trim and sky rules, and an unfinished side quest.
+- **Play time** ([`tests/integration/play-time.test.ts`](../../tests/integration/play-time.test.ts)): see §13.
+- **Browser end to end** ([`e2e/storm-on-galilee.spec.ts`](../../e2e/storm-on-galilee.spec.ts)): new profile → Chapter 2 → opening → Grandmother's corner → sky → loading → the lake as `data-weather` goes `clear` → `wind` → `storm` → `clear` → decision → the others → home → Nikanor → Scripture Connection → reflection → summary.
 
 ## 12. Known gaps
 
@@ -174,3 +182,16 @@ The storm itself is not baked: the lake is rendered calm, and the engine draws t
 - **Mood:** no dedicated lakeside mood (see §10); adding one would touch `direction.ts`, the HUD emblem and tests owned by others.
 - **The season** isn't stated. Afternoon westerlies are a summer pattern and the fiercest easterlies are Oct–May; the game says only that winds off the eastern heights "can come at night".
 - **Scripture text:** the WEB text of Mark 4 is not in the translation registry, so the panel shows the placeholder even if WEB display is later enabled for Luke 10. Adding it is a human editorial decision.
+
+## 13. How long it plays
+
+The owner found the chapters "playing pretty quick. Much shorter than the projected 20 to 30 minutes" (2026-09-30). Measured by [`tests/integration/play-time.test.ts`](../../tests/integration/play-time.test.ts) with the model in [`tests/support/play-time.ts`](../../tests/support/play-time.ts) (explained in [game-design.md §17](../game-design.md#17-how-long-it-plays)): a *steady* first-timer reads every line at 230 words a minute; a *brisk* adult reads at 320 and solves puzzles quickly. *Direct* follows only the main quest; *curious* takes up what the shore offers.
+
+| Run | Before (steady · brisk) | After (steady · brisk) |
+|---|---|---|
+| Direct | 19 min · 12 min | 23 min · 15 min |
+| Curious | 30 min · 20 min | 39 min · 26 min |
+
+**What was added:** Grandmother's corner (a first, small net before the door opens), Hodaya of the Magdala crew (a new person, a witness at night), *Oded's Leaking Boat* (an errand across three people and a sequence puzzle, whose result you see in the storm), the lamp at the stern, seeing to the others before turning home, the net on the still water, and telling Nikanor before Grandmother. None of it touches what happens in the teacher's boat, and none of it ties the calm to anything the player did.
+
+**Art:** Hodaya is pre-rendered like everyone else (people sheets in the `late` and `night` lights; portraits neutral, glad and worried). Old Hanina's night figure reuses his seated sheets. No place was re-rendered: every new hotspot sits on a tile that already draws itself.

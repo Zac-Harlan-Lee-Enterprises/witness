@@ -67,7 +67,21 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await expect(dialogueBox(page)).toContainText('Scripture paraphrase');
   await choose(page, 'I’m ready. What do I do?');
   await choose(page, 'I’ll go and find Hanina.');
+  // Before the door: Grandmother's corner (a small first net).
+  await choose(page, 'Show me how.');
   await endDialogue(page);
+  const corner = page.getByRole('dialog', { name: 'Grandmother’s Corner' });
+  await expect(corner).toBeVisible();
+  await mendNet(corner, [
+    [1, 3],
+    [2, 3], [2, 4],
+    [3, 3],
+    [4, 2], [4, 3], [4, 4],
+    [5, 2], [5, 3], [5, 4],
+  ]); // prettier-ignore
+  await expect(corner.getByText('Solved!')).toBeVisible();
+  await snap(page, 'storm-01b-corner');
+  await corner.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: /^Quests/ }).click();
   await expect(page.getByRole('dialog', { name: 'Quests' })).toContainText('The Crossing');
   await page.keyboard.press('Escape');
@@ -188,6 +202,10 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await readNarration(page); // the calm
   await expect(weather(page)).toHaveAttribute('data-weather', 'clear');
   await snap(page, 'storm-11-calm');
+  // See to the others before Uncle Elazar will turn for home.
+  await goTo(page, 'Talk to The little boat off the port side');
+  await choose(page, 'Call across that it will be morning soon.');
+  await endDialogue(page);
 
   // Home in the night.
   await goTo(page, 'Talk to Uncle Elazar, at the steering oar');
@@ -196,6 +214,12 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await expectScene(page, 'The shore at Capernaum');
   await readNarration(page); // homecoming
   await snap(page, 'storm-12-home-night');
+  // Grandmother sends you to Nikanor first, with news of his jars.
+  await goTo(page, 'Talk to Grandmother Shelomit, with a lamp');
+  await endDialogue(page);
+  await goTo(page, 'Talk to Nikanor, waiting');
+  await choose(page, 'Everyone’s safe. Every one of us.');
+  await endDialogue(page);
   await goTo(page, 'Talk to Grandmother Shelomit, with a lamp');
   await choose(page, 'And then the wind just stopped. All at once.');
   await continueDialogue(page);

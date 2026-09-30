@@ -1,6 +1,31 @@
-import { opt, say, solved, type DialogueInput } from './helpers';
+import { not, opt, say, solved, type DialogueInput } from './helpers';
 
 export const HOME_DIALOGUES: DialogueInput[] = [
+  {
+    id: 'd-mending',
+    entries: [{ when: solved('p-corner'), node: 'done' }],
+    start: 'look',
+    nodes: [
+      say(
+        'look',
+        'narrator',
+        'Grandmother’s net lies across the mat, with the family’s mark knotted into it. One corner of the mark has pulled loose.',
+        {
+          choices: [
+            opt('tie', 'Tie the loose knots.', undefined, {
+              effects: [{ type: 'openPuzzle', puzzle: 'p-corner' }],
+            }),
+            opt('leave', 'Leave it for now.'),
+          ],
+        },
+      ),
+      say(
+        'done',
+        'narrator',
+        'The net lies across the mat, the little boat whole again in your knots. Every family on the shore mends nets like this, all year round.',
+      ),
+    ],
+  },
   {
     id: 'd-opening',
     characterId: 'shelomit',
@@ -78,9 +103,23 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say('n8b', 'shelomit', 'Keep them together, and keep your wits about you.', {
         choices: [
           opt('c-lamp', 'A lamp? Out on the water?', 'n9', { once: true }),
-          opt('c-go', 'I’ll go and find Hanina.', 'n10'),
+          opt('c-go', 'I’ll go and find Hanina.', 'n9c'),
         ],
       }),
+      say(
+        'n9c',
+        'shelomit',
+        'Wait — before you go. Hold this corner for me. The last knots are the fiddly ones, and my eyes aren’t what they were.',
+        {
+          choices: [opt('c-knots', 'Show me how.', 'n9d')],
+        },
+      ),
+      say(
+        'n9d',
+        'shelomit',
+        'It’s our mark, knotted into the mesh: the little boat, see? The numbers chalked on the frame say how many knots run together in each row and each column. Tie the loose part to match.',
+        { effects: [{ type: 'openPuzzle', puzzle: 'p-corner' }], next: 'n10' },
+      ),
       say(
         'n9',
         'shelomit',
@@ -99,11 +138,25 @@ export const HOME_DIALOGUES: DialogueInput[] = [
     id: 'd-shelomit',
     characterId: 'shelomit',
     entries: [
+      { when: not(solved('p-corner')), node: 'corner' },
       { when: solved('p-load'), node: 'bye' },
       { when: solved('p-sky'), node: 'load' },
     ],
     start: 'ask',
     nodes: [
+      say(
+        'corner',
+        'shelomit',
+        'The corner first, {player}. The last few knots, then you can go.',
+        {
+          choices: [
+            opt('tie', 'I’ll tie them now.', undefined, {
+              effects: [{ type: 'openPuzzle', puzzle: 'p-corner' }],
+            }),
+            opt('later', 'In a moment.'),
+          ],
+        },
+      ),
       say(
         'ask',
         'shelomit',

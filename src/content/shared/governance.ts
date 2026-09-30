@@ -46,3 +46,25 @@ export function aiDraft(options: DraftOptions): Governance {
 
 /** Fictional narrative (not educational; publishable without theological review). */
 export const FICTION = aiDraft({ confidence: 'not-applicable', ageLevel: '10+' });
+
+/**
+ * Governance for content drafted on a given day, with a summary of why.
+ * Content added to a chapter after its approval gets the day it was
+ * drafted, so the approval (src/content/shared/approvals.ts), which covers
+ * only what was drafted by its own date, does not cover it: it stays an AI
+ * draft awaiting a named reviewer.
+ */
+export function draftOn(date: string, summary: string, options: DraftOptions): Governance {
+  const g = aiDraft(options);
+  return {
+    ...g,
+    history: [{ version: 1, date, author: 'Claude (AI-assisted draft)', summary }],
+  };
+}
+
+/**
+ * The day the longer Chapters 1 and 2 were drafted (their new people,
+ * errands, puzzles and journal entries). After the approval of 2026-09-26,
+ * so nothing drafted that day is approved until a named person approves it.
+ */
+export const LONGER_CHAPTERS_DRAFTED = '2026-09-30';

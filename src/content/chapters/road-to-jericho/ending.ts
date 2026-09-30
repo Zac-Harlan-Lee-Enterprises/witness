@@ -69,6 +69,10 @@ export const SCRIPTURE_CONNECTION: ChapterInput['scriptureConnection'] = {
       when: inn('promised'),
       text: 'You promised the innkeeper you would come back and pay — like the Samaritan’s promise in Luke 10:35.',
     },
+    {
+      when: flag('cut-bundle'),
+      text: 'You bound a stranger’s wounds with linen that wasn’t yours to give, and Rivka called it well spent. In Jesus’ story, the Samaritan bandaged the man’s wounds too (Luke 10:34).',
+    },
   ],
 };
 
@@ -93,6 +97,10 @@ export const SUMMARY: ChapterInput['summary'] = {
       text: 'You listened carefully to travelers in the market and weighed their advice.',
     },
     {
+      when: flag('linen-collected'),
+      text: 'You collected Rivka’s linen from Hadassah the weaver and carried it with the remedy.',
+    },
+    {
       when: flag('dispute-settled'),
       text: 'You settled a dispute between Ezer the baker and Menashe the oil merchant with an honest measure.',
     },
@@ -101,6 +109,10 @@ export const SUMMARY: ChapterInput['summary'] = {
       text: 'At the fork, you read the evidence and chose the shepherds’ ridge path.',
     },
     { when: flag('refilled'), text: 'You refilled your water at the shepherds’ cistern.' },
+    {
+      when: { type: 'met', character: 'eli' },
+      text: 'On the ridge you met Eli, Old Shimon’s grandson, minding the flock.',
+    },
     {
       when: { type: 'puzzleSolved', puzzle: 'p-what-happened' },
       text: 'Below the bend, you pieced together what had happened to a robbed traveler.',
@@ -115,6 +127,14 @@ export const SUMMARY: ChapterInput['summary'] = {
       text: 'You hurried past the injured traveler and on toward Jericho.',
     },
     { when: flag('remedy-delivered'), text: 'You delivered Aunt Miriam’s remedy to Rivka.' },
+    {
+      when: flag('cloak-returned'),
+      text: 'At the inn, you worked out whose striped cloak a goatherd had found in the rocks.',
+    },
+    {
+      when: flag('sat-with-natan'),
+      text: 'You kept Natan company while his remedy steeped, and told him about the road.',
+    },
     {
       when: flag('heard-yair'),
       text: 'Yair told you about a story Jesus once told — about this very road.',
@@ -153,8 +173,13 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       id: 'menashe-sent-untold',
-      when: all(traveler('send-help'), { type: 'not', condition: flag('asher-sent') }),
+      when: all(traveler('send-help'), not(flag('asher-sent')), not(flag('eli-told'))),
       text: 'You meant to send help, but never told anyone at the inn. Shepherds found Menashe near sunset and brought him in.',
+    },
+    {
+      id: 'menashe-sent-eli',
+      when: all(traveler('send-help'), not(flag('asher-sent')), flag('eli-told')),
+      text: 'You never told anyone at the inn. But Eli, bringing the flock down the gully early as his grandfather asked, found Menashe in the afternoon and ran for the shepherds.',
     },
     {
       id: 'menashe-told',
@@ -163,13 +188,33 @@ export const SUMMARY: ChapterInput['summary'] = {
     },
     {
       id: 'menashe-found',
-      when: all(traveler('hurry-on'), { type: 'not', condition: flag('asher-sent') }),
+      when: all(traveler('hurry-on'), not(flag('asher-sent')), not(flag('eli-told'))),
       text: 'Shepherds found Menashe near sunset and carried him to the inn.',
+    },
+    {
+      id: 'menashe-found-eli',
+      when: all(traveler('hurry-on'), not(flag('asher-sent')), flag('eli-told')),
+      text: 'Eli, bringing the flock down the gully early as his grandfather asked, found Menashe in the afternoon and ran for the shepherds, who carried him to the inn.',
     },
     {
       id: 'cloak',
       when: { type: 'choiceMade', choice: 'choice-cloak', option: 'given' },
       text: 'Menashe kept warm in your cloak, and promised to return it in Jerusalem.',
+    },
+    {
+      id: 'own-cloak',
+      when: flag('cloak-returned'),
+      text: 'Menashe’s own cloak, thrown away by the robbers, was kept for him at the inn.',
+    },
+    {
+      id: 'linen-whole',
+      when: all(flag('remedy-delivered'), not(flag('cut-bundle'))),
+      text: 'Hadassah’s linen reached Rivka whole, for Natan’s bed.',
+    },
+    {
+      id: 'linen-cut',
+      when: flag('cut-bundle'),
+      text: 'One of Rivka’s new sheets reached Jericho a strip short: it had bound Menashe’s wounds. Rivka hemmed the edge herself.',
     },
     { id: 'inn-paid', when: inn('paid'), text: 'Your coins paid for Menashe’s bed and meals.' },
     {
@@ -193,6 +238,21 @@ export const SUMMARY: ChapterInput['summary'] = {
       id: 'hadassah',
       when: { type: 'choiceMade', choice: 'choice-prejudice', option: 'challenged' },
       text: 'Hadassah started to rethink what she’d always said about Samaritans.',
+    },
+    {
+      id: 'tobiah',
+      when: flag('tobiah-rethinks'),
+      text: 'Tobiah promised to stop telling travelers the wadi is fastest.',
+    },
+    {
+      id: 'salome-greeting',
+      when: flag('greeted-salome'),
+      text: 'You gave Salome Aunt Miriam’s greeting, and she sent back an open door.',
+    },
+    {
+      id: 'natan-menashe',
+      when: flag('natan-knows-menashe'),
+      text: 'Natan knows a Samaritan oil merchant’s name now.',
     },
     {
       id: 'malik-watch',
@@ -243,4 +303,8 @@ export const SUMMARY: ChapterInput['summary'] = {
 
 function all(...of: Condition[]): Condition {
   return { type: 'all', of };
+}
+
+function not(condition: Condition): Condition {
+  return { type: 'not', condition };
 }
