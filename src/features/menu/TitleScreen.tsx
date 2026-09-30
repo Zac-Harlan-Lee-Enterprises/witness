@@ -21,7 +21,9 @@ export function TitleScreen({
       <h1 id="game-title" className="title-screen__title">
         {config.title}
       </h1>
-      <p className="title-screen__subtitle">Chapter 1 · The Road to Jericho</p>
+      <p className="title-screen__subtitle">
+        Four journeys · Jericho, Galilee, Bethlehem, Colossae
+      </p>
       <nav className="menu" aria-label="Main menu">
         <button type="button" className="button button--primary button--large" onClick={onPlay}>
           Play
