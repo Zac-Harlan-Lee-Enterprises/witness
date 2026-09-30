@@ -72,6 +72,9 @@ export function MapPuzzleView({
   };
 
   const width = puzzle.map[0]?.length ?? 0;
+  // Landmarks are marked with letters and named in a key (one letter per kind: every milestone is M…).
+  const labels = [...new Set(puzzle.landmarks.map((l) => l.label))];
+  const letterOf = (label: string) => String.fromCharCode(65 + labels.indexOf(label));
   return (
     <div className="map-puzzle">
       <section aria-labelledby={`${puzzle.id}-directions`}>
@@ -107,16 +110,36 @@ export function MapPuzzleView({
                   {walker ? (
                     <span className="map-cell__you">{SIGN[at.facing]}</span>
                   ) : landmark ? (
-                    '•'
+                    letterOf(landmark.label)
                   ) : (
                     ''
                   )}
-                  {landmark && <span className="map-cell__label">{landmark.label}</span>}
                 </div>
               );
             }),
           )}
         </div>
+        <section className="map-puzzle__key" aria-labelledby={`${puzzle.id}-key`}>
+          <h3 id={`${puzzle.id}-key`} className="map-puzzle__heading">
+            Key
+          </h3>
+          <ul>
+            <li>
+              <span className="map-key map-key--you" aria-hidden="true">
+                {SIGN[at.facing]}
+              </span>{' '}
+              You
+            </li>
+            {labels.map((label) => (
+              <li key={label}>
+                <span className="map-key" aria-hidden="true">
+                  {letterOf(label)}
+                </span>{' '}
+                {label}
+              </li>
+            ))}
+          </ul>
+        </section>
         <div className="map-puzzle__controls">
           <p className="map-puzzle__where" aria-live="polite">
             {whereText}

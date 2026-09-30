@@ -1577,17 +1577,43 @@ thead .netting__clue .netting__num {
   font-weight: 700;
   z-index: 1;
 }
-.map-cell__label {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  line-height: 1;
-  color: var(--color-text);
-  white-space: nowrap;
-  font-weight: 400;
-  pointer-events: none;
+.map-puzzle__key {
+  flex: 1 1 12rem;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+.map-puzzle__key ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  columns: 2 10rem;
+}
+.map-key {
+  display: inline-block;
+  min-width: 1.4em;
+  text-align: center;
+  background: #8a6a3e;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 3px;
+}
+.map-key--you {
+  background: var(--color-focus);
+}
+@media (max-width: 480px) {
+  .net-cell,
+  .logic-cell {
+    width: 34px;
+    height: 34px;
+  }
+  .floor-cell {
+    width: 48px;
+    height: 48px;
+    font-size: 0.55rem;
+  }
+  .map-cell {
+    font-size: 0.6rem;
+  }
 }
 .map-puzzle__controls {
   flex: 1 1 14rem;
