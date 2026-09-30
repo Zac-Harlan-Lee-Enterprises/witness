@@ -1,9 +1,9 @@
 # Chapter 3: *A Journey to Bethlehem* (Luke 2:1–20)
 
-**Status:** playable end to end on every branch. All educational content is an AI-assisted draft awaiting human review: 42 educational records, all `sources-attached`, none approved.
+**Status:** playable end to end on every branch. The owner approved the chapter's AI-drafted content on 2026-09-26. The text added on 2026-09-30, when the chapter was made longer, is **not** covered by that approval: its three records (`rec-para-ruth`, `rec-e-kid`, `rec-e-supper`) are in review (`sources-attached` / `ai-draft`), and so is the new dialogue.
 **Content:** [`src/content/chapters/journey-to-bethlehem/`](../../src/content/chapters/journey-to-bethlehem/)
 **Research:** [research/journey-to-bethlehem-sources.md](../research/journey-to-bethlehem-sources.md)
-**Play time:** about 20–30 minutes.
+**Play time:** about 20–30 minutes (it was nearer 13–19 before the chapter was made longer; see [§13](#13-play-time)).
 
 This document describes the chapter as built.
 
@@ -16,10 +16,12 @@ The player is a fictional child (ungendered, as in every chapter) of a Bethlehem
 1. bakes bread for the guests;
 2. decides what stays in the small guest room;
 3. may help the clerk write down Uncle Asa's household (optional);
-4. takes supper to a cousin at the sheepfold;
-5. tracks a lost lamb, or goes home;
-6. decides where a late stranger sleeps;
-7. late at night, hears from a neighbour what shepherds from the fields have been telling everyone.
+4. fetches milk for little Dodi from Hagit, whose runaway kid has to be found first;
+5. takes supper to a cousin at the sheepfold, and may share the milk with a newborn lamb;
+6. tracks a lost lamb, or goes home;
+7. eats supper with the whole household, tells them about the day, and decides what happens to the last loaf;
+8. decides where a late stranger sleeps;
+9. late at night, hears from a neighbour what shepherds from the fields have been telling everyone.
 
 Then the game shows what Luke 2:1–20 actually says. Scripture, paraphrase, history and interpretation are each labelled.
 
@@ -30,17 +32,19 @@ Then the game shows what Luke 2:1–20 actually says. Scripture, paraphrase, his
 
 The house, its guests and the stranger are the player's own fiction. The house is not presented as the place of the birth, and nobody in the game turns Mary and Joseph away. When the player asks to go and see, Hagit says the shepherds didn't say which house, and that the mother and baby should be left to sleep.
 
-## 2. The seven acts
+## 2. The acts
 
 | Act | Where | What happens | Puzzle / choice |
 |---|---|---|---|
 | **1. A full house** | Tamar's house | Tamar explains the registration, a little hedged ("*They say* everyone must be written down in their own family's town"). She asks for bread, places set for supper, and a ready guest room. | `p-bread` (logic grid) |
 | **2. Making room** | Tamar's house | The guest room floor is a grid, five squares by three, around the water jar, the roof post and the way to the door. Both beds must go in; the loom, the barley and Asa's tools compete for the room left, and only one of them ever fits. The barley may only leave the room if the player has noticed the dry corner on the roof (the ladder). | `p-room` (floor plan) → `choice-room` |
 | **3. The crowded village** | The lanes | Saba Amram helps the clerk and tells the well story (labelled paraphrase). Uncle Asa has waited in line since midday. Hagit offers her roof "to a tired soul". Clean straw lies on the threshing floor. | Optional side quest `q-queue`: `p-register` (sequence) |
-| **4. The fold at dusk** | The fields | Yonatan counts the flock through the gate and one lamb is missing. The player can search or go home before dark. Searching means reading signs; one sighting (Uncle Asa's "lamb" with horns) is questionable. | `p-lamb` (deduction) → `choice-lamb` |
-| **5. A knock at the door** | Tamar's house, night | Zerah, an old basket-maker from Tekoa, has found every door full. The five options depend on earlier choices: a space left in the guest room, straw from the threshing floor, Hagit's offer. Unavailable options stay visible, with the reason. | `choice-stranger` |
-| **6. News in the night** | Tamar's house, late | Hagit knocks. Her retelling of the shepherds' report is a labelled paraphrase. The player wakes the house or keeps it to think about. | `choice-news` → Scripture Connection |
-| **7. Reflection and summary** | Panels | An optional private reflection, then a summary of what happened. Nothing is graded. | — |
+| **4. Hagit's runaway kid** | The lanes | Tamar asks for a jar of Hagit's milk for Dodi, but Hagit's white kid is out and she can't chase it. Saba Amram, Uncle Asa (in the line, or at home if you helped the clerk) and Kallias each saw one part of its afternoon. Put in order, the last stop is the threshing floor, where the kid is burrowed into the chaff. Bring her home; Hagit gives you the milk and tells how her father once found her lost kid. The east gate waits for the milk (and says where Hagit lives). Uncle Asa's "lamb with horns" turns out to have been this kid. | `p-kid` (logic grid) |
+| **5. The fold at dusk** | The fields | Yonatan counts the flock through the gate and one lamb is missing. The player can search or go home before dark. Searching means reading signs; one sighting (Uncle Asa's "lamb" with horns) is questionable. Old Yoram's newborn lamb is hungry; half the milk can go to it. Afterwards Yonatan will talk about the night watch. | `p-lamb` (deduction) → `choice-lamb`; optional `choice-milk` |
+| **6. Supper by the fire** | Tamar's house, nightfall | The household eats in the places you set at midday. Peninah gets the milk (a whole jar, or half). You tell them about your day: the topics offered are what you did (the lamb found or left, the kid, Asa's line). Saba retells three verses of Ruth, Naomi coming home to a stirred-up Bethlehem and Boaz winnowing on the threshing floor (labelled paraphrase). There is one loaf left: keep it by the oven for whoever knocks, save it for Yonatan's breakfast, or share it round. | `choice-loaf` |
+| **7. A knock at the door** | Tamar's house, night | Zerah, an old basket-maker from Tekoa, has found every door full. The five options depend on earlier choices: a space left in the guest room, straw from the threshing floor, Hagit's offer. Unavailable options stay visible, with the reason. If you kept the loaf, Zerah gets it, even if you turned him away (you run after him). He'll talk about home, his grandfather and his baskets; Tamar will talk by the fire. | `choice-stranger` |
+| **8. News in the night** | Tamar's house, late | Hagit knocks. Her retelling of the shepherds' report is a labelled paraphrase. The player wakes the house or keeps it to think about. | `choice-news` → Scripture Connection |
+| **9. Reflection and summary** | Panels | An optional private reflection, then a summary of what happened. Nothing is graded. | — |
 
 ## 3. Places
 
@@ -89,8 +93,10 @@ A fictional picture of the village crowded for the registration:
 | The well by the gate | Examine; Saba's paraphrase of 2 Samuel 23:15–16 |
 | Hagit | Her offer (`hagit-offered`), her knowledge of the lamb (`clue-hagit-water`), and whether the kid got out |
 | Heap of clean straw | One armful (`straw`) |
+| Barley by the travellers' cart, washing by the square, bedrolls in the lane | Examine: where the kid has been, and who is sleeping outdoors tonight (`sprite: 'none'`, so nothing new is drawn) |
+| Something chewing in the chaff heap | Hagit's kid, once `p-kid` is solved; take her back to Hagit for the milk (`kid-home`, `got-milk`) |
 | Zerah by the well / at Hagit's door | Night, depending on `choice-stranger` |
-| Exit `to-fields` (east gate) | Needs `supper-given`; +1 hour |
+| Exit `to-fields` (east gate) | Needs `supper-given` and Hagit's milk (`got-milk`); the blocked text says where Hagit lives; +1 hour |
 
 ### 3.3 The fold below Bethlehem (`shepherds-fields`, outdoor, `wilderness`, 42×28, weather `wind` → `clear`)
 
@@ -143,12 +149,13 @@ Everyone is fictional (`fictional: true, biblicalFigure: false`), and the conten
 - **Room items:** Asa's bedding and Peninah's bedding (essential), the loom, the barley and the tools. Each weighs 2 (floor space). They exist only while the room puzzle is open, and solving removes them.
 - **Weightless carried items:** Yonatan's supper and thick cloak, a clay lamp (the chapter's `lightItem`), and an armful of straw.
 
-**Clues:** 8, each with an honest reliability.
+**Clues:** 11, each with an honest reliability.
 
 | Clue | Source | Reliability |
 |---|---|---|
 | `clue-model-order` | Clerk's tablet | reliable |
 | `clue-hagit-water` | Hagit | reliable |
+| `clue-kid-amram`, `clue-kid-asa`, `clue-kid-kallias` | Saba Amram, Uncle Asa, Kallias | reliable: each is one clue of the kid's logic grid |
 | `clue-asa-lamb` | Uncle Asa | **unreliable**: it had horns, and it was hours earlier |
 | `clue-small-prints`, `clue-wool`, `clue-terrace-gap`, `clue-thicket` | The fold | reliable |
 | `clue-ewe` | The fold | uncertain |
@@ -159,18 +166,20 @@ Everyone is fictional (`fictional: true, biblicalFigure: false`), and the conten
 | `p-room`: Room in the Guest Room | floor plan (Chapter 3's own type) | Pieces: Asa's bedding (a row of 3), Peninah and Dodi's (a 2×2 square), the barley jars (an L of 3), the loom (a row of 3), the tools (2). Both beds plus one of barley / loom / tools fit, never two; the barley's L fits only one way, round the roof post. Leaving the barley out requires knowing about the roof. Choose a piece, turn it (R), press the square for its first cell; the floor previews where it would land and says why it won't fit. | Classifies `choice-room`: `kept-grain`, `kept-loom`, `kept-tools`, `made-space` |
 | `p-register`: Uncle Asa's Declaration | sequence + conclusion | declarant → town → members with ages → property → oath. Conclusion: to know who lives where and what they own, for taxes. | The clerk's model tablet. The order is modelled on Egyptian returns and labelled as a reconstruction. |
 | `p-lamb`: Where Did the Lamb Go? | deduction | The gully, with 2 reliable signs. Presenting Asa's sighting fails the attempt. | Solvable from the fold signs alone |
+| `p-kid`: The Kid's Afternoon | logic grid | Four places (the cart, the washing, the well trough, the threshing floor) in order, from three witnesses: the cart before the washing (Saba), the washing before the well (Asa), the well neither first nor last (Kallias). The well must be third, so the washing is second, the cart first and the threshing floor last. Exactly one answer, every clue needed (content test). | Hagit's "I think I know where your kid went" waits until all three have been asked, and says who to ask |
 
 ## 6. Quests
 
 **Main quest: *Room for Everyone* (`q-room`).** Its stages are:
 
 1. `welcome`: bread, room, optional greeting, collect the supper.
-2. `supper`: optional straw; give Yonatan his supper.
+2. `supper`: optional straw; get Dodi's milk from Hagit (with two optional steps once the kid is missing: ask the three witnesses, bring the kid home); give Yonatan his supper.
 3. `lamb`: search (optional sub-steps) or leave; the required step completes on `choice-lamb`.
 4. `evening`: go home.
-5. `stranger`: decide.
-6. `night`: lie down and hear Hagit.
-7. `wonder`: the Scripture Connection.
+5. `hearth`: supper by the fire; completes on `choice-loaf`.
+6. `stranger`: decide.
+7. `night`: lie down and hear Hagit.
+8. `wonder`: the Scripture Connection.
 
 The outcomes are *Shared the news* or *Kept the news to think about*. Both are successes. The main quest never depends on the side quest, and a test enforces this.
 
@@ -184,6 +193,8 @@ The outcomes are *Shared the news* or *Kept the news to think about*. Both are s
 |---|---|---|
 | `choice-room` | kept-grain · kept-loom · kept-tools · made-space | Loom, jars and tool bag stand in the guest room or with the animals. A spare mat marks the space. Peninah and Asa comment. The guest-room option for Zerah is available only with `made-space`, otherwise shown with the reason. |
 | `choice-queue` | helped | Asa leaves the line and is at home in the afternoon. Summary line. |
+| `choice-milk` | shared · kept | Shared: Yoram's newborn drinks from a corner of his cloak, and Peninah gets half a jar. Kept (or never asked): a whole jar for Dodi. Summary line either way. |
+| `choice-loaf` | set-aside · yonatan · shared | Set aside: Zerah gets the loaf, wherever he sleeps (`zerah-bread`). Summary line for each. |
 | `choice-lamb` | found · left | Found: the lamb rides on your shoulders, then stands with its mother in the fold. Left: Old Yoram's place by the fire is empty (he has gone searching); you are home earlier; the summary says he found it near midnight. |
 | `choice-stranger` | own-place · guest-room · straw-bed · hagit · no-room | Where Zerah lies: by the fire, in the guest room, or on fresh straw by the animals. At Hagit's door or by the well (seen in the lane). If you gave your place, your own bed is in the straw beside the mangers when the news comes. Walking him over yourself costs an hour. |
 | `choice-news` | told · kept | Told: everyone sits up in the lamplight. Kept: the house sleeps on. |
@@ -203,6 +214,8 @@ Choices never grade the player. The Scripture Connection comparisons respond to 
 | Evening at home | set to 20 |
 | Walking Zerah over yourself | +1 |
 | Lying down | set to 23 |
+
+The kid, the milk and supper by the fire don't move the clock: supper is part of the evening (hour 20), so the fold is still seen in the late sun and at sunset on the main path, as before.
 
 ## 8. Scripture Connection and summary
 
@@ -254,7 +267,7 @@ Choices never grade the player. The Scripture Connection comparisons respond to 
 
 ## 11. Where this is verified
 
-- [`tests/content/journey-to-bethlehem.test.ts`](../../tests/content/journey-to-bethlehem.test.ts) (18 tests) checks:
+- [`tests/content/journey-to-bethlehem.test.ts`](../../tests/content/journey-to-bethlehem.test.ts) (25 tests) checks:
   - integrity and reachability;
   - the lazy registry;
   - all four puzzle types;
@@ -269,7 +282,9 @@ Choices never grade the player. The Scripture Connection comparisons respond to 
   - sensitivity notes;
   - a real decision at the door;
   - known sprites;
-  - painter rules for the new tiles.
+  - painter rules for the new tiles;
+  - the kid's logic grid (one answer, every witness needed, the kid hidden until it is solved), the milk before the fold, supper by the fire (topics that follow the day, a labelled Ruth paraphrase, the loaf choice), and enough to do for 20–30 minutes;
+  - that the text added on 2026-09-30 stays in review.
 - [`tests/integration/journey-to-bethlehem-playthrough.test.ts`](../../tests/integration/journey-to-bethlehem-playthrough.test.ts) runs six headless playthroughs:
   - generous: side quest, space, lamb, guest room, told;
   - careful: grain, home early, own place, kept;
@@ -277,10 +292,23 @@ Choices never grade the player. The Scripture Connection comparisons respond to 
   - neighbour;
   - full house: no room, search given up;
   - dead-end guards.
-- [`e2e/journey-to-bethlehem.spec.ts`](../../e2e/journey-to-bethlehem.spec.ts) runs in the browser: new profile → chapter select → opening → all three main-path puzzles → the lamb → the stranger → the news (paraphrase label) → Scripture Connection (placeholder and paraphrase) → reflection → summary.
+  Every path now also fetches the milk (Asa asked in the line or at home), and the paths cover sharing or keeping it, and all three loaf choices (including bread for Zerah when he is turned away).
+- [`e2e/journey-to-bethlehem.spec.ts`](../../e2e/journey-to-bethlehem.spec.ts) runs in the browser: new profile → chapter select → opening → the main-path puzzles → the kid's logic grid and the milk → the lamb → supper by the fire → the stranger → the news (paraphrase label) → Scripture Connection → reflection → summary.
 
 ## 12. Known gaps
 
 - **Pre-rendered art.** All three places are pre-rendered in 3D ([technical art guide](../art/technical-art-guide.md), [`kit_village.py`](../../tools/art/lib/kit_village.py)): the house by day and by lamplight, the lanes and the fold from mid-afternoon into the night. On the main path the fold is seen in the late sun and at sunset; it is at night only if you helped the clerk first (the sun sets while you carry the lamb, and the fields change to their night light around you) or go back down after dark.
 - **Hagit may be off-screen.** She is drawn at the door during her report, but the camera may not frame her if the player's bed is across the room.
 - **Leaving the house on the stranger branches.** The house exit stays open at night, so a player can visit Zerah at Hagit's or by the well. Leaving the house before lying down is allowed.
+
+## 13. Play time
+
+The owner found the chapter "playing pretty quick" against a target of 20–30 minutes. Measured by replaying the headless playthroughs and counting every word a player is shown (each dialogue line and choice, each message, and each puzzle's introduction, clues and explanation; the Scripture Connection and summary not included):
+
+| Path | Before (2026-09-26) | After (2026-09-30) |
+|---|---|---|
+| Least: straight through, nothing optional | 1,700 words, 2 puzzles | 2,680 words, 3 puzzles |
+| Typical: the lamb searched for | 1,920 words, 3 puzzles | 3,060 words, 4 puzzles |
+| Thorough: side quest, lamb, milk shared, every supper topic | 2,690 words, 4 puzzles | 4,070 words, 5 puzzles |
+
+At a brisk adult pace (about 300 words a minute, a little over a minute a puzzle, instant travel, two minutes for the ending), that is **about 13 → 18 minutes** at the least, **15 → 21** typically and **19 → 25** thoroughly. A first-time younger player (about 200 words a minute, two minutes a puzzle, walking rather than instant travel) takes about a third longer. Supper by the fire and the kid are on the main path, so even a player who skips everything optional sees them.
