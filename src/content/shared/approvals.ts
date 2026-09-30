@@ -3,9 +3,13 @@ import type { ChapterInput } from '@/domain/chapter';
 /**
  * Editorial approvals by named humans (mirrored in the approval log in
  * docs/content-governance.md). An approval covers every record of the
- * chapters it names that is still awaiting review: each becomes `approved`,
- * naming its reviewer and date. Provenance is unchanged (the content stays
- * recorded as AI-assisted). Rejected records stay rejected.
+ * chapters it names that is still awaiting review AND was drafted on or
+ * before the approval's date (the date of the record's first history
+ * entry): each becomes `approved`, naming its reviewer and date. A record
+ * drafted later (new content added to an approved chapter) is not covered:
+ * it stays awaiting review until a named person approves it. Provenance is
+ * unchanged (the content stays recorded as AI-assisted). Rejected records
+ * stay rejected.
  *
  * Only a named person adds an entry here; an agent never approves content.
  */
@@ -62,12 +66,23 @@ export function withTeaserApproval(
   };
 }
 
-export function withApprovals(chapterId: string, records: Records): Records {
-  const approval = APPROVALS.find((a) => a.chapters.includes(chapterId));
+/** When a record was first drafted: the date of its first history entry. */
+export function draftedOn(record: ContentRecordInput): string {
+  return record.governance.history[0]?.date ?? '';
+}
+
+export function withApprovals(
+  chapterId: string,
+  records: Records,
+  approvals: readonly Approval[] = APPROVALS,
+): Records {
+  const approval = approvals.find((a) => a.chapters.includes(chapterId));
   if (!approval) return records;
   return records.map((r) => {
     const status = r.governance.status;
     if (status === 'approved' || status === 'published' || status === 'rejected') return r;
+    // Drafted after the approval: the reviewer never saw it (ISO dates compare as text).
+    if (draftedOn(r) > approval.date) return r;
     return {
       ...r,
       governance: {
