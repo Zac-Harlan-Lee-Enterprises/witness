@@ -104,4 +104,15 @@ export const ITEMS: ChapterInput['items'] = [
     icon: '🌾',
     description: 'Clean straw from the threshing floor. Good for bedding — animals’ or anyone’s.',
   },
+  {
+    id: 'milk',
+    name: 'Jar of goat’s milk',
+    kind: 'food',
+    weight: 0,
+    maxStack: 1,
+    essential: false,
+    icon: '🥛',
+    description:
+      'A small jar of Hagit’s goat’s milk, still warm, for little Dodi when he wakes. Her thanks for bringing her kid home.',
+  },
 ];

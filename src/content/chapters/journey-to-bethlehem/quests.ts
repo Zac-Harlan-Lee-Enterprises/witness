@@ -1,7 +1,7 @@
 import type { Condition } from '@/domain/conditions';
 import type { ChapterInput } from '@/domain/chapter';
 import { QUEST_EMITTED_EVENTS } from '@/domain/quests';
-import { FOLD_CLUES } from './clues';
+import { FOLD_CLUES, KID_CLUES } from './clues';
 
 const flag = (name: string): Condition => ({ type: 'flag', flag: name });
 const solved = (puzzle: string): Condition => ({ type: 'puzzleSolved', puzzle });
@@ -54,13 +54,33 @@ export const QUESTS: ChapterInput['quests'] = [
         id: 'supper',
         title: 'Supper for the Fold',
         description:
-          'Take Yonatan his supper and his thick cloak at the sheepfold below the village. The way is through the square and out of the east gate.',
+          'Take Yonatan his supper and his thick cloak at the sheepfold below the village. The way is through the square and out of the east gate. On the way, get a jar of milk for little Dodi from Hagit next door.',
         objectives: [
           {
             id: 'straw',
             description: 'Optional: bring an armful of clean straw from the threshing floor',
             completeWhen: flag('took-straw'),
             optional: true,
+          },
+          {
+            id: 'ask-kid',
+            description: 'Ask who saw Hagit’s kid: Saba Amram, Uncle Asa and Kallias the clerk',
+            completeWhen: { type: 'cluesFound', clues: KID_CLUES, min: 3 },
+            optional: true,
+            revealWhen: flag('kid-missing'),
+          },
+          {
+            id: 'kid',
+            description: 'Work out where the kid went, and bring her home to Hagit',
+            completeWhen: flag('kid-home'),
+            optional: true,
+            revealWhen: flag('kid-missing'),
+          },
+          {
+            id: 'milk',
+            description: 'Get a jar of milk for Dodi from Hagit, who keeps goats',
+            completeWhen: flag('got-milk'),
+            optional: false,
           },
           {
             id: 'fold',
@@ -111,6 +131,22 @@ export const QUESTS: ChapterInput['quests'] = [
             id: 'home',
             description: 'Go home',
             completeWhen: flag('evening'),
+            optional: false,
+          },
+        ],
+        next: 'hearth',
+        onEnter: [],
+      },
+      {
+        id: 'hearth',
+        title: 'Supper by the Fire',
+        description:
+          'The whole household eats together around the eating mat. Tell them about your day — and decide what happens to the last loaf.',
+        objectives: [
+          {
+            id: 'eat',
+            description: 'Eat supper with the family, and decide about the last loaf',
+            completeWhen: chose('choice-loaf'),
             optional: false,
           },
         ],

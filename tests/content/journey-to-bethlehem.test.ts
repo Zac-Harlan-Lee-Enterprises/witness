@@ -21,6 +21,9 @@ import { isKnownProp } from '@/game/art/props';
 import { makeState } from '../support/state';
 
 const chapter = parseChapter(JOURNEY_TO_BETHLEHEM);
+/** Records written on 2026-09-30, when the chapter was made longer. */
+const LONGER_RECORDS = ['rec-e-kid', 'rec-e-supper', 'rec-para-ruth'];
+const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
 
 /** Every sentence the player can read that is NOT a labelled paraphrase or Scripture record. */
 const plainText = (): string[] => [
@@ -115,6 +118,86 @@ describe('A Journey to Bethlehem content', () => {
     }
   });
 
+  it('the kid’s afternoon has exactly one order, needs every witness, and ends where the kid is found', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-kid') as LogicGridPuzzle;
+    expect(logicGridSolutions(puzzle)).toEqual([puzzle.answer]);
+    for (const clue of puzzle.clues) {
+      const fewer = { ...puzzle, clues: puzzle.clues.filter((c) => c.id !== clue.id) };
+      expect(logicGridSolutions(fewer).length, clue.id).toBeGreaterThan(1);
+    }
+    expect(puzzle.answer.threshing).toBe('last');
+    // Each clue in the grid is something a person in the lanes tells you; all three are needed.
+    const said = (id: string) => chapter.clues.find((c) => c.id === id)?.text ?? '';
+    expect(said('clue-kid-amram')).toMatch(/barley came before the washing/);
+    expect(said('clue-kid-asa')).toMatch(/washing before the well/);
+    expect(said('clue-kid-kallias')).toMatch(/neither the first place it went nor the last/);
+    const think = chapter.dialogues
+      .find((d) => d.id === 'd-hagit')
+      ?.nodes.find((n) => n.id === 'hub')
+      ?.choices.find((c) => c.id === 'think');
+    expect(JSON.stringify(think?.requires)).toMatch(/cluesFound.*"min":3/);
+    expect(think?.unavailableText).toMatch(/Saba Amram, Uncle Asa and Kallias/);
+    // The kid only appears once you have worked out where she is.
+    const lanes = chapter.scenes.find((s) => s.id === 'bethlehem-lanes');
+    expect(JSON.stringify(lanes?.entities.find((e) => e.id === 'kid')?.visibleWhen)).toMatch(
+      /p-kid/,
+    );
+  });
+
+  it('asks for Dodi’s milk before the fold, and says where to get it', () => {
+    const lanes = chapter.scenes.find((s) => s.id === 'bethlehem-lanes');
+    const gate = lanes?.exits.find((e) => e.id === 'to-fields');
+    expect(JSON.stringify(gate?.requires)).toMatch(/got-milk/);
+    expect(gate?.blockedText).toMatch(/goat yard/);
+    const stage = chapter.quests
+      .find((q) => q.id === 'q-room')
+      ?.stages.find((st) => st.id === 'supper');
+    expect(stage?.objectives.find((o) => o.id === 'milk')?.optional).toBe(false);
+  });
+
+  it('adds supper by the fire before the knock, where the day comes back and the last loaf is decided', () => {
+    const main = chapter.quests.find((q) => q.id === 'q-room');
+    expect(main?.stages.map((st) => st.id)).toEqual([
+      'welcome',
+      'supper',
+      'lamb',
+      'evening',
+      'hearth',
+      'stranger',
+      'night',
+      'wonder',
+    ]);
+    const supper = chapter.dialogues.find((d) => d.id === 'd-supper');
+    const hub = supper?.nodes.find((n) => n.id === 'hub');
+    // Topics depend on what you did today.
+    for (const id of ['found', 'left', 'kid', 'line', 'waited'])
+      expect(hub?.choices.find((c) => c.id === id)?.when, id).toBeDefined();
+    const loaf = supper?.nodes.find((n) => n.id === 'loaf');
+    expect(loaf?.choices.map((c) => c.id)).toEqual(['aside', 'yonatan', 'share']);
+    loaf?.choices.forEach((c) =>
+      expect(c.text).not.toMatch(/\b(good|evil|right thing|wrong thing|sin|kind|selfish)\b/i),
+    );
+    // Saba's story of Ruth is a labelled paraphrase checked against the WEB.
+    const ruth = supper?.nodes.filter((n) => n.recordId === 'rec-para-ruth') ?? [];
+    expect(ruth.length).toBe(3);
+    ruth.forEach((n) => expect(n.kind).toBe('paraphrase'));
+    const record = chapter.records.find((r) => r.id === 'rec-para-ruth');
+    expect(record?.checkedAgainstTranslation).toBe('WEB');
+    expect(record?.scripture?.map((r) => `${r.chapter}:${r.verseStart}`)).toEqual([
+      '1:1',
+      '1:19',
+      '3:2',
+    ]);
+  });
+
+  it('has enough to do for 20–30 minutes: five puzzles, eight main stages and a long script', () => {
+    expect(chapter.puzzles).toHaveLength(5);
+    const script = chapter.dialogues
+      .flatMap((d) => d.nodes)
+      .reduce((n, x) => n + words(x.text) + x.choices.reduce((m, c) => m + words(c.text), 0), 0);
+    expect(script).toBeGreaterThan(4500);
+  });
+
   it('the guest room floor fits the beds with exactly one extra thing, and the barley only one way', () => {
     const puzzle = chapter.puzzles.find((p) => p.id === 'p-room') as FloorplanPuzzle;
     const beds = ['bed-asa', 'bed-peninah'];
@@ -193,12 +276,26 @@ describe('A Journey to Bethlehem content', () => {
     expect(text).not.toMatch(/\b(score|points)\b/i);
   });
 
+  it('keeps the text written for the longer chapter in review: the approval of 2026-09-26 does not cover it', () => {
+    const later = chapter.records.filter((r) =>
+      r.governance.history.some((h) => h.date > '2026-09-26'),
+    );
+    expect(later.map((r) => r.id).sort()).toEqual(LONGER_RECORDS);
+    for (const r of later) {
+      expect(r.governance.status, r.id).toMatch(/^(ai-draft|sources-attached)$/);
+      expect(r.governance.reviewer, r.id).toBeUndefined();
+      expect(r.governance.reviewedAt, r.id).toBeUndefined();
+      expect(r.governance.provenance, r.id).toBe('ai-assisted');
+    }
+    // Only the new paraphrase is educational; it waits for a named reviewer.
+    expect(contentReport(chapter).awaitingReview).toBe(1);
+  });
+
   it('is approved by a named human in the approvals log (never self-approved by an agent)', () => {
     const report = contentReport(chapter);
-    expect(report.awaitingReview).toBe(0);
-    expect(report.approved).toBe(report.educational);
+    expect(report.approved).toBe(report.educational - report.awaitingReview);
     const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
-    for (const r of chapter.records) {
+    for (const r of chapter.records.filter((x) => !LONGER_RECORDS.includes(x.id))) {
       expect(r.governance.status, r.id).toBe('approved');
       expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
       expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');
