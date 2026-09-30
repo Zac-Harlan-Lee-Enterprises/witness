@@ -384,6 +384,10 @@ class Person(people.Person):
         if cloak:
             self.marks.add("wrapped-in-cloak")
         for part in self.parts[n_before:]:
+            # A drop spindle hangs straight down from its thread, however the hand turns.
+            if part.obj.name.endswith(("-spindle", "-whorl")) and part.upright is None:
+                part.upright = tuple(self.J["hand_R"])
+        for part in self.parts[n_before:]:
             self._bind_part(part)
         self.cloth.build_marks()
         self._cloth_cache = {}
@@ -406,7 +410,7 @@ class Person(people.Person):
         set_attr(obj, "albedo", self.look.albedo[used])
         set_attr(obj, "rest", body.co[used])
         # Eyes: the iris and pupil toward the front of each eyeball.
-        eye = np.tile(np.array([0.62, 0.58, 0.54], F), (len(used), 1))
+        eye = np.tile(np.array([0.4, 0.37, 0.34], F), (len(used), 1))
         iris = np.array(common.hex_rgb(self.look.ident.P.iris)[:3], F)
         for g in ("helper-l-eye", "helper-r-eye"):
             vi = base.verts_of(g)
@@ -414,7 +418,7 @@ class Person(people.Person):
             d = body.co[vi] - c
             d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
             fwd = -d[:, 1]
-            col = np.where((fwd > 0.86)[:, None], iris[None, :], eye[remap[vi]])
+            col = np.where((fwd > 0.8)[:, None], iris[None, :], eye[remap[vi]])
             col = np.where((fwd > 0.97)[:, None], np.array([0.01, 0.008, 0.006], F)[None, :], col)
             eye[remap[vi]] = col
         set_attr(obj, "eye", eye)
@@ -495,6 +499,16 @@ class Person(people.Person):
         hand = "L" if busy else "R"
         R, root = world_motion.pose(walk, breath, talk, hand=hand, rest=rest, carry=carry, J=self.bodyd.J, height=self.H)
         R = world_motion.carry_pose(R, carry if rest is None or carry == "lamb" else "none", rest, breath)
+        if rest == "sit":
+            # Cross-legged: the thighs out and forward, lying low, each shin
+            # folded across in front of the body, the right ankle under the
+            # left knee (aimed in character space, so any body sits so).
+            sk, heads = self.bodyd.sk, self.bodyd.heads
+            for side, sgn, drop in (("L", 1.0, 0.0), ("R", -1.0, 0.06)):
+                R.pop(f"lowerleg01.{side}", None)
+                wb.aim(sk, heads, R, f"upperleg01.{side}", f"lowerleg01.{side}", (sgn * 0.78, -0.6, -0.2 - drop))
+                wb.aim(sk, heads, R, f"lowerleg01.{side}", f"foot.{side}", (-sgn * 0.93, 0.28 + drop, -0.12 - drop))
+                R[f"foot.{side}"] = wb.rot(x=10.0, y=sgn * 30.0)
         if rest is None:
             D = wb.forward(self.bodyd.sk, self.bodyd.heads, R, root)
             root = world_motion._T(0, 0, -self._lowest(D)) @ root
@@ -502,8 +516,7 @@ class Person(people.Person):
             # Sitting or lying: the lowest point of the body just above the
             # ground (the tunic lies under it), found once for the pose.
             if rest not in self._rest_lift:
-                R0, root0 = world_motion.pose(None, 0.0, 0, rest=rest, J=self.bodyd.J, height=self.H)
-                D = wb.forward(self.bodyd.sk, self.bodyd.heads, R0, root0)
+                D = wb.forward(self.bodyd.sk, self.bodyd.heads, R, root)
                 body = mh.Base.get().verts_of("body")[::3]
                 pts = wb.skin(self.bodyd.co[body], self.bodyd.sk.W[body], D)
                 self._rest_lift[rest] = 0.012 - float(pts[:, 2].min())

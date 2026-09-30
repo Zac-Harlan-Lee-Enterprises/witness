@@ -42,7 +42,7 @@ _GAIT = {
     "toe": [(0.0, 0.0), (0.4, 0.0), (0.5, 18.0), (0.6, 30.0), (0.68, 8.0), (0.75, 0.0)],
 }
 # A walk in a long tunic: a shorter stride than the laboratory's.
-STRIDE = 0.82
+STRIDE = 0.72
 
 
 def _curve(name, q):

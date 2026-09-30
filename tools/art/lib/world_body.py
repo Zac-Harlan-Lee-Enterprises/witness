@@ -137,6 +137,17 @@ def forward(sk, heads, rots, root=None):
     return D
 
 
+def aim(sk, heads, rots, bone, end, target, root=None):
+    """Set rots[bone] so the segment from `bone`'s head to `end`'s head
+    points along `target` (character space), given everything above it."""
+    D = forward(sk, heads, rots, root)
+    i = sk.index[bone]
+    p = sk.parent[i]
+    Rp = D[p][:3, :3] if p >= 0 else (root[:3, :3] if root is not None else np.eye(3))
+    rots[bone] = between(heads[sk.index[end]] - heads[i], Rp.T @ np.asarray(target, float))
+    return rots
+
+
 def skin(co, W, D):
     """Linear-blend skinning of `co` (N×3) by weights W (N×B) and matrices D."""
     out = np.zeros_like(co, dtype=np.float64)

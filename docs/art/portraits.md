@@ -93,7 +93,7 @@ MakeHuman's hm08 model is a full human body of 13,380 skin vertices in quads, of
 
 **Getting the data:**
 
-- `npm run art:fetch-makehuman` ([`scripts/fetch-makehuman.mjs`](../../scripts/fetch-makehuman.mjs)) downloads the 497 files the build reads (25.5 MB) into `tools/art/.cache/makehuman/`:
+- `npm run art:fetch-makehuman` ([`scripts/fetch-makehuman.mjs`](../../scripts/fetch-makehuman.mjs)) downloads the 499 files the portrait and people builds read (26.5 MB; the skeleton and its weights are for the world figures, ADR-0017) into `tools/art/.cache/makehuman/`:
   - from `raw.githubusercontent.com/makehumancommunity/makehuman` at commit `1f508f6083b2f823dab15de924b3bde72e08d77c` (tag v1.3.0);
   - over plain HTTPS, with no account, token or identifying header.
 - Each file's SHA-256 must match [`tools/art/data/makehuman-files.json`](../../tools/art/data/makehuman-files.json), or it is refused.

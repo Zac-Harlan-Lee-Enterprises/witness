@@ -360,7 +360,7 @@ class Wardrobe:
         blouse = np.exp(-(((z - (self.belt_z + 0.045)) / 0.04) ** 2))
         ang = np.arctan2(V[:, 0], -(V[:, 1] - float(J["waist"][1])))
         folds = 0.35 + 0.65 * (0.5 + 0.5 * np.sin(ang * 7.0 + 0.6) * np.sin(ang * 3.0 + 1.9))
-        d = 0.009 + 0.028 * blouse * folds * (1 - armw) + 0.012 * armw + 0.03 * forew / max(sleeve_to, 1e-3)
+        d = 0.009 + 0.028 * blouse * folds * (1 - armw) + 0.018 * armw + 0.04 * forew / max(sleeve_to, 1e-3)
         side = np.clip(np.abs(V[:, 0]) / 0.18, 0, 1) * (1 - armw) * np.clip((float(J["chest"][2]) + 0.05 - z) / 0.2, 0, 1)
         d = d + 0.012 * side
         # Under the arm the cloth bridges the gap rather than dipping into it.
@@ -392,7 +392,7 @@ class Wardrobe:
             av = np.arctan2(V[:, 0], -(V[:, 1] - cyw)) % (2 * math.pi)
             ai = np.round(av / (2 * math.pi) * 64).astype(int) % 64
             zi = np.clip(np.round((float(J["neck"][2]) - V[:, 2]) / 0.01).astype(int), 0, len(tab) - 1)
-            target = tab[zi, ai] + 0.012
+            target = tab[zi, ai] + 0.02
             rv = np.hypot(V[:, 0], V[:, 1] - cyw)
             grow = np.maximum(0.0, target - rv) * hang
             dirs = np.stack([V[:, 0], V[:, 1] - cyw], 1) / np.maximum(rv, 1e-6)[:, None]
@@ -443,7 +443,7 @@ class Wardrobe:
             r = np.maximum(r, prev * 0.98 if prev is not None else r)
             rr = r + ease
             # The hem must let a stride through.
-            rr = np.maximum(rr, (0.17 + 0.09 * t) * self.body.height / 1.69 * common.smoothstep(0.2, 0.55, t))
+            rr = np.maximum(rr, (0.16 + 0.06 * t) * self.body.height / 1.69 * common.smoothstep(0.2, 0.55, t))
             prev = r
             rings.append(np.stack([cx + np.sin(th) * rr, cy - np.cos(th) * rr, np.full(SEG, z)], 1))
         if "torn-hem" in self.p.marks:
@@ -846,7 +846,7 @@ class Wardrobe:
                 f += 1
             return out
         # Standing (or at rest): into the pose, settle, then each state in turn.
-        into = 30 if rest else 16
+        into = 1 if rest else 16
         settle = 44 if rest else 34
         for k in range(into):
             out.append((f, dict(rest=rest, blend=(k + 1) / into, target=dict(rest=rest)), None))
@@ -879,7 +879,15 @@ class Wardrobe:
             src = spec.get("source") or dict()
             a = p.rotations(**_args(src)) if src else (dict(), np.eye(4))
             b = p.rotations(**_args(spec["target"]))
-            return _blend(a, b, _ease(spec["blend"]))
+            t = _ease(spec["blend"])
+            R, root = _blend(a, b, t)
+            rest = spec["target"].get("rest")
+            if rest and not src:
+                # Sitting or lying down, the body is carried clear of the
+                # ground on the way (limbs would pass through it) and set down.
+                root = root.copy()
+                root[2, 3] += (0.7 if rest == "lie" else 0.35) * math.sin(math.pi * t)
+            return R, root
         return p.rotations(**_args(spec))
 
     def _run(self, clip, states, sims):
@@ -944,7 +952,7 @@ class Wardrobe:
             s.pin_stiffness = 1.0
             c = cm.collision_settings
             c.use_collision = True
-            c.collision_quality = 4
+            c.collision_quality = 6 if clip in ("sit", "lie") else 4
             c.distance_min = 0.003
             c.use_self_collision = False
             coll = bpy.data.collections.new(f"{p.name}-{g.name}-colliders")
@@ -953,8 +961,8 @@ class Wardrobe:
                 for ob in cols.get(key, []):
                     if coll.objects.get(ob.name) is None:
                         coll.objects.link(ob)
-            if not os.environ.get("CLOTHALL"):
-                c.collection = coll
+            # One-way: a garment feels only the colliders it names.
+            c.collection = coll
             cm.point_cache.frame_start = 1
             cm.point_cache.frame_end = n
             work[g.name] = (g, o)
@@ -990,8 +998,6 @@ class Wardrobe:
                 g.shapes[(clip, rec)] = v.reshape(-1, 3).copy()
                 sh = g.shapes[(clip, rec)]
                 print("CLOTH", g.name, clip, rec, "moved", round(float(np.abs(sh - g.V).max()), 3), "z", round(float(sh[:, 2].min()), 3), round(float(sh[:, 2].max()), 3), flush=True)
-                if os.environ.get("CLOTHDUMP"):
-                    np.savez(os.path.join(os.environ["CLOTHDUMP"], f"{g.name}-{clip}-{rec[0]}.npz"), rest=g.V, sim=sh, pin=g.pin)
         # Tidy: the working copies, the ground and the animation go.
         for g, o in work.values():
             bpy.data.objects.remove(o)
@@ -1040,7 +1046,7 @@ class Wardrobe:
         o.hide_render = True
         self.p.rig.bind(o, self.W[used])
         o.modifiers.new("collision", "COLLISION")
-        o.collision.thickness_outer = 0.005 if legs else 0.006
+        o.collision.thickness_outer = 0.008 if legs else 0.006
         o.collision.cloth_friction = 1.5 if legs else 3.0
         o.collision.damping = 0.4
         return o
