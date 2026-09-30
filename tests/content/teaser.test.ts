@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseChapter } from '@/content';
@@ -96,6 +96,13 @@ describe('the Chapter 1 teaser', () => {
     for (const v of teaser?.video ?? []) expect(existsSync(join(PUBLIC, v.src)), v.src).toBe(true);
     expect(existsSync(join(PUBLIC, teaser?.poster ?? 'missing'))).toBe(true);
     expect(teaser?.video.map((v) => v.type).sort()).toEqual(['video/mp4', 'video/webm']);
+  });
+
+  it('keeps the MP4 (the format every browser plays) within 12 MB', () => {
+    // edit_teaser.py encodes it again at a lower quality until it fits.
+    const mp4 = teaser?.video.find((v) => v.type === 'video/mp4');
+    expect(mp4).toBeDefined();
+    expect(statSync(join(PUBLIC, mp4?.src ?? 'missing')).size).toBeLessThanOrEqual(12_000_000);
   });
 
   it('records the film in the asset manifest', () => {
