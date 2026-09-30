@@ -505,6 +505,37 @@ describe('pre-rendered people', () => {
   }
 });
 
+describe('the half-resolution set phones load', () => {
+  // It was box-filtered and saved at WebP 84, which smeared the grit of the
+  // ground and a drying net's mesh into a mottled blur. It is now halved
+  // with a Lanczos filter and a light unsharp mask and saved at 88
+  // (imageio.downsample_sharp, docs/performance.md §2c). Detail costs bits: a
+  // half ground that kept its detail carries more bits per pixel than the
+  // full ground it was made from (the old ones carried 0.89-1.45 times as
+  // many; the sharp ones 1.21-1.92).
+  const bpp = (dir: string, tiles: readonly ArtTile[]): number => {
+    let bytes = 0;
+    let px = 0;
+    for (const t of tiles) {
+      const f = join(dir, t.file);
+      const { w, h } = webpSize(f);
+      bytes += statSync(f).size;
+      px += w * h;
+    }
+    return (bytes * 8) / px;
+  };
+  for (const id of PLACES_WITH_ART) {
+    it(`${id}: its half-resolution ground keeps the full ground's detail`, () => {
+      const dir = join(ART, id);
+      const { art } = parsePlaceArt(JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')));
+      for (const [name, v] of Object.entries(art?.variants ?? {})) {
+        const ratio = bpp(dir, v.groundLow) / bpp(dir, v.ground);
+        expect(ratio, `${name}: half/full bits per pixel`).toBeGreaterThan(1.15);
+      }
+    });
+  }
+});
+
 describe("Chapter 4's dye works", () => {
   // The hot vats' stoke-holes were once flat white slabs; they are coals now,
   // each with a small flickering light at the vat's foot. The Laodicea road
