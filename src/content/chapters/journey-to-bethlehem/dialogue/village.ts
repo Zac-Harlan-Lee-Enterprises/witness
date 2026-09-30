@@ -322,8 +322,14 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         {
           expression: 'glad',
           effects: [{ type: 'giveItem', item: 'milk' }, setFlag('got-milk')],
-          next: 'hub',
+          next: 'return3',
         },
+      ),
+      say(
+        'return3',
+        'hagit',
+        'When I was your age I lost a kid for a whole night. My father found her in the morning, asleep on top of the olive press, fat as a sack. He didn’t say a word to me. He carried her home and gave me the first cup of milk. I’ve never forgotten it.',
+        { expression: 'glad', next: 'hub' },
       ),
       say('night', 'hagit', 'Go home to bed, child. It’s late, even for me.'),
       say('night-zerah', 'hagit', 'Your Zerah is asleep by my fire. He snores like a donkey.', {
