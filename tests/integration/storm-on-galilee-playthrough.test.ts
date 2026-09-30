@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STORM_ON_GALILEE } from '@/content/chapters/storm-on-galilee';
 import { buildChapterSummary } from '@/domain/chapter-summary';
-import { applyMeasure, initialLevels, type MeasuringPuzzle } from '@/domain/puzzles';
 import { createHarness, flush, loadChapter, Player, type Harness } from '../support/harness';
 
 /**
@@ -74,21 +73,8 @@ async function brineSideQuest(p: Player): Promise<void> {
   await p.finish();
   expect(p.h.state().quests['q-brine']?.stageId).toBe('measure');
   await p.interact('brine-jars');
-  const puzzle = p.h.puzzles.find('p-brine') as MeasuringPuzzle;
-  let levels = initialLevels(puzzle);
-  for (const s of [
-    { type: 'fill', vessel: 'small' },
-    { type: 'pour', from: 'small', to: 'big' },
-    { type: 'fill', vessel: 'small' },
-    { type: 'pour', from: 'small', to: 'big' },
-    { type: 'empty', vessel: 'big' },
-    { type: 'pour', from: 'small', to: 'big' },
-    { type: 'fill', vessel: 'small' },
-    { type: 'pour', from: 'small', to: 'big' },
-  ] as const)
-    levels = applyMeasure(puzzle, levels, s);
-  expect(levels.big).toBe(7);
-  expect(p.h.puzzles.submitMeasure('p-brine', levels)).toBe(true);
+  expect(p.h.ui.getState().puzzleId).toBe('p-brine');
+  expect(p.mendNet('p-brine')?.solved).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
   await p.interact('nikanor');
@@ -129,7 +115,7 @@ async function loadBoat(p: Player, packed: Record<string, number>): Promise<void
   await p.choose('load');
   await p.finish();
   expect(p.h.ui.getState().puzzleId).toBe('p-load');
-  const result = p.h.puzzles.submitPacking('p-load', packed);
+  const result = p.loadAndTrim('p-load', packed);
   expect(result?.valid, JSON.stringify(result?.failures)).toBe(true);
   p.h.controller.closePuzzle();
   await flush();
@@ -260,9 +246,11 @@ describe('A Storm on Galilee — full playthroughs', () => {
       'Your rope held, and the two boats came home tied together.',
     );
     expect(summary.consequences).toContain('Ami went home wrapped in your cloak.');
-    expect(summary.consequences).toContain('Nikanor’s brine was ready for the morning’s catch.');
+    expect(summary.consequences).toContain(
+      'Nikanor’s jar net was mended and ready for the morning.',
+    );
     expect(summary.sideQuests).toEqual([
-      { name: 'Nikanor’s Brine', outcome: 'The brine is ready' },
+      { name: 'Nikanor’s Jar Net', outcome: 'The net is mended' },
     ]);
     expect(summary.scripture.map((r) => r.id)).toContain('rec-mark-4-35-41');
     expect(summary.choices.find((c) => c.prompt.startsWith('How did you load'))?.chosen).toMatch(
@@ -417,7 +405,7 @@ describe('A Storm on Galilee — full playthroughs', () => {
     await p.choose('load');
     await p.finish();
     const failures = (packed: Record<string, number>) =>
-      h.puzzles.submitPacking('p-load', packed)?.failures.map((f) => f.ruleId);
+      p.loadAndTrim('p-load', packed)?.failures.map((f) => f.ruleId);
     expect(failures({ bailer: 1, 'fish-jar': 6, net: 1, 'spare-oar': 1 })).toEqual(['capacity']);
     expect(failures({ 'fish-jar': 4 })).toEqual(['bailer']);
     expect(failures({ bailer: 1, 'fish-jar': 2 })).toEqual(['jars']);
@@ -445,8 +433,6 @@ describe('A Storm on Galilee — full playthroughs', () => {
     await castOff(p);
     expect(h.state().quests['q-brine']?.status).toBe('failed');
     const summary = buildChapterSummary(h.chapter, h.state());
-    expect(summary.consequences).toContain(
-      'Nikanor’s brine was left unmeasured when you cast off.',
-    );
+    expect(summary.consequences).toContain('Nikanor’s jar net was left torn when you cast off.');
   });
 });

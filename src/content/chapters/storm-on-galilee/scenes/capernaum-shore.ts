@@ -249,8 +249,8 @@ export const CAPERNAUM_SHORE: ChapterInput['scenes'][number] = {
     {
       id: 'brine-jars',
       kind: 'feature',
-      label: 'Nikanor’s measuring jars',
-      sprite: 'vessels',
+      label: 'Nikanor’s torn jar net',
+      sprite: 'net-pile',
       x: 37,
       y: 8,
       visibleWhen: DAY,
@@ -258,7 +258,7 @@ export const CAPERNAUM_SHORE: ChapterInput['scenes'][number] = {
         verb: 'use',
         requires: { type: 'questStage', quest: 'q-brine', stage: 'measure' },
         blockedText:
-          'A big jar and a small jar beside the brine tubs, each marked with how much it holds — and nothing in between.',
+          'A rope net for carrying jars, torn right through the fish knotted into it. The mending pattern is chalked on its frame.',
         effects: [{ type: 'openPuzzle', puzzle: 'p-brine' }],
       },
     },

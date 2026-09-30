@@ -152,13 +152,13 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say(
         'b1',
         'nikanor',
-        'Help? Bless you. My apprentice ran off to hear the teacher, and the brine tub needs exactly seven measures of lake water for this basket of salt.',
+        'Help? Bless you. My apprentice ran off to hear the teacher, and he left the jar net half mended — the rope net my jars ride in. It’s torn right through my mark.',
         { expression: 'glad', next: 'b2' },
       ),
       say(
         'b2',
         'nikanor',
-        'My big jar holds eight and the small one five, and neither has any marks. Seven in the big jar, exactly. Can you do it?',
+        'The pattern is chalked on the frame, but I can salt a fish, not tie a knot. Your grandmother mends nets, doesn’t she? Can you do it?',
         {
           choices: [
             opt('yes', 'I’ll try.', 'b3', {
@@ -171,13 +171,17 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say(
         'b3',
         'nikanor',
-        'The jars are by the tubs. Take your time — Hanina says you’re a thinker.',
+        'The net is by the tubs. Take your time — Hanina says you’re a thinker.',
       ),
-      say('measuring', 'nikanor', 'The jars are by the tubs. Seven in the big jar, exactly.'),
+      say(
+        'measuring',
+        'nikanor',
+        'The net is by the tubs. Every row and column has to match the pattern.',
+      ),
       say(
         'tell',
         'nikanor',
-        'Seven measures, exactly? Let me see… yes! Good. In goes the salt, and tomorrow’s catch goes in the brine.',
+        'Mended already? Let me see… every knot where it should be, and my fish is whole again. Good!',
         {
           expression: 'glad',
           effects: [{ type: 'setFlag', flag: 'brine-done', value: true }],
@@ -192,7 +196,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say(
         'thanks',
         'nikanor',
-        'The brine is ready. Remember — only as many jars as the boat can carry safely.',
+        'The net is as good as new. Remember — only as many jars as the boat can carry safely.',
       ),
       say(
         'night',
@@ -274,7 +278,7 @@ export const SHORE_DIALOGUES: DialogueInput[] = [
       say(
         'e3',
         'elazar',
-        'Ten loads, besides the four of us. A jar is one load; the bailer, the rope, your lamp, your bread, your cloak and that water skin one each; the oar and the net two each. Past ten, she sits so low that a wave can come over the side.',
+        'Ten loads, besides the four of us. A jar is one load; the bailer, the rope, your lamp, your bread, your cloak and that water skin one each; the oar and the net two each. Past ten, she sits so low that a wave can come over the side. And load her level — nose, tail and both sides.',
         { next: 'e2' },
       ),
       say(

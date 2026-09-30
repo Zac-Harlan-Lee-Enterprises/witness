@@ -3,9 +3,14 @@ import type { ChapterInput } from '@/domain/chapter';
 /**
  * Four puzzles, each growing out of the story:
  *  1. p-sky    — what is the sky saying? (deduction: weigh testimony and signs; an answer that admits uncertainty)
- *  2. p-load   — load the boat (packing: the fee against safety, gear and room for others)
+ *  2. p-load   — load and trim the boat (trim: the fee against safety, gear and room for others —
+ *                and where it all goes, so she sits level)
  *  3. p-sail   — shorten sail in a squall (sequence: each job makes the next possible)
- *  4. p-brine  — Nikanor's brine (measuring; optional side quest that changes what counts as "enough jars")
+ *  4. p-brine  — mend Nikanor's jar net (netting, a picture logic grid; optional side quest that
+ *                changes what counts as "enough jars"). The id is kept from when it was a brine
+ *                puzzle, because saves and the story's flags name it.
+ *
+ * Trim and netting are Chapter 2's own puzzle types: no other chapter uses them.
  */
 export const PUZZLES: ChapterInput['puzzles'] = [
   {
@@ -104,11 +109,41 @@ export const PUZZLES: ChapterInput['puzzles'] = [
   },
   {
     id: 'p-load',
-    type: 'packing',
+    type: 'trim',
     title: 'Load the Boat',
     intro:
-      'The boat takes 10 loads besides her crew, and everything piled on the jetty weighs more than that. The bailer must go, and the jars pay the family’s way. What else will you need tonight — and what might someone else need?',
+      'The boat takes 10 loads besides her crew, and everything piled on the jetty weighs more than that. The bailer must go, and the jars pay the family’s way. The crew are already in their places — and she has to sit level: the bow about as heavy as the stern, and port (the left side, looking forward) about as heavy as starboard. What goes aboard, and where?',
     capacity: 10,
+    places: [
+      { id: 'bow', label: 'Bow', limit: 4 },
+      { id: 'port', label: 'Port side', limit: 3 },
+      { id: 'starboard', label: 'Starboard side', limit: 3 },
+      { id: 'stern', label: 'Stern', limit: 2 },
+    ],
+    crew: [
+      { id: 'you', name: 'you', place: 'bow', weight: 2 },
+      { id: 'yoezer', name: 'Yoezer', place: 'port', weight: 3 },
+      { id: 'tamar', name: 'Tamar', place: 'starboard', weight: 2 },
+      { id: 'elazar', name: 'Uncle Elazar', place: 'stern', weight: 3 },
+    ],
+    balance: [
+      {
+        id: 'fore-aft',
+        description: 'Bow and stern about the same',
+        between: ['bow', 'stern'],
+        tolerance: 1,
+        failureHint:
+          'She isn’t level from end to end. Uncle Elazar sits in the stern to steer, so the bow needs more cargo than the stern.',
+      },
+      {
+        id: 'side-to-side',
+        description: 'Port and starboard about the same',
+        between: ['port', 'starboard'],
+        tolerance: 1,
+        failureHint:
+          'She leans to one side. Yoezer is heavier than Tamar, so starboard needs a little more cargo than port.',
+      },
+    ],
     choiceId: 'choice-load',
     rules: [
       {
@@ -178,19 +213,19 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     hints: [
       {
         tier: 1,
-        text: 'Start with what must go: the bailer, and at least four jars (two, if Nikanor agreed to fewer). Then see how much room is left.',
+        text: 'Start with what must go: the bailer, and at least four jars (two, if Nikanor agreed to fewer). Then look at who is already sitting where — and what Hanina said about the night.',
       },
       {
         tier: 2,
-        text: 'Think about what Hanina told you. If a wind comes, what would you want in the boat? And why carry drinking water across a lake of fresh water?',
+        text: 'Opposite places must weigh within 1 of each other, crew included. Uncle Elazar (3) in the stern outweighs you (2) in the bow, and Yoezer (3) to port outweighs Tamar (2) to starboard — so put more cargo in the bow than the stern, and a little more to starboard than to port.',
       },
       {
         tier: 3,
-        text: 'There is no single right answer. Any load of 10 or less with the bailer and enough jars works. Fewer jars leave room for a rope, the spare oar, your cloak or the lamp — or for someone else in the boat.',
+        text: 'Any load of 10 or less with the bailer and enough jars works, if she sits level. For example: four jars in the bow; the bailer and your lamp in the stern; the spare oar to port; the rope and your cloak to starboard. That makes the bow 6 and the stern 5, port 5 and starboard 4.',
       },
     ],
     explanation:
-      'You loaded within the safe limit, with the bailer and enough jars. Whatever you left goes back up to the rack. What you carry will shape what you can do out on the water.',
+      'You loaded within the safe limit, with the bailer and enough jars — and she sits level, so no end digs in and no side leans. Whatever you left goes back up to the rack. What you carry will shape what you can do out on the water. (The loads and places are simplified for the game.)',
     recordIds: ['rec-hist-galilee-boat'],
     onSolved: [
       { type: 'setFlag', flag: 'loaded', value: true },
@@ -287,33 +322,30 @@ export const PUZZLES: ChapterInput['puzzles'] = [
   },
   {
     id: 'p-brine',
-    type: 'measuring',
-    title: 'Nikanor’s Brine',
+    type: 'netting',
+    title: 'Nikanor’s Jar Net',
     intro:
-      'The brine tub needs exactly 7 measures of lake water for this basket of salt, measured in the big jar. The big jar holds 8; the small jar holds 5. Neither has marks in between.',
-    sourceLabel: 'the lake',
-    unit: 'measures',
-    vessels: [
-      { id: 'big', label: 'Big jar', capacity: 8 },
-      { id: 'small', label: 'Small jar', capacity: 5 },
-    ],
-    goal: { vessel: 'big', amount: 7 },
+      'The rope net that carries Nikanor’s jars has torn right through his mark: a fish, knotted into the mesh in thick cord. Your grandmother taught you to read a mending pattern. The numbers beside each row and above each column are the runs of knots in that line, in order: “3 1” means three knots together, then a gap, then one more. Tie the torn part so every row and column matches.',
+    // The finished mark: a fish swimming left, with its tail on the right.
+    pattern: ['..###.#', '.#.####', '######.', '.######', '..###.#'],
+    // Columns 2–5 are torn; the nose and the tail are still whole.
+    torn: ['.????..', '.????..', '.????..', '.????..', '.????..'],
     hints: [
       {
         tier: 1,
-        text: 'You can’t pour exactly 7 straight in. What can you make by pouring the small jar into the big one twice?',
+        text: 'Start with the lines that leave no choice. A column of five cells whose number is 5 must be knotted all the way down.',
       },
       {
         tier: 2,
-        text: 'Pour two small jars into the big one: it fills up, and 2 measures are left in the small jar. Could you keep that 2?',
+        text: 'The third column needs “1 3”: one knot, a gap, then three — exactly five cells, so there is only one way to fit it. Then check each row against what is already tied.',
       },
       {
         tier: 3,
-        text: 'Full method: fill the small jar → pour it into the big jar → fill the small jar again → pour into the big jar until it’s full (2 are left) → empty the big jar → pour the 2 into it → fill the small jar → pour it in. The big jar holds 7.',
+        text: 'Full method: tie row 1 at columns 3, 4 and 5; row 2 at columns 2, 4 and 5 (leave column 3 open — the fish’s eye); rows 3 and 4 at columns 2, 3, 4 and 5; and row 5 at columns 3, 4 and 5. Everything else in the torn part stays open.',
       },
     ],
     explanation:
-      'You measured exactly 7 with an 8-measure jar and a 5-measure jar. Salting fish let them keep for months, so they could be sold far from the lake. (The recipe is made up for the game.)',
+      'Every row and column matches, and Nikanor’s fish is whole again. (The jar net and its mark are made up for the game.) Salting fish let them keep for months, so they could be sold far from the lake.',
     recordIds: ['rec-hist-salting'],
     onSolved: [{ type: 'setFlag', flag: 'brine-measured', value: true }],
   },
