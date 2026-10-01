@@ -36,7 +36,7 @@ export const STORM_ON_GALILEE: ChapterInput = {
   id: 'storm-on-galilee',
   number: 2,
   title: 'A Storm on Galilee',
-  subtitle: 'One of the other boats',
+  subtitle: 'A night on the lake, in one of the other boats',
   synopsis:
     'Crew the family fishing boat for the first time, on the evening a teacher crosses the Sea of Galilee and other boats go with him. Read the sky, load the boat, and face a storm in the dark — then read what Mark says happened in the boat ahead.',
   estimatedMinutes: { min: 20, max: 30 },

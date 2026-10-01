@@ -45,8 +45,16 @@ def storm_water():
         # Whitecaps: the crests of the wind waves breaking, streaked downwind.
         crest = n.new("ShaderNodeMapRange", Value=(h2, "Value"), **{"From Min": 0.92, "From Max": 1.08})
         streak = n.noise(3.0, 6.0, 0.7, (stretch, "Vector"))
-        caps = n.math("MULTIPLY", (crest, "Result"), (streak, "Fac"), clamp=True)
-        col = n.mix((caps, "Value"), "#1b3434", "#d9dedb")
+        # Darker and rougher toward the storm (east, +x): more of it breaking.
+        geo = n.new("ShaderNodeNewGeometry")
+        gx = n.new("ShaderNodeSeparateXYZ", Vector=(geo, "Position"))
+        toward = n.new("ShaderNodeMapRange", Value=(gx, "X"), **{"From Min": 30.0, "From Max": 1500.0})
+        more = n.math("MULTIPLY_ADD", (toward, "Result"), 1.6)
+        n._in(more, 2, 1.0)
+        caps = n.math("MULTIPLY", (crest, "Result"), (streak, "Fac"))
+        caps = n.math("MULTIPLY", (caps, "Value"), (more, "Value"), clamp=True)
+        water = n.mix((toward, "Result"), "#1b3434", "#0c1617")
+        col = n.mix((caps, "Value"), (water, 2), "#d9dedb")
         rough = n.new("ShaderNodeMapRange", Value=(caps, "Value"), **{"To Min": 0.06, "To Max": 0.7})
         n.bsdf(
             **{
@@ -94,7 +102,7 @@ def hills(scene, centre, z0, seed=3):
     def ridge(t):
         # The skyline: higher to the east (the Golan side), lower to the north.
         east = np.exp(-((t - 0.0) / 0.9) ** 2)
-        base = 120.0 + 260.0 * east
+        base = 80.0 + 170.0 * east
         wob = sum(math.sin(k * 3.1 * t + ph[k]) * (70.0 / (k + 1)) for k in range(1, 8))
         return base + wob
 
@@ -185,38 +193,59 @@ def storm_sky(scene, sun_az=182.0, sun_el=3.5, strength=1.0):
     D = tc.outputs["Generated"]
     sep = node("ShaderNodeSeparateXYZ", Vector=D)
     x, y, zc = sep.outputs["X"], sep.outputs["Y"], sep.outputs["Z"]
-    # The cloud deck, seen in perspective: (x, y) / z.
+
+    def smooth(value, a, b):
+        return node("ShaderNodeMapRange", _interpolation_type="SMOOTHSTEP", Value=value, **{"From Min": a, "From Max": b}).outputs[0]
+
+    def noise1(value, scale, detail=4.0, rough=0.6, w=0.0):
+        vec = node("ShaderNodeCombineXYZ", X=value, Y=w, Z=0.0).outputs[0]
+        return node("ShaderNodeTexNoise", Vector=vec, Scale=scale, Detail=detail, Roughness=rough).outputs["Fac"]
+
+    az = math_("ARCTAN2", y, x)
+    # How far round toward the squall (east, +x): it fills the sky ahead and
+    # breaks up behind, to the west.
+    ahead = smooth(x, -0.45, 0.25)
+    # The high cloud above the shelf: a dark, rolling overcast seen in
+    # perspective, (x, y) / z.
     zz = math_("MAXIMUM", zc, 0.03)
-    u = math_("DIVIDE", x, zz)
-    v = math_("DIVIDE", y, zz)
-    uv = node("ShaderNodeCombineXYZ", X=u, Y=v, Z=0.0).outputs[0]
+    uv = node("ShaderNodeCombineXYZ", X=math_("DIVIDE", x, zz), Y=math_("DIVIDE", y, zz), Z=0.0).outputs[0]
     big = node("ShaderNodeTexNoise", Vector=uv, Scale=0.35, Detail=6.0, Roughness=0.62, Distortion=0.6).outputs["Fac"]
     rolls = node("ShaderNodeTexNoise", Vector=uv, Scale=1.6, Detail=8.0, Roughness=0.62).outputs["Fac"]
-    dens = math_("MULTIPLY_ADD", math_("SUBTRACT", rolls, 0.5), 0.6, big)
-    # Heavier over the hills ahead (east, +x), thinning to the clearer west behind.
-    east = node("ShaderNodeMapRange", Value=x, **{"From Min": -0.7, "From Max": 0.4, "To Min": -0.25, "To Max": 0.12}).outputs[0]
-    dens = math_("ADD", dens, east)
-    cover = node("ShaderNodeMapRange", Value=dens, **{"From Min": 0.44, "From Max": 0.6}).outputs[0]
-    # The sky behind the cloud: dim slate, a pale band low in the west.
-    hz = node("ShaderNodeMapRange", Value=zc, **{"From Min": 0.0, "From Max": 0.35}).outputs[0]
-    sky = mix(hz, "#d2bfa2", "#4a5262")
-    west = node("ShaderNodeMapRange", Value=x, **{"From Min": -0.2, "From Max": -0.95}).outputs[0]
-    low = node("ShaderNodeMapRange", Value=zc, **{"From Min": 0.12, "From Max": 0.0}).outputs[0]
-    glow = math_("MULTIPLY", west, low, clamp=True)
-    sky = mix(glow, sky, "#f2b27a")
-    # The cloud: dark, its rolled underside lit warm toward the sun, a little
-    # lighter where it is thin.
-    dark = mix(rolls, "#121419", "#343842")
+    dens = math_("ADD", math_("MULTIPLY_ADD", math_("SUBTRACT", rolls, 0.5), 0.6, big), math_("MULTIPLY", ahead, 0.5))
+    cover = smooth(dens, 0.42, 0.58)
+    # The shelf cloud: a towering dark wall over the far hills, its base a
+    # little above the horizon, its top billowing.
+    base = math_("MULTIPLY_ADD", noise1(az, 7.0, 4.0), 0.045, 0.03)
+    top = math_("MULTIPLY_ADD", noise1(az, 2.2, 5.0, 0.65, 3.0), 0.2, 0.14)
+    shelf = math_("MULTIPLY", smooth(zc, base, math_("ADD", base, 0.012)), math_("SUBTRACT", 1.0, smooth(zc, math_("SUBTRACT", top, 0.06), top)))
+    shelf = math_("MULTIPLY", shelf, ahead, clamp=True)
+    # Its face in long rolled bands, and the lip at its foot catching the last
+    # warm light from the west.
+    bands = noise1(math_("MULTIPLY", zc, 14.0), 3.0, 6.0, 0.6, math_("MULTIPLY", az, 1.5))
+    face = mix(smooth(bands, 0.35, 0.65), "#0d0f13", "#4a515e")
+    lip = math_("SUBTRACT", 1.0, smooth(zc, math_("ADD", base, 0.008), math_("ADD", base, 0.05)))
+    face = mix(math_("MULTIPLY", lip, 0.75), face, "#8a6650")
+    # Under the shelf: a band of last light low on the horizon, hidden in
+    # places by curtains of rain falling from the cloud.
+    band_glow = mix(smooth(zc, 0.0, 0.06), "#ffd29a", "#c99a7a")
+    veil = math_("MULTIPLY", smooth(noise1(az, 9.0, 3.0, 0.5, 7.0), 0.5, 0.7), ahead)
+    band = mix(math_("MULTIPLY", veil, 0.85), band_glow, "#59606a")
+    # Behind (west): pale sky low down, broken dark cloud above.
+    hz = smooth(zc, 0.0, 0.35)
+    sky = mix(hz, "#d8b48c", "#4a5262")
+    dark = mix(rolls, "#0c0e12", "#2a2e37")
     lit = node("ShaderNodeMapRange", Value=x, **{"From Min": 0.1, "From Max": -0.9, "To Min": 0.0, "To Max": 0.8}).outputs[0]
     lit = math_("MULTIPLY", lit, math_("SUBTRACT", 1.0, rolls), clamp=True)
     cloud = mix(lit, dark, "#c98a5c")
     col = mix(cover, sky, cloud)
+    # Ahead, below the shelf's base, the band; the shelf over everything.
+    under = math_("MULTIPLY", math_("SUBTRACT", 1.0, smooth(zc, base, math_("ADD", base, 0.01))), ahead)
+    col = mix(under, col, band)
+    col = mix(shelf, col, face)
     # Below the horizon (unseen past the hills, but it lights the scene from
     # the side): the lake's dark grey.
     below = node("ShaderNodeMapRange", Value=zc, **{"From Min": 0.0, "From Max": -0.05}).outputs[0]
     col = mix(below, col, "#22282a")
-    # A curtain of rain falling from the squall far ahead: vertical streaks,
-    # greying the hills where it falls.
     bg = node("ShaderNodeBackground", Color=col, Strength=strength)
     out = node("ShaderNodeOutputWorld")
     L.new(bg.outputs[0], out.inputs["Surface"])
