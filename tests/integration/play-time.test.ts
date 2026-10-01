@@ -543,7 +543,7 @@ async function stormOnGalileeDirect(): Promise<PlayMeter> {
   return meter;
 }
 
-/** Print the estimates when asked (PLAY_TIME=1), for docs/game-design.md. */
+/** Print the estimates when asked (PLAY_TIME=1), for the chapter documents (docs/chapters/<id>.md §11). */
 function report(label: string, meter: PlayMeter): { steady: PlayTime; brisk: PlayTime } {
   const steady = meter.estimate(STEADY);
   const brisk = meter.estimate(BRISK);

@@ -8,7 +8,7 @@ import { QUEST_STATUSES } from '../conditions';
  * rendering data (Phaser owns sprites/cameras) and no UI state (React owns
  * open panels). Everything here is a concrete fact about the story world:
  * who you met, what you carry, what you chose — never a score of faith,
- * holiness or favor (see docs/game-design.md §Consequences).
+ * holiness or favor (see docs/game-design.md §3, "Design pillars").
  */
 export const DIRECTIONS = ['up', 'down', 'left', 'right'] as const;
 export const DirectionSchema = z.enum(DIRECTIONS);
