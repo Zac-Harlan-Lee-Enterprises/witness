@@ -519,7 +519,8 @@ DONE   : Faces under headwear read dark at game size: lighting.PEOPLE_FILL / peo
          sets them back outside it, standing and walking. FIGURE = 2 recorded per light in people.json; every one of
          the 112 entries / 310 sheets re-rendered (Eli and Hodaya on MakeHuman bodies for the first time), -low and
          shadows regenerated. people-art.spec.ts captures Shimon, Eli (the road), Shelomit and Hodaya too.
-         Docs: technical-art-guide §3 (people fill) and §7 (outer garments), performance §2d addendum.
+         Shadow edges: WHITE 0.992 -> 0.996 (two lamp shadows came out at 247 after WebP), shadow_margins.py gave 113
+         sheets their fading margin. Docs: technical-art-guide §3 (people fill) and §7 (outer garments), performance §2d.
 TESTS  : Vitest 786 -> 789 (every sheet at the current figure build; people fill in every light and off for shadows;
          outer garments supple, draped and outside the skirt). typecheck, lint, content:validate, knip, prettier clean.
          e2e on 4493/5493: chapter, storm-on-galilee, smoke, mobile, people-shadows, a11y.
