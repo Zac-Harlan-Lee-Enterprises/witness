@@ -25,7 +25,7 @@ An honest inventory of what is **not** done in this vertical slice: what it is, 
 
 | Item | Status | Notes |
 |---|---|---|
-| Chapters 2+ (Galilee, Bethlehem, Paul…) | Listed as "Not available yet" | Build them from content — see [chapter-authoring-guide.md](chapter-authoring-guide.md). |
+| Chapters 5+ | Chapters 1–4 are playable ([chapters/](chapters/README.md)); no fifth chapter is registered yet | Build it from content — see [chapter-authoring-guide.md](chapter-authoring-guide.md). |
 | Cloud saves, accounts, AWS backend | Interfaces only (`SyncProvider`, `AuthProvider` → `LocalOnlySync`, `LocalOnlyAuth`) | [future-aws.md](future-aws.md). No backend until a concrete need justifies it. |
 | AI study guide (RAG) | Interface + enforced answer policy only (`StudyGuide`, `checkGuideAnswer`) | No chatbot ships. |
 | Analytics provider | Abstraction + consent + sanitiser; `NoopAnalytics` in production | Nothing is ever sent today. |

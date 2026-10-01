@@ -9,7 +9,13 @@ import { prefersReducedMotionSetting, useSystemReducedMotion } from '../game/mot
 export type TeaserOutcome = 'ended' | 'skipped';
 
 /** A film that hasn't started playing by then is treated as unavailable. */
-export const TEASER_LOAD_TIMEOUT_MS = 8000;
+/**
+ * How long the film may go without any download progress before the stills
+ * stand in. A slow connection that is still downloading keeps the film: an
+ * 8-second deadline to *start* sent players on ordinary connections to the
+ * stills once the film grew past 10 MB.
+ */
+export const TEASER_LOAD_TIMEOUT_MS = 15000;
 
 /**
  * A chapter's teaser film, full screen, before the chapter begins.
@@ -80,14 +86,24 @@ export function TeaserPlayer({
     return () => audio.stopFilmScore();
   }, [audio]);
 
-  // A film that never starts (offline, a missing file) falls back to the stills.
+  // A film that stalls before it can play (offline, a missing file) falls
+  // back to the stills; one that is still downloading, however slowly, plays.
+  const lastProgress = useRef(0);
   useEffect(() => {
     if (mode !== 'film') return;
-    const timer = setTimeout(() => {
-      const v = videoRef.current;
-      if (!v || v.readyState < 2) setMode('stills');
-    }, loadTimeoutMs);
-    return () => clearTimeout(timer);
+    lastProgress.current = Date.now();
+    const check = setInterval(
+      () => {
+        const v = videoRef.current;
+        if (v && v.readyState >= 2) return clearInterval(check);
+        if (Date.now() - lastProgress.current >= loadTimeoutMs) {
+          clearInterval(check);
+          setMode('stills');
+        }
+      },
+      Math.min(1000, loadTimeoutMs),
+    );
+    return () => clearInterval(check);
   }, [mode, loadTimeoutMs]);
 
   useEffect(() => {
@@ -139,6 +155,7 @@ export function TeaserPlayer({
             audio.stopFilmScore();
           }}
           onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+          onProgress={() => (lastProgress.current = Date.now())}
           onEnded={() => finish('ended')}
           onError={() => setMode('stills')}
         >
@@ -183,13 +200,26 @@ export function TeaserPlayer({
             {playing ? 'Pause' : 'Play'}
           </button>
         ) : (
-          <button
-            type="button"
-            className="button button--small"
-            onClick={() => (lastStep ? finish('ended') : setStep((s) => s + 1))}
-          >
-            {lastStep ? 'Begin' : 'Next'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => (lastStep ? finish('ended') : setStep((s) => s + 1))}
+            >
+              {lastStep ? 'Begin' : 'Next'}
+            </button>
+            {/* The film is always one press away, with reduced motion too. */}
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => {
+                setTime(0);
+                setMode('film');
+              }}
+            >
+              Play the film
+            </button>
+          </>
         )}
         <button
           ref={skipRef}

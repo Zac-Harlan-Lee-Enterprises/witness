@@ -394,5 +394,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "chapter-docs",
+    "category": "quality",
+    "description": "Every registered chapter has a design document, docs/chapters/<id>.md, in one fourteen-section template (docs/chapters/README.md) that names each of its scenes and each puzzle with its type; the README lists every chapter, and docs/chapter-authoring-guide.md takes a newcomer through adding one end to end.",
+    "verification": "npx --no-install vitest run tests/content/chapter-docs.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]
