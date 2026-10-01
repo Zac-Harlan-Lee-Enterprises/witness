@@ -197,9 +197,22 @@ A phone now holds **31–41%** of the textures it did: 5–30 MB a place instead
 
 **Where the phone's memory went** (the lanes of Bethlehem in the late sun, from the sizes of the files loaded): ground 16.1 → 4.0 MB (RGB 5-6-5 either way), sprite pages 24.5 → 6.1 MB, people 26.4 → 6.6 MB. Their cast shadows (6.4 MB at one byte a pixel) are kept at full size: halving them would save little, and a phone would magnify each shadow texel to about nine device pixels.
 
-**The look** (captures at the phone's device pixels, before and after, in the review sets): at arm's length the scenes read the same. Side by side at 100% the half-resolution art is softer: the grit of the ground and fine sprite detail (flowers, a mosaic's dots) blur a little, and faces and the stripes of robes are softer; the most visible loss is the fine mesh of the nets drying on the shore at Capernaum, which blurs into a mottled weave. Nothing is lost that the story needs (marks, carried things, who is who). At a 3× phone's device pixels (a 2× canvas scaled 1.5 by the browser) a full-size person is itself magnified 1.75×; an intermediate size (2 px per unit) was compared and is barely sharper there, for 78% more memory than 1.5.
+**The look** (captures at the phone's device pixels, before and after, in the review sets): at arm's length the scenes read the same. Side by side at 100% the half-resolution art is softer: the grit of the ground and fine sprite detail (flowers, a mosaic's dots) blur a little, and faces and the stripes of robes are softer; the most visible loss was the fine mesh of the nets drying on the shore at Capernaum, which blurred into a mottled weave (much of this softness came from how the half set was made: see "A sharper half set" below). Nothing is lost that the story needs (marks, carried things, who is who). At a 3× phone's device pixels (a 2× canvas scaled 1.5 by the browser) a full-size person is itself magnified 1.75×; an intermediate size (2 px per unit) was compared and is barely sharper there, for 78% more memory than 1.5.
 
 **Download:** the half-resolution people are 306 files, 7.6 MB (the full colour sheets: 12.4 MB); a phone downloads them instead of the full ones for every person it meets. `people.json` grows from 1.39 to 2.32 MB (85 → 141 KB gzip) with their frame tables. The service worker precaches the morning and indoor ones too, as it does both resolutions of the places' morning sets: the precache grows from 356 files, 17.3 MB, to 458 files, 20.7 MB (`npm run build`).
+
+### A sharper half set (2026-09-30)
+
+The softness above came as much from how the half set was made as from its size: each 2 × 2 block of the full set was averaged (a box filter, which blurs detail near the new pixel size) and saved at WebP 84 (the ground) and 86 (sprite pages), which smoothed away much of what was left. Options weighed:
+
+| Option | Phone texture memory | Download | Look |
+|---|---|---|---|
+| The full ground on phones at RGB 5-6-5 | +12–19 MB a place | the ground about 2.5 times the sharp half ground below | Sharp ground; the sprites and nets still soft |
+| The same half set re-saved at WebP 92 | unchanged | ground +65–80% | Fewer compression smudges; still box-blurred |
+| **Halved with a Lanczos-3 filter and a light unsharp mask, WebP 88** (chosen) | **unchanged** | **ground +36–56%, whole half set +27%** | Grit, pebbles and grass blades crisp; the nets' diamond mesh visible again |
+| The same at WebP 92 | unchanged | ground +85–115% | Barely different from 88 |
+
+The chosen half set (`imageio.downsample_sharp`: the colour filtered in premultiplied space, the alpha box-filtered so edges never ring, the colour kept within its alpha) is made by `build_place.py` and was remade for every place from its full set with `upgrade_place.py --sharpen-low`. The textures keep their sizes and formats, so `data-texture-mb` is exactly as in the table above. Download: every place's half set in every light, ground and sprite pages, grew from 9.05 to 11.45 MB (+2.4 MB); a phone loads one place and light at a time, 50 KB to 1.6 MB each (the Laodicea road the most, its ground 3 tiles). Crops of the nets and the ground at Capernaum, before and after, are in the art-polish review captures. (Separately, the open lake's story sails now carry their moon shadow, which made its sprite pages taller: 20.6 → 21.2 MB on a phone.)
 
 ## 3. How to reproduce
 

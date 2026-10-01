@@ -44,6 +44,9 @@ import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# How dark a shadow caught on water is (Sprite.catch = "water"): the moon's
+# shadow of a sail on the lake, faint where the water and sky still light it.
+WATER_SHADOW = 0.4
 sys.path.insert(0, os.path.join(HERE, "lib"))
 import common  # noqa: E402
 import imageio  # noqa: E402
@@ -160,12 +163,24 @@ def set_extras(p, variant, plan):
     return extras
 
 
+def catcher_at(p, sp, x, y):
+    """A point of a sprite's shadow catcher: on the terrain, or for one that
+    catches its shadow on water (Sprite.catch), on the water's surface
+    wherever that lies over the terrain (sheared like the water itself)."""
+    if getattr(sp, "catch", "ground") == "water" and hasattr(p, "z_water"):
+        h = max(p.H(x, y), p.z_water())
+        return Vector((x, -(y + h), h + 0.002))
+    return p.P(x, y, 0.002)
+
+
 def catcher_for(p, sp):
     """A shadow-catching patch of ground under a sprite that carries its own shadow."""
     xs = [t[0] for t in sp.tiles] or [0]
     ys = [t[1] for t in sp.tiles] or [0]
-    x0, x1 = min(xs) - 1.6, max(xs) + 2.6
-    y0, y1 = min(ys) - 1.6, max(ys) + 2.2
+    # A sail's shadow on the water reaches far: a tall thing, a low moon.
+    far = 4.5 if getattr(sp, "catch", "ground") == "water" else 0.0
+    x0, x1 = min(xs) - 1.6 - far, max(xs) + 2.6 + far
+    y0, y1 = min(ys) - 1.6 - far, max(ys) + 2.2 + far
     import bmesh
 
     bm = bmesh.new()
@@ -174,7 +189,7 @@ def catcher_for(p, sp):
     for j in range(ny + 1):
         row = []
         for i in range(nx + 1):
-            row.append(bm.verts.new(p.P(x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny, 0.002)))
+            row.append(bm.verts.new(catcher_at(p, sp, x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny)))
         grid.append(row)
     for j in range(ny):
         for i in range(nx):
@@ -315,7 +330,7 @@ def main():
         before = ground_files(variant)
         grounds[variant] = {
             "ground": imageio.save_tiles(ground, a.out, f"ground-{variant}", 86),
-            "groundLow": imageio.save_tiles(imageio.downsample(ground, 2), a.out, f"ground-{variant}-low", 84),
+            "groundLow": imageio.save_tiles(imageio.downsample_sharp(ground), a.out, f"ground-{variant}-low", imageio.LOW_GROUND_Q),
         }
         now = {t["file"] for tiles in grounds[variant].values() for t in tiles}
         for f in before - now:
@@ -399,6 +414,18 @@ def main():
                 # Drop the faint noise over the rest of the catcher (it would
                 # make the crop as big as the catcher).
                 shadow[:, :, 3] = np.where(shadow[:, :, 3] < 0.035, 0.0, shadow[:, :, 3])
+                if getattr(sp, "catch", "ground") == "water":
+                    # On open water at night the moon is the only key light,
+                    # so its shadow came out black; the water's own sheen and
+                    # the sky still light it: a faint, soft shadow, and none
+                    # of the catcher's sampling specks (they made the crop
+                    # as big as the catcher).
+                    a_ = shadow[:, :, 3]
+                    a_ = np.where(a_ < 0.25, 0.0, a_)
+                    k = 2
+                    pad = np.pad(a_, k, mode="edge")
+                    a_ = sum(pad[k + dy : k + dy + a_.shape[0], k + dx : k + dx + a_.shape[1]] for dy in range(-k, k + 1) for dx in range(-k, k + 1)) / (2 * k + 1) ** 2
+                    shadow[:, :, 3] = np.where(a_ < 0.02, 0.0, a_ * WATER_SHADOW)
                 # A shadow only darkens (the catcher also records some bounce).
                 shadow[:, :, :3] = 0.0
                 img = imageio.over(img, shadow)
@@ -476,7 +503,7 @@ def main():
             page_files.append(name)
             # Half resolution, for phones and reduced effects.
             low = f"sprites-{variant}-{page}-low.webp"
-            imageio.save(imageio.downsample(arr[:h], 2), os.path.join(a.out, low), "WEBP", 86)
+            imageio.save(imageio.downsample_sharp(arr[:h]), os.path.join(a.out, low), "WEBP", imageio.LOW_PAGE_Q)
             low_files.append(low)
         for stale in (previous or {}).get("variants", {}).get(variant, {}).get("pages", [])[len(page_files) :]:
             for f in (stale, stale.replace(".webp", "-low.webp")):

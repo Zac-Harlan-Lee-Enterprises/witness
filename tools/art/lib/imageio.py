@@ -64,6 +64,58 @@ def downsample(arr, factor):
     return out
 
 
+# WebP quality of the half-resolution set (phones, devices short of memory),
+# ground and sprite pages alike (they were 84 and 86, box-filtered). With
+# the sharper filter (downsample_sharp) 88 keeps the grit and a net's mesh;
+# 92 was a fifth larger again for little that shows (docs/performance.md §2c).
+LOW_GROUND_Q = 88
+LOW_PAGE_Q = 88
+
+
+def _lanczos_half(a, axis):
+    """Halve an array along one axis with a Lanczos-3 filter (six taps each
+    side of an output pixel's centre, which falls between two inputs)."""
+    n = a.shape[axis] // 2 * 2
+    a = np.take(a, np.arange(n), axis=axis)
+    offs = np.arange(-5, 7) - 0.5  # input centres relative to the output centre, in input pixels
+    x = offs / 2.0  # in output pixels
+    w = np.sinc(x) * np.sinc(x / 3.0) * (np.abs(x) < 3.0)
+    w = w / w.sum()
+    pad = [(0, 0)] * a.ndim
+    pad[axis] = (6, 6)
+    p = np.pad(a, pad, mode="edge")
+    out = 0.0
+    for k, wk in enumerate(w):
+        # Output i sits between inputs 2i and 2i+1; tap k reads input 2i + offs[k] + 0.5.
+        start = 6 + int(offs[k] + 0.5)
+        idx = start + 2 * np.arange(n // 2)
+        out = out + wk * np.take(p, idx, axis=axis)
+    return out
+
+
+def downsample_sharp(arr, amount=0.35):
+    """Halve an image for the half-resolution set, keeping it crisp: the
+    colour through a Lanczos-3 filter (in premultiplied space) with a light
+    unsharp mask, the alpha box-filtered (so no ringing halos at edges), the
+    colour then kept within its alpha. A box filter alone (downsample) blurs
+    fine texture (the grit of the ground, the mesh of a net) to mush."""
+    h, w = arr.shape[:2]
+    a = arr[: h // 2 * 2, : w // 2 * 2].astype(np.float32)
+    pm = a.copy()
+    pm[:, :, :3] *= pm[:, :, 3:4]
+    box = downsample(a, 2)
+    alpha = box[:, :, 3:4]
+    rgb = _lanczos_half(_lanczos_half(pm[:, :, :3], 0), 1)
+    if amount > 0:
+        # A light unsharp mask at the new size (radius about one pixel).
+        q = np.pad(rgb, ((1, 1), (1, 1), (0, 0)), mode="edge")
+        blur = (q[1:-1, 1:-1] + q[:-2, 1:-1] + q[2:, 1:-1] + q[1:-1, :-2] + q[1:-1, 2:]) / 5.0
+        rgb = rgb + amount * (rgb - blur)
+    rgb = np.clip(rgb, 0.0, alpha)
+    out = np.concatenate([np.where(alpha > 1e-5, rgb / np.maximum(alpha, 1e-5), 0.0), alpha], axis=2)
+    return out.astype(np.float32)
+
+
 # Every GPU the game runs on holds a 2048 px texture (WebGL 2's minimum);
 # many phones stop at 4096. Big images are cut into tiles this size at most.
 TILE = 2048

@@ -87,6 +87,7 @@ def drape_folds(seed, axis_y=1.5, amp=0.3, count=7, spread=(2.5, 6.0), sway=0.06
 class Clothes:
     def __init__(self, head, params, hair_lift=1.0, head_shape=None):
         self.bands = None
+        self.edge = None  # a veil's face opening (a field), for its woven hem bands
         self.head = head
         self.P = params
         self.a = params.appearance
@@ -117,6 +118,10 @@ class Clothes:
         in centimetres on the band a point belongs to."""
         if name == "headwear" and self.bands:
             return {"cloth_uv": self._band_uv(V)}
+        if name == "headwear" and self.edge is not None:
+            # How far into the cloth from the edge round the face (cm, about),
+            # for a veil's woven hem bands.
+            return {"edge": (-self.edge(np.asarray(V, F))).astype(F)}
         return None
 
     # ── Body garments ──────────────────────────────────────────────────────
@@ -238,10 +243,14 @@ class Clothes:
         body = head.body()
         drape = S.Offset(body, 1.4 if kind != "scarf" else 1.2)
         low = -40.0
+        D = P.drape
+        # (Fifth pass.) A woman's veil hangs as she wears it: one side lower
+        # and looser than the other, falling a little forward or back.
+        lean = (2.4 * D["asym"] * s, 1.6 * D["hang"] * s) if D else (0.0, 0.0)
         if kind == "scarf":
-            curtain = S.RoundCone((0, 2.0 * s, 8.0 * s), (0, 2.3 * s, -20.0 * s), 6.4 * s + 0.8 * P.veil_full, 10.0 * s + P.veil_full)
+            curtain = S.RoundCone((0, 2.0 * s, 8.0 * s), (lean[0], 2.3 * s + lean[1], -20.0 * s), 6.4 * s + 0.8 * P.veil_full, 10.0 * s + P.veil_full)
         else:
-            curtain = S.RoundCone((0, 2.2 * s, 8.0 * s), (0, 2.6 * s, -20.0 * s), 6.8 * s + P.veil_full, 10.8 * s + 1.2 * P.veil_full)
+            curtain = S.RoundCone((0, 2.2 * s, 8.0 * s), (lean[0], 2.6 * s + lean[1], -20.0 * s), 6.8 * s + P.veil_full, 10.8 * s + 1.2 * P.veil_full)
         cover = S.Union([env, curtain], 3.5)
         cover = S.Union([cover, S.Clip(drape, (-40, -40, low), (40, 40, 0))], 2.5)
         # Folds: long, deep ones falling from the head, finer creases between.
@@ -249,12 +258,30 @@ class Clothes:
         # out toward the shoulders (MakeHuman pass: many even folds read as
         # a pleated lampshade), a few finer creases, and cloth bunched
         # irregularly where it rests on the head.
-        folds = drape_folds(P.seed + 3, amp=1.0, count=5, spread=(5.0, 14.0), top=3.0, sway=0.1)
-        creases = drape_folds(P.seed + 4, amp=0.12, count=4, spread=(2.0, 4.5), top=5.0, sway=0.2)
-        bunch = undulation(P.seed + 6, amp=0.28, count=7, spread=(4.0, 9.0))
+        if D:
+            # Each woman's own: how many broad folds and how deep, how many
+            # small creases and how much it bunches (soft linen creases and
+            # sags; heavy wool falls in fewer, rounder folds).
+            folds = drape_folds(P.seed + 3, amp=D["fold_amp"], count=D["folds"], spread=(4.0, 11.0 + 5.0 * (1 - D["soft"])), top=3.0, sway=0.16)
+            creases = drape_folds(P.seed + 4, amp=0.1 + 0.22 * D["soft"], count=4 + int(4 * D["soft"]), spread=(1.6, 4.0), top=5.0, sway=0.3)
+            bunch = undulation(P.seed + 6, amp=0.22 + 0.3 * D["soft"], count=9, spread=(3.0, 8.0))
+            # Where the cloth leaves the head it sags between the temples and
+            # the shoulders, more on the looser side.
+            sag = undulation(P.seed + 8, amp=0.5 + 0.4 * D["soft"], count=5, spread=(6.0, 12.0))
+        else:
+            folds = drape_folds(P.seed + 3, amp=1.0, count=5, spread=(5.0, 14.0), top=3.0, sway=0.1)
+            creases = drape_folds(P.seed + 4, amp=0.12, count=4, spread=(2.0, 4.5), top=5.0, sway=0.2)
+            bunch = undulation(P.seed + 6, amp=0.28, count=7, spread=(4.0, 9.0))
+            sag = None
 
         def fine(p):
-            return creases(p) + bunch(p)
+            out = creases(p) + bunch(p)
+            if sag is not None:
+                z = p[:, 2]
+                below = np.clip((3.0 * s - z) / 10.0, 0.0, 1.0) * np.clip((z + 26.0) / 12.0, 0.0, 1.0)
+                side = 1.0 + 0.45 * D["asym"] * np.tanh(p[:, 0] / 4.0)
+                out = out + sag(p) * below * side
+            return out
 
         # The opening for the face, as an angle round the head, so the hem
         # follows the cloth: an arch over the brow, edges hanging in front of
@@ -264,15 +291,22 @@ class Clothes:
         face = (60.0 if kind != "scarf" else 57.0) + P.veil_open
         zc = 1.0 * s
 
+        # (Fifth pass) the looser side stands a few degrees wider of the face.
+        wide = 8.0 * D["asym"] if D else 0.0
+        thick = D["thick"] if D else 0.46
+        hem_roll = 0.3 if not D else 0.16 + 0.2 * D["thick"]
+
         def open_f(p):
             x, y, z = p[:, 0], p[:, 1], p[:, 2]
             az = np.degrees(np.arctan2(np.abs(x), -(y - 1.5)))
+            f = face + wide * np.tanh(x / 2.0)
             t = np.clip((z - zc) / (top_z - zc), 0, 1)
+            lo = np.interp(z, [-40.0, -20.0, -12.0 * s, zc], [34.0, 38.0, face - 4.0, face]) + wide * np.tanh(x / 2.0) * np.clip((z + 20.0) / 20.0, 0.0, 1.0)
             theta = np.where(
                 z > zc,
                 # (closing a little past the top, so no seam runs up the middle)
-                (face + 5.0) * np.sqrt(np.clip(1 - t * t, 0, 1)) - 5.0,
-                np.interp(z, [-40.0, -20.0, -12.0 * s, zc], [34.0, 38.0, face - 4.0, face]),
+                (f + 5.0) * np.sqrt(np.clip(1 - t * t, 0, 1)) - 5.0,
+                lo,
             )
             return (az - theta) * (math.pi / 180.0) * 9.0
 
@@ -284,7 +318,7 @@ class Clothes:
         def cloth_f(p):
             d = outer_f(p)
             hem = np.exp(-((open_f(p) / 0.7) ** 2))
-            return np.maximum(d, -d - (0.46 + 0.3 * hem))
+            return np.maximum(d, -d - (thick + hem_roll * hem))
 
         outer = S.Fn(outer_f, ((-40, -40, -45), (40, 40, 20)))
         self.cloth_outer = outer
@@ -292,6 +326,8 @@ class Clothes:
         opening = S.Fn(open_f, ((-15, -25, -45), (15, 0, 20)))
         cut = S.Subtract(cloth, opening, 0.3)
         self.parts["headwear"] = (cut, "headwear", (-26, -17, -27), (26, 19, 21), 0.11)
+        if D and D["hem"]:
+            self.edge = opening
 
         # Hair must stay under the cloth, except where the face shows.
         def obstacle(p):

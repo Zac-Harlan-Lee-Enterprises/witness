@@ -194,11 +194,11 @@ class Sprite:
     - `flat`: lies on the ground (prints, a mat): anyone standing on it
       draws over it, so its base is its northern edge;
     - `shadow`: a conditional thing carries its own shadow on a catcher
-      laid on the terrain under it; False for one whose shadow would fall
-      where no catcher can hold it (a sail over open water, whose terrain
-      is the lake bed)."""
+      laid on the terrain under it; False for one that casts none;
+    - `catch`: where that catcher lies: "ground" (the terrain) or "water"
+      (the lake's surface, above its bed: a sail's shadow on open water)."""
 
-    def __init__(self, sid, base, objects, tiles=None, conditional=False, flat=False, fade=False, shadow=True):
+    def __init__(self, sid, base, objects, tiles=None, conditional=False, flat=False, fade=False, shadow=True, catch="ground"):
         self.id = sid
         self.base = base
         self.objects = objects
@@ -208,6 +208,9 @@ class Sprite:
         # A canopy (a palm's crown): the game fades it while someone walks behind it.
         self.fade = fade
         self.shadow = shadow
+        # Where its shadow is caught: on the terrain ("ground"), or on the
+        # water's surface over the lake bed ("water": a sail over open water).
+        self.catch = catch
 
 
 def value_noise(w, h, cell, seed):

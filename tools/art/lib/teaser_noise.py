@@ -116,3 +116,12 @@ def bilinear(grid, x0, y0, cell, x, y):
     c = grid[iy + 1, ix]
     d = grid[iy + 1, ix + 1]
     return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty
+
+
+def cell_random(i, j=0, seed=0):
+    """A random value in [0, 1) for each integer cell (i, j): the same cell
+    always gives the same value (jointed blocks, notches, per-course colour)."""
+    i = np.asarray(i, dtype=np.float64)
+    j = np.asarray(j, dtype=np.float64)
+    h = _hash(np.floor(i).astype(np.int64), np.floor(j).astype(np.int64), seed)
+    return (h & np.uint64(0xFFFFFF)).astype(np.float64) / float(0x1000000)

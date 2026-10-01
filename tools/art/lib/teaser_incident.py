@@ -27,6 +27,7 @@ import common
 import rocks
 import materials as M
 import teaser_city as C
+import teaser_clay as TC
 import teaser_noise as N
 import teaser_props as PR
 from teaser_nodes import Graph
@@ -41,21 +42,6 @@ def from_game(x, y):
 
 
 # ── materials ────────────────────────────────────────────────────────────────
-def clay_outer():
-    def build():
-        g = Graph("jar-outer")
-        pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 14.0, 5.0), 0.3, 0.7), "#a9806a", "#c29a7c")
-        # Slip wiped thin in places; dust settled into every pore.
-        col = g.mix(g.mul(g.smooth(g.noise(pos, 5.0, 3.0), 0.5, 0.7), 0.4), col, "#cdb293")
-        col = g.mix(g.add(0.4, g.mul(g.smooth(g.noise(pos, 22.0, 3.0), 0.45, 0.7), 0.3)), col, "#cbb896")
-        pores = g.map(g.voronoi(pos, 220.0), 0.0, 0.3, 1.0, 0.0)
-        col = g.mix(g.mul(pores, 0.25), col, "#6e4a34")
-        rings = g.wave(pos, 90.0, 1.5, 2.0, "BANDS", "Z")
-        g.principled(col, 0.93, 0.18, g.bump(g.add(g.noise(pos, 60.0, 4.0), g.add(g.mul(rings, 0.2), g.mul(pores, 0.5))), 0.35, 0.001))
-        return g.mat
-
-    return C._cached("jar-outer", build)
 
 
 def clay_inner():
@@ -70,15 +56,15 @@ def clay_inner():
     return C._cached("jar-inner", build)
 
 
-def clay_break():
-    def build():
-        g = Graph("jar-break")
-        pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 80.0, 4.0), 0.3, 0.7), "#a8765a", "#c08e6e")
-        g.principled(col, 0.92, 0.2, g.bump(g.noise(pos, 300.0, 3.0), 0.6, 0.0005))
-        return g.mat
+def clay_outer():
+    """The oil jar's outside: pale-fired clay, fire-clouded, its wheel rings
+    and temper showing, dusty from the road (teaser_clay)."""
+    return TC.fired_clay("jar-outer", "#b88a6c", reduced="#86705f", pale="#d1b392", dust=0.5, sheen=0.02, ring_pitch=0.008, scale=1.4)
 
-    return C._cached("jar-break", build)
+
+def clay_break():
+    """A fresh break: granular, with the grey core of the firing."""
+    return TC.clay_core("jar-break", "#bb8e70", "#6c625a")
 
 
 def pebble_material(kind):
@@ -125,6 +111,7 @@ def shard_mesh(name, a0, a1, h0, h1, rng, thick=0.009, na=10, nh=8, full=False, 
     its outline broken irregularly, with thickness and raw broken edges.
     Materials: 0 outside, 1 inside, 2 the fresh break."""
     bm = bmesh.new()
+    depth = bm.verts.layers.float.new("depth")
     grid = []
     for j in range(nh + 1):
         row = []
@@ -164,6 +151,10 @@ def shard_mesh(name, a0, a1, h0, h1, rng, thick=0.009, na=10, nh=8, full=False, 
             f = bm.faces.new((outer[j0][i0], inner[j0][i0], inner[j1][i1], outer[j1][i1]))
             f.material_index = 2
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    # Depth through the wall (0 outside, 1 inside), for the break's grey core.
+    for row in inner:
+        for v in row:
+            v[depth] = 1.0
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()

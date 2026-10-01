@@ -81,6 +81,29 @@ def gaze_target(head, gaze, cam):
     return mid + d
 
 
+def fair_fine(P, skin_hex):
+    """(Fifth pass.) Extra skin texture for fair-skinned women (1 = none, up
+    to 1.5): at 512 px their smooth, lightly lined young skin, scattering
+    light the most, had read as wax."""
+    if P.sex != "f" or P.child >= 0.5:
+        return 1.0
+    dark = portrait_mhskin.darkness(skin_hex)
+    return round(1.0 + 0.5 * float(np.clip((0.2 - dark) / 0.2, 0.0, 1.0)), 2)
+
+
+def veil_edge(P, a):
+    """A woman's veil's woven hem bands, (count, colour), or None: the
+    thread is her own accent colour, dulled toward the cloth's."""
+    D = P.drape
+    if not D or not D["hem"] or P.head_style not in ("veil", "scarf"):
+        return None
+    ha, hb = a["accent"].lstrip("#"), a["headwearColor"].lstrip("#")
+    ca = [int(ha[i : i + 2], 16) for i in (0, 2, 4)]
+    cb = [int(hb[i : i + 2], 16) for i in (0, 2, 4)]
+    mixed = [round((x * 0.7 + y * 0.3) * 0.8) for x, y in zip(ca, cb)]
+    return (D["hem"], "#" + "".join(f"{v:02x}" for v in mixed))
+
+
 def _set_maps(obj, maps):
     for name, values in maps.items():
         portrait_mesh.set_attribute(obj, name, values)
@@ -146,7 +169,7 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
         maps["albedo"] = (np.array([0.05, 0.05, 0.3], np.float32) * (1 - m[:, None]) + np.array([0.9, 0.8, 0.1], np.float32) * m[:, None]).astype(np.float32)
     detail = 1.0 + 0.3 * P.sun + 0.3 * P.age_t
     canthus = tuple(round(float(v), 2) for v in (abs(head.lid_point(1, 1.0, rest=True)[0]), head.lid_point(1, 1.0, rest=True)[2]))
-    skin = PM.skin(pid, P.child, portrait_mhskin.subsurface_weight(skin_hex), detail, portrait_mhskin.darkness(skin_hex), age=P.age_t, canthus=canthus)
+    skin = PM.skin(pid, P.child, portrait_mhskin.subsurface_weight(skin_hex), detail, portrait_mhskin.darkness(skin_hex), age=P.age_t, canthus=canthus, fine=fair_fine(P, skin_hex))
     obj = portrait_mesh.from_arrays("skin", V, Q, None, skin, col)
     _set_maps(obj, maps)
     sub = obj.modifiers.new("smooth", "SUBSURF")
@@ -168,7 +191,7 @@ def build(pid, appearance, player=False, chapter="", expression="neutral", sampl
     mats = {
         "tunic": PM.cloth(a["robe"], "wool", a["accent"], 0.062, 0.011, name="tunic"),
         "mantle": PM.cloth(MANTLE[0], "wool", MANTLE[1], 0.1, 0.02, name="mantle"),
-        "headwear": PM.cloth(a["headwearColor"], "wool" if wool_head else "linen", name="headwear", uv="cloth_uv" if style == "wrap" else None),
+        "headwear": PM.cloth(a["headwearColor"], "wool" if wool_head else "linen", name="headwear", uv="cloth_uv" if style == "wrap" else None, edge=veil_edge(P, a)),
         "cord": PM.cloth("#2c2621", "wool", name="cord"),
     }
     skip = os.environ.get("PORTRAIT_SKIP", "").split(",")  # review: e.g. hair,clothes

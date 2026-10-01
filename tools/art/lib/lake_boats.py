@@ -501,9 +501,10 @@ class BoatsMixin:
         objs = self._yard(name, rig["L"], rig["B"], rig["xf"], state, common.rng(int(x * 131 + y * 17)))
         for o in objs:
             o["wl_z"] = rig["zb"]
-        # Sorted with its boat; no shadow of its own (it would fall on open
-        # water, whose terrain is the lake bed); faded like the boat's rig.
-        return objs, rig["south"] * 32.0, False, {"shadow": False, "fade": True}
+        # Sorted with its boat, faded like the boat's rig, and carrying its
+        # own shadow (the moon's, at night) on a catcher at the water's
+        # surface: the terrain under open water is the lake bed.
+        return objs, rig["south"] * 32.0, False, {"shadow": True, "fade": True, "catch": "water"}
 
     def _furled(self, name, a, b, mat, rng, r=0.14):
         """A sail gathered up on its yard: a long lumpy roll with the brails

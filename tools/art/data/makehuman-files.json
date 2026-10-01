@@ -1,5 +1,5 @@
 {
-  "$comment": "MakeHuman data used by the portrait build (tools/art/lib/makehuman.py), pinned by commit and SHA-256. Downloaded into tools/art/.cache/makehuman by `npm run art:fetch-makehuman`; never committed. Data only (base mesh, morph targets, licence text): no MakeHuman code. Approved by Zac Harlan on 2026-09-26 (docs/adr/0016-makehuman-base-for-portraits.md).",
+  "$comment": "MakeHuman data used by the portrait build and the teaser film's man in the shade (tools/art/lib/makehuman.py, teaser_body.py), pinned by commit and SHA-256. Downloaded into tools/art/.cache/makehuman by `npm run art:fetch-makehuman`; never committed. Data only (base mesh, morph targets, licence text): no MakeHuman code. Approved by Zac Harlan on 2026-09-26 (docs/adr/0016-makehuman-base-for-portraits.md).",
   "source": {
     "project": "MakeHuman",
     "repository": "makehumancommunity/makehuman",
