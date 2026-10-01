@@ -424,3 +424,22 @@ NEXT   : Record the owner's approval of rec-teaser (a person, not an agent): an 
          test that rec-teaser is approved by that entry. For more realism: re-render with `node scripts/art-build.mjs
          teaser --shots <n>` after improving the city's houses (teaser_city.py) and the market's walls.
 BLOCKED: none (the approval is for a person to record).
+
+--- 2026-09-30  Claude Opus 5.5 (art-polish-2 agent) — remaining art flaws (feat/art-polish-2) ---
+DONE   : Teaser: every shot re-rendered. Shot 7's man is MakeHuman's CC0 body (teaser_body.py; ADR-0016
+         addendum, for the owner to confirm) on his back under a cloth-simulated wool tunic, the lens settling on
+         the ground before his feet; rock doves (teaser_birds.py); rubble/plastered city with lintels, doors,
+         parapets, yards with trees, warm shade; gorge cliffs with joints, chutes, bedding, distinct walls; slope
+         lumps/outcrops/terracettes faded by mesh resolution; slope attribute masks no longer in bump heights and
+         tracks/joints kept off gentle slopes (the "grid"); cloud layer in every sky; fired clay (teaser_clay.py).
+         Portraits fifth pass: fair women's skin texture, each woman's veil her own, children's/young men's hair
+         cut to shape (63 renders). Places: Laodicea road re-rendered (coals); sharper half set for phones
+         (Lanczos + unsharp, q88; upgrade_place --sharpen-low; memory unchanged, half sets 9.05 -> 11.45 MB);
+         the lake's set sails carry their moon shadow on a water-surface catcher. Fair render lock (FIFO tickets)
+         in the scratchpad's with-render-lock.sh.
+TESTS  : Vitest 723 -> 742 (vats' coals, half-set detail per place, sail shadows, teaser MP4 <= 12 MB).
+         typecheck, lint, prettier, knip, content:validate clean. e2e on 4495/5495 (teaser, portraits, smoke,
+         mobile, storm-on-galilee, letter-from-paul): 24 passed, 1 skipped. Teaser MP4 11.3 MB, WebM 10.7 MB.
+NEXT   : The owner to confirm the MakeHuman body for the teaser's man (ADR-0016 addendum); if not, replace
+         teaser_body.LyingMan with a body built in code and run `node scripts/art-build.mjs teaser --shots 7`.
+BLOCKED: none.
