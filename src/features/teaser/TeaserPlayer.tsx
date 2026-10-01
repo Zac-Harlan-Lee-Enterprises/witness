@@ -20,8 +20,9 @@ export const TEASER_LOAD_TIMEOUT_MS = 15000;
 /**
  * A chapter's teaser film, full screen, before the chapter begins.
  *
- * - The film is muted; its score comes from the game's synthesiser, cued to
- *   the film's time, and follows the player's music volume and mute.
+ * - The film is muted; its music is the game's recorded music, cued to the
+ *   film's time (src/application/music.ts: filmMusicPlan), and follows the
+ *   player's music volume and mute. It stops on pause, skip and end.
  * - The words are real text over the film, cued to its time, announced
  *   politely, readable at every text size.
  * - Skip is always there (the button, Escape, Enter or Space); the film can

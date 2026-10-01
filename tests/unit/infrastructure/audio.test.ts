@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { AmbienceId, FootstepSurface, SfxId } from '@/application/ports';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
-import {
-  AMBIENCE,
-  FOOTSTEPS,
-  MUSIC,
-  nextPhrase,
-  scheduleAmbience,
-  SFX,
-} from '@/infrastructure/audio/soundscape';
-import { SynthAudio } from '@/infrastructure/audio/synth-audio';
+import { AMBIENCE, FOOTSTEPS, scheduleAmbience, SFX } from '@/infrastructure/audio/soundscape';
+import { MUSIC_TRACKS } from '@/domain/music';
+import type { MusicDeckFactory } from '@/infrastructure/audio/recorded-music';
+import { SynthAudio, type MusicReport } from '@/infrastructure/audio/synth-audio';
 import { createLogger } from '@/shared/logger';
 
 const seq = (values: number[]) => {
@@ -70,14 +65,6 @@ describe('sound design', () => {
     expect(events.map((e) => e.at)).toEqual([...events.map((e) => e.at)].sort((a, b) => a - b));
     expect(Object.keys(AMBIENCE).sort()).toEqual(['indoor', 'market', 'oasis', 'wind']);
   });
-
-  it('plays phrases in the mode, never repeating a phrase back to back', () => {
-    for (const style of Object.values(MUSIC)) {
-      for (const phrase of style.phrases)
-        for (const d of phrase) expect(d).toBeLessThan(style.notes.length);
-      expect(nextPhrase(style, 0, () => 0)).not.toBe(0);
-    }
-  });
 });
 
 /** Just enough of WebAudio to run the synth and count what it makes. */
@@ -111,6 +98,7 @@ function fakeContext() {
     sampleRate: 8000,
     destination: {},
     resume: async () => undefined,
+    suspend: async () => undefined,
     close: async () => undefined,
     createGain: () => node('gain'),
     createOscillator: () => node('osc'),
@@ -123,15 +111,47 @@ function fakeContext() {
   return { ctx: ctx as unknown as AudioContext, made };
 }
 
+/** Music decks that play nothing, for SynthAudio's music channel. */
+function fakeDecks() {
+  const decks: Array<{ track: string; playing: boolean; level: number }> = [];
+  const make = (): MusicDeckFactory => (track) => {
+    const d = { track: track.id as string, playing: false, level: 0 };
+    decks.push(d);
+    return {
+      play: async () => {
+        d.playing = true;
+      },
+      pause: () => {
+        d.playing = false;
+      },
+      fade: (level) => {
+        d.level = level;
+      },
+      time: 0,
+      ended: false,
+      dispose: () => {
+        d.playing = false;
+      },
+    };
+  };
+  return { decks, make };
+}
+
 describe('SynthAudio', () => {
+  const quiet = () => createLogger({ level: 'error', echo: false });
+
   it('plays effects, ambience and music through WebAudio, captioning what is audible', async () => {
     const { ctx, made } = fakeContext();
     const captions: string[] = [];
+    const music = fakeDecks();
     const audio = new SynthAudio(
-      createLogger({ level: 'error', echo: false }),
+      quiet(),
       (c) => captions.push(c),
       () => ctx,
       seq([0.2, 0.5, 0.8]),
+      {
+        musicDecks: () => music.make(),
+      },
     );
     audio.applySettings(DEFAULT_SETTINGS);
     expect(await audio.unlock()).toBe(true);
@@ -139,11 +159,104 @@ describe('SynthAudio', () => {
     expect(made.filter((m) => m === 'osc').length).toBeGreaterThanOrEqual(6); // two bells, three partials each
     audio.setAmbience('oasis');
     audio.setMusic('journey');
+    await Promise.resolve();
     expect(captions.some((c) => /Birdsong/.test(c))).toBe(true);
-    expect(captions.some((c) => /drum/.test(c))).toBe(true);
+    expect(captions).toContain(MUSIC_TRACKS['sacred-sands'].caption);
+    expect(music.decks.map((d) => d.track)).toEqual(['sacred-sands']);
     const before = made.length;
     audio.playFootstep('stone');
     expect(made.length).toBeGreaterThan(before);
+    audio.dispose();
+  });
+
+  it('remembers music asked for before the first gesture and starts it on unlock', async () => {
+    const { ctx } = fakeContext();
+    const music = fakeDecks();
+    const reports: MusicReport[] = [];
+    const audio = new SynthAudio(
+      quiet(),
+      () => {},
+      () => ctx,
+      Math.random,
+      {
+        musicDecks: () => music.make(),
+        onMusicStatus: (r) => reports.push(r),
+      },
+    );
+    audio.applySettings(DEFAULT_SETTINGS);
+    audio.setMusic('home');
+    expect(music.decks).toHaveLength(0);
+    expect(reports.at(-1)).toMatchObject({ track: 'cinematic-oud-and-qanun', playing: false });
+    await audio.unlock();
+    await Promise.resolve();
+    expect(music.decks.map((d) => d.track)).toEqual(['cinematic-oud-and-qanun']);
+    expect(reports.at(-1)).toMatchObject({ track: 'cinematic-oud-and-qanun', playing: true });
+    // Unlocking again (every gesture tries) changes nothing.
+    await audio.unlock();
+    expect(music.decks).toHaveLength(1);
+    audio.dispose();
+  });
+
+  it('pauses the music when muted or at zero volume, and when the page is hidden', async () => {
+    const { ctx } = fakeContext();
+    const music = fakeDecks();
+    const reports: MusicReport[] = [];
+    const audio = new SynthAudio(
+      quiet(),
+      () => {},
+      () => ctx,
+      Math.random,
+      {
+        musicDecks: () => music.make(),
+        onMusicStatus: (r) => reports.push(r),
+      },
+    );
+    audio.applySettings(DEFAULT_SETTINGS);
+    await audio.unlock();
+    audio.setMusic('reflection');
+    await Promise.resolve();
+    const deck = music.decks[0];
+    expect(deck?.playing).toBe(true);
+    expect(reports.at(-1)?.volume).toBeCloseTo(
+      DEFAULT_SETTINGS.volume.master * DEFAULT_SETTINGS.volume.music,
+    );
+    audio.applySettings({ ...DEFAULT_SETTINGS, muted: true });
+    expect(deck?.playing).toBe(false);
+    expect(reports.at(-1)).toMatchObject({ playing: false, volume: 0 });
+    audio.applySettings({
+      ...DEFAULT_SETTINGS,
+      volume: { ...DEFAULT_SETTINGS.volume, music: 0 },
+    });
+    expect(deck?.playing).toBe(false);
+    audio.applySettings(DEFAULT_SETTINGS);
+    await Promise.resolve();
+    expect(deck?.playing).toBe(true);
+    audio.suspend();
+    expect(deck?.playing).toBe(false);
+    await audio.unlock();
+    await Promise.resolve();
+    expect(deck?.playing).toBe(true);
+    expect(music.decks).toHaveLength(1);
+    audio.dispose();
+  });
+
+  it('never captions music while muted or with captions off', async () => {
+    const { ctx } = fakeContext();
+    const captions: string[] = [];
+    const audio = new SynthAudio(
+      quiet(),
+      (c) => captions.push(c),
+      () => ctx,
+      Math.random,
+      {
+        musicDecks: () => fakeDecks().make(),
+      },
+    );
+    audio.applySettings({ ...DEFAULT_SETTINGS, captions: false });
+    await audio.unlock();
+    audio.setMusic('tension');
+    await Promise.resolve();
+    expect(captions).toEqual([]);
     audio.dispose();
   });
 });

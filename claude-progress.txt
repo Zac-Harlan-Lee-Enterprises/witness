@@ -529,6 +529,29 @@ NEXT   : The owner judges the before/after captures. If he wants faces lighter s
          re-render (`node scripts/art-build.mjs people --only <ids> --force`, three ids per run). Hodaya's carried
          net (people.py) reads as a fluted blob on the shoulder; a softer, draped net would help.
 BLOCKED: none.
+
+2026-10-01 | Codex GPT-6 | DONE: Downloaded four owner-requested Pixabay MP3s to public/audio/music with music-sources.json; no game code changed. TESTS: afinfo successfully parsed all four MP3s; recorded sizes and SHA-256 hashes. Application suites not run (asset staging only). NEXT: Integrate recorded soundtrack via AudioPort, preserve existing effects and ambience, verify offline caching and scene/state transitions. BLOCKED: None; official signed-in license certificates not obtained.
+--- 2026-10-01  Claude Opus 5.5 (recorded-music agent) — the owner's four Pixabay tracks replace the synthesised music (feat/recorded-music) ---
+DONE   : Recorded music through AudioPort. Mood -> track map and teaser cue sheets in src/application/music.ts (pure);
+         track catalogue + credits data + musicOf in src/domain/music.ts; scenes gain musicChanges (open lake: journey,
+         tension once the wind rises, 5 s silence then the flute at the calm; Jericho road: tension from finding the man
+         until the choice). GameController.syncMusic asks only on real changes, ducks under dialogue/journal/Scripture
+         Connection/reflection, reflective music under the ending panels, stops ambience on dispose. Infrastructure:
+         RecordedMusic (no restart, 2.5 s cross-fades, last request wins, max two tracks, silence + gentle return, loops
+         cross-faded before each file's fade-out, duck -8 dB, pause when muted/zero/hidden, autoplay retry, failures
+         logged once), media-deck.ts (<audio> -> WebAudio gain -> music channel), music-cache.ts (whole files into the
+         witness-music cache on first play; SW route CacheFirst + rangeRequests; ?v= from SHA-256). App: menu music,
+         unlock on every gesture, suspend when hidden, dispose; captions over menus; credits in About this game.
+         Removed film-score.ts and the synth MUSIC tables. Docs: ADR-0018, docs/music.md, content-governance §9, and
+         README/architecture/accessibility/performance/deployment/security/testing/authoring updates.
+TESTS  : Vitest 789 -> 833 (music map + controller, RecordedMusic with fake decks/timers, media deck + offline cacher,
+         SynthAudio music/mute/suspend/captions, music-sources.json SHA-256 + catalogue, UI credits/controls/App).
+         e2e on 4497/5497: new music.spec (gesture, mute, volume, blocked files); pwa.spec plays music offline from the
+         cache; chapter and storm specs assert the track per place/story. typecheck, lint, content:validate, knip,
+         prettier clean.
+NEXT   : Listen on a real iPhone/iPad (WebKit untested): music starts on the first tap, pauses when the app is
+         backgrounded, and plays offline after a first visit. If a loop seam is audible, adjust `loop` in
+         src/domain/music.ts (measured from the decoded files: each fades out over its last 2-9 s).
 --- 2026-10-01  Claude Opus 5.5 (menu key art agent) — rendered key art for the title and chapter select (feat/menu-key-art) ---
 DONE   : Replaced the cartoon SVG (JourneyArt, deleted) on the title screen, chapter cards and chapter summary with
          rendered key art. tools/art/build_key_art.py + lib/key_art.py (PlaceShot: a game place built by place.Place,

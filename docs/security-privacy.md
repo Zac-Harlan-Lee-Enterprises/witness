@@ -43,9 +43,9 @@ Clearing the browser's site data for the game, or uninstalling the installed app
 
 [`tests/architecture/layers.test.ts`](../tests/architecture/layers.test.ts) ("makes no network requests from game code") fails the build if any file in `src/` contains `fetch(`, `XMLHttpRequest`, `navigator.sendBeacon` or `new WebSocket`. Comments and string literals are stripped first, so prose can't trip the rule. A second rule forbids `eval(` and `new Function(`.
 
-The only requests the browser makes are **same-origin** requests for the game's own files: lazy JS chunks, fonts, icons, the manifest, the service-worker precache and the service-worker update checks.
+The only requests the browser makes are **same-origin** requests for the game's own files: lazy JS chunks, fonts, icons, the manifest, art, the music, the service-worker precache and the service-worker update checks. The music is streamed by `<audio>` elements and, once it has played, stored whole for offline play with `Cache.add` ([`music-cache.ts`](../src/infrastructure/audio/music-cache.ts)): a same-origin GET of the game's own files, and the one place where game code asks for a file itself.
 
-Links in the Journal's **Sources** lists (Wikipedia, eBible.org, Sefaria, New Advent and others) open third-party sites, but **only when a player clicks one**. They open in a new tab with `rel="noopener noreferrer"` ([`src/features/common/ContentBlock.tsx`](../src/features/common/ContentBlock.tsx), the only `<a href>` in the app).
+Links in the Journal's **Sources** lists (Wikipedia, eBible.org, Sefaria, New Advent and others) open third-party sites, but **only when a player clicks one**. They open in a new tab with `rel="noopener noreferrer"` ([`src/features/common/ContentBlock.tsx`](../src/features/common/ContentBlock.tsx)). So do the music credits' links to each track's Pixabay page and the licence ([`MusicCredits.tsx`](../src/features/menu/MusicCredits.tsx)).
 
 **Limits of the rule:** it covers first-party code in `src/`. It does not scan `node_modules`. Zod 4, a dependency, uses `new Function` for its fast parsing path when the page allows it (see the CSP note in §11). That code is generated from the app's own schema definitions, not from content or player data.
 
@@ -165,6 +165,7 @@ Why each part:
 
 - **`script-src 'self'`:** the production `index.html` has no inline scripts, because the PWA register is `injectRegister: false` and is imported as a module.
 - **`img-src data: blob:`:** a check of the built Phaser chunk found `data:image/…` URIs and `URL.createObjectURL` calls.
+- **`media-src 'self'`:** the teaser film and the recorded music (`audio/music/`, [docs/music.md](music.md)); **`connect-src 'self'`** also covers the music being stored for offline play (a same-origin `Cache.add`).
 - **`style-src 'self'`:** React `style` props and `--text-scale` are applied through the CSSOM, which CSP does not block. Confirm this in Report-Only mode.
 - **Zod 4 probe:** Zod 4 would try `new Function("")` to decide whether to JIT-compile parsers, which shows up as a `script-src` violation. [`src/app/zod-config.ts`](../src/app/zod-config.ts) sets `z.config({ jitless: true })` before anything else runs, so it never tries (the CSP test fails without it).
 - **Where to set it:**

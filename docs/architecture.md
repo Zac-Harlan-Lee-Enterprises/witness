@@ -133,7 +133,7 @@ The test scans `import … from`, `export … from`, side-effect `import '…'` 
 | `tests/` | `unit/` (per layer), `integration/` (full playthroughs), `content/`, `architecture/`, `ui/` (React Testing Library, jsdom), `fixtures/saves/`, `support/` (headless harness) | Vitest projects `unit` (node) and `ui` (jsdom) defined in `vite.config.ts`. |
 | `e2e/` | `smoke`, `chapter`, `saves`, `pwa`, `a11y`, `mobile`, `perf` specs | Runs against `vite preview` of the production build, so the service worker and lazy chunks behave as they do for players. |
 | `scripts/` | `validate-content.ts`, `report-bundle.mjs`, `generate-icons.mjs`, `hooks/`, `lib/policy.sh` | Build-time and harness tooling. |
-| `public/` | PWA icons only | The only static files. There is no other binary art or audio. |
+| `public/` | PWA icons, pre-rendered art (`art/`), the recorded music (`audio/music/`, with its provenance) | Static files served under the base path. |
 | `docs/` | This document, [adr/](adr/README.md), [save-data.md](save-data.md), [future-aws.md](future-aws.md) and the other guides linked from `AGENTS.md` | Durable design knowledge next to the code. |
 
 ## 4. Module and component responsibilities
@@ -170,7 +170,9 @@ The test scans `import … from`, `export … from`, side-effect `import '…'` 
 | [game/systems/](../src/game/systems/) | game | Pure, unit-tested rules: collision, focus picking, camera framing and look-ahead, lighting, automatic quality levels, render resolution, weather (easing, gusts, particle budgets, lightning rationing), the post-processing grade, water, signs of life (noticing, blinking, talking, crowds, pigeons) | `WorldScene` and helpers |
 | [game/art/](../src/game/art/) | game | Art direction per mood (`direction.ts`), site reading (`site.ts`), the scene painter and its passes (terrain, architecture, nature, furnishings, shading), character sheets and poses, entity props | `WorldScene` |
 | [infrastructure/persistence/](../src/infrastructure/persistence/) | infrastructure | IndexedDB repositories, memory fallback, `createRepositories()` | `SaveService`, `ProfileService`, `SettingsService` |
-| [infrastructure/audio/synth-audio.ts](../src/infrastructure/audio/synth-audio.ts) | infrastructure | `SynthAudio` (procedural WebAudio + captions) and `SilentAudio` | `AudioPort` |
+| [infrastructure/audio/synth-audio.ts](../src/infrastructure/audio/synth-audio.ts) | infrastructure | `SynthAudio` (procedural WebAudio effects and ambience, the recorded music's channel, captions) and `SilentAudio` | `AudioPort` |
+| [infrastructure/audio/recorded-music.ts](../src/infrastructure/audio/recorded-music.ts), [media-deck.ts](../src/infrastructure/audio/media-deck.ts), [music-cache.ts](../src/infrastructure/audio/music-cache.ts) | infrastructure | The recorded music: cross-fades, no restarts, last request wins, silence then a gentle return, loops, ducking, pause, autoplay and failure handling; `<audio>` through WebAudio; the offline cache ([docs/music.md](music.md)) | `RecordedMusic` behind `AudioPort` |
+| [application/music.ts](../src/application/music.ts) | application | Which track plays for each mood and each teaser section; ducking and the ending's reflective music (pure) | — |
 | [infrastructure/input/](../src/infrastructure/input/) | infrastructure | Keyboard (remappable) and gamepad (standard mapping) → `VirtualInput`; gamepad focus navigation of menus and dialogue | `App` |
 | [infrastructure/pwa/register-sw.ts](../src/infrastructure/pwa/register-sw.ts) | infrastructure | Service-worker registration with a prompt-to-update flow | `main.tsx` |
 | [infrastructure/scripture/scripture-provider.ts](../src/infrastructure/scripture/scripture-provider.ts) | infrastructure | `StaticScriptureProvider`: approved stored text or the placeholder | `ContentBlock` |
@@ -179,7 +181,7 @@ The test scans `import … from`, `export … from`, side-effect `import '…'` 
 | [shared/event-bus.ts](../src/shared/event-bus.ts), [store.ts](../src/shared/store.ts), [logger.ts](../src/shared/logger.ts) | shared | Typed bus with handler isolation, observable store (works with `useSyncExternalStore`), ring-buffer logger | everyone except domain |
 | [app/services.ts](../src/app/services.ts) | app | Chooses every implementation, loads settings before first render | `main.tsx` |
 | [app/game-runtime.ts](../src/app/game-runtime.ts) | app | Everything for one chapter run: bus, session, controllers, `UiStore`, autosaver, lazy world | `App.tsx`, `GameScreen` |
-| [features/game/GameScreen.tsx](../src/features/game/GameScreen.tsx), [GameViewport.tsx](../src/features/game/GameViewport.tsx) | features | Game screen layout, input-action routing, play-time tick, autosave flush, audio unlock, world host | runtime |
+| [features/game/GameScreen.tsx](../src/features/game/GameScreen.tsx), [GameViewport.tsx](../src/features/game/GameViewport.tsx) | features | Game screen layout, input-action routing, play-time tick, autosave flush, world host (audio is unlocked by any gesture in `App`) | runtime |
 | [features/*](../src/features/) (HUD, dialogue, journal, satchel, quests, puzzles, chapter ending, settings, menus) | features | HTML views of stores. Overlays (journal, satchel, quests, "Go to…", pause, puzzles, ending panels, settings, dialogue history) use the focus-trapping `Modal`. The dialogue box is a non-modal `role="dialog"` panel. | runtime, services |
 
 ## 5. Domain model
@@ -903,7 +905,7 @@ sequenceDiagram
     GC->>WS: WorldPort.loadScene(buildSceneModel(chapter, state, appearance))
     WS->>WS: buildScene: paint ground and canopy canvases, add sprites, camera follow, fade-in unless reduced motion
     WS-->>GC: WorldEvent sceneReady (ignored)
-    GC->>AU: setAmbience and setMusic for the scene
+    GC->>AU: setAmbience and setMusic for the scene (musicOf: its music as the story stands)
     GC->>UI: announce(scene name and description) for screen readers
     GC->>UI: setTransitioning(false)
     GC->>GC: flushDeferred()
@@ -1089,7 +1091,7 @@ The principle: **content or storage problems are logged and survived, never show
 | A save write fails (quota, storage errors) | `SaveService.save` returns `false` | Autosave shows the toast *Your progress could not be saved on this device.*, and manual saves show *The game could not be saved.* |
 | Settings unreadable or partially invalid | `parseSettings` / `SettingsService.load` | Falls back **field by field** to defaults. Load and save failures are logged as warnings. |
 | Stored profile invalid | `ProfileService.list` | Skipped, with a warning. |
-| Audio cannot start (autoplay policy, no device) | `SynthAudio.unlock` try/catch. `SilentAudio` is used when `AudioContext` is missing. | Logged as a warning, and `unlock()` resolves `false`. `playSfx` is a no-op unless the context is running. The game never depends on sound, and ambience and music changes can be captioned. |
+| Audio cannot start (autoplay policy, no device), or a music file can't be loaded | `SynthAudio.unlock` try/catch; `RecordedMusic` catches every failed play. `SilentAudio` is used when `AudioContext` is missing. | Logged as a warning, and `unlock()` resolves `false`. `playSfx` is a no-op unless the context is running. The game never depends on sound, and ambience and music changes can be captioned. |
 | Service worker cannot register | `registerServiceWorker` | Logged as a warning and returns `null`. The game works online-only. |
 | Phaser fails to boot | `mountWorld` rejects (constructor error). `GameViewport` catches it. | `UiStore.setFatalError('The game world could not start on this device (graphics may be unavailable). Your progress is saved.')` shows a `Modal` titled "Something went wrong" with **Return to title**. |
 | A scene fails to build | `GameController.loadCurrentScene` try/catch | Fatal-error modal: *This area could not be loaded. Your progress is saved — try returning to the menu.* |

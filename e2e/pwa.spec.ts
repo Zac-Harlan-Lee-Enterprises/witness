@@ -24,10 +24,26 @@ test('installs a service worker and keeps working offline after the first visit'
     .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
     .toBe(true);
 
+  // The music, once heard online, is stored whole for offline play: the
+  // track that plays first, then the others (src/infrastructure/audio/music-cache.ts).
+  const html = page.locator('html');
+  await page.getByRole('heading', { level: 1 }).click();
+  await expect(html).toHaveAttribute('data-music-playing', 'true');
+  await expect
+    .poll(
+      () => page.evaluate(async () => (await (await caches.open('witness-music')).keys()).length),
+      { timeout: 60_000 },
+    )
+    .toBe(4);
+
   // Relaunch with no network at all.
   await context.setOffline(true);
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+  // The music plays from the cache, answered in byte ranges as the <audio> element asks.
+  await page.getByRole('heading', { level: 1 }).click();
+  await expect(html).toHaveAttribute('data-music', 'cinematic-oud-and-qanun');
+  await expect(html).toHaveAttribute('data-music-playing', 'true');
   // The menus' key art is precached: the title's hero and every chapter's
   // picture show offline, not their painted stand-ins.
   const loaded = (img: Locator) =>

@@ -5,7 +5,7 @@ import type { ScriptureRef, Translation } from '@/domain/scripture';
 import type { GameSettings } from '@/domain/settings';
 import type { GuideAnswer } from '@/domain/guide-policy';
 import type { Direction } from '@/domain/state/game-state';
-import type { Entity, Exit, LookMark, Scene, TileGrid, Weather } from '@/domain/world';
+import type { Entity, Exit, LookMark, Scene, SceneMusic, TileGrid, Weather } from '@/domain/world';
 import type { Appearance } from '@/domain/characters';
 import type { FilmSection } from '@/domain/teaser';
 
@@ -165,7 +165,13 @@ export type WorldListener = (event: WorldEvent) => void;
 
 // ── Audio ──────────────────────────────────────────────────────────────────
 export type AmbienceId = 'market' | 'wind' | 'indoor' | 'oasis' | 'none';
-export type MusicId = 'home' | 'journey' | 'tension' | 'reflection' | 'none';
+/** The mood the music should have (src/application/music.ts chooses the track). */
+export type MusicId = SceneMusic;
+
+export interface MusicOptions {
+  /** Seconds of silence before the new music (a sudden calm). */
+  silence?: number;
+}
 export type SfxId =
   'interact' | 'item' | 'journal' | 'discover' | 'quest' | 'solved' | 'error' | 'page' | 'door';
 
@@ -179,14 +185,24 @@ export interface AudioPort {
   playSfx(id: SfxId): void;
   playFootstep(surface: FootstepSurface): void;
   setAmbience(id: AmbienceId): void;
-  setMusic(id: MusicId): void;
-  applySettings(settings: GameSettings): void;
   /**
-   * Play a film's score (a teaser's cue sheet) from `from` seconds, in place
-   * of any music; it follows the music volume and mute like all music.
+   * Ask for music of a mood. Asking for what already plays changes nothing
+   * (the track never restarts); otherwise the music cross-fades, and the
+   * latest request always wins. Before unlock() it is remembered and starts
+   * once audio is allowed.
+   */
+  setMusic(id: MusicId, options?: MusicOptions): void;
+  /** Lower the music under dialogue and reading, and raise it again after. */
+  setMusicDucked(ducked: boolean): void;
+  applySettings(settings: GameSettings): void;
+  /** The page is hidden: pause every sound until unlock() is called again. */
+  suspend(): void;
+  /**
+   * Play a film's music (a teaser's cue sheet) from `from` seconds, in place
+   * of any other music; it follows the music volume and mute like all music.
    */
   playFilmScore(sections: readonly FilmSection[], duration: number, from: number): void;
-  /** Stop a film's score (paused, skipped or ended). */
+  /** Stop a film's music (paused, skipped or ended); other music is left alone. */
   stopFilmScore(): void;
   dispose(): void;
 }

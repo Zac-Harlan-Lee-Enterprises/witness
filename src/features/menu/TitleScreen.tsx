@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
+import { MusicCredits } from './MusicCredits';
 import { TITLE_ART } from './key-art';
 import { KeyArtImage } from './KeyArtImage';
 
@@ -118,6 +119,7 @@ function AboutDialog({ onClose }: { onClose: () => void }) {
         against sources, and they are labeled “Awaiting editorial review” until a human editor
         approves them.
       </p>
+      <MusicCredits />
     </Modal>
   );
 }

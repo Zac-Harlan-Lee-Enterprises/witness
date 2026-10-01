@@ -338,13 +338,14 @@ export function Toasts({ ui }: { ui: GameRuntimeLike['ui'] }) {
   );
 }
 
-export function Captions() {
+/** Sound captions; `fixed` places them over a menu screen rather than the game. */
+export function Captions({ fixed = false }: { fixed?: boolean }) {
   const { notices } = useServices();
   const settings = useSettings();
   const n = useStore(notices);
   if (!settings.captions || n.captions.length === 0) return null;
   return (
-    <div className="captions" aria-hidden="true">
+    <div className={fixed ? 'captions captions--fixed' : 'captions'} aria-hidden="true">
       {n.captions.map((c) => (
         <p key={c.id}>{c.text}</p>
       ))}

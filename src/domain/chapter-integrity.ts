@@ -459,6 +459,9 @@ export function validateChapterIntegrity(chapter: Chapter): IntegrityIssue[] {
     s.weatherChanges.forEach((change, i) =>
       checkCondition(`${where} weather change ${i}`, change.when),
     );
+    s.musicChanges.forEach((change, i) =>
+      checkCondition(`${where} music change ${i}`, change.when),
+    );
     s.entities.forEach((e) => {
       const eWhere = `${where} entity ${e.id}`;
       if (grid && (e.x >= grid.width || e.y >= grid.height)) add(eWhere, 'is outside the map');

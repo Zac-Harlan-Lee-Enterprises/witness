@@ -1,29 +1,42 @@
-import type { AmbienceId, AudioPort, FootstepSurface, MusicId, SfxId } from '@/application/ports';
+import { filmMusicPlan, trackFor } from '@/application/music';
+import type {
+  AmbienceId,
+  AudioPort,
+  FootstepSurface,
+  MusicId,
+  MusicOptions,
+  SfxId,
+} from '@/application/ports';
+import { MUSIC_TRACKS, musicUrl, type MusicTrack } from '@/domain/music';
 import type { GameSettings } from '@/domain/settings';
 import type { FilmSection } from '@/domain/teaser';
 import type { Logger } from '@/shared/logger';
+import { mediaDeckFactory } from './media-deck';
+import { musicCacher } from './music-cache';
+import {
+  RecordedMusic,
+  type MusicDeckFactory,
+  type MusicStatus,
+  type MusicTimers,
+} from './recorded-music';
 import {
   AMBIENCE,
   FOOTSTEPS,
-  MUSIC,
-  nextPhrase,
   scheduleAmbience,
   SFX,
   type AmbientEventKind,
-  type MusicStyle,
   type Tone,
 } from './soundscape';
-import { composeScore, scoreFrom, type Score } from './film-score';
 
 /**
- * Original, procedurally generated audio (WebAudio), driven by the sound
- * design in soundscape.ts. No audio files ship with the game, so there is
- * nothing to license and nothing to download. Independent gain channels
- * for music, effects, ambience and voice (voice is reserved for future
- * recorded narration).
+ * The game's audio, with WebAudio: original, procedurally generated effects,
+ * footsteps and ambience (the sound design in soundscape.ts), and recorded
+ * background music (recorded-music.ts: four licensed tracks, ADR-0018), on
+ * independent gain channels for music, effects, ambience and voice (voice
+ * is reserved for future recorded narration).
  *
  * The game never depends on audio: every sound has a visible text
- * equivalent, and ambience/music changes can be captioned.
+ * equivalent, and ambience and music changes can be captioned.
  */
 type Channel = 'music' | 'effects' | 'ambience' | 'voice';
 
@@ -34,15 +47,25 @@ const AMBIENCE_CAPTIONS: Record<AmbienceId, string | null> = {
   oasis: '[Birdsong, rustling leaves, trickling water]',
   none: null,
 };
-const MUSIC_CAPTIONS: Record<MusicId, string | null> = {
-  home: '[Warm lyre music]',
-  journey: '[Steady walking music with a soft drum]',
-  tension: '[Low, uneasy music]',
-  reflection: '[Quiet, thoughtful music]',
-  none: null,
-};
 
-const midiToHz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
+/**
+ * The music channel's level at full music volume: the recorded tracks are
+ * mastered loud, and the music should sit under the story, not over it.
+ */
+export const MUSIC_GAIN = 0.45;
+
+/** What the music is doing, and how loud the music channel is (0 when muted). */
+export type MusicReport = MusicStatus & { volume: number };
+
+export interface SynthAudioOptions {
+  /** Plays the recorded music into the music channel (tests pass fakes). */
+  musicDecks?: (ctx: AudioContext, out: AudioNode) => MusicDeckFactory;
+  timers?: MusicTimers;
+  /** What the music is doing (the app exposes it for tests and diagnostics). */
+  onMusicStatus?: (report: MusicReport) => void;
+  /** The site's base URL, e.g. "/witness/". */
+  base?: string;
+}
 
 export class SynthAudio implements AudioPort {
   private ctx: AudioContext | null = null;
@@ -51,25 +74,33 @@ export class SynthAudio implements AudioPort {
   private settings: GameSettings | null = null;
   private ambienceNodes: AudioNode[] = [];
   private ambienceTimer: ReturnType<typeof setInterval> | null = null;
-  private musicTimer: ReturnType<typeof setInterval> | null = null;
-  private droneNodes: OscillatorNode[] = [];
   private noise: AudioBuffer | null = null;
   private currentAmbience: AmbienceId = 'none';
-  private currentMusic: MusicId = 'none';
-  private nextNoteTime = 0;
-  private phrase = { index: 0, step: 0 };
-  private film: {
-    bus: GainNode;
-    timer: ReturnType<typeof setInterval>;
-    nodes: OscillatorNode[];
-  } | null = null;
+  private readonly music: RecordedMusic;
+  private musicAttached = false;
+  private musicStatus: MusicStatus = { track: null, playing: false };
+  private readonly musicDecks: (ctx: AudioContext, out: AudioNode) => MusicDeckFactory;
 
   constructor(
     private readonly logger: Logger,
     private readonly onCaption: (caption: string) => void = () => {},
     private readonly createContext: () => AudioContext | null = defaultContext,
     private readonly random: () => number = Math.random,
-  ) {}
+    private readonly options: SynthAudioOptions = {},
+  ) {
+    this.music = new RecordedMusic(
+      logger,
+      {
+        onStart: (track) => this.captionMusic(track),
+        onStatus: (status) => {
+          this.musicStatus = status;
+          this.reportMusic();
+        },
+      },
+      options.timers,
+    );
+    this.musicDecks = options.musicDecks ?? defaultMusicDecks(options.base, logger);
+  }
 
   async unlock(): Promise<boolean> {
     try {
@@ -86,15 +117,24 @@ export class SynthAudio implements AudioPort {
         this.noise = this.makeNoise();
         if (this.settings) this.applySettings(this.settings);
       }
-      if (this.ctx.state === 'suspended') await this.ctx.resume();
-      // Re-start whatever should be playing now that we can.
-      const ambience = this.currentAmbience;
-      const music = this.currentMusic;
-      this.currentAmbience = 'none';
-      this.currentMusic = 'none';
-      this.setAmbience(ambience);
-      this.setMusic(music);
-      return this.ctx.state === 'running';
+      if (this.ctx.state !== 'running') await this.ctx.resume();
+      const running = this.ctx.state === 'running';
+      if (running) {
+        // Start whatever should be playing now that we can (once).
+        if (this.ambienceNodes.length === 0 && this.currentAmbience !== 'none') {
+          const ambience = this.currentAmbience;
+          this.currentAmbience = 'none';
+          this.setAmbience(ambience);
+        }
+        const out = this.channels.get('music');
+        if (!this.musicAttached && out) {
+          this.musicAttached = true;
+          this.music.attach(this.musicDecks(this.ctx, out));
+        }
+        this.music.setPaused('hidden', false);
+        this.music.resume();
+      }
+      return running;
     } catch (error) {
       this.logger.warn('Audio unavailable (autoplay policy or no audio device)', error);
       return false;
@@ -103,10 +143,16 @@ export class SynthAudio implements AudioPort {
 
   applySettings(settings: GameSettings): void {
     this.settings = settings;
+    // Silent music is paused (it costs nothing), and resumes where it was.
+    this.music.setPaused(
+      'muted',
+      settings.muted || settings.volume.master === 0 || settings.volume.music === 0,
+    );
+    this.reportMusic();
     if (!this.ctx || !this.master) return;
     const t = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(settings.muted ? 0 : settings.volume.master, t, 0.05);
-    this.channels.get('music')?.gain.setTargetAtTime(settings.volume.music * 0.35, t, 0.05);
+    this.channels.get('music')?.gain.setTargetAtTime(settings.volume.music * MUSIC_GAIN, t, 0.05);
     this.channels.get('effects')?.gain.setTargetAtTime(settings.volume.effects * 0.5, t, 0.05);
     this.channels.get('ambience')?.gain.setTargetAtTime(settings.volume.ambience * 0.3, t, 0.05);
     this.channels.get('voice')?.gain.setTargetAtTime(settings.volume.voice, t, 0.05);
@@ -175,141 +221,47 @@ export class SynthAudio implements AudioPort {
     this.ambienceTimer = setInterval(tick, 1000);
   }
 
-  setMusic(id: MusicId): void {
-    if (id === this.currentMusic) return;
-    this.currentMusic = id;
-    this.stopMusic();
-    const ctx = this.ctx;
-    const out = this.channels.get('music');
-    if (!ctx || !out || id === 'none' || ctx.state !== 'running') return;
-    const caption = MUSIC_CAPTIONS[id];
-    if (caption && this.settings?.captions && !this.settings.muted) this.onCaption(caption);
-    const style = MUSIC[id];
-    this.droneNodes = style.drone.map((m) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = midiToHz(m);
-      g.gain.value = 0.07;
-      osc.connect(g).connect(out);
-      osc.start();
-      return osc;
-    });
-    this.nextNoteTime = ctx.currentTime + 0.3;
-    this.phrase = { index: nextPhrase(style, -1, this.random), step: 0 };
-    this.musicTimer = setInterval(() => this.scheduleNotes(style, out), 120);
+  setMusic(id: MusicId, options: MusicOptions = {}): void {
+    this.music.play(trackFor(id), options);
+  }
+
+  setMusicDucked(ducked: boolean): void {
+    this.music.setDucked(ducked);
   }
 
   playFilmScore(sections: readonly FilmSection[], duration: number, from: number): void {
-    this.stopFilmScore();
-    this.setMusic('none');
-    const ctx = this.ctx;
-    const out = this.channels.get('music');
-    if (!ctx || !out || ctx.state !== 'running') return;
-    const score: Score = scoreFrom(composeScore(sections, duration), from);
-    // Film time t plays at context time start + (t - from).
-    const start = ctx.currentTime + 0.05;
-    const bus = ctx.createGain();
-    bus.gain.value = 1;
-    bus.connect(out);
-    const nodes: OscillatorNode[] = [];
-    for (const pad of score.pads) {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = pad.freq;
-      const t0 = start + (pad.time - from);
-      const t1 = t0 + pad.dur;
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(pad.gain, t0 + Math.min(1.5, pad.dur / 3));
-      g.gain.setValueAtTime(pad.gain, Math.max(t0 + 0.01, t1 - Math.min(1.5, pad.dur / 3)));
-      g.gain.exponentialRampToValueAtTime(0.0001, t1);
-      osc.connect(g).connect(bus);
-      osc.start(t0);
-      osc.stop(t1 + 0.05);
-      nodes.push(osc);
-    }
-    // Notes a little ahead of time, so a long score doesn't create every
-    // node at once.
-    let next = 0;
-    const schedule = (): void => {
-      const now = ctx.currentTime;
-      while (next < score.notes.length) {
-        const n = score.notes[next];
-        if (!n) break;
-        const when = start + (n.time - from);
-        if (when > now + 0.6) break;
-        this.play(n, when, bus);
-        next++;
-      }
-    };
-    schedule();
-    const timer = setInterval(schedule, 200);
-    this.film = { bus, timer, nodes };
+    this.music.playFilm(filmMusicPlan(sections, duration, from));
   }
 
   stopFilmScore(): void {
-    const film = this.film;
-    if (!film) return;
-    this.film = null;
-    clearInterval(film.timer);
-    const ctx = this.ctx;
-    if (ctx) {
-      film.bus.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
-      setTimeout(() => film.bus.disconnect(), 400);
-    } else film.bus.disconnect();
-    for (const o of film.nodes) {
-      try {
-        o.stop();
-      } catch {
-        // already stopped
-      }
-    }
+    this.music.stopFilm();
+  }
+
+  suspend(): void {
+    this.music.setPaused('hidden', true);
+    // Ambience events are scheduled on the context's clock: start afresh on return.
+    this.stopAmbience();
+    void this.ctx?.suspend().catch(() => undefined);
   }
 
   dispose(): void {
-    this.stopFilmScore();
+    this.music.dispose();
+    this.musicAttached = false;
     this.stopAmbience();
-    this.stopMusic();
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
+    this.channels.clear();
+    this.master = null;
   }
 
-  private scheduleNotes(style: MusicStyle, out: GainNode): void {
-    const ctx = this.ctx;
-    if (!ctx) return;
-    while (this.nextNoteTime < ctx.currentTime + 0.3) {
-      const phrase = style.phrases[this.phrase.index] ?? [];
-      const degree = phrase[this.phrase.step] ?? -1;
-      if (degree >= 0) {
-        const note = style.notes[degree] ?? 62;
-        this.play(
-          { kind: 'pluck', freq: midiToHz(note), at: 0, dur: style.beat * 2.4, gain: 0.3 },
-          this.nextNoteTime,
-          out,
-        );
-      }
-      if (style.drum && this.phrase.step % 4 === 0) {
-        this.play(
-          {
-            kind: 'breath',
-            freq: 140,
-            at: 0,
-            dur: 0.22,
-            gain: this.phrase.step === 0 ? 0.35 : 0.2,
-          },
-          this.nextNoteTime,
-          out,
-        );
-      }
-      this.nextNoteTime += style.beat;
-      this.phrase.step++;
-      if (this.phrase.step >= phrase.length) {
-        // Breathe between phrases, then choose another.
-        this.nextNoteTime += style.beat * 2;
-        this.phrase = { index: nextPhrase(style, this.phrase.index, this.random), step: 0 };
-      }
-    }
+  private captionMusic(track: MusicTrack): void {
+    if (this.settings?.captions && !this.settings.muted) this.onCaption(track.caption);
+  }
+
+  private reportMusic(): void {
+    const s = this.settings;
+    const volume = !s || s.muted ? 0 : s.volume.master * s.volume.music;
+    this.options.onMusicStatus?.({ ...this.musicStatus, volume: Math.round(volume * 100) / 100 });
   }
 
   private ambientEvent(kind: AmbientEventKind, when: number, v: number, out: AudioNode): void {
@@ -436,16 +388,6 @@ export class SynthAudio implements AudioPort {
     this.ambienceNodes = [];
   }
 
-  private stopMusic(): void {
-    if (this.musicTimer) clearInterval(this.musicTimer);
-    this.musicTimer = null;
-    this.droneNodes.forEach((o) => {
-      o.stop();
-      o.disconnect();
-    });
-    this.droneNodes = [];
-  }
-
   private makeNoise(): AudioBuffer | null {
     const ctx = this.ctx;
     if (!ctx) return null;
@@ -459,6 +401,22 @@ export class SynthAudio implements AudioPort {
     }
     return buffer;
   }
+}
+
+/** Recorded music from the site's own files, cached for offline play once it has played. */
+function defaultMusicDecks(
+  base: string = import.meta.env.BASE_URL,
+  logger: Logger,
+): (ctx: AudioContext, out: AudioNode) => MusicDeckFactory {
+  const urls = Object.values(MUSIC_TRACKS).map((t) => musicUrl(t, base));
+  const cache = musicCacher(urls, (message, error) => logger.warn(message, error));
+  return (ctx, out) =>
+    mediaDeckFactory(
+      ctx,
+      out,
+      (track) => musicUrl(track, base),
+      (url) => void cache(url),
+    );
 }
 
 function defaultContext(): AudioContext | null {
@@ -475,9 +433,11 @@ export class SilentAudio implements AudioPort {
   }
   playSfx(): void {}
   playFootstep(_surface: FootstepSurface): void {}
-  setAmbience(): void {}
-  setMusic(): void {}
+  setAmbience(_id: AmbienceId): void {}
+  setMusic(_id: MusicId, _options?: MusicOptions): void {}
+  setMusicDucked(_ducked: boolean): void {}
   applySettings(): void {}
+  suspend(): void {}
   playFilmScore(): void {}
   stopFilmScore(): void {}
   dispose(): void {}

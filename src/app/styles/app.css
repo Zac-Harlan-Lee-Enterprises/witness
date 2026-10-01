@@ -706,6 +706,12 @@ legend {
   margin: 0.1rem 0;
 }
 
+/* Over the menus (music captions), at the top of the window. */
+.captions--fixed {
+  position: fixed;
+  top: 0.75rem;
+}
+
 .touch-controls {
   position: absolute;
   inset: auto 0 0 0;
@@ -2319,4 +2325,12 @@ body {
 }
 :root[data-motion='reduce'] .teaser__cue {
   animation: none;
+}
+
+/* Music credits (About this game). */
+.credits {
+  padding-left: 1.2rem;
+}
+.credits li {
+  margin: 0.3rem 0;
 }

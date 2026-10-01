@@ -403,5 +403,14 @@
     "priority": 2,
     "hermetic": true,
     "passes": true
+  },
+  {
+    "id": "recorded-music",
+    "category": "functional",
+    "description": "Background music is four recorded Pixabay tracks (owner's decision 2026-10-01, ADR-0018) chosen by mood through AudioPort: oud and qanun for home, markets and menus; Sacred Sands for journeys; the mystery for danger and the storm; the flute for reflection, Scripture, Paul's letter and the endings. Cross-fades, no needless restarts, last request wins, loops, ducking under dialogue and reading, silence before Galilee's calm, tension that stops with the story, teaser music cued to the film; starts on a gesture, silent on failure, paused when muted or hidden, offline from its own range-request cache; credits in About this game; provenance checked by SHA-256.",
+    "verification": "npx --no-install vitest run tests/unit/application/music.test.ts tests/unit/infrastructure/recorded-music.test.ts tests/unit/infrastructure/media-deck.test.ts tests/unit/infrastructure/audio.test.ts tests/content/music.test.ts tests/ui/music.test.tsx",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
   }
 ]

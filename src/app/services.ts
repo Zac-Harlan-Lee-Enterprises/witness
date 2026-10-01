@@ -17,7 +17,7 @@ import { chapterSource } from '@/content';
 import { STORED_PASSAGES, TRANSLATIONS } from '@/content/scripture/translations';
 import { DisabledStudyGuide } from '@/infrastructure/ai/disabled-study-guide';
 import { LogAnalytics, NoopAnalytics } from '@/infrastructure/analytics/providers';
-import { SilentAudio, SynthAudio } from '@/infrastructure/audio/synth-audio';
+import { SilentAudio, SynthAudio, type MusicReport } from '@/infrastructure/audio/synth-audio';
 import { createRepositories, type Repositories } from '@/infrastructure/persistence/indexeddb';
 import { StaticScriptureProvider } from '@/infrastructure/scripture/scripture-provider';
 import { LocalOnlyAuth, LocalOnlySync } from '@/infrastructure/sync/local-only';
@@ -49,6 +49,19 @@ export interface AppServices {
   auth: AuthProvider;
   notices: Store<AppNotice>;
   applyUpdate: (() => Promise<void>) | null;
+}
+
+/**
+ * What the music is doing, on the document element (data-music: the track
+ * or "none"; data-music-playing; data-music-volume), so end-to-end tests
+ * and bug reports can see it without listening.
+ */
+function showMusicStatus(report: MusicReport): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement.dataset;
+  root.music = report.track ?? 'none';
+  root.musicPlaying = String(report.playing);
+  root.musicVolume = String(report.volume);
 }
 
 export async function createAppServices(
@@ -93,7 +106,10 @@ export async function createAppServices(
   const audio =
     overrides.audio ??
     (typeof window !== 'undefined' && 'AudioContext' in window
-      ? new SynthAudio(logger, pushCaption)
+      ? new SynthAudio(logger, pushCaption, undefined, undefined, {
+          base: config.basePath,
+          onMusicStatus: showMusicStatus,
+        })
       : new SilentAudio());
   audio.applySettings(settings.current);
   settings.store.subscribe(() => audio.applySettings(settings.current));

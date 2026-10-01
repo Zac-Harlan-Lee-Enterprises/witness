@@ -271,6 +271,22 @@ export const WeatherChangeSchema = z.object({
   weather: WeatherSchema,
 });
 
+/** The music a place can call for (src/domain/music.ts says which track plays). */
+export const SCENE_MUSIC = ['home', 'journey', 'tension', 'reflection', 'none'] as const;
+export const SceneMusicSchema = z.enum(SCENE_MUSIC);
+export type SceneMusic = z.infer<typeof SceneMusicSchema>;
+
+/**
+ * Music that changes with the story while you stay in a place (later
+ * entries win), e.g. tension when a storm breaks. `silence` lets the music
+ * fall quiet for a few seconds before the new music returns (a sudden calm).
+ */
+export const MusicChangeSchema = z.object({
+  when: ConditionSchema,
+  music: SceneMusicSchema,
+  silence: z.number().min(0).max(10).optional(),
+});
+
 export const SceneSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -300,7 +316,9 @@ export const SceneSchema = z.object({
    * When omitted it follows the ambience.
    */
   mood: z.enum(['home', 'city', 'wilderness', 'oasis']).optional(),
-  music: z.enum(['home', 'journey', 'tension', 'reflection', 'none']).default('none'),
+  music: SceneMusicSchema.default('none'),
+  /** Music driven by the story within the place (the last matching entry wins). */
+  musicChanges: z.array(MusicChangeSchema).default([]),
   /** The weather when nothing in `weatherChanges` applies. */
   weather: WeatherSchema.default('clear'),
   /**

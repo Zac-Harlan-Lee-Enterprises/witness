@@ -5,6 +5,7 @@ import type { Chapter } from '@/domain/chapter';
 import type { PlayerProfile } from '@/domain/profile';
 import { shouldPlayTeaser } from '@/domain/teaser';
 import { useStore } from '@/features/common/hooks';
+import { Captions } from '@/features/hud/Hud';
 import { GameScreen } from '@/features/game/GameScreen';
 import { prefersReducedMotionSetting, useSystemReducedMotion } from '@/features/game/motion';
 import { ChapterSelect } from '@/features/menu/ChapterSelect';
@@ -91,6 +92,35 @@ export function App({ services }: { services: AppServices }) {
       detachPad();
     };
   }, [services]);
+
+  // Sound may start only after a user gesture (autoplay policies). Every
+  // press or key tries, so music the browser blocked starts on the next one;
+  // a hidden page is silent until it is shown again.
+  useEffect(() => {
+    const { audio } = services;
+    const unlock = (): void => void audio.unlock();
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'hidden') audio.suspend();
+      else unlock();
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+      document.removeEventListener('visibilitychange', onVisibility);
+      audio.dispose();
+    };
+  }, [services]);
+
+  // The menus have the home music (the oud and qanun), from the title to the
+  // chapter list; a chapter and a teaser choose their own.
+  const inMenus =
+    screen.name === 'title' || screen.name === 'profiles' || screen.name === 'chapters';
+  useEffect(() => {
+    if (inMenus) services.audio.setMusic('home');
+  }, [inMenus, services]);
 
   const keyboard = useMemo(() => createKeyboardAttacher(services), [services]);
 
@@ -239,6 +269,7 @@ export function App({ services }: { services: AppServices }) {
           onQuit={() => void quitGame()}
         />
       )}
+      {inMenus && <Captions fixed />}
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </ErrorBoundary>
   );

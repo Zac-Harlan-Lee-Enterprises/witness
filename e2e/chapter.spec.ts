@@ -26,12 +26,15 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   test.setTimeout(timeLimit(240_000));
   await openApp(page);
   await setFastSettings(page);
+  // The music, as the game exposes it (src/app/services.ts).
+  const music = page.locator('html');
 
   // 1–2
   await createProfile(page, 'Ari');
   await newGame(page);
   await waitForWorld(page);
   await expectScene(page, 'Aunt Miriam’s house');
+  await expect(music).toHaveAttribute('data-music', 'cinematic-oud-and-qanun');
   await snap(page, '01-house-opening');
 
   // 3–5: the opening conversation gives the quest and the remedy.
@@ -107,6 +110,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await goTo(page, 'Go to the market');
   await goTo(page, /Go to the east gate/);
   await expectScene(page, 'The road down to Jericho');
+  await expect(music).toHaveAttribute('data-music', 'sacred-sands'); // the music follows the place
   await snap(page, '05-road');
 
   // 13: the road.
@@ -140,6 +144,8 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
 
   await goTo(page, 'Examine Broken jar');
   await endDialogue(page); // the ridge-end narration fires on the way down
+  // Uneasy music from finding the man until you have chosen what to do.
+  await expect(music).toHaveAttribute('data-music', 'middle-eastern-cinematic-mystery');
   await goTo(page, 'Examine Many footprints');
   await goTo(page, 'Examine Drag marks');
   await choose(page, 'Think it through now.');
@@ -163,6 +169,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await snap(page, '08-decision');
   await choose(page, /Leave him what water and food you have/);
   await endDialogue(page);
+  await expect(music).toHaveAttribute('data-music', 'sacred-sands');
   await goTo(page, 'Go to the road on to Jericho');
   await expectScene(page, 'Jericho, the city of palm trees');
   await snap(page, '09-jericho');
@@ -212,6 +219,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
     'Behold, a certain lawyer stood up and tested him', // the approved World English Bible text
   );
   await expect(connection).toContainText('In our own words — not a quotation');
+  await expect(music).toHaveAttribute('data-music', 'meditative-middle-eastern-flute');
   await snap(page, '11-connection');
   await connection.getByRole('button', { name: 'Continue' }).click();
   const reflect = page.getByRole('dialog', { name: 'Reflect' });

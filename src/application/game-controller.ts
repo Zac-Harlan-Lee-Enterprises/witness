@@ -1,6 +1,7 @@
 import type { Appearance } from '@/domain/characters';
 import { evaluate } from '@/domain/conditions';
 import { playerMarks } from '@/domain/looks';
+import { musicOf } from '@/domain/music';
 import { weatherOf } from '@/domain/weather';
 import type { DomainEvent } from '@/domain/events';
 import { MOVEMENT_SPEEDS, type GameSettings } from '@/domain/settings';
@@ -12,7 +13,15 @@ import type { AnalyticsService } from './analytics';
 import { footstepSurface } from './footsteps';
 import type { DialogueController } from './dialogue-controller';
 import type { GameSession } from './game-session';
-import type { AudioPort, WorldConversation, WorldEmphasis, WorldEvent, WorldPort } from './ports';
+import { musicDucked, musicWithPanel } from './music';
+import type {
+  AudioPort,
+  MusicId,
+  WorldConversation,
+  WorldEmphasis,
+  WorldEvent,
+  WorldPort,
+} from './ports';
 import type { PuzzleController } from './puzzle-controller';
 import { timeOfDayLabel } from './time-of-day';
 import type { UiStore } from './ui-store';
@@ -69,6 +78,9 @@ export class GameController {
   private entitiesKey = '';
   private playerMarksKey = '';
   private weatherKey = '';
+  /** The music last asked for, and in which place (null until a place has loaded). */
+  private musicKey: { sceneId: string; music: MusicId } | null = null;
+  private ducked = false;
   private lastStoryState: GameState | null = null;
   private disposed = false;
   private chapterStarted = false;
@@ -79,8 +91,14 @@ export class GameController {
     const { bus, session, ui } = deps;
     this.unsubscribers.push(
       bus.onAny((event) => this.onDomainEvent(event)),
-      session.store.subscribe(() => this.refreshEntities()),
-      ui.subscribe(() => this.syncControls()),
+      session.store.subscribe(() => {
+        this.refreshEntities();
+        this.syncMusic();
+      }),
+      ui.subscribe(() => {
+        this.syncControls();
+        this.syncMusic();
+      }),
     );
   }
 
@@ -144,7 +162,7 @@ export class GameController {
       this.weatherKey = model.weather;
       await this.world?.loadScene(model);
       audio.setAmbience(scene.ambience);
-      audio.setMusic(scene.music);
+      this.syncMusic(true);
       ui.announce(`${scene.name}. ${scene.description}`);
       ui.showPlace(scene.name);
     } catch (error) {
@@ -274,9 +292,13 @@ export class GameController {
   }
 
   dispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
     this.unsubscribers.forEach((u) => u());
     this.world = null;
+    // The place's sounds end with the chapter; the menus choose the next music.
+    this.deps.audio.setAmbience('none');
+    if (this.ducked) this.deps.audio.setMusicDucked(false);
   }
 
   // ── Internals ───────────────────────────────────────────────────────────
@@ -548,6 +570,35 @@ export class GameController {
     if (key === this.entitiesKey) return;
     this.entitiesKey = key;
     this.world.updateEntities(entities);
+  }
+
+  /**
+   * The music follows the place, the story within it (musicChanges: tension
+   * that stops when the storm calms, with a moment's silence first) and the
+   * ending's panels; it is lowered under dialogue and reading. The port is
+   * only told about real changes.
+   */
+  private syncMusic(sceneLoaded = false): void {
+    if (this.disposed) return;
+    const { session, ui, audio } = this.deps;
+    const state = ui.getState();
+    const duck = musicDucked(state);
+    if (duck !== this.ducked) {
+      this.ducked = duck;
+      audio.setMusicDucked(duck);
+    }
+    // Until the first place has loaded, the music waits for it.
+    if (!sceneLoaded && !this.musicKey) return;
+    const scene = findScene(session.chapter, session.state.sceneId);
+    const now = musicOf(scene, session.state);
+    const music = musicWithPanel(now.music, state.panel);
+    const prev = this.musicKey;
+    if (prev?.sceneId === scene.id && prev.music === music) return;
+    // A moment's silence only for a change of story here, never on arrival.
+    const silence = prev?.sceneId === scene.id && music === now.music ? now.silence : 0;
+    this.musicKey = { sceneId: scene.id, music };
+    if (silence > 0) audio.setMusic(music, { silence });
+    else audio.setMusic(music);
   }
 
   private syncControls(): void {

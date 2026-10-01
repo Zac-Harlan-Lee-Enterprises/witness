@@ -45,7 +45,7 @@ export function GameScreen({
   onOpenSettings: () => void;
   onQuit: () => void;
 }) {
-  const { input, audio } = useServices();
+  const { input } = useServices();
   const ui = useStore(runtime.ui);
   const settings = useSettings();
 
@@ -94,17 +94,6 @@ export function GameScreen({
   useEffect(() => {
     runtime.controller.applyMotionSettings();
   }, [runtime, settings.movementSpeed, settings.reducedMotion, systemReducedMotion]);
-
-  // Unlock audio on the first interaction (autoplay policies).
-  useEffect(() => {
-    const unlock = () => void audio.unlock();
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
-    return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-    };
-  }, [audio]);
 
   return (
     <div className="game" data-exploring={runtime.ui.explorationAllowed ? 'true' : 'false'}>
