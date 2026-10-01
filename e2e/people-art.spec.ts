@@ -1,11 +1,13 @@
 import { writeFileSync } from 'node:fs';
-import { devices, expect, test, type Page } from '@playwright/test';
+import { devices, test, type Page } from '@playwright/test';
 import {
   choose,
+  continueDialogue,
   createProfile,
   endDialogue,
   expectScene,
   goTo,
+  mendNet,
   newGame,
   openApp,
   setFastSettings,
@@ -17,7 +19,9 @@ import { artDetails } from './world-probe';
  * Captures of the world's people in the game (not a pass/fail test), for
  * judging their realism at the size players see them: Aunt Miriam and the
  * player (look 1) in her house, the market's passers-by and the player
- * walking among them, and Hadassah. Each shot is taken whole and as a
+ * walking among them, Hadassah and Old Shimon (an elder in his mantle); Eli on
+ * the road down to Jericho; Grandmother Shelomit (an elder) and Hodaya on the
+ * shore at Capernaum. Each shot is taken whole and as a
  * close crop round the middle of the view (where the player stands), at
  * desktop and phone sizes.
  *
@@ -58,40 +62,48 @@ async function canvasInfo(page: Page): Promise<string> {
   return `art=${art ?? '?'}\ttextureMb=${mb ?? '?'}`;
 }
 
+/** Takes a whole and a cropped capture, and notes the art the game drew. */
+function shooter(
+  page: Page,
+  vp: string,
+  part: string,
+): (name: string, settle?: number) => Promise<void> {
+  let n = 0;
+  const info: string[] = [];
+  const prefix = `test-results/people-art/${SET}/${vp}`;
+  return async (name: string, settle = 600): Promise<void> => {
+    await page.waitForTimeout(settle);
+    n++;
+    const file = `${prefix}-${part}${String(n).padStart(2, '0')}-${name}`;
+    await page.screenshot({ path: `${file}.png` });
+    const box = await page.locator('.viewport canvas').boundingBox();
+    if (box) {
+      // A close crop round the middle of the view, where the camera keeps the player.
+      const side = Math.min(box.width, box.height) * (vp === 'phone' ? 0.8 : 0.5);
+      await page.screenshot({
+        path: `${file}-crop.png`,
+        clip: {
+          x: box.x + (box.width - side) / 2,
+          y: box.y + (box.height - side) / 2,
+          width: side,
+          height: side,
+        },
+      });
+    }
+    info.push(
+      `${part}${String(n).padStart(2, '0')}-${name}\t${await canvasInfo(page)}\t${await artDetails(page)}`,
+    );
+    writeFileSync(`${prefix}-${part}art.txt`, info.join('\n') + '\n');
+  };
+}
+
 for (const vp of VIEWPORTS) {
   test.describe(vp.name, () => {
     test.use(vp.use);
     test(`people art (${vp.name})`, async ({ page }) => {
       test.skip(!process.env.E2E_SHOTS, 'art captures run only with E2E_SHOTS=1');
-      test.setTimeout(240_000);
-      let n = 0;
-      const info: string[] = [];
-      const prefix = `test-results/people-art/${SET}/${vp.name}`;
-      const shot = async (name: string, settle = 600): Promise<void> => {
-        await page.waitForTimeout(settle);
-        n++;
-        const file = `${prefix}-${String(n).padStart(2, '0')}-${name}`;
-        await page.screenshot({ path: `${file}.png` });
-        const box = await page.locator('.viewport canvas').boundingBox();
-        if (box) {
-          // A close crop round the middle of the view, where the camera keeps the player.
-          const side = Math.min(box.width, box.height) * (vp.name === 'phone' ? 0.8 : 0.5);
-          await page.screenshot({
-            path: `${file}-crop.png`,
-            clip: {
-              x: box.x + (box.width - side) / 2,
-              y: box.y + (box.height - side) / 2,
-              width: side,
-              height: side,
-            },
-          });
-        }
-        info.push(
-          `${String(n).padStart(2, '0')}-${name}\t${await canvasInfo(page)}\t${await artDetails(page)}`,
-        );
-        writeFileSync(`${prefix}-art.txt`, info.join('\n') + '\n');
-      };
-
+      test.setTimeout(420_000);
+      const shot = shooter(page, vp.name, '');
       await openApp(page);
       await setFastSettings(page);
       await createProfile(page, 'Ari');
@@ -116,10 +128,80 @@ for (const vp of VIEWPORTS) {
       await shot('market-walking', 0);
       await page.keyboard.up('ArrowRight');
       await shot('market-standing', 2500);
+      await goTo(page, 'Talk to Old Shimon');
+      await shot('shimon', 1500);
+      await choose(page, 'I’m going down to Jericho. Any advice?');
+      await choose(page, 'Is there any water on the way?');
+      await choose(page, 'That could save a lot of weight in my satchel.');
+      await choose(page, 'Goodbye, Shimon.');
+      await endDialogue(page);
       await goTo(page, 'Talk to Hadassah the weaver');
       await shot('hadassah', 1500);
+      await choose(page, 'Aunt Miriam sent me for Rivka’s linen.');
+      await choose(page, 'I’ll keep it safe.');
+      await choose(page, 'Goodbye.');
+      await endDialogue(page);
+
+      // On to the road, and Eli by the cistern on the ridge.
+      await goTo(page, 'Go to Aunt Miriam’s house');
+      await goTo(page, 'Use Travel satchel');
+      const puzzle = page.getByRole('dialog', { name: 'Pack the Satchel' });
+      await puzzle.getByRole('button', { name: 'Pack one Water skin' }).click();
+      await puzzle.getByRole('button', { name: 'Pack one Bread and dates' }).click();
+      await puzzle.getByRole('button', { name: 'Finish packing' }).click();
+      await puzzle.getByRole('button', { name: 'Continue' }).click();
+      await goTo(page, 'Go to the market');
+      await goTo(page, /Go to the east gate/);
+      await expectScene(page, 'The road down to Jericho');
+      await goTo(page, 'Use The crossroads — choose a route');
+      await continueDialogue(page);
+      await endDialogue(page);
+      const route = page.getByRole('dialog', { name: 'Which Way Down?' });
+      await route.getByLabel(/The shepherds’ ridge path/).check();
+      await route.getByLabel(/A cistern on the ridge/).check();
+      await route.getByLabel(/Watchers at the bend/).check();
+      await route.getByRole('button', { name: 'Present my reasoning' }).click();
+      await route.getByRole('button', { name: 'Continue' }).click();
+      await goTo(page, 'Talk to Eli, the shepherd boy');
+      await choose(page, 'Sorry — I need mine for the road.');
+      await shot('eli', 1500);
+      await choose(page, 'I have to keep going.');
+      await endDialogue(page);
+      await shot('eli-after', 1200);
+    });
+
+    test(`people art at Capernaum (${vp.name})`, async ({ page }) => {
+      test.skip(!process.env.E2E_SHOTS, 'art captures run only with E2E_SHOTS=1');
+      test.setTimeout(300_000);
+      const shot = shooter(page, vp.name, 'shore-');
+      await openApp(page);
+      await setFastSettings(page);
+      await createProfile(page, 'Noa');
+      await newGame(page, 'A Storm on Galilee');
+      await waitForWorld(page);
+      await shot('shelomit', SETTLE_MS);
+      await choose(page, 'So many people! Who are they listening to?');
+      await choose(page, 'I’m ready. What do I do?');
+      await choose(page, 'I’ll go and find Hanina.');
+      await choose(page, 'Show me how.');
+      await endDialogue(page);
+      const corner = page.getByRole('dialog', { name: 'Grandmother’s Corner' });
+      await mendNet(corner, [
+        [1, 3],
+        [2, 3], [2, 4],
+        [3, 3],
+        [4, 2], [4, 3], [4, 4],
+        [5, 2], [5, 3], [5, 4],
+      ]); // prettier-ignore
+      await corner.getByRole('button', { name: 'Continue' }).click();
+      await shot('shelomit-after', 1200);
+      await goTo(page, 'Go to the shore');
+      await expectScene(page, 'The shore at Capernaum');
+      await shot('shore', SETTLE_MS);
+      await goTo(page, 'Talk to Hodaya, of the Magdala crew');
+      await shot('hodaya', 1500);
       await page.keyboard.press('Escape');
-      await expect(page.locator('.viewport canvas')).toBeVisible();
+      await shot('hodaya-after', 1200);
     });
   });
 }

@@ -203,8 +203,27 @@ FABRIC = {
     "linen": dict(mass=0.12, tension=12.0, compression=12.0, shear=4.0, bending=0.08, air=1.2),
     # Everyday wool tunic: heavier, broader folds.
     "wool": dict(mass=0.25, tension=18.0, compression=18.0, shear=6.0, bending=0.6, air=1.0),
-    # A mantle or cloak of thick wool: heavy, stiff, few deep folds.
+    # Thick wool: heavy, stiff, few deep folds.
     "heavy": dict(mass=0.42, tension=25.0, compression=25.0, shear=10.0, bending=0.9, air=1.0),
+    # An outer garment of fulled wool (the elders' mantle, a cloak): heavy
+    # but supple. It barely stretches, yet gives way when pushed together
+    # (low compression), so it buckles into deep, rounded folds where it is
+    # gathered or caught, rather than standing off the body like a board.
+    "mantle": dict(mass=0.34, tension=16.0, compression=3.0, shear=4.0, bending=0.12, air=1.0),
+}
+
+# How an outer garment hangs (_curtain, _drape): the start shape the
+# simulation drapes. `smooth` rounds the outline of what holds it up (a hull
+# is straight between the shoulder and the elbow: left alone it hangs in flat
+# panels); `cling` draws it in toward the body below the shoulders, so it
+# lies on the arms and back instead of starting as a cylinder off them;
+# `folds` seeds the vertical folds it falls into (outward only, growing to
+# the hem); `flare` lets it out toward the hem; `gather` puts small pleats
+# round the top, where it is gathered on the shoulders (or clutched at the
+# throat).
+DRAPE = {
+    "mantle": dict(smooth=3, cling=0.35, folds=0.03, flare=0.024, gather=0.01),
+    "cloak": dict(smooth=3, cling=0.4, folds=0.028, flare=0.02, gather=0.012),
 }
 
 
@@ -308,7 +327,7 @@ class Wardrobe:
             self._headwear(hw)
         if a["build"] == "elder":
             mat = cloth_material("#6e6452", "wool", "#4c4436", stripe_at=0.14, stripe_w=0.02, name="mantle")
-            self._curtain("mantle", mat, top=J["neck"][2] + 0.01, bottom=J["knee_L"][2] + 0.06, front_open=0.3, fabric="heavy", pad=0.012)
+            self._curtain("mantle", mat, top=J["neck"][2] + 0.01, bottom=J["knee_L"][2] + 0.06, front_open=0.3, fabric="mantle", pad=0.012, drape=DRAPE["mantle"])
 
     def build_marks(self):
         """Garments and wraps the story marks put on (after the carried things)."""
@@ -321,7 +340,7 @@ class Wardrobe:
             if self.p.rest == "lie":
                 made.append(self._blanket("cloak", mat, mark="wrapped-in-cloak"))
             else:
-                made.append(self._curtain("cloak", mat, top=J["neck"][2] + 0.015, bottom=J["pelvis"][2] - 0.12, front_open=0.1, fabric="heavy", pad=0.04, mark="wrapped-in-cloak"))
+                made.append(self._curtain("cloak", mat, top=J["neck"][2] + 0.015, bottom=(J["pelvis"][2] + J["knee_L"][2]) / 2 - 0.04, front_open=0.1, fabric="mantle", pad=0.016, mark="wrapped-in-cloak", drape=DRAPE["cloak"]))
         for m in ("bandaged", "rag-bandaged"):
             if m in marks:
                 col = "#e6ddc9" if m == "bandaged" else self.p.rag
@@ -655,7 +674,7 @@ class Wardrobe:
             g.extra = [list(range(40))[::-1]]
         self.garments.append(g)
 
-    def _curtain(self, name, mat, top, bottom, front_open, fabric, pad, face=False, mark=None):
+    def _curtain(self, name, mat, top, bottom, front_open, fabric, pad, face=False, mark=None, drape=None):
         """Cloth hanging from the head or shoulders: at each height, the outline
         of everything above it (cloth falls straight from what holds it up),
         let out; open at the front for the face or down the chest."""
@@ -689,6 +708,8 @@ class Wardrobe:
             ease = pad + (0.012 + 0.014 * min(1.0, (chin - z) / 0.25) if below_chin else 0.0)
             rr = acc + ease
             rings.append(np.stack([np.sin(th) * rr, cy - np.cos(th) * rr, np.full(SEG, z)], 1))
+        if drape:
+            rings = self._drape(rings, cy, th, drape, name, allp)
         if face:
             # Over the crown the cloth is a round dome, not the head's point.
             zr = np.array([r[0, 2] for r in rings])
@@ -752,6 +773,41 @@ class Wardrobe:
             return g
         self.garments.append(g)
         return g
+
+    def _drape(self, rings, cy, th, d, name, allp):
+        """The start shape of an outer garment (see DRAPE): rounded, drawn
+        in to lie on the arms, flared, seeded with folds and gathered at the
+        top. Folds go only outward, so nothing starts inside the body."""
+        zs = np.array([r[0, 2] for r in rings])
+        top, bottom = float(zs[0]), float(zs[-1])
+        span = max(top - bottom, 1e-6)
+        R = np.array([np.hypot(r[:, 0], r[:, 1] - cy) for r in rings])
+        # Rounded: a circular smoothing of each ring's radii (never more than
+        # a few millimetres inside the raw outline).
+        k = np.array([1.0, 2.0, 3.0, 2.0, 1.0])
+        k /= k.sum()
+        for _ in range(int(d.get("smooth", 0))):
+            S = sum(np.roll(R, s, axis=1) * w for s, w in zip(range(-2, 3), k))
+            R = np.maximum(S, R - 0.004)
+        rng = np.random.default_rng(sum(map(ord, name)) * 7 + 3)
+        ph = rng.uniform(0, 2 * math.pi, 3)
+        out = []
+        for z, r in zip(zs, R):
+            t = (top - z) / span
+            # Drawn in toward the body at this height (the arms' hull leaves a
+            # gap at the sides), never closer than the body with a little air.
+            near = allp[np.abs(allp[:, 2] - z) < 0.03]
+            if d.get("cling") and t > 0.05 and len(near) >= 3:
+                body = _radii(_hull2(near[:, :2]), (0.0, cy), th) + 0.02
+                w = d["cling"] * min(1.0, (t - 0.05) / 0.2)
+                r = np.maximum(r - w * np.maximum(r - body, 0.0), body)
+            fold = 0.6 * (0.5 + 0.5 * np.cos(9 * th + ph[0] + 0.8 * t)) + 0.4 * (0.5 + 0.5 * np.cos(14 * th + ph[1] - 1.1 * t))
+            r = r + d.get("folds", 0.0) * t**0.8 * fold + d.get("flare", 0.0) * t
+            g = d.get("gather", 0.0) * max(0.0, 1.0 - (top - z) / 0.08)
+            if g:
+                r = r + g * (0.5 + 0.5 * np.cos(22 * th + ph[2]))
+            out.append(np.stack([np.sin(th) * r, cy - np.cos(th) * r, np.full(len(th), z)], 1))
+        return out
 
     def _blanket(self, name, mat, mark):
         """A cloak laid over someone lying on their back: it covers the front
@@ -1041,6 +1097,16 @@ class Wardrobe:
                 g.shapes[(clip, rec)] = v.reshape(-1, 3).copy()
                 sh = g.shapes[(clip, rec)]
                 print("CLOTH", g.name, clip, rec, "moved", round(float(np.abs(sh - g.V).max()), 3), "z", round(float(sh[:, 2].min()), 3), round(float(sh[:, 2].max()), 3), flush=True)
+            # An outer garment hangs over the tunic's skirt. The solver lets
+            # supple wool slip through another simulated cloth (the mantle
+            # hung inside the skirt from the belt down, showing only as a
+            # yoke): standing or walking, it is set back outside it.
+            skirt = work.get("skirt")
+            if skirt and clip in ("stand", "walk"):
+                S = skirt[0].shapes[(clip, rec)]
+                for name, (g, o) in work.items():
+                    if name in DRAPE:
+                        g.shapes[(clip, rec)] = outside(g.shapes[(clip, rec)], S)
         # Tidy: the working copies, the ground and the animation go.
         for g, o in work.values():
             bpy.data.objects.remove(o)
@@ -1139,6 +1205,49 @@ def _blend(a, b, t):
     m = Matrix.Translation(la.lerp(lb, t)) @ qa.slerp(qb, t).to_matrix().to_4x4()
     _ = Quaternion
     return out, np.array(m)
+
+
+def outside(V, S, gap=0.008, band=0.02, seg=48):
+    """V with every point within the height of surface S (a garment hanging
+    round the body, like the skirt) moved out from S's own axis at that
+    height until it lies at least `gap` outside S. Points above or below S,
+    and points already outside, are left where they are."""
+    V = np.array(V, F, copy=True)
+    S = np.asarray(S, F)
+    z0, z1 = float(S[:, 2].min()), float(S[:, 2].max())
+    nb = max(1, int(math.ceil((z1 - z0) / band)))
+    sb = np.clip(((S[:, 2] - z0) / band).astype(int), 0, nb - 1)
+    tau = 2 * math.pi
+
+    def bins(d):
+        a = np.arctan2(d[:, 0], -d[:, 1]) % tau
+        return (a / tau * seg).astype(int) % seg
+
+    for b in range(nb):
+        sel = S[sb == b]
+        if len(sel) < 8:
+            continue
+        c = sel[:, :2].mean(0)
+        d = sel[:, :2] - c
+        rmax = np.zeros(seg)
+        np.maximum.at(rmax, bins(d), np.hypot(d[:, 0], d[:, 1]))
+        for _ in range(seg):
+            empty = rmax == 0
+            if not empty.any():
+                break
+            rmax[empty] = np.maximum(np.roll(rmax, 1), np.roll(rmax, -1))[empty]
+        rmax = np.maximum(rmax, 0.97 * np.maximum(np.roll(rmax, 1), np.roll(rmax, -1)))
+        lo = z0 + b * band
+        hi = z1 + 1e-6 if b == nb - 1 else lo + band
+        m = (V[:, 2] >= lo) & (V[:, 2] < hi)
+        if not m.any():
+            continue
+        dv = V[m, :2] - c
+        rv = np.hypot(dv[:, 0], dv[:, 1])
+        need = rmax[bins(dv)] + gap
+        k = np.where(rv < need, need / np.maximum(rv, 1e-6), 1.0)
+        V[m, :2] = c + dv * k[:, None]
+    return V
 
 
 def _blob(c, r):
