@@ -400,15 +400,20 @@ class Person(people.Person):
                 part.rest[:, 1] += shift
             if part.upright is not None and part.obj.name.endswith(("-oar", "-oar-blade", "-staff")):
                 # A tall person's oar or staff (sized to their height) would
-                # rise out of the top of the frame: kept under 1.86 m.
+                # rise out of the top of the frame (raised in the hand, and seen
+                # from above, it stands higher still): kept under 1.66 m.
                 # (Both pieces of an oar by the same measure: its blade's top.)
                 top = (1.13 if "-oar" in part.obj.name else 1.02) * self.H
-                limit = 1.86
+                limit = 1.66
                 if top > limit:
                     k = limit / top
                     for v in part.obj.data.vertices:
                         v.co.z *= k
                     part.rest[:, 2] *= k
+            if part.bone == "hand_R" and part.upright is None and any(k in part.obj.name for k in ("-tray", "-loaf", "-lamp")):
+                # A tray of bread is carried level, a lamp's flame stands up:
+                # they follow the hand but don't tilt with it.
+                part.upright = tuple(self.J["hand_R"])
             # A drop spindle hangs straight down from its thread, however the hand turns.
             if part.obj.name.endswith(("-spindle", "-whorl")) and part.upright is None:
                 part.upright = tuple(self.J["hand_R"])

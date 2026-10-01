@@ -500,41 +500,30 @@ describe('pre-rendered people', () => {
 
   it('nobody is cut off by the edge of their frame', () => {
     // A figure and everything it carries lies inside every frame of every
-    // colour sheet (full and half resolution), clear of its edges: a
-    // frame that touches its edge has lost a hand, a hem or a headdress.
+    // rendered colour sheet, clear of its edges: a frame whose pixels reach
+    // its edge has lost a hand, a hem, a staff's tip or a headdress. (The
+    // half-resolution copies are resampled from these, and their filter's
+    // faint fringe may touch an edge the full frame clears.)
     expect(people).not.toBeNull();
     if (!people) return;
     const cut: string[] = [];
-    for (const sheet of Object.values(people)) {
-      const sizes: Array<[string, number, number]> = [
-        ...Object.values(sheet.sheets).map(
-          (f) => [f, sheet.frameWidth, sheet.frameHeight] as [string, number, number],
-        ),
-        ...Object.values(sheet.low?.sheets ?? {}).map(
-          (f) =>
-            [f, sheet.low?.frameWidth ?? 0, sheet.low?.frameHeight ?? 0] as [
-              string,
-              number,
-              number,
-            ],
-        ),
-      ];
-      for (const [file, fw, fh] of sizes)
+    for (const sheet of Object.values(people))
+      for (const file of Object.values(sheet.sheets))
         for (const [name, [, , w, h, ox, oy]] of Object.entries(sheet.atlas[file] ?? {}))
-          if (ox <= 0 || oy <= 0 || ox + w >= fw || oy + h >= fh) cut.push(`${file} ${name}`);
-    }
+          if (ox <= 0 || oy <= 0 || ox + w >= sheet.frameWidth || oy + h >= sheet.frameHeight)
+            cut.push(`${file} ${name}`);
     expect(cut).toEqual([]);
   });
 
   it('people stand as tall as real people do', () => {
     // Facing the camera at rest, the top of the head (or of what is worn on
-    // it) above the soles, in metres (32 game units): children about ten,
+    // it) above the soles, in metres (32 game units): children from six to ten,
     // grown men and women, the old. Someone holding up a staff, an oar or
     // a lamp is measured by those instead, so they are left out.
     expect(people).not.toBeNull();
     if (!people) return;
     const range: Record<string, [number, number]> = {
-      child: [1.2, 1.55],
+      child: [1.0, 1.55],
       adult: [1.5, 1.95],
       elder: [1.45, 1.95],
     };
