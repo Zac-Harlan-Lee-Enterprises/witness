@@ -137,6 +137,69 @@ describe('art asset provenance', () => {
   });
 });
 
+describe('MakeHuman data in the world figures (ADR-0017)', () => {
+  const pinned = JSON.parse(
+    readFileSync(join(ROOT, 'tools', 'art', 'data', 'makehuman-files.json'), 'utf8'),
+  ) as {
+    $comment: string;
+    source: { license: string; commit: string };
+    files: Array<{ path: string; bytes: number; sha256: string }>;
+  };
+  const manifest = JSON.parse(
+    readFileSync(join(ROOT, 'docs', 'art', 'asset-manifest.json'), 'utf8'),
+  ) as { assets: AssetEntry[]; thirdPartySources: Array<{ use: string; approval: string }> };
+
+  it('pins the skeleton and its skin weights with the rest of MakeHuman’s CC0 data', () => {
+    expect(pinned.source.license).toBe('CC0-1.0');
+    for (const path of [
+      'makehuman/data/rigs/default.mhskel',
+      'makehuman/data/rigs/default_weights.mhw',
+    ]) {
+      const f = pinned.files.find((x) => x.path === path);
+      expect(f, `${path} is pinned`).toBeDefined();
+      expect(f?.sha256, path).toMatch(/^[0-9a-f]{64}$/);
+      expect(f?.bytes, path).toBeGreaterThan(0);
+    }
+    expect(pinned.$comment).toContain('0017-makehuman-bodies-for-world-figures.md');
+  });
+
+  it('takes only geometry and modelling data: no skins, proxies, clothes, hair or poses', () => {
+    // The owner approved the base mesh, its targets and its skeleton and
+    // weights (2026-09-26); everything a person wears or is coloured with
+    // is made here.
+    const allowed = /^makehuman\/data\/(3dobjs\/base\.obj|targets\/|rigs\/default(_weights)?\.m)/;
+    const other = pinned.files
+      .map((f) => f.path)
+      .filter((p) => p !== 'LICENSE.ASSETS.md' && !allowed.test(p));
+    expect(other).toEqual([]);
+    // And the build reads nothing else from the cache.
+    const lib = join(ROOT, 'tools', 'art', 'lib');
+    const reads = readdirSync(lib)
+      .filter((f) => f.endsWith('.py'))
+      .flatMap((f) =>
+        [...readFileSync(join(lib, f), 'utf8').matchAll(/\bmh\.path\("([^"]+)"\)/g)].map(
+          (m) => `makehuman/data/${m[1] ?? ''}`,
+        ),
+      );
+    expect(reads.length).toBeGreaterThan(0);
+    for (const r of reads) expect(r, r).toMatch(allowed);
+  });
+
+  it('records that the people sheets are built on MakeHuman bodies, with the owner’s approval', () => {
+    const sheets = manifest.assets.find((a) => a.path === 'public/art/people/*.webp');
+    expect(sheets?.origin).toContain('tools/art/lib/world_person.py');
+    expect(sheets?.origin).toContain('MakeHuman');
+    const mh = manifest.thirdPartySources.find((s) => s.use.includes('world'));
+    expect(mh?.use).toContain('skeleton');
+    expect(mh?.approval).toContain('0017');
+    const adr = readFileSync(
+      join(ROOT, 'docs', 'adr', '0017-makehuman-bodies-for-world-figures.md'),
+      'utf8',
+    );
+    expect(adr).toMatch(/Approved by the owner, Zac Harlan, on 2026-09-26/);
+  });
+});
+
 describe('Philemon’s house', () => {
   it('fades a column while the player stands behind it, rather than cutting them in half', () => {
     // The colonnade sorts true (no cheat): someone just north of a column in
@@ -433,6 +496,56 @@ describe('pre-rendered people', () => {
       }
     }
     expect(problems).toEqual([]);
+  });
+
+  it('nobody is cut off by the edge of their frame', () => {
+    // A figure and everything it carries lies inside every frame of every
+    // rendered colour sheet, clear of its edges: a frame whose pixels reach
+    // its edge has lost a hand, a hem, a staff's tip or a headdress. (The
+    // half-resolution copies are resampled from these, and their filter's
+    // faint fringe may touch an edge the full frame clears.)
+    expect(people).not.toBeNull();
+    if (!people) return;
+    const cut: string[] = [];
+    for (const sheet of Object.values(people))
+      for (const file of Object.values(sheet.sheets))
+        for (const [name, [, , w, h, ox, oy]] of Object.entries(sheet.atlas[file] ?? {}))
+          // (An overlay's frame where the body hides its mark is empty.)
+          if (
+            w * h > 1 &&
+            (ox <= 0 || oy <= 0 || ox + w >= sheet.frameWidth || oy + h >= sheet.frameHeight)
+          )
+            cut.push(`${file} ${name}`);
+    expect(cut).toEqual([]);
+  });
+
+  it('people stand as tall as real people do', () => {
+    // Facing the camera at rest, the top of the head (or of what is worn on
+    // it) above the soles, in metres (32 game units): children from six to ten,
+    // grown men and women, the old. Someone holding up a staff, an oar or
+    // a lamp is measured by those instead, so they are left out.
+    expect(people).not.toBeNull();
+    if (!people) return;
+    const range: Record<string, [number, number]> = {
+      child: [1.0, 1.55],
+      adult: [1.5, 1.95],
+      elder: [1.45, 1.95],
+    };
+    const wrong: string[] = [];
+    for (const [id, sheet] of Object.entries(people)) {
+      if (sheet.overlay || (sheet.pose ?? 'stand') !== 'stand') continue;
+      const [, , , , headwear, , , build = '', carry = 'none'] = sheet.appearance.split('|');
+      if (['staff', 'oar', 'lamp', 'net'].includes(carry)) continue;
+      const file = Object.values(sheet.sheets)[0];
+      const frame = file ? sheet.atlas[file]?.['down-0'] : undefined;
+      if (!frame) continue;
+      const metres = (sheet.originY - frame[5]) / sheet.ppu / 32;
+      const [lo, hi] = range[build] ?? [0, 0];
+      // A wound turban stands a hand's breadth above the crown.
+      const top = hi + (headwear === 'wrap' ? 0.08 : 0);
+      if (metres < lo || metres > top) wrong.push(`${id}: ${metres.toFixed(2)} m`);
+    }
+    expect(wrong).toEqual([]);
   });
 
   it('the half-resolution sheets are recorded as derived from the rendered ones', () => {

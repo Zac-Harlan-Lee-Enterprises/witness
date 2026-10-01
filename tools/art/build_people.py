@@ -53,7 +53,7 @@ import downsample_people  # noqa: E402
 import imageio  # noqa: E402
 import lighting  # noqa: E402
 import materials as M  # noqa: E402
-import people  # noqa: E402
+import world_person  # noqa: E402
 import repack_people  # noqa: E402
 import shadow_edges  # noqa: E402
 import view  # noqa: E402
@@ -96,13 +96,14 @@ def args():
     p.add_argument("--variants", nargs="+", default=None)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--only", nargs="+", default=None, help="only sheets whose id is one of these")
+    p.add_argument("--force", action="store_true", help="render the chosen sheets again even where people.json has them")
     return p.parse_args(argv)
 
 
 class Job:
     """One sheet to render: whose, in what pose, with which marks."""
 
-    def __init__(self, sid, pid, key, appearance, walks, variants, pose="stand", marks=(), overlay=None, rag=None, of=None):
+    def __init__(self, sid, pid, key, appearance, walks, variants, pose="stand", marks=(), overlay=None, rag=None, of=None, chapter=""):
         self.id = sid
         self.pid = pid
         self.key = key
@@ -114,6 +115,8 @@ class Job:
         self.overlay = overlay
         self.rag = rag
         self.of = of
+        # The chapter (a portrait identity reads it: Colossae's people are Greeks and Phrygians).
+        self.chapter = chapter
 
 
 def lookup(data, who):
@@ -181,15 +184,15 @@ def plan(data, scenes):
             variants = light(by_id[ap["scene"]])
             for pose in ap["poses"]:
                 base = who if pose == "stand" else f"{who}~{pose}"
-                add(Job(base, who, ch["key"], ch["appearance"], False, variants, pose))
+                add(Job(base, who, ch["key"], ch["appearance"], False, variants, pose, chapter=ch["chapter"]))
                 for mark in ap["marks"]:
                     if mark in BASE_MARKS:
-                        add(Job(f"{base}+{mark}", who, ch["key"], ch["appearance"], False, variants, pose, marks=[mark]))
+                        add(Job(f"{base}+{mark}", who, ch["key"], ch["appearance"], False, variants, pose, marks=[mark], chapter=ch["chapter"]))
                     elif mark == "rag-bandaged":
                         for t in tunics:
-                            add(Job(f"{base}@rag-bandaged-{t}", who, ch["key"], ch["appearance"], False, variants, pose, overlay=mark, rag="#" + t, of=base))
+                            add(Job(f"{base}@rag-bandaged-{t}", who, ch["key"], ch["appearance"], False, variants, pose, overlay=mark, rag="#" + t, of=base, chapter=ch["chapter"]))
                     else:
-                        add(Job(f"{base}@{mark}", who, ch["key"], ch["appearance"], False, variants, pose, overlay=mark, of=base))
+                        add(Job(f"{base}@{mark}", who, ch["key"], ch["appearance"], False, variants, pose, overlay=mark, of=base, chapter=ch["chapter"]))
     variants = sorted({v for s in wanted for v in light(s)})
     # Each chapter's marks, in the lights of that chapter's places.
     marks = {}
@@ -241,6 +244,25 @@ def render_frame(scene, path, tries=6):
     return imageio.load(path)
 
 
+def forget(manifest, job):
+    """Drop what people.json records of a job's sheets in its lights (and the
+    person's half-resolution copies), so they are rendered and packed again."""
+    e = manifest.get(job.id)
+    if not e:
+        return
+    atlas = e.setdefault("atlas", {})
+    for v in job.variants:
+        f = e["sheets"].pop(v, None)
+        if f:
+            atlas.pop(f, None)
+        s = e.get("shadows", {}).pop(v, None)
+        if s:
+            atlas.pop(s["sheet"], None)
+    e.pop("low", None)
+    for k in [k for k in atlas if k.endswith("-low.webp")]:
+        del atlas[k]
+
+
 def render(job, a, manifest, tmp):
     scene = common.reset(a.samples)
     build_marks = set(job.marks) | ({job.overlay} if job.overlay else set())
@@ -249,7 +271,16 @@ def render(job, a, manifest, tmp):
         # At rest the hands are empty (and Menashe's jar was broken on the road);
         # a newborn lamb stays in the lap.
         app["carry"] = "none"
-    person = people.Person(app, marks=build_marks, rag=job.rag or "#3e6b73", name=job.pid)
+    person = world_person.Person(
+        app,
+        marks=build_marks,
+        rag=job.rag or "#3e6b73",
+        name=job.pid,
+        pid=job.pid,
+        player=job.pid.startswith("player-"),
+        chapter=job.chapter,
+        rest=None if job.pose == "stand" else job.pose,
+    )
     bpy.ops.mesh.primitive_plane_add(size=24.0, location=(0, 0, 0))
     ground = bpy.context.object
     ground.is_shadow_catcher = True
@@ -287,6 +318,18 @@ def render(job, a, manifest, tmp):
     mark_parts = [p for p in person.parts if p.mark is not None]
     body_parts = [p for p in person.parts if p.mark is None]
     todo = [v for v in job.variants if v not in entry["sheets"]]
+
+    def poses():
+        for r, (dname, yaw) in enumerate(rows):
+            for c, (cname, spec) in enumerate(cols):
+                yield r, c, f"{dname}-{cname}", dict(spec, yaw=math.radians(yaw), rest=rest)
+        for c, (tname, yaw) in enumerate(turns):
+            yield len(rows), c, tname, {"yaw": math.radians(yaw)}
+
+    if todo:
+        # The clothes are simulated once for every frame the sheet shows
+        # (the same in every light).
+        person.prepare([spec for _, _, _, spec in poses()])
     for variant in todo:
         lighting.setup(scene, variant)
         # Exposed as the places in that light are (at night, the eye adapts).
@@ -304,14 +347,6 @@ def render(job, a, manifest, tmp):
                 part.obj.hide_render = True
         view.setup_figure_camera(scene, foot - fh_u / 2, fw, fh, a.ppu, tilt_deg=REST_TILT if rest else 32.0)
         sheet = np.zeros((fh * n_rows, fw * n_cols, 4), dtype=np.float32)
-
-        def poses():
-            for r, (dname, yaw) in enumerate(rows):
-                for c, (cname, spec) in enumerate(cols):
-                    yield r, c, f"{dname}-{cname}", dict(spec, yaw=math.radians(yaw), rest=rest)
-            for c, (tname, yaw) in enumerate(turns):
-                yield len(rows), c, tname, {"yaw": math.radians(yaw)}
-
         for r, c, label, spec in poses():
             person.pose(**spec)
             sheet[r * fh : (r + 1) * fh, c * fw : (c + 1) * fw] = render_frame(scene, os.path.join(tmp, f"{job.id}-{variant}-{label}.png"))
@@ -369,6 +404,9 @@ def main():
             j.variants = [v for v in j.variants if v in a.variants]
     if a.only:
         jobs = [j for j in jobs if j.id in a.only]
+    if a.force and not a.dry_run:
+        for job in jobs:
+            forget(manifest, job)
     for job in jobs:
         missing = [v for v in job.variants if v not in manifest.get(job.id, {}).get("sheets", {})]
         print("PLAN", job.id, "pose", job.pose, "marks", job.marks, "overlay", job.overlay, "missing", missing)

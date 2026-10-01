@@ -20,6 +20,7 @@ Short records of the decisions that shape **Witness**. They explain *why* the co
 | [0014](0014-prerendered-places.md) | Grounded realism by pre-rendering places and people offline in 3D (Blender) and compositing them in Phaser; painted fallback | Accepted (market slice) |
 | [0015](0015-world-rendering-effects.md) | High-DPI rendering, live weather and water, and one post-processing pass inside Phaser; effects step down before the frame rate does | Accepted |
 | [0016](0016-makehuman-base-for-portraits.md) | Portrait heads from MakeHuman's CC0 model (geometry and targets only; everything else procedural), approved by the owner on 2026-09-26 | Accepted |
+| [0017](0017-makehuman-bodies-for-world-figures.md) | The world's people on MakeHuman bodies (the portrait's identity, MakeHuman's skeleton and weights) with clothes draped by cloth simulation, within the owner's 2026-09-26 approval | Accepted |
 
 Code comments refer to these by number (for example `ADR-0006` in [vite.config.ts](../../vite.config.ts) and `ADR-0007` in [src/domain/settings.ts](../../src/domain/settings.ts)). **Never renumber a record.**
 

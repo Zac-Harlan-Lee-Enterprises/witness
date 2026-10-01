@@ -21,8 +21,10 @@ import numpy as np
 # from every edge of every box, so their contact shadow is untouched).
 MARGIN = 12
 INSET = 4
-# A frame whose outermost ring is at least this white needs no margin.
-WHITE = 0.985
+# A frame whose outermost ring is at least this white needs no margin (a
+# little above what the browser check allows, 248/255: WebP compression can
+# darken a near-white edge by a few levels).
+WHITE = 0.992
 
 
 def ring_is_white(frame):
