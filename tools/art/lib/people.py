@@ -661,12 +661,14 @@ class Person:
             self.parts.append(Part(jar, bone="hand_L"))
         elif kind == "bread":
             hand = J["hand_R"]
-            tray = common.lathe(f"{self.name}-tray", [(0.0, 0), (0.1 * H, 0.0), (0.11 * H, 0.015 * H)], 24, M.straw(), self.col)
-            tray.location = hand + Vector((-0.04 * H, -0.06 * H, 0.02 * H))
+            tray = common.lathe(f"{self.name}-tray", [(0.0, 0), (0.08 * H, 0.0), (0.088 * H, 0.014 * H)], 24, M.straw(), self.col)
+            at = hand + Vector((-0.02 * H, -0.035 * H, 0.02 * H))
+            tray.location = at
             self.parts.append(Part(tray, bone="hand_R"))
             for i in range(4):
                 ang = i * math.pi / 2 + 0.4
-                loaf = ellipsoid(f"{self.name}-loaf{i}", tray.location + Vector((math.cos(ang) * 0.05 * H, math.sin(ang) * 0.05 * H, 0.02 * H)), (0.04 * H, 0.04 * H, 0.018 * H), M.plain("#a8733e", 0.7), self.col, 12, 6)
+                # (Placed on the tray: `at`, since the tray's own location is applied to its mesh.)
+                loaf = ellipsoid(f"{self.name}-loaf{i}", at + Vector((math.cos(ang) * 0.04 * H, math.sin(ang) * 0.04 * H, 0.02 * H)), (0.032 * H, 0.032 * H, 0.016 * H), M.plain("#a8733e", 0.7), self.col, 12, 6)
                 self.parts.append(Part(loaf, bone="hand_R"))
         elif kind == "bundle":
             back = J["chest"] + Vector((0, 0.1 * H, -0.02 * H))
