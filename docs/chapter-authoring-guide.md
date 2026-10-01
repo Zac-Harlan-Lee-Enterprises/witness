@@ -90,6 +90,23 @@ Need a **new puzzle type**? That is an engine extension (open/closed): add a sch
 
 Every chapter ends the same way (engine behaviour): a dialogue emits `openPanel: 'scripture-connection'` → the player reads the labelled passage, background and interpretations plus `comparisons` (conditional on what they did) → **Reflect** (optional text, stored only on the device) → the summary (`summary.recap`, `consequences`, `themes`, `scriptureRecordIds`, `historyRecordIds`, `reflectionPrompts`). The main quest's final objective should complete on the flag `seen:scripture-connection`. Nothing in the summary grades the player.
 
+## 9a. Key art
+
+**Each chapter needs key art**: one picture on its card in chapter select (and on its summary), rendered with the Blender pipeline from the chapter's own places, people and light, so it shows the game as it is played. A content test ([tests/content/key-art.test.ts](../tests/content/key-art.test.ts)) fails until it exists.
+
+1. **Choose the moment.** Not a pretty view of a place: the heart of the chapter's story, the moment that makes a player want to play it, without giving the ending away (Chapter 2 shows the squall coming, not the calm; Chapter 4 the sealed letter about to be read, not Philemon's answer). Keep the content rules: nobody the chapter keeps off stage appears (the teacher's boat in Chapter 2 is only a furled shape far off), and nothing in it is presented as Scripture.
+2. **Add a shot** to [tools/art/lib/key_art_shots.py](../tools/art/lib/key_art_shots.py) under the chapter's id. A `PlaceShot` builds one of the chapter's places exactly as the game's art does (`place.Place`), stands the game's own people in it (`Cast`: who, where in map tiles, which way they face, standing, sitting or lying, their marks), lights it in a light from `lighting.py` (the place's lamps and fires burn in the lights they are tagged with), shows the story entities you name, and looks through a perspective camera (`eye`, `target` in map tiles and metres up; `lens`; `focus`). `sky` and `extra` hooks add what the game's camera never sees (the lake beyond the map, a sky) or a prop the moment needs, built with the kits' own builders and materials. A `FilmShot` uses the teaser's film-scale sets instead (the wilderness, Jerusalem). No downloaded images or textures, no image-generation models; people are the game's MakeHuman figures.
+3. **Iterate on previews** (half size, a few minutes each), and look at every one at card size (about 350 px wide on a phone): it must read at a glance.
+
+   ```bash
+   node scripts/art-build.mjs key-art --shots <chapter-id> --quality preview   # → tools/art/.cache/key-art/preview/
+   node scripts/art-build.mjs key-art --shots <chapter-id>                     # → public/art/key-art/<chapter-id>.webp, -800.webp
+   ```
+
+   The final render is 1600 × 600 (WebP quality 82, about 150–250 KB) with an 800 × 300 copy for phones; both are precached, so the menus look right offline.
+4. **Register it**: `keyArt: keyArt('<chapter-id>', '<what the picture shows>')` in the chapter's entry in [src/content/index.ts](../src/content/index.ts). The text is the image's `alt`: say what is in the picture, plainly, in a sentence.
+5. **Record its provenance**: the `public/art/key-art/*` entry in [docs/art/asset-manifest.json](art/asset-manifest.json) covers every file there; add the chapter's shot to its description.
+
 ## 10. Validate, test, play
 
 ```bash

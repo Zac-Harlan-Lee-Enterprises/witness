@@ -97,6 +97,40 @@ describe('offline caching of pre-rendered art', () => {
     expect(config.slice(film, film + 80)).toContain("handler: 'NetworkOnly'");
   });
 
+  it("precaches the menus' key art, so the title and chapter select look right offline", async () => {
+    // The build's own patterns (vite.config.ts), on the files as they are.
+    const { getManifest } = await import('workbox-build');
+    const { manifestEntries = [] } = await getManifest({
+      globDirectory: join(__dirname, '../../../public'),
+      globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}'],
+      globIgnores: [
+        '**/art/**/*-late*.webp',
+        ...CACHED_ON_FIRST_USE_PLACES.map((id) => `**/art/${id}/**`),
+        ...CACHED_ON_FIRST_USE_PEOPLE_LIGHTS.map((light) => `**/art/people/*-${light}*.webp`),
+        CACHED_ON_FIRST_USE_PORTRAITS,
+        '**/art/people/**',
+        '**/art/portraits/**',
+      ],
+    });
+    const urls = manifestEntries.map((e) => e.url);
+    for (const id of [
+      'title',
+      'road-to-jericho',
+      'storm-on-galilee',
+      'journey-to-bethlehem',
+      'letter-from-paul',
+    ]) {
+      const small = id === 'title' ? 'title-960' : `${id}-800`;
+      expect(urls).toContain(`art/key-art/${id}.webp`);
+      expect(urls).toContain(`art/key-art/${small}.webp`);
+    }
+    const config = readFileSync(join(__dirname, '../../../vite.config.ts'), 'utf8');
+    expect(config).toContain(
+      "globPatterns: ['**/*.{js,css,html,svg,png,webp,json,woff2,webmanifest}']",
+    );
+    expect(config).toContain("'**/art/**/*-late*.webp'");
+  }, 60_000);
+
   it('precaches the teaser poster (the film itself is too big and not an image)', async () => {
     const { getManifest } = await import('workbox-build');
     const { manifestEntries = [] } = await getManifest({
