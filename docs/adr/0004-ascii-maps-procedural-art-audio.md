@@ -1,6 +1,6 @@
 # ADR-0004: ASCII tile maps and procedurally generated original art and audio (no binary assets to license)
 
-- **Status:** Accepted
+- **Status:** Accepted. The music part is superseded by [ADR-0018](0018-recorded-music.md) (recorded tracks, 2026-10-01); effects, footsteps and ambience remain procedural as described here.
 - **Related:** [src/domain/world.ts](../../src/domain/world.ts) (`TILE_KINDS`, `parseLayout`), [src/game/art/scene-painter.ts](../../src/game/art/scene-painter.ts), [src/game/art/props.ts](../../src/game/art/props.ts), [src/game/art/people/](../../src/game/art/people/), [src/features/common/Portrait.tsx](../../src/features/common/Portrait.tsx), [src/infrastructure/audio/synth-audio.ts](../../src/infrastructure/audio/synth-audio.ts), [scripts/generate-icons.mjs](../../scripts/generate-icons.mjs)
 
 ## Context

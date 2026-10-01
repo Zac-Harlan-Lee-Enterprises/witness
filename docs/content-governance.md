@@ -128,3 +128,18 @@ Where Christian traditions differ, content says so. Chapter 1 presents both the 
 - [ ] No scores of faith/holiness/favor; consequences are concrete facts.
 - [ ] `npm run content:validate` and `npm test` pass.
 - [ ] Status is `ai-draft`/`sources-attached` until a named human approves.
+
+## 9. Third-party assets
+
+The rule: **every asset is original**, made by code in this repository, or permissively licensed, with its licence recorded next to it ([ADR-0004](adr/0004-ascii-maps-procedural-art-audio.md), [README](../README.md#asset-licensing)). Nothing may imitate the look of a commercial game. An exception needs the owner's approval and its own ADR. These exceptions are approved, each scoped to one purpose:
+
+| Exception | Approved | Scope | Record |
+|---|---|---|---|
+| MakeHuman's CC0 human model | 2026-09-26 | Geometry and morph targets for the portraits and the world's people | [ADR-0016](adr/0016-makehuman-base-for-portraits.md), [ADR-0017](adr/0017-makehuman-bodies-for-world-figures.md) |
+| Four recorded music tracks from Pixabay (Pixabay Content License) | 2026-10-01 | The background music only; effects, footsteps and ambience stay original | [ADR-0018](adr/0018-recorded-music.md), [docs/music.md](music.md), [`music-sources.json`](../public/audio/music/music-sources.json) |
+
+For the music:
+
+- keep `music-sources.json` as written; [`tests/content/music.test.ts`](../tests/content/music.test.ts) checks every file against its recorded SHA-256;
+- credit every track in the game (*About this game*) and in [docs/music.md](music.md);
+- never offer the files on their own (as a download, a soundtrack or a stream).

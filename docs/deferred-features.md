@@ -30,7 +30,7 @@ An honest inventory of what is **not** done in this vertical slice: what it is, 
 | AI study guide (RAG) | Interface + enforced answer policy only (`StudyGuide`, `checkGuideAnswer`) | No chatbot ships. |
 | Analytics provider | Abstraction + consent + sanitiser; `NoopAnalytics` in production | Nothing is ever sent today. |
 | Voice-over | A `voice` volume channel exists; no recordings | The game is fully text-based and understandable without audio. |
-| Final art and music | Original **procedural placeholder** art (Canvas-painted tiles, characters, props, SVG portraits) and WebAudio-synthesised music/ambience/SFX | No third-party assets to license. Replacing them later needs no engine change beyond painters/audio adapter. |
+| Final sound | Background music is recorded (four Pixabay tracks, [ADR-0018](adr/0018-recorded-music.md)); ambience and effects are still WebAudio-synthesised | Commissioned music could replace the tracks through the catalogue in `src/domain/music.ts`, with no engine change. |
 | Localisation | English only; UI strings are in components, story text in content | Extract UI strings before a second language. |
 | Visual map in the journal | The "Maps" entry is a text route description | An SVG route map is a small, contained addition. |
 | Map editor (Tiled) support | Maps are ASCII in TypeScript, validated at build time | Adequate for authors; a Tiled importer could come later. |
