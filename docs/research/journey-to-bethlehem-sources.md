@@ -4,6 +4,7 @@ This is the claim-by-claim record behind the historical, geographical and interp
 
 > **Provenance and status**
 >
+> - **Today (2026-10-01):** the owner approved the chapter's records drafted by 2026-09-26, and the World English Bible text is displayed; the status notes below are as of the research. Current approval status, record by record: [the chapter document, §12](../chapters/journey-to-bethlehem.md#12-content-and-approval-status).
 > - **Two AI research assistants retrieved and checked these sources on 2026-09-25.** Each source below was fetched in that session. Quotations were checked word for word against the page text. The lead author spot-checked the World English Bible text of Luke 2, the grammateus census page and the Carlson abstract.
 > - "Via search snippet" means the text was seen only in a search result. Nothing seen only that way is cited in the game.
 > - **Human citation verification is still required.** `verified: true` in `sources.ts` records only that the AI retrieval took place. All 42 educational records are at governance status `sources-attached`. None is approved, and each one is labelled "Awaiting editorial review" in the game ([content-governance.md](../content-governance.md)).

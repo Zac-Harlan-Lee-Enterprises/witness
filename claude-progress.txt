@@ -529,3 +529,20 @@ NEXT   : The owner judges the before/after captures. If he wants faces lighter s
          re-render (`node scripts/art-build.mjs people --only <ids> --force`, three ids per run). Hodaya's carried
          net (people.py) reads as a fluted blob on the shoulder; a softer, draped net would help.
 BLOCKED: none.
+--- 2026-10-01  Claude Opus 5.5 (chapter-docs agent) — a design document per chapter, kept true by a test (docs/chapter-docs) ---
+DONE   : docs/chapters/road-to-jericho.md (Chapter 1, moved out of game-design.md and checked against the content);
+         Chapters 2-4 rewritten to the same fourteen-section template and re-checked against today's content;
+         docs/chapters/README.md (the list + the template + "required for a new chapter"); game-design.md is now the
+         game-wide design (pillars, controls, shape of a chapter, all ten puzzle types, time of day, the ending,
+         play-time model) linking each chapter doc; chapter-authoring-guide.md rewritten for adding Chapter 5 end to
+         end (content, registration, puzzles, expressions/portraits, places/people, approvals/coveredBy, Scripture
+         text, teaser, tests, chapter doc). AGENTS.md deep-docs rows fixed. Stale claims fixed: "no human has
+         reviewed" / "nothing approved" (approved 2026-09-26), WEB text "disabled"/"placeholder" (displayed), the
+         satchel's fourth rule, Menashe's stranger greeting and Go-to feedback listed as open (both fixed), Ch2's door
+         gate, Ch2-4 realism-pass notes (now built). Research banners point at each chapter's §12.
+TESTS  : Vitest 789 -> 806 (tests/content/chapter-docs.test.ts: doc per chapter, README lists them, template
+         sections in order, every scene id in §3, every puzzle id + type in §6). typecheck, lint, content:validate,
+         knip, prettier, quality-sweep clean. No game content or behaviour changed.
+NEXT   : Pin Chapters 3 and 4 in tests/integration/play-time.test.ts (direct + curious runs, as for Chapters 1-2), then
+         replace the word-count estimates in docs/chapters/journey-to-bethlehem.md §11 and letter-from-paul.md §11.
+BLOCKED: none.
