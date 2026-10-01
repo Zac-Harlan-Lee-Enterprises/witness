@@ -279,6 +279,7 @@ def render(job, a, manifest, tmp):
         pid=job.pid,
         player=job.pid.startswith("player-"),
         chapter=job.chapter,
+        rest=None if job.pose == "stand" else job.pose,
     )
     bpy.ops.mesh.primitive_plane_add(size=24.0, location=(0, 0, 0))
     ground = bpy.context.object

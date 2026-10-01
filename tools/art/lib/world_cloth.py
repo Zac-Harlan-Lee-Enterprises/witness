@@ -226,6 +226,8 @@ class Garment:
         self.colliders = colliders
         self.collide_as = collide_as
         self.extra = ()
+        # A garment simulated from a pose other than standing follows this bone there.
+        self.bone = None
         self.obj = None
         self.shapes = {}
 
@@ -316,7 +318,10 @@ class Wardrobe:
         if "wrapped-in-cloak" in marks:
             col = M._toward("#7a4a34", "#8a6a50", 0.2)
             mat = cloth_material(col, "wool", "#5a3a26", stripe_at=0.16, stripe_w=0.03, name="cloak")
-            made.append(self._curtain("cloak", mat, top=J["neck"][2] + 0.015, bottom=J["pelvis"][2] - 0.12, front_open=0.34, fabric="heavy", pad=0.04, mark="wrapped-in-cloak"))
+            if self.p.rest == "lie":
+                made.append(self._blanket("cloak", mat, mark="wrapped-in-cloak"))
+            else:
+                made.append(self._curtain("cloak", mat, top=J["neck"][2] + 0.015, bottom=J["pelvis"][2] - 0.12, front_open=0.1, fabric="heavy", pad=0.04, mark="wrapped-in-cloak"))
         for m in ("bandaged", "rag-bandaged"):
             if m in marks:
                 col = "#e6ddc9" if m == "bandaged" else self.p.rag
@@ -324,6 +329,7 @@ class Wardrobe:
                 made += self._bandages(mat, m)
         for g in made:
             self._realise(g)
+            self.garments.append(g)
 
     def _bodice(self, mat, child):
         """The tunic above the belt and its sleeves: the body's surface let out."""
@@ -736,7 +742,7 @@ class Wardrobe:
             pin = np.clip((z - hold) / 0.05, 0, 1) * (0.35 + 0.65 * np.clip((z - hold - 0.06) / 0.04, 0, 1))
         else:
             sh = float(J["shoulder_L"][2])
-            pin = np.clip((z - (sh - 0.02)) / 0.04, 0, 1) * np.clip(1 - np.abs(V[:, 0]) / 0.2, 0.3, 1)
+            pin = np.clip((z - (sh - 0.02)) / 0.04, 0, 1) * (1.0 if mark else np.clip(1 - np.abs(V[:, 0]) / 0.2, 0.3, 1))
         g = Garment(name, V, Q, mat, sim=True, fabric=fabric, pin=pin.astype(F), mark=mark, colliders=("dressed", "skirt", "headwear", "mantle") if mark else ("dressed", "skirt", "headwear") if name == "mantle" else ("dressed",), collide_as=name)
         if face:
             # The crown closed.
@@ -747,12 +753,35 @@ class Wardrobe:
         self.garments.append(g)
         return g
 
+    def _blanket(self, name, mat, mark):
+        """A cloak laid over someone lying on their back: a flat sheet held
+        a hand's breadth over the front of the body (which faces the sky
+        once they lie down), which falls over them and down their sides."""
+        J = self.body.J
+        pts = self.dressed_points()
+        top = float(J["shoulder_L"][2]) + 0.02
+        bottom = float(J["knee_L"][2]) - 0.12
+        span = pts[(pts[:, 2] < top) & (pts[:, 2] > bottom)]
+        y = float(span[:, 1].min()) - 0.16
+        nx, nz = 26, 32
+        xs = np.linspace(-0.45, 0.45, nx)
+        zs = np.linspace(top, bottom, nz)
+        V = np.array([(x, y, z) for z in zs for x in xs], F)
+        Q = np.array([(i * nx + j, i * nx + j + 1, (i + 1) * nx + j + 1, (i + 1) * nx + j) for i in range(nz - 1) for j in range(nx - 1)], np.int64)
+        pin = np.zeros(len(V), F)
+        pin[:nx] = 0.25 * (np.abs(xs) < 0.2)
+        g = Garment(name, V, Q, mat, sim=True, fabric="heavy", pin=pin, mark=mark, colliders=("dressed", "skirt"), collide_as=name)
+        # Carried with the whole body as it lies down (not by the arms beside it).
+        g.bone = "root"
+        return g
+
     def _bandages(self, mat, mark):
         J = self.body.J
         out = []
         head_z = float(J["head"][2])
-        z = head_z + (self.body.height - head_z) * 0.55
-        rings = self._head_rings([z + 0.02, z - 0.02], 0.006)
+        # Round the forehead, just under the edge of a turban or head cloth (so it shows).
+        z = head_z + (self.body.height - head_z) * 0.52 - 0.018
+        rings = self._head_rings([z + 0.012, z - 0.012], 0.008)
         V, Q = ring_grid(rings)
         W = np.zeros((len(V), self.W.shape[1]), F)
         W[:, self.idx["head"]] = 1.0
@@ -933,7 +962,12 @@ class Wardrobe:
                 if w <= 0:
                     continue
                 vg.add(np.nonzero(np.round(g.pin, 2) == w)[0].tolist(), float(w), "REPLACE")
-            p.rig.bind(o, self.nearest_weights(g.V))
+            if g.bone:
+                Wb = np.zeros((len(g.V), self.W.shape[1]), F)
+                Wb[:, self.idx[g.bone]] = 1.0
+                p.rig.bind(o, Wb)
+            else:
+                p.rig.bind(o, self.nearest_weights(g.V))
             cm = o.modifiers.new("cloth", "CLOTH")
             s = cm.settings
             fab = FABRIC[g.fabric]

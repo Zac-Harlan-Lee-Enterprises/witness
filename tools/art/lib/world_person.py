@@ -351,10 +351,13 @@ class Rig:
 class Person(people.Person):
     """A world figure (see the module docstring)."""
 
-    def __init__(self, appearance, marks=(), rag="#3e6b73", name="person", pid=None, player=False, chapter=""):
+    def __init__(self, appearance, marks=(), rag="#3e6b73", name="person", pid=None, player=False, chapter="", rest=None):
         self.a = appearance
         self.marks = set(marks)
         self.rag = rag
+        # The pose of the sheet being made (None standing, "sit", "lie"): a
+        # borrowed cloak is worn round the shoulders, or laid over someone lying.
+        self.rest = rest
         self.name = name
         self.col = common.collection(name)
         pid = pid or name
@@ -384,6 +387,28 @@ class Person(people.Person):
         if cloak:
             self.marks.add("wrapped-in-cloak")
         for part in self.parts[n_before:]:
+            if part.obj.name.endswith("-bundle"):
+                # The bundle rests against the back (people.py placed it for a
+                # thinner body): its front touches the shoulder blades.
+                co = self.bodyd.co[mh.Base.get().verts_of("body")]
+                z = float(self.J["chest"].z)
+                back = float(co[np.abs(co[:, 2] - z) < 0.06, 1].max())
+                ys = [v.co.y for v in part.obj.data.vertices]
+                shift = back + 0.01 - min(ys)
+                for v in part.obj.data.vertices:
+                    v.co.y += shift
+                part.rest[:, 1] += shift
+            if part.upright is not None and part.obj.name.endswith(("-oar", "-oar-blade", "-staff")):
+                # A tall person's oar or staff (sized to their height) would
+                # rise out of the top of the frame: kept under 1.86 m.
+                # (Both pieces of an oar by the same measure: its blade's top.)
+                top = (1.13 if "-oar" in part.obj.name else 1.02) * self.H
+                limit = 1.86
+                if top > limit:
+                    k = limit / top
+                    for v in part.obj.data.vertices:
+                        v.co.z *= k
+                    part.rest[:, 2] *= k
             # A drop spindle hangs straight down from its thread, however the hand turns.
             if part.obj.name.endswith(("-spindle", "-whorl")) and part.upright is None:
                 part.upright = tuple(self.J["hand_R"])
