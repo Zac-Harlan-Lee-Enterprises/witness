@@ -161,11 +161,12 @@ Everything `VITE_*` is compiled into the public bundle — never put a secret in
 |---|---|
 | [README.md](README.md) | Product overview, setup, deployment |
 | [docs/executive-summary.md](docs/executive-summary.md) | Summary + assumptions |
-| [docs/game-design.md](docs/game-design.md) | GDD, player journey, quests, dialogue, puzzles |
+| [docs/game-design.md](docs/game-design.md) | Game-wide design: pillars, core loop, controls, the shape of a chapter, puzzle types, time of day, the ending, play-time model |
+| [docs/chapters/](docs/chapters/README.md) | One design document per chapter (acts, places, people, quests, puzzles and solutions, choices, art, play time, approval status, known gaps); required for every new chapter |
 | [docs/architecture.md](docs/architecture.md) | Architecture, domain model, events, data flow |
 | [docs/adr/](docs/adr/) | Architecture Decision Records |
 | [docs/content-governance.md](docs/content-governance.md) | Content model, Scripture rules, AI governance |
-| [docs/chapter-authoring-guide.md](docs/chapter-authoring-guide.md) | How to add Chapter 2 |
+| [docs/chapter-authoring-guide.md](docs/chapter-authoring-guide.md) | How to add a new chapter end to end: content, puzzles, art, approvals, tests and its chapter doc |
 | [docs/save-data.md](docs/save-data.md) | Save schema + migrations |
 | [docs/accessibility.md](docs/accessibility.md) | Accessibility plan + status |
 | [docs/testing-strategy.md](docs/testing-strategy.md) | What is tested where |

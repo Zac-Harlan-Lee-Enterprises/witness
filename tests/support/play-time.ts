@@ -4,8 +4,8 @@ import type { Harness } from './harness';
  * A play-time meter for headless playthroughs: it watches what a player is
  * shown (every dialogue line and choice, every message, every puzzle and the
  * ending's panels) and turns it into an estimate of real play for someone
- * playing the chapter for the first time (docs/game-design.md, "How long it
- * plays"). Lines seen again, like a conversation's list of questions, are
+ * playing the chapter for the first time (docs/game-design.md §11, "How long a
+ * chapter plays"). Lines seen again, like a conversation's list of questions, are
  * counted once.
  *
  * Two readers, because play time depends most on reading:

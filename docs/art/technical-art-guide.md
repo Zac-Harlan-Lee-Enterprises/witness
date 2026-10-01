@@ -456,3 +456,23 @@ node scripts/art-build.mjs teaser-edit                  # cut and encode from th
 ```
 
 Frames go to `tools/art/.cache/teaser/<quality>/shot<N>/` (gitignored); a crash loses nothing. The film has **no words and no sound**: the words are the chapter's teaser cues (`src/content/chapters/road-to-jericho/teaser.ts`), shown as text by the game, and the music is the game's recorded music, cued to the film's sections (`filmMusicPlan` in `src/application/music.ts`, [ADR-0018](../adr/0018-recorded-music.md)). The service worker never caches the films (network only); the poster is precached for the offline fallback (`TEASER_FILM` in [`art-cache.ts`](../../src/app/art-cache.ts)).
+Frames go to `tools/art/.cache/teaser/<quality>/shot<N>/` (gitignored); a crash loses nothing. The film has **no words and no sound**: the words are the chapter's teaser cues (`src/content/chapters/road-to-jericho/teaser.ts`), shown as text by the game, and the music is composed for the game's synthesiser (`src/infrastructure/audio/film-score.ts`). The service worker never caches the films (network only); the poster is precached for the offline fallback (`TEASER_FILM` in [`art-cache.ts`](../../src/app/art-cache.ts)).
+
+## 12. Key art for the menus
+
+The title screen's hero image and each chapter's picture in chapter select (and on its summary) are stills rendered by the same pipeline, so the menus show the game as it is played: [`build_key_art.py`](../../tools/art/build_key_art.py), with the shots in [`key_art_shots.py`](../../tools/art/lib/key_art_shots.py) and the machinery in [`key_art.py`](../../tools/art/lib/key_art.py).
+
+| Kind | What it does |
+|---|---|
+| **Place shot** (`PlaceShot`) | Builds one of the game's places exactly as `build_place.py` does, stands the game's own people in it (`Cast`: the MakeHuman figures of the people sheets, `world_person.Person`, posed standing, sitting, lying or mid-stride, with their marks), lights it in a light of `lighting.py` (things and lamps tagged for that light only), shows the story entities named in `show`, and looks through a **perspective** camera. Rooms keep their cutaway (their near walls and roof are occluders). People are lit by the place itself, not by a people light. `sky` and `extra` hooks add what the game's camera never sees: Chapter 2's lake beyond the map, the far shore, the squall and the rain ([`key_art_storm.py`](../../tools/art/lib/key_art_storm.py)), or a prop the moment needs (Chapter 4's table, sealed letter and lamps, built with the kits' own builders). Cycles. |
+| **Film shot** (`FilmShot`) | Builds a set from the teaser's film-scale sets (§11: the wilderness, Jerusalem and its market) and the game's people. EEVEE. |
+
+Every still is graded like a teaser frame (`teaser_render.grade`) and written as WebP: `public/art/key-art/<id>.webp` (chapters 1600 × 600, the title 1920 × 960, quality 90, about 100–250 KB) and a half-width copy for phones (`<id>-800.webp`, `title-960.webp`). The menus load them with `srcset`, reserve their size, and paint a stand-in if one fails ([`KeyArtImage.tsx`](../../src/features/menu/KeyArtImage.tsx)). They are precached (the `globPatterns` in [`vite.config.ts`](../../vite.config.ts) take everything under `art/key-art/`), so the menus look right offline.
+
+```bash
+node scripts/art-build.mjs key-art --shots storm-on-galilee --quality preview   # half size, a few minutes → tools/art/.cache/key-art/preview/
+node scripts/art-build.mjs key-art                                               # every shot, final → public/art/key-art/
+node scripts/art-build.mjs key-art --shots title --regrade                       # grade the last render again
+```
+
+Compose for the card: chapter select shows a chapter's picture about 350 px wide on a phone, so its subject must read at that size (people at least a fifth of the frame's height, one bright centre of interest), and the title's lower third sits under the title and its scrim. What each picture shows, and why, is the shot's docstring; how to give a new chapter its key art is in the [chapter authoring guide](../chapter-authoring-guide.md) (§9a).

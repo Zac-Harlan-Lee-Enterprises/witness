@@ -1,10 +1,11 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { applySettingsToDocument } from '@/app/App';
 import { chapterSource } from '@/content';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { ChapterSelect } from '@/features/menu/ChapterSelect';
+import { TITLE_ART } from '@/features/menu/key-art';
 import { TitleScreen } from '@/features/menu/TitleScreen';
 import { ProfileScreen } from '@/features/profiles/ProfileScreen';
 import { SettingsPanel } from '@/features/settings/SettingsPanel';
@@ -114,6 +115,76 @@ describe('Chapter select', () => {
     const jericho = screen.getByRole('listitem', { name: /The Road to Jericho/ });
     await user.click(within(jericho).getByRole('button', { name: 'New game' }));
     expect(onStart).toHaveBeenCalledWith('road-to-jericho', null);
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('Key art', () => {
+  it('shows the title over the rendered hero image, with a text alternative and both sizes', async () => {
+    const { container } = await renderWithServices(
+      <TitleScreen onPlay={vi.fn()} onSettings={vi.fn()} />,
+    );
+    const hero = screen.getByRole('img', { name: TITLE_ART.alt });
+    expect(hero.tagName).toBe('IMG');
+    expect(hero).toHaveAttribute('src', '/art/key-art/title.webp');
+    expect(hero.getAttribute('srcset')).toBe(
+      '/art/key-art/title-960.webp 960w, /art/key-art/title.webp 1920w',
+    );
+    // Its size is reserved, so the menu doesn't jump when it loads.
+    expect(hero).toHaveAttribute('width', '1920');
+    expect(hero).toHaveAttribute('height', '960');
+    expect(hero).toHaveAttribute('loading', 'eager');
+    // The title is a real heading over the image, not part of it.
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(hero.closest('.title-screen__hero')).toContainElement(heading);
+    await expectNoAxeViolations(container);
+  });
+
+  it('keeps a painted stand-in, still named, if the hero image fails to load', async () => {
+    const { container } = await renderWithServices(
+      <TitleScreen onPlay={vi.fn()} onSettings={vi.fn()} />,
+    );
+    fireEvent.error(screen.getByRole('img', { name: TITLE_ART.alt }));
+    const fallback = screen.getByRole('img', { name: TITLE_ART.alt });
+    expect(fallback.tagName).toBe('DIV');
+    expect(fallback).toHaveClass('title-screen__art', 'key-art--fallback');
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+  });
+
+  it("gives every chapter card its chapter's own key art, and a stand-in if it fails", async () => {
+    const { container } = await renderWithServices(
+      <ChapterSelect profile={TEST_PROFILE} onStart={vi.fn()} onBack={vi.fn()} />,
+    );
+    await screen.findByRole('heading', { name: /The Road to Jericho/ });
+    const chapters = chapterSource.list().filter((c) => c.available);
+    expect(chapters).toHaveLength(4);
+    const alts = new Set<string>();
+    for (const meta of chapters) {
+      const card = screen.getByRole('listitem', { name: new RegExp(meta.title) });
+      expect(meta.keyArt, meta.id).toBeDefined();
+      const alt = meta.keyArt?.alt ?? '';
+      alts.add(alt);
+      const img = within(card).getByRole('img', { name: alt });
+      expect(img).toHaveAttribute('src', `/art/key-art/${meta.id}.webp`);
+      expect(img.getAttribute('srcset')).toBe(
+        `/art/key-art/${meta.id}-800.webp 800w, /art/key-art/${meta.id}.webp 1600w`,
+      );
+      expect(img).toHaveAttribute('width', '1600');
+      expect(img).toHaveAttribute('height', '600');
+      expect(img).toHaveAttribute('loading', 'lazy');
+    }
+    // Each chapter says what its own picture shows.
+    expect(alts.size).toBe(chapters.length);
+    await expectNoAxeViolations(container);
+    const storm = screen.getByRole('listitem', { name: /A Storm on Galilee/ });
+    const alt = chapters.find((c) => c.id === 'storm-on-galilee')?.keyArt?.alt ?? '';
+    fireEvent.error(within(storm).getByRole('img', { name: alt }));
+    const fallback = within(storm).getByRole('img', { name: alt });
+    expect(fallback.tagName).toBe('DIV');
+    expect(fallback).toHaveClass('chapter-card__art', 'key-art--fallback');
+    // The card still works.
+    expect(within(storm).getByRole('button', { name: 'New game' })).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
 });

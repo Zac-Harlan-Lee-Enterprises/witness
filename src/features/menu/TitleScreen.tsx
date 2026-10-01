@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
-import { JourneyArt } from './JourneyArt';
 import { MusicCredits } from './MusicCredits';
+import { TITLE_ART } from './key-art';
+import { KeyArtImage } from './KeyArtImage';
 
 export function TitleScreen({
   onPlay,
@@ -16,15 +17,17 @@ export function TitleScreen({
   const [about, setAbout] = useState(false);
   return (
     <main className="screen title-screen" aria-labelledby="game-title">
-      <div className="title-screen__art" aria-hidden="true">
-        <JourneyArt className="title-screen__svg" />
+      <div className="title-screen__hero">
+        <KeyArtImage art={TITLE_ART} className="title-screen__art" sizes="100vw" eager />
+        <div className="title-screen__heading">
+          <h1 id="game-title" className="title-screen__title">
+            {config.title}
+          </h1>
+          <p className="title-screen__subtitle">
+            Four journeys · Jericho, Galilee, Bethlehem, Colossae
+          </p>
+        </div>
       </div>
-      <h1 id="game-title" className="title-screen__title">
-        {config.title}
-      </h1>
-      <p className="title-screen__subtitle">
-        Four journeys · Jericho, Galilee, Bethlehem, Colossae
-      </p>
       <nav className="menu" aria-label="Main menu">
         <button type="button" className="button button--primary button--large" onClick={onPlay}>
           Play

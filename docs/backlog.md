@@ -56,8 +56,8 @@ Ordered by dependency: human gates first, then platform confidence, then new con
 
 | Item | Detail |
 |---|---|
-| Fix Menashe's greeting on the road | Record the `meetCharacter` effect **after** choosing the entry node in `DialogueController.start`, or base the variant on a market-only flag. Add a regression test for a player who never met him. See [game-design.md §17](game-design.md#17-known-design-gaps-in-the-current-build). |
-| "Go to…" feedback | Mark or explain destinations that can't be reached yet (behind the route blocker or the night blocker), instead of doing nothing |
+| ~~Fix Menashe's greeting on the road~~ | Done (`d01d11e`): `DialogueController.start` chooses the entry node before recording the meeting. Chapter 1's open gaps: [chapters/road-to-jericho.md §14](chapters/road-to-jericho.md#14-known-gaps). |
+| ~~"Go to…" feedback~~ | Done: a destination with no path now says "You can't get there from here yet." |
 | Satchel capacity after packing | Decide whether items bought or received after packing should be limited, explained or left as is |
 | Delete a single save slot | Today saves are removed only with their profile |
 | Visual route map in the journal | Today the Maps entry is a text description |

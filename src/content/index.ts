@@ -3,6 +3,21 @@ import { ChapterSchema, type Chapter, type ChapterInput, type ChapterMeta } from
 import { validateChapterIntegrity } from '@/domain/chapter-integrity';
 
 /**
+ * A chapter's key art: pre-rendered stills in public/art/key-art/ (rendered
+ * by tools/art/build_key_art.py; tests/content/key-art.test.ts checks they
+ * exist at these sizes).
+ */
+function keyArt(id: string, alt: string): NonNullable<ChapterMeta['keyArt']> {
+  return {
+    src: `art/key-art/${id}.webp`,
+    srcSmall: `art/key-art/${id}-800.webp`,
+    width: 1600,
+    height: 600,
+    alt,
+  };
+}
+
+/**
  * Chapter registry. Each available chapter is a lazy import, so its content
  * (and nothing else) downloads when the player starts it. Future chapters
  * are listed so the menu can show what's coming — they are NOT implemented.
@@ -21,6 +36,10 @@ const REGISTRY: RegistryEntry[] = [
       subtitle: 'A journey down from Jerusalem',
       available: true,
       estimatedMinutes: { min: 20, max: 30 },
+      keyArt: keyArt(
+        'road-to-jericho',
+        'A young traveller with a satchel walks alone along the path above the gorge in the Judean wilderness, the cliffs falling away beside it and the way going on ahead.',
+      ),
       hasTeaser: true,
     },
     load: () => import('./chapters/road-to-jericho').then((m) => m.ROAD_TO_JERICHO),
@@ -33,6 +52,10 @@ const REGISTRY: RegistryEntry[] = [
       subtitle: 'One of the other boats',
       available: true,
       estimatedMinutes: { min: 20, max: 30 },
+      keyArt: keyArt(
+        'storm-on-galilee',
+        'Fishing boats on the Sea of Galilee at dusk as dark storm cloud rolls in over the far hills; the crew stand on the deck of the family’s boat as the waves rise.',
+      ),
     },
     load: () => import('./chapters/storm-on-galilee').then((m) => m.STORM_ON_GALILEE),
   },
@@ -44,6 +67,10 @@ const REGISTRY: RegistryEntry[] = [
       subtitle: 'A crowded night in David’s town',
       available: true,
       estimatedMinutes: { min: 20, max: 30 },
+      keyArt: keyArt(
+        'journey-to-bethlehem',
+        'Inside a crowded Bethlehem house at night: relatives sit among their bedding by lamplight, the animals at the far end, and a late stranger with a lamp has come in among them.',
+      ),
     },
     load: () => import('./chapters/journey-to-bethlehem').then((m) => m.JOURNEY_TO_BETHLEHEM),
   },
@@ -55,6 +82,10 @@ const REGISTRY: RegistryEntry[] = [
       subtitle: 'Carried by hand, read aloud in Colossae',
       available: true,
       estimatedMinutes: { min: 20, max: 30 },
+      keyArt: keyArt(
+        'letter-from-paul',
+        'Lamp-lighting in Philemon’s house at Colossae: the household gathers round a table where a sealed letter lies beside a lamp, about to hear it read aloud.',
+      ),
     },
     load: () => import('./chapters/letter-from-paul').then((m) => m.LETTER_FROM_PAUL),
   },

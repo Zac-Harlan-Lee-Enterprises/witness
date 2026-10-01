@@ -10,7 +10,7 @@ Three more chapters, each about 20–30 minutes, sit beside other passages witho
 - **Chapter 3 — A Journey to Bethlehem** (Luke 2:1–20): a crowded household during the registration hears what the shepherds tell.
 - **Chapter 4 — A Letter from Paul** (Philemon; Colossians 4:7–18): a letter carried by hand and read aloud in Colossae.
 
-Every place is pre-rendered in 3D (Blender, `tools/art/`) and composited by Phaser with live weather, water and light; characters have rendered portraits. The owner approved the AI-drafted content of all four chapters on 2026-09-26; what was added to Chapters 1 and 2 on 2026-09-30 to make them longer is an AI draft awaiting his review.
+Every place is pre-rendered in 3D (Blender, `tools/art/`) and composited by Phaser with live weather, water and light; characters have rendered portraits. The owner approved the AI-drafted content of all four chapters on 2026-09-26; what was added to all four chapters on 2026-09-30 to make them longer is an AI draft awaiting his review (each chapter document lists it: [docs/chapters/](docs/chapters/README.md)).
 
 > The working title is configurable (`VITE_GAME_TITLE`).
 
@@ -103,7 +103,7 @@ Keyboard (remappable), gamepad, on-screen touch controls, and a **"Go to…" lis
 ## Authoring content and chapters
 
 - Content lives in `src/content/chapters/<chapter-id>/` as typed data files. `npm run content:validate` checks schemas, references, reachability of every object from every spawn point, and the governance rules.
-- Adding Chapter 2 means adding content (and perhaps a new tile kind), not rewriting dialogue, quests, inventory, saving or the journal. Step by step: [docs/chapter-authoring-guide.md](docs/chapter-authoring-guide.md).
+- Adding a chapter means adding content, art and tests (and perhaps a new tile kind or puzzle type), not rewriting dialogue, quests, inventory, saving or the journal. Step by step: [docs/chapter-authoring-guide.md](docs/chapter-authoring-guide.md); each chapter's design is in [docs/chapters/](docs/chapters/README.md).
 
 ## Asset licensing
 

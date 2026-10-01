@@ -4,6 +4,7 @@ This is the claim-by-claim record behind the historical, geographical and interp
 
 > **Provenance and status**
 >
+> - **Today (2026-10-01):** the owner approved the chapter's records drafted by 2026-09-26, and the World English Bible text is displayed; the status notes below are as of the research. Current approval status, record by record: [the chapter document, §12](../chapters/letter-from-paul.md#12-content-and-approval-status).
 > - **Retrieval and checking were done by AI research assistants on 2026-09-25.** Every source below was fetched in that session (WebFetch, and where WebFetch only summarised a page, plain HTTP so quotations could be matched word for word). Pages that refused access are listed at the end and are **not** cited.
 > - **Human citation verification is still required.** `verified: true` in `sources.ts` records only that the AI retrieval took place. Every educational record is `sources-attached`, is labelled "Awaiting editorial review" in the game, and cannot be published until a named human approves it ([content-governance.md](../content-governance.md)).
 > - Quotations are short (under 30 words). No Bible passage is reproduced beyond short phrases; the game shows Scripture only as references and labelled paraphrase.

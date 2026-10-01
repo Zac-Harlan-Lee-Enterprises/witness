@@ -4,6 +4,7 @@ This is the claim-by-claim record behind the historical, geographical and interp
 
 > **Provenance and status**
 >
+> - **Today (2026-10-01):** the owner approved the chapter's records drafted by 2026-09-26, and the World English Bible text is displayed; the status notes below are as of the research. Current approval status, record by record: [the chapter document, §12](../chapters/road-to-jericho.md#12-content-and-approval-status).
 > - **Retrieval and checking were done by an AI research assistant on 2026-09-24.** Every source listed below was fetched or read in that session unless the notes say otherwise. ("Via search snippet" means the text was seen only in a search result.)
 > - **Human citation verification is still required.** No person has yet opened these sources to confirm the quotations, locators and conclusions. `verified: true` in `sources.ts` records only that the AI retrieval took place. Every educational record is still at governance status `sources-attached`, is labelled "Awaiting editorial review" in the game, and can't be published until a named human approves it ([content-governance.md](../content-governance.md)).
 > - The working notes (`research-findings.md`/`.json` and a machine-readable copy of the WEB passage) were kept in a temporary session folder and are **not** in the repository. **This document is the permanent record.** The verbatim WEB text of Luke 10:25–37 is stored, switched off, in [`src/content/scripture/translations.ts`](../../src/content/scripture/translations.ts).

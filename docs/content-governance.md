@@ -103,9 +103,9 @@ flowchart LR
 | Approved | Reviewer named in `governance.reviewer` | `transitionReview` refuses approval without a reviewer |
 | Published | Release | Version bump + history entry |
 
-### Current status of Chapter 1
+### Current status of the chapters
 
-- 31 educational records; **0 approved**. Records checked against retrieved sources are `sources-attached`; the rest are `ai-draft`.
+- The owner's approval of 2026-09-26 (approval log above) covers every record of the four chapters drafted by that day. The records added on 2026-09-30, when the chapters were lengthened, are still `ai-draft` (one, `rec-para-ruth`, is `sources-attached`). Each chapter's document lists them by id in its §12 *Content and approval status* ([chapters/](chapters/README.md)).
 - In the default **preview** mode (`VITE_CONTENT_MODE=preview`) unapproved educational content is shown with an **"Awaiting editorial review"** label.
 - `npm run content:publish-check` lists every record still needing a human reviewer and exits non-zero until all are approved. Use it as the release gate for a "strict" build.
 

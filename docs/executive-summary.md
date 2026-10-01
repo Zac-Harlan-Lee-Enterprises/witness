@@ -1,7 +1,7 @@
 # Executive summary
 
 **Product:** *Witness: A Journey Through Scripture*, a local-first Christian narrative adventure for ages 10+, families, Christian schools and youth groups. It is a React + Phaser 3 + TypeScript progressive web app (PWA).
-**This slice:** Chapter 1, *The Road to Jericho*, about 20–30 minutes of play for a first-time player (measured: [game-design.md §17](game-design.md#17-how-long-it-plays)).
+**This slice:** Chapter 1, *The Road to Jericho*, about 20–30 minutes of play for a first-time player (measured: [chapters/road-to-jericho.md §11](chapters/road-to-jericho.md#11-how-long-it-plays)).
 **Status (2026-09-24):** Playable from start to finish on every major branch, in a real browser and headlessly. It works offline after the first visit. All educational content is AI-drafted and **awaiting human review**, and Bible text is **switched off** until a human approves a translation.
 
 ---
@@ -96,9 +96,9 @@ The full inventory, with reasons and next steps, is in [deferred-features.md](de
 
 These were found by reading the code and running the headless harness. None of them blocks finishing the chapter. They are tracked in [backlog.md](backlog.md) and [risks.md](risks.md).
 
-1. **Menashe's "stranger" greeting on the road is never shown.** The dialogue controller records meeting a character before choosing where the conversation starts, so even a player who never met Menashe hears the "I know you… from the market" lines ([game-design.md §17](game-design.md#17-known-design-gaps-in-the-current-build)).
+1. ~~**Menashe's "stranger" greeting on the road is never shown.**~~ Fixed (`d01d11e`): the dialogue controller now chooses where a conversation starts before recording the meeting. Chapter 1's open gaps are in [its document, §14](chapters/road-to-jericho.md#14-known-gaps).
 2. **`VITE_CONTENT_MODE=strict` does not block unreviewed content.** In the code it only removes the "Awaiting editorial review" label ([`ContentBlock.tsx`](../src/features/common/ContentBlock.tsx)). Nothing wires `content:publish-check` into the build or the deploy workflow. [deferred-features.md](deferred-features.md) says strict builds fail; the code doesn't support that.
-3. **The "Go to…" list includes destinations that can't be reached yet.** Choosing one does nothing visible.
+3. ~~**The "Go to…" list includes destinations that can't be reached yet.**~~ Fixed: choosing one now says "You can't get there from here yet."
 4. **Satchel capacity is checked only while packing.** Items bought or received afterwards are not re-checked.
 
 ## Assumptions
@@ -115,7 +115,7 @@ These assumptions shaped the slice. Each one is visible in the code or content, 
 | 6 | **No backend.** The game is local-first and runs on any static host. There are no accounts and no server, and game code makes no network calls. Cloud sync and sign-in exist only as interfaces (`LocalOnlySync`, `LocalOnlyAuth`). | [`services.ts`](../src/app/services.ts), architecture tests |
 | 7 | **Settings are device-level and shared by all profiles**, because accessibility needs must apply before a profile is chosen. | [`settings.ts`](../src/domain/settings.ts) |
 | 8 | **Profiles are nickname-only**: up to 20 characters (letters, numbers, spaces, apostrophes, periods, hyphens) plus one of four non-gendered looks. No email, birthday, real name or account. Up to 8 profiles per device. | [`profile.ts`](../src/domain/profile.ts), [`profile-service.ts`](../src/application/profile-service.ts) |
-| 9 | **Time of day is a story counter, not a real-time timer.** `hour` starts at 8 and moves only with travel and decisions (+1 leaving Jerusalem, +1 for settling the side quest, +2 at the end of the ridge, +6/+3/+1/+1 for the traveler decision, +1 for the road exit to Jericho, +1 for working at the inn). At hour ≥ 18 without a lamp, the player rests at the inn and delivers at dawn. There is never time pressure. | [game-design.md, time-of-day model](game-design.md#time-of-day-model) |
+| 9 | **Time of day is a story counter, not a real-time timer.** `hour` starts at 8 and moves only with travel and decisions (+1 leaving Jerusalem, +1 for settling the side quest, +2 at the end of the ridge, +6/+3/+1/+1 for the traveler decision, +1 for the road exit to Jericho, +1 for working at the inn). At hour ≥ 18 without a lamp, the player rests at the inn and delivers at dawn. There is never time pressure. | [road-to-jericho.md §8](chapters/road-to-jericho.md#8-time-weather-and-light) |
 | 10 | **The route details are fictional.** The fork, the bend, the shepherds' ridge path, the cairns, the cistern, the wadi ending at a drop, the lower market and the wayside inn are invented or composite, and the game says so. The inn is explicitly *not* the inn in Jesus' story. | Records `rec-hist-road-surface`, `rec-map`, `rec-pl-inn`, `rec-pl-market` |
 | 11 | **Setting:** "Judea, early first century AD, during the years of Jesus' public ministry (dates approximate)." The road is shown as a rough track, because scholars think the engineered Roman road network came mostly after AD 66–70. | [`index.ts`](../src/content/chapters/road-to-jericho/index.ts), record `rec-hist-road-surface` |
 | 12 | **All educational content is AI-drafted and awaiting human review.** The 31 educational records carry status `sources-attached` or `ai-draft`, none is approved, and the default "preview" mode labels them "Awaiting editorial review". The 33 sources were retrieved and checked by an AI research assistant. A human must still verify citations. | [`governance.ts`](../src/content/shared/governance.ts), [`sources.ts`](../src/content/shared/sources.ts), `npm run content:publish-check` (fails today, by design) |
@@ -134,6 +134,6 @@ These assumptions shaped the slice. Each one is visible in the code or content, 
 | If you are… | Read |
 |---|---|
 | A parent or product owner | This page, then [risks.md](risks.md) and [deferred-features.md](deferred-features.md) |
-| A content editor, pastor, teacher or historian | [content-governance.md](content-governance.md), then [game-design.md §15](game-design.md#15-the-good-samaritan-connection) |
+| A content editor, pastor, teacher or historian | [content-governance.md](content-governance.md), then [road-to-jericho.md §9](chapters/road-to-jericho.md#9-scripture-connection-and-summary) |
 | A designer | [game-design.md](game-design.md) |
 | A developer | [AGENTS.md](../AGENTS.md), [architecture.md](architecture.md), [testing-strategy.md](testing-strategy.md), [backlog.md](backlog.md), [chapter-authoring-guide.md](chapter-authoring-guide.md) |
