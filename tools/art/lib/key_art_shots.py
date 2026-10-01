@@ -6,7 +6,10 @@ giving its ending away.
 
 | id | Shows |
 |----|-------|
-| journey-to-bethlehem | Tamar's house at night, every corner full of guests and their bundles; a late stranger with a lamp at the door |
+| title | Dawn over Jerusalem: the flat roofs of the lower city, the wall, and the road east winding down into the wilderness (the teaser's sets) |
+| road-to-jericho | The player alone on the path along the gorge's rim, going down toward Jericho (the teaser's sets) |
+| storm-on-galilee | The family's boat on the open lake at dusk as storm cloud rolls in over the far hills; the other boats, one with its sail set |
+| journey-to-bethlehem | Tamar's house at night, seen from inside: every corner full of guests and their bedding, the animals at the far end, a late stranger come in with his lamp |
 | letter-from-paul | Philemon's house at lamp-lighting: the household gathered round a sealed letter, Zenon ready to read it, Tychicus who carried it beside him |
 """
 import math
@@ -111,7 +114,7 @@ shot(
         eye=(5.2, 15.8, 5.0),
         target=(36.0, 8.6, 3.0),
         lens=26.0,
-        samples=192,
+        samples=128,
         grade={"exposure": 0.2, "contrast": 1.12, "balance": (1.02, 1.0, 1.0), "saturation": 0.92, "vignette": 0.3, "bloom": 0.12},
     )
 )
@@ -127,26 +130,27 @@ shot(
         show={"stable-loom", "stable-tools", "straw-bed", "bedding", "guest-grain", "guest-tools", "spare-mat", "your-mat", "bread"},
         cast=[
             # The household and its guests, filling the family's end of the room.
-            Cast("amram", (10.2, 4.0), 40.0, pose="sit"),
-            Cast("asa", (11.6, 3.5), 20.0, pose="sit"),
-            Cast("crowd:crowd-0", (12.9, 3.8), 10.0, pose="sit"),
-            Cast("peninah", (14.6, 4.0), 30.0, pose="sit"),
-            Cast("dodi", (15.5, 3.4), -90.0, pose="lie"),
-            Cast("crowd:crowd-2", (12.6, 6.2), -60.0, pose="sit"),
-            Cast("crowd:crowd-1", (9.6, 6.6), -120.0, pose="sit"),
-            Cast("crowd:crowd-3", (10.6, 7.9), -120.0, pose="sit"),
-            # Turning to the door, where a late stranger stands with his lamp.
-            Cast("tamar", (11.4, 6.1), -100.0),
-            Cast("hagit", (8.3, 8.7), -95.0),
-            Cast("player:look-2", (11.0, 8.9), -95.0),
-            Cast("zerah", (6.0, 9.0), 85.0),
+            Cast("amram", (10.6, 4.0), 70.0, pose="sit"),
+            Cast("asa", (12.0, 3.4), 50.0, pose="sit"),
+            Cast("crowd:crowd-0", (13.4, 3.8), 40.0, pose="sit"),
+            Cast("peninah", (15.2, 4.2), -60.0, pose="sit"),
+            Cast("dodi", (16.0, 3.6), -90.0, pose="lie"),
+            Cast("crowd:crowd-2", (12.4, 6.6), 60.0, pose="sit"),
+            Cast("crowd:crowd-1", (9.8, 6.4), 80.0, pose="sit"),
+            Cast("crowd:crowd-3", (14.8, 8.2), -100.0, pose="sit"),
+            # Turning to the door, where a late stranger has come in with his lamp.
+            Cast("tamar", (11.2, 5.9), -80.0),
+            Cast("hagit", (8.8, 8.4), -95.0),
+            Cast("player:look-2", (13.0, 8.7), -95.0),
+            Cast("zerah", (7.3, 8.8), 90.0),
         ],
-        # From inside, at the guests' end, looking down the room to the door.
+        # From inside, at the guests' end, looking down the room to the
+        # stable and the door.
         closed=True,
-        eye=(13.8, 8.2, 1.7),
-        target=(5.5, 8.6, 1.0),
-        lens=22.0,
-        exposure=0.4,
+        eye=(17.6, 8.0, 1.6),
+        target=(6.5, 6.8, 0.4),
+        lens=24.0,
+        exposure=0.9,
         grade={"contrast": 1.08, "balance": (0.99, 1.0, 1.03), "saturation": 0.92, "vignette": 0.3, "bloom": 0.2, "bloom_threshold": 0.7},
     )
 )
@@ -158,7 +162,14 @@ def letter_table(scene, p):
     Roman kit builds it) with a sealed roll of papyrus and a clay lamp; two
     more lampstands lit for the gathering."""
     x, y = 13.9, 7.35
-    link(scene, p._round_table("key-table", x, y))
+    import bpy
+
+    table = p._round_table("key-table", x, y)
+    # Clear the table for the letter: the jug would hide it.
+    for o in [o for o in table if o.name.endswith("-jug")]:
+        table.remove(o)
+        bpy.data.objects.remove(o, do_unlink=True)
+    link(scene, table)
     top = p.P(x, y, 0.70)
     link(scene, sealed_letter("key-letter", top + Vector((0.05, -0.05, 0.0)), math.radians(12), length=0.34, r=0.032))
     p.clay_lamp("key-lamp", top + Vector((-0.2, 0.12, 0.0)), lit=True, power=6.0)
@@ -188,7 +199,7 @@ shot(
         hide=("garden-8", "garden-9"),
         extra=letter_table,
         eye=(13.9, 9.0, 1.35),
-        target=(13.9, 5.6, 0.87),
+        target=(13.9, 5.6, 0.95),
         lens=22.0,
         focus=(13.9, 7.35, 0.75),
         fstop=8.0,
@@ -254,12 +265,12 @@ def jericho_walker(ctx, scene):
     LK.haze(scene, 0.00007, "#dcd2c4", ground=w.z - 250.0, scale_height=900.0, centre=(w.x, w.y))
     scene.view_settings.exposure = -1.55
     cam = R.camera(scene, lens=35.0)
-    far = path.point(s0 + 160.0)
-    target = Vector((far[0], far[1], z(far[0], far[1]) - 14.0)) - left * 45.0
+    far = path.point(s0 + 260.0)
+    target = Vector((far[0], far[1], z(far[0], far[1]) - 4.0)) - left * 60.0
     look = (target - eye).normalized() * 0.55 + (w + Vector((0, 0, 0.9)) - eye).normalized() * 0.45
     R.aim(cam, eye, eye + look * 50.0, 35.0)
     R.focus(cam, (w - eye).length, 11.0)
 
 
-shot(FilmShot("title", title_dawn, res=(1920, 960), grade={"contrast": 1.1, "balance": (1.08, 1.0, 0.9), "saturation": 1.02, "vignette": 0.24, "bloom": 0.12, "shadows": (0.012, 0.004, -0.008)}))
+shot(FilmShot("title", title_dawn, res=(1920, 960), grade={"contrast": 1.16, "balance": (1.08, 1.0, 0.9), "saturation": 1.08, "vignette": 0.24, "bloom": 0.12, "shadows": (0.012, 0.004, -0.008)}))
 shot(FilmShot("road-to-jericho", jericho_walker, grade={"contrast": 1.12, "saturation": 0.98, "balance": (1.05, 1.0, 0.94), "vignette": 0.24}))

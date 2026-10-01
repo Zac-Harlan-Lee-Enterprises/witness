@@ -103,7 +103,7 @@ Every chapter ends the same way (engine behaviour): a dialogue emits `openPanel:
    node scripts/art-build.mjs key-art --shots <chapter-id>                     # → public/art/key-art/<chapter-id>.webp, -800.webp
    ```
 
-   The final render is 1600 × 600 (WebP quality 82, about 150–250 KB) with an 800 × 300 copy for phones; both are precached, so the menus look right offline.
+   The final render is 1600 × 600 (WebP quality 90, about 100–250 KB) with an 800 × 300 copy for phones; both are precached, so the menus look right offline.
 4. **Register it**: `keyArt: keyArt('<chapter-id>', '<what the picture shows>')` in the chapter's entry in [src/content/index.ts](../src/content/index.ts). The text is the image's `alt`: say what is in the picture, plainly, in a sentence.
 5. **Record its provenance**: the `public/art/key-art/*` entry in [docs/art/asset-manifest.json](art/asset-manifest.json) covers every file there; add the chapter's shot to its description.
 

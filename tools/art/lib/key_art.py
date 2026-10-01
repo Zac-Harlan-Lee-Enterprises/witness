@@ -82,7 +82,7 @@ class PlaceShot:
 
     kind = "place"
 
-    def __init__(self, id, scene, light, cast, eye, target, lens=35.0, show=(), hide=(), samples=256, exposure=0.0, grade=None, sky=None, extra=None, focus=None, fstop=None, res=(1600, 600), chapter=None, roll=0.0, closed=False):
+    def __init__(self, id, scene, light, cast, eye, target, lens=35.0, show=(), hide=(), samples=128, exposure=0.0, grade=None, sky=None, extra=None, focus=None, fstop=None, res=(1600, 600), chapter=None, roll=0.0, closed=False):
         self.id = id
         self.scene = scene
         self.light = light
@@ -175,7 +175,7 @@ def render_place(shot, quality, raw_path):
     preview = quality == "preview"
     data = chapter_data()
     scene_data = next(s for s in data["scenes"] if s["id"] == shot.scene)
-    scene = common.reset(max(16, shot.samples // 8) if preview else shot.samples)
+    scene = common.reset(max(16, shot.samples // 4) if preview else shot.samples)
     scene.cycles.sample_clamp_indirect = 10.0
     scene.cycles.blur_glossy = 0.5
     cast = build_cast(shot, data)
@@ -222,7 +222,7 @@ def render_place(shot, quality, raw_path):
     scene.render.resolution_x, scene.render.resolution_y = w, h
     scene.render.resolution_percentage = 100
     scene.render.pixel_aspect_x = scene.render.pixel_aspect_y = 1.0
-    cam = R.camera(scene, lens=shot.lens, clip=(0.05, 4000.0))
+    cam = R.camera(scene, lens=shot.lens, clip=(0.05, 40000.0))
     R.aim(cam, B(*shot.eye), B(*shot.target), shot.lens, roll=shot.roll)
     if shot.focus:
         R.focus(cam, (B(*shot.focus) - B(*shot.eye)).length, shot.fstop or 4.0)
@@ -254,7 +254,7 @@ def finish(shot, raw_path, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     w = full.shape[1]
     paths = [os.path.join(out_dir, f"{shot.id}.webp"), os.path.join(out_dir, f"{shot.id}-{w // 2}.webp")]
-    imageio.save(full, paths[0], "WEBP", 82)
-    imageio.save(imageio.downsample_sharp(full, 0.25), paths[1], "WEBP", 84)
+    imageio.save(full, paths[0], "WEBP", 90)
+    imageio.save(imageio.downsample_sharp(full, 0.25), paths[1], "WEBP", 90)
     imageio.save(full, os.path.splitext(raw_path)[0] + "-graded.png", "PNG")
     return paths

@@ -38,7 +38,7 @@ const REGISTRY: RegistryEntry[] = [
       estimatedMinutes: { min: 20, max: 30 },
       keyArt: keyArt(
         'road-to-jericho',
-        'A young traveller with a satchel walks alone down the steep road through the Judean wilderness, the gorge falling away beside the road and a bend ahead.',
+        'A young traveller with a satchel walks alone along the path above the gorge in the Judean wilderness, the cliffs falling away beside it and the way going on ahead.',
       ),
       hasTeaser: true,
     },
@@ -54,7 +54,7 @@ const REGISTRY: RegistryEntry[] = [
       estimatedMinutes: { min: 20, max: 30 },
       keyArt: keyArt(
         'storm-on-galilee',
-        'Fishing boats on the Sea of Galilee at dusk as a dark squall rolls in over the hills; the crew of the nearest boat shorten sail.',
+        'Fishing boats on the Sea of Galilee at dusk as dark storm cloud rolls in over the far hills; the crew stand on the deck of the family’s boat as the waves rise.',
       ),
     },
     load: () => import('./chapters/storm-on-galilee').then((m) => m.STORM_ON_GALILEE),
@@ -69,7 +69,7 @@ const REGISTRY: RegistryEntry[] = [
       estimatedMinutes: { min: 20, max: 30 },
       keyArt: keyArt(
         'journey-to-bethlehem',
-        'Inside a crowded Bethlehem house at night: relatives sit among their bundles by lamplight, the animals at the lower end, and a late stranger stands at the door with a lamp.',
+        'Inside a crowded Bethlehem house at night: relatives sit among their bedding by lamplight, the animals at the far end, and a late stranger with a lamp has come in among them.',
       ),
     },
     load: () => import('./chapters/journey-to-bethlehem').then((m) => m.JOURNEY_TO_BETHLEHEM),
@@ -84,7 +84,7 @@ const REGISTRY: RegistryEntry[] = [
       estimatedMinutes: { min: 20, max: 30 },
       keyArt: keyArt(
         'letter-from-paul',
-        'Lamp-lighting in Philemon’s house at Colossae: people gather round a sealed letter, about to hear it read aloud.',
+        'Lamp-lighting in Philemon’s house at Colossae: the household gathers round a table where a sealed letter lies beside a lamp, about to hear it read aloud.',
       ),
     },
     load: () => import('./chapters/letter-from-paul').then((m) => m.LETTER_FROM_PAUL),

@@ -88,14 +88,14 @@ def hills(scene, centre, z0, seed=3):
     rng = np.random.default_rng(seed)
     cx, cy = centre
     thetas = np.radians(np.linspace(-95.0, 110.0, 420))
-    rs = np.concatenate([np.linspace(2400.0, 4200.0, 60), np.linspace(4300.0, 9000.0, 30)])
+    rs = np.concatenate([np.linspace(6000.0, 8500.0, 60), np.linspace(8600.0, 16000.0, 30)])
     ph = rng.uniform(0, math.tau, 8)
 
     def ridge(t):
         # The skyline: higher to the east (the Golan side), lower to the north.
         east = np.exp(-((t - 0.0) / 0.9) ** 2)
-        base = 140.0 + 260.0 * east
-        wob = sum(math.sin(k * 3.1 * t + ph[k]) * (40.0 / (k + 1)) for k in range(1, 8))
+        base = 120.0 + 260.0 * east
+        wob = sum(math.sin(k * 3.1 * t + ph[k]) * (70.0 / (k + 1)) for k in range(1, 8))
         return base + wob
 
     bm = bmesh.new()
@@ -104,7 +104,7 @@ def hills(scene, centre, z0, seed=3):
         row = []
         for t in thetas:
             top = ridge(t)
-            u = np.clip((r - 2400.0) / 1500.0, 0.0, 1.0)
+            u = np.clip((r - 6000.0) / 2200.0, 0.0, 1.0)
             # A steep face rising from the water, then a rolling plateau.
             h = top * (1 - (1 - u) ** 2.2) + 25.0 * math.sin(r / 310.0 + 3 * t) * u
             row.append(bm.verts.new((cx + r * math.cos(t), cy + r * math.sin(t), z0 - 0.5 + max(0.0, h))))
@@ -120,7 +120,7 @@ def hills(scene, centre, z0, seed=3):
         col = n.mix((g, "Fac"), "#1d2124", "#2f332e")
         # Air between: the far hills fade toward the storm's grey.
         cam = n.new("ShaderNodeCameraData")
-        far = n.new("ShaderNodeMapRange", Value=(cam, "View Distance"), **{"From Min": 2000.0, "From Max": 7000.0, "To Min": 0.15, "To Max": 0.75})
+        far = n.new("ShaderNodeMapRange", Value=(cam, "View Distance"), **{"From Min": 6000.0, "From Max": 14000.0, "To Min": 0.35, "To Max": 0.8})
         col = n.mix((far, "Result"), (col, 2), "#5a606a")
         bump = n.bump((n.noise(0.02, 6.0, 0.6, obj), "Fac"), strength=0.4, distance=20.0)
         n.bsdf(**{"Base Color": (col, 2), "Roughness": 0.9, "Normal": (bump, "Normal")})
@@ -199,14 +199,14 @@ def storm_sky(scene, sun_az=182.0, sun_el=3.5, strength=1.0):
     cover = node("ShaderNodeMapRange", Value=dens, **{"From Min": 0.44, "From Max": 0.6}).outputs[0]
     # The sky behind the cloud: dim slate, a pale band low in the west.
     hz = node("ShaderNodeMapRange", Value=zc, **{"From Min": 0.0, "From Max": 0.35}).outputs[0]
-    sky = mix(hz, "#a3a19c", "#4a5262")
+    sky = mix(hz, "#d2bfa2", "#4a5262")
     west = node("ShaderNodeMapRange", Value=x, **{"From Min": -0.2, "From Max": -0.95}).outputs[0]
     low = node("ShaderNodeMapRange", Value=zc, **{"From Min": 0.12, "From Max": 0.0}).outputs[0]
     glow = math_("MULTIPLY", west, low, clamp=True)
     sky = mix(glow, sky, "#f2b27a")
     # The cloud: dark, its rolled underside lit warm toward the sun, a little
     # lighter where it is thin.
-    dark = mix(rolls, "#1c1f26", "#3e434e")
+    dark = mix(rolls, "#121419", "#343842")
     lit = node("ShaderNodeMapRange", Value=x, **{"From Min": 0.1, "From Max": -0.9, "To Min": 0.0, "To Max": 0.8}).outputs[0]
     lit = math_("MULTIPLY", lit, math_("SUBTRACT", 1.0, rolls), clamp=True)
     cloud = mix(lit, dark, "#c98a5c")
