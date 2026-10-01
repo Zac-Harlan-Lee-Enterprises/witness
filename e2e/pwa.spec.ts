@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import {
   choose,
   createProfile,
@@ -28,8 +28,20 @@ test('installs a service worker and keeps working offline after the first visit'
   await context.setOffline(true);
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+  // The menus' key art is precached: the title's hero and every chapter's
+  // picture show offline, not their painted stand-ins.
+  const loaded = (img: Locator) =>
+    img.evaluate((el: HTMLImageElement) => (el.complete ? el.naturalWidth : 0));
+  await expect.poll(() => loaded(page.locator('img.title-screen__art'))).toBeGreaterThan(0);
   await setFastSettings(page);
   await createProfile(page, 'Offline');
+  const cards = page.locator('img.chapter-card__art');
+  await expect(cards).toHaveCount(4);
+  for (const img of await cards.all()) {
+    await img.scrollIntoViewIfNeeded();
+    await expect.poll(() => loaded(img)).toBeGreaterThan(0);
+  }
+  await expect(page.locator('.key-art--fallback')).toHaveCount(0);
   await newGame(page);
   await waitForWorld(page); // Phaser + chapter content come from the precache
   await expect(page.locator('.hud__scene')).toHaveText('Aunt Miriam’s house');

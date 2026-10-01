@@ -24,10 +24,6 @@
   --color-focus: #1c5d99;
   --color-danger: #8c2a1c;
   --color-good: #2f5d2f;
-  --color-sun: #e9b949;
-  --color-hill-far: #c9a877;
-  --color-hill-near: #a9825a;
-  --color-road: #ead7b0;
   --portrait-bg: #e8d6b2;
   --shadow: 0 6px 24px rgb(44 29 18 / 0.25);
 
@@ -295,10 +291,6 @@ legend {
 }
 .title-screen {
   text-align: center;
-}
-.title-screen__svg {
-  width: min(100%, 30rem);
-  height: auto;
 }
 .title-screen__title {
   font-size: clamp(2rem, 6vw, 3.2rem);
@@ -2080,23 +2072,49 @@ body {
 }
 
 /* ── Title and chapter select ────────────────────────────────────────── */
-.title-screen__art {
-  width: min(100%, 40rem);
-  margin: 0 auto;
+/* Key art (pre-rendered stills: src/features/menu/KeyArtImage.tsx). While
+   it loads, and if it can't, a painted dusk stands in for it. */
+.key-art--fallback {
+  background:
+    radial-gradient(ellipse at 70% 30%, rgb(255 214 150 / 0.55), transparent 55%),
+    linear-gradient(180deg, #d9a96a 0%, #a8744a 55%, #4a2f1c 100%);
 }
-.title-screen__svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 12 / 5;
+.title-screen {
+  max-width: 68rem;
+}
+/* The hero: the image, and the title over a dark scrim at its foot (light
+   text on at least 72% near-black, whatever the image does: WCAG AA). */
+.title-screen__hero {
+  position: relative;
+  overflow: hidden;
   border-radius: 18px;
   border: 2px solid var(--ink);
   box-shadow: var(--shadow), var(--panel-edge);
+  background: #3a2413;
+}
+.title-screen__art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+.title-screen__heading {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 4.5rem 1.25rem 1.1rem;
+  background: linear-gradient(
+    180deg,
+    rgb(26 15 7 / 0) 0%,
+    rgb(26 15 7 / 0.72) 42%,
+    rgb(26 15 7 / 0.86) 100%
+  );
 }
 .title-screen__title {
-  margin-top: 1.1rem;
-  color: var(--ink);
-  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+  margin: 0;
+  color: #fff8ea;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.55);
 }
 .title-screen__title::after {
   content: '';
@@ -2104,7 +2122,26 @@ body {
   width: 6rem;
   height: 3px;
   margin: 0.5rem auto 0;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  background: linear-gradient(90deg, transparent, #e8b85a, transparent);
+}
+.title-screen__subtitle {
+  margin: 0.5rem 0 0;
+  color: #f6e6c6;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+.title-screen .menu,
+.title-screen .notices {
+  max-width: 48rem;
+  margin-inline: auto;
+}
+@media (max-width: 40rem) {
+  /* Phones: a taller crop, so the scene still shows above the title. */
+  .title-screen__art {
+    aspect-ratio: 4 / 3;
+  }
+  .title-screen__heading {
+    padding: 3rem 0.9rem 0.9rem;
+  }
 }
 .chapter-card {
   background: var(--paper-grain), var(--color-surface);
@@ -2113,10 +2150,14 @@ body {
 .chapter-card__art {
   display: block;
   width: calc(100% + 2.4rem);
-  height: 7.5rem;
+  max-width: none;
+  height: auto;
+  aspect-ratio: 8 / 3;
+  object-fit: cover;
   margin: -1rem -1.2rem 0.8rem;
   border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
   border-bottom: 2px solid var(--color-border);
+  background-color: var(--color-surface-2);
 }
 .chapter-card--locked {
   background: var(--color-surface-2);
@@ -2126,7 +2167,9 @@ body {
 .summary__art {
   display: block;
   width: 100%;
-  height: 9rem;
+  height: auto;
+  aspect-ratio: 8 / 3;
+  object-fit: cover;
   border-radius: var(--radius);
   border: 2px solid var(--color-border);
   margin-bottom: 0.6rem;

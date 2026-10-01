@@ -120,4 +120,23 @@ export interface ChapterMeta {
   estimatedMinutes: { min: number; max: number } | null;
   /** The chapter has a teaser film (chapter select offers to watch it). */
   hasTeaser?: boolean;
+  /** The chapter's key art, shown on its card in chapter select and on its summary. */
+  keyArt?: KeyArt;
+}
+
+/**
+ * A pre-rendered still (public/art/key-art/, rendered by
+ * tools/art/build_key_art.py from the game's own places, people and light).
+ * Paths are relative to the app's base path.
+ */
+export interface KeyArt {
+  /** The full-size image, e.g. `art/key-art/road-to-jericho.webp`. */
+  src: string;
+  /** The same image at half the width, for phones. */
+  srcSmall: string;
+  /** The full-size image's pixel size (the half-size one is half of each). */
+  width: number;
+  height: number;
+  /** What the picture shows, for anyone who can't see it. */
+  alt: string;
 }

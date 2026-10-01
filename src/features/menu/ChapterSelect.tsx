@@ -6,7 +6,7 @@ import { Modal } from '../common/Modal';
 import { Portrait } from '../common/Portrait';
 import { useServices } from '../common/services';
 import { Icon } from '../common/Icon';
-import { JourneyArt } from './JourneyArt';
+import { KeyArtImage } from './KeyArtImage';
 
 const SLOT_LABELS: Record<string, string> = {
   auto: 'Autosave',
@@ -69,7 +69,13 @@ export function ChapterSelect({
               className={`chapter-card ${meta.available ? '' : 'chapter-card--locked'}`}
               aria-labelledby={`chapter-title-${meta.id}`}
             >
-              {meta.available && <JourneyArt className="chapter-card__art" />}
+              {meta.available && meta.keyArt && (
+                <KeyArtImage
+                  art={meta.keyArt}
+                  className="chapter-card__art"
+                  sizes="(max-width: 50rem) 100vw, 46rem"
+                />
+              )}
               <h2 className="chapter-card__title" id={`chapter-title-${meta.id}`}>
                 <span className="chapter-card__number">Chapter {meta.number}</span> {meta.title}
               </h2>

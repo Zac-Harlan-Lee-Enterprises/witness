@@ -16,6 +16,7 @@
  *   node scripts/art-build.mjs probe <scene-id> x0 y0 x1 y1 [ppu]   # a quick beauty render for review
  *   node scripts/art-build.mjs teaser [--shots 6] [--quality preview]   # the teaser film before Chapter 1
  *   node scripts/art-build.mjs teaser-edit          # cut and encode it from frames already rendered
+ *   node scripts/art-build.mjs key-art [--shots title] [--quality preview]   # the menus' key art
  *
  * Extra arguments after the job are passed to the Blender script
  * (for example --variants day, --samples 32, --only menashe~sit, --who miriam).
@@ -51,6 +52,15 @@ const PLACES = [
   'colossae-street',
   'lycus-road',
   'philemon-house',
+];
+
+/** The menus' key art, by shot (tools/art/lib/key_art_shots.py): the title screen's, then each chapter's. */
+const KEY_ART = [
+  'title',
+  'road-to-jericho',
+  'storm-on-galilee',
+  'journey-to-bethlehem',
+  'letter-from-paul',
 ];
 
 /**
@@ -240,6 +250,23 @@ const jobs = {
     ['tools/art/build_teaser.py', '--quality', 'final', ...rest],
     ['tools/art/edit_teaser.py', '--quality', 'final', '--out', 'public/art/teaser/chapter-1'],
   ],
+  // The menus' key art (tools/art/lib/key_art_shots.py): the title screen's
+  // hero and each chapter's picture, into public/art/key-art (<id>.webp and
+  // a half-width copy). One Blender per shot; `--shots title` for some,
+  // `--quality preview` for a quick look (written under tools/art/.cache).
+  // About 25 minutes for all five on an M3 Pro.
+  'key-art': () => {
+    const args = [...rest];
+    const i = args.indexOf('--shots');
+    let shots = KEY_ART;
+    if (i >= 0) {
+      let j = i + 1;
+      while (j < args.length && !args[j].startsWith('--')) j++;
+      shots = args.slice(i + 1, j);
+      args.splice(i, j - i);
+    }
+    return shots.map((id) => ['tools/art/build_key_art.py', '--shots', id, ...args]);
+  },
   // Only the edit and encode, from frames already rendered.
   'teaser-edit': () => [
     [

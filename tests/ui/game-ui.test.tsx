@@ -2,6 +2,7 @@ import { ContentBlock } from '@/features/common/ContentBlock';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { chapterSource } from '@/content';
 import { ChapterSummary, ScriptureConnection } from '@/features/chapter/ChapterEnding';
 import { DialogueOverlay } from '@/features/dialogue/DialogueOverlay';
 import { Hud, InteractionPrompt, PlaceBanner, Toasts } from '@/features/hud/Hud';
@@ -368,6 +369,12 @@ describe('Chapter ending', () => {
     // The same screen ends every chapter: it must not name one chapter's place
     // (it said "Keep exploring Jericho" at the end of the Galilee chapter).
     expect(within(dialog).getByRole('button', { name: 'Keep exploring' })).toBeInTheDocument();
+    // The chapter's own key art, not a generic picture.
+    const art = chapterSource.list().find((c) => c.id === 'road-to-jericho')?.keyArt;
+    expect(within(dialog).getByRole('img', { name: art?.alt })).toHaveAttribute(
+      'src',
+      expect.stringContaining('art/key-art/road-to-jericho.webp'),
+    );
     await expectNoAxeViolations(container);
   });
 });

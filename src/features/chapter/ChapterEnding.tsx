@@ -8,7 +8,8 @@ import { ContentBlock } from '../common/ContentBlock';
 import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import type { GameRuntimeLike } from '../game/types';
-import { JourneyArt } from '../menu/JourneyArt';
+import { useServices } from '../common/services';
+import { KeyArtImage } from '../menu/KeyArtImage';
 
 /**
  * Act 6 and 7: the Scripture Connection, an optional reflection, and the
@@ -119,9 +120,14 @@ export function ChapterSummary({
 }) {
   const state = useStore(runtime.session.store);
   const summary = buildChapterSummary(runtime.chapter, state);
+  const art = useServices()
+    .chapters.list()
+    .find((c) => c.id === runtime.chapter.id)?.keyArt;
   return (
     <Modal title={`Chapter complete: ${summary.chapterTitle}`} className="modal--full summary">
-      <JourneyArt className="summary__art" />
+      {art && (
+        <KeyArtImage art={art} className="summary__art" sizes="(max-width: 50rem) 100vw, 46rem" />
+      )}
       <p className="meta-note">{formatPlayTime(state.playTimeMs)}</p>
       <section aria-labelledby="sum-journey">
         <h3 id="sum-journey">Your journey</h3>

@@ -529,6 +529,24 @@ NEXT   : The owner judges the before/after captures. If he wants faces lighter s
          re-render (`node scripts/art-build.mjs people --only <ids> --force`, three ids per run). Hodaya's carried
          net (people.py) reads as a fluted blob on the shoulder; a softer, draped net would help.
 BLOCKED: none.
+--- 2026-10-01  Claude Opus 5.5 (menu key art agent) — rendered key art for the title and chapter select (feat/menu-key-art) ---
+DONE   : Replaced the cartoon SVG (JourneyArt, deleted) on the title screen, chapter cards and chapter summary with
+         rendered key art. tools/art/build_key_art.py + lib/key_art.py (PlaceShot: a game place built by place.Place,
+         the game's MakeHuman people posed in it, its own light, a perspective Cycles camera; FilmShot: the teaser's
+         EEVEE sets), shots in lib/key_art_shots.py, the squall in lib/key_art_storm.py; `node scripts/art-build.mjs
+         key-art [--shots id] [--quality preview] [--regrade]`. Five stills in public/art/key-art (1600x600 + 800 for
+         chapters, 1920x960 + 960 title, WebP q90, 73-161 KB): title (dawn over Jerusalem, road east), road-to-jericho
+         (the player on the gorge-rim path), storm-on-galilee (the family's boat as storm cloud comes in), journey-to-
+         bethlehem (Tamar's house inside at night, crowded, Zerah with his lamp), letter-from-paul (the gathering round
+         a sealed letter on a table). ChapterMeta.keyArt (alt text) in src/content/index.ts; KeyArtImage (srcset,
+         width/height, painted fallback on error); title hero with dark scrim under light title text. Precached by the
+         existing globs. Docs: asset-manifest, technical-art-guide §12, chapter-authoring-guide §9a.
+TESTS  : Vitest 789 -> 796 (UI: hero/cards alt, srcset, fallback, axe; content: key art on disk at declared sizes;
+         art-cache: key art precached). typecheck, lint, knip, content:validate, prettier clean. e2e 4499/5499: smoke,
+         a11y, mobile, pwa (key art loads offline), teaser.
+NEXT   : The owner judges the menus. Ch2's sky is the weakest picture: tune storm_sky in tools/art/lib/key_art_storm.py
+         and run `node scripts/art-build.mjs key-art --shots storm-on-galilee` (about 2 min). Before/after captures
+         were in the session scratchpad (menu-art/before, menu-art/after).
 --- 2026-10-01  Claude Opus 5.5 (chapter-docs agent) — a design document per chapter, kept true by a test (docs/chapter-docs) ---
 DONE   : docs/chapters/road-to-jericho.md (Chapter 1, moved out of game-design.md and checked against the content);
          Chapters 2-4 rewritten to the same fourteen-section template and re-checked against today's content;
