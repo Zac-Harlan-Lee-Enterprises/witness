@@ -147,6 +147,30 @@ describe('TeaserPlayer', () => {
     }
   });
 
+  it('keeps the film while it is still downloading, however slowly', async () => {
+    vi.useFakeTimers();
+    try {
+      await setup('off', 500);
+      // Progress keeps arriving, each time before the stall limit.
+      for (let i = 0; i < 5; i++)
+        act(() => {
+          vi.advanceTimersByTime(400);
+          fireEvent.progress(film());
+        });
+      expect(film()).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers the film from the stills (reduced motion too), and plays it', async () => {
+    const user = userEvent.setup();
+    await setup('on');
+    expect(film()).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Play the film' }));
+    expect(film()).not.toBeNull();
+  });
+
   it('labels words still awaiting review, discreetly, in preview builds', async () => {
     await setup();
     const approved = record.governance.status === 'approved';
