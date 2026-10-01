@@ -83,6 +83,13 @@ WALK = [(f"walk{i}", {"walk": i / 8.0}) for i in range(8)]
 REST = [("idle", {}), ("breath", {"breath": 1}), ("talk", {"talk": 1})]
 # Marks that change the body itself get a sheet of their own; the rest are overlays.
 BASE_MARKS = {"torn-hem"}
+# Which build of the figures a sheet was rendered with, recorded per light in
+# people.json (`figure`; the game ignores it, tests/content/art-assets.test.ts
+# checks every sheet is current). Raise it when a change to the figures means
+# every sheet must be rendered again (`--force`).
+#   1  MakeHuman bodies with simulated clothes (ADR-0017)
+#   2  a soft fill light for people; supple, gathered outer garments
+FIGURE = 2
 
 
 def args():
@@ -252,6 +259,7 @@ def forget(manifest, job):
         return
     atlas = e.setdefault("atlas", {})
     for v in job.variants:
+        e.get("figure", {}).pop(v, None)
         f = e["sheets"].pop(v, None)
         if f:
             atlas.pop(f, None)
@@ -332,6 +340,9 @@ def render(job, a, manifest, tmp):
         person.prepare([spec for _, _, _, spec in poses()])
     for variant in todo:
         lighting.setup(scene, variant)
+        # A soft fill from the camera's side, so faces under headwear and
+        # hands read at game size (lighting.PEOPLE_FILL); off for the shadows.
+        fill = lighting.people_fill(scene, variant)
         # Exposed as the places in that light are (at night, the eye adapts).
         scene.view_settings.exposure = -1.4 + lighting.ev(variant)
         # 1. The person (no ground), from the figure camera. An overlay shows
@@ -353,9 +364,12 @@ def render(job, a, manifest, tmp):
         name = f"{job.id}-{variant}.webp"
         imageio.save(sheet, os.path.join(a.out, name), "WEBP", 90)
         entry["sheets"][variant] = name
+        entry.setdefault("figure", {})[variant] = FIGURE
         if job.overlay:
             continue
-        # 2. Its shadow on the ground, from the world camera.
+        # 2. Its shadow on the ground, from the world camera (the key's alone).
+        if fill is not None:
+            fill.hide_render = True
         ground.hide_render = False
         for part in person.parts:
             part.obj.visible_camera = False

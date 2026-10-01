@@ -8,6 +8,7 @@ import { parseLayout, type LookMark, type Pose } from '@/domain/world';
 import {
   LIGHTING_VARIANTS,
   MAX_ART_TEXTURE,
+  PEOPLE_LIGHTS,
   parsePeopleArt,
   parsePlaceArt,
   type ArtTile,
@@ -546,6 +547,84 @@ describe('pre-rendered people', () => {
       if (metres < lo || metres > top) wrong.push(`${id}: ${metres.toFixed(2)} m`);
     }
     expect(wrong).toEqual([]);
+  });
+
+  it('every sheet is rendered with the current build of the figures, in every light it has', () => {
+    // Eli and Hodaya, added with the longer chapters, once kept sheets of the
+    // old procedural mannequins beside everyone else's MakeHuman figures.
+    // build_people.py records the figure build per light (FIGURE).
+    const source = readFileSync(join(ROOT, 'tools', 'art', 'build_people.py'), 'utf8');
+    const current = Number(/^FIGURE = (\d+)$/m.exec(source)?.[1]);
+    expect(current).toBeGreaterThanOrEqual(2);
+    const raw = JSON.parse(readFileSync(join(ART, 'people', 'people.json'), 'utf8')) as Record<
+      string,
+      { sheets: Record<string, string>; figure?: Record<string, number> }
+    >;
+    const stale: string[] = [];
+    for (const [id, sheet] of Object.entries(raw))
+      for (const light of Object.keys(sheet.sheets))
+        if (sheet.figure?.[light] !== current)
+          stale.push(`${id} ${light}: ${sheet.figure?.[light] ?? 'none'}`);
+    expect(stale).toEqual([]);
+    expect(raw.eli?.figure).toBeDefined();
+    expect(raw.hodaya?.figure).toBeDefined();
+  });
+
+  it('people are lit with a soft fill in every people light, and their shadows by the key alone', () => {
+    // Faces under headwear read as dark blots at game size without a fill
+    // from the camera's side (lighting.PEOPLE_FILL); a fill that also cast a
+    // shadow would add a second shadow behind everyone.
+    const lighting = readFileSync(join(ROOT, 'tools', 'art', 'lib', 'lighting.py'), 'utf8');
+    const block = /^PEOPLE_FILL = \{([\s\S]*?)^\}/m.exec(lighting)?.[1] ?? '';
+    const fills = new Map(
+      [...block.matchAll(/"(\w+)": \(([\d.]+), "#[0-9a-f]{6}", ([\d.]+), (-?[\d.]+)\)/g)].map(
+        (m) => [m[1] ?? '', { power: Number(m[2]), elevation: Number(m[3]) }],
+      ),
+    );
+    for (const light of PEOPLE_LIGHTS) {
+      const fill = fills.get(light);
+      expect(fill, `${light} has a people fill`).toBeDefined();
+      // Below the figure camera's 32° (it reaches under a brim), and soft.
+      expect(fill?.elevation, light).toBeLessThan(32);
+      expect(fill?.power, light).toBeGreaterThan(0);
+    }
+    // The night's fill is dim beside the day's (the night is rendered brighter).
+    expect(fills.get('night')?.power ?? 0).toBeLessThan((fills.get('day')?.power ?? 0) / 3);
+    const build = readFileSync(join(ROOT, 'tools', 'art', 'build_people.py'), 'utf8');
+    const lit = build.indexOf('lighting.people_fill(scene, variant)');
+    const off = build.indexOf('fill.hide_render = True');
+    const shadows = build.indexOf('2. Its shadow on the ground');
+    expect(lit).toBeGreaterThan(0);
+    expect(off).toBeGreaterThan(shadows);
+  });
+
+  it('outer garments drape as supple wool, gathered at the shoulders, not as stiff shells', () => {
+    // The standing cloak was a boxy cape and the elders' mantle hung in flat
+    // panels: thick, incompressible cloth started as a cylinder round the
+    // shoulders' and arms' hull. They are fulled wool that buckles into folds
+    // (low compression), started rounded, drawn in, seeded with folds and
+    // gathered at the top (world_cloth.DRAPE).
+    const cloth = readFileSync(join(ROOT, 'tools', 'art', 'lib', 'world_cloth.py'), 'utf8');
+    const mantle =
+      /"mantle": dict\(mass=([\d.]+), tension=([\d.]+), compression=([\d.]+), shear=([\d.]+), bending=([\d.]+)/.exec(
+        cloth,
+      );
+    expect(mantle).not.toBeNull();
+    const [, , tension, compression, , bending] = (mantle ?? []).map(Number);
+    expect(compression).toBeLessThan((tension ?? 0) / 3);
+    expect(bending).toBeLessThan(0.5);
+    // And they hang over the tunic's skirt, never inside it (the solver let
+    // the mantle slip through it from the belt down).
+    expect(cloth).toContain('g.shapes[(clip, rec)] = outside(g.shapes[(clip, rec)], S)');
+    const drapes = /^DRAPE = \{([\s\S]*?)^\}/m.exec(cloth)?.[1] ?? '';
+    for (const garment of ['mantle', 'cloak']) {
+      const call = new RegExp(`_curtain\\("${garment}"[^\\n]*`).exec(cloth)?.[0] ?? '';
+      expect(call, garment).toContain('fabric="mantle"');
+      expect(call, garment).toContain(`drape=DRAPE["${garment}"]`);
+      const drape = new RegExp(`"${garment}": dict\\(([^)]*)\\)`).exec(drapes)?.[1] ?? '';
+      for (const key of ['smooth', 'cling', 'folds', 'gather'])
+        expect(drape, garment).toContain(key);
+    }
   });
 
   it('the half-resolution sheets are recorded as derived from the rendered ones', () => {

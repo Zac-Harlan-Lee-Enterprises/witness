@@ -326,6 +326,59 @@ def setup_lamp(scene):
     return None
 
 
+# ── A soft fill for people ──────────────────────────────────────────────────
+# Seen from the figure camera (32° down, looking north) at a few pixels a
+# head, a face under a veil or a head cloth lies in the headwear's shade and
+# reads as a dark blot. Each people light has a soft fill from the camera's
+# side, a little below its eye line (so it reaches under a brim), broad and
+# far enough to model gently: it lifts faces and hands without flattening the
+# form the key gives. Its colour is the light that would bounce there in that
+# set (sunlit ground, a cool sky, plaster, lamplight, the moonlit night), its
+# power a fraction of the key's on a face turned to the camera. It is only for
+# the figure itself: the cast-shadow pass turns it off, so shadows are the key's.
+#   light -> (power in W, colour, elevation in degrees, azimuth off the camera axis in degrees)
+PEOPLE_FILL = {
+    "day": (225.0, "#f2e4cf", 9.0, 18.0),
+    "late": (195.0, "#f3d7b4", 9.0, -18.0),
+    "overcast": (115.0, "#dde2e6", 10.0, 0.0),
+    "indoor": (165.0, "#ffd9b0", 9.0, -14.0),
+    "lamp": (135.0, "#ffc994", 9.0, -14.0),
+    "night": (45.0, "#a9b8e0", 10.0, -14.0),
+    "dusk": (36.0, "#ffc994", 9.0, 0.0),
+    "lamplight": (36.0, "#ffc994", 9.0, 0.0),
+}
+FILL_DISTANCE = 4.0
+FILL_SIZE = 2.4
+FILL_TARGET_Z = 1.25
+
+
+def people_fill(scene, name):
+    """Add (or replace) the people fill for light `name` (see PEOPLE_FILL).
+    Returns the light object, or None if the light has no fill."""
+    for obj in [o for o in scene.objects if o.type == "LIGHT" and o.name.startswith("PeopleFill")]:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    spec = PEOPLE_FILL.get(name)
+    if spec is None:
+        return None
+    power, color, elev, az = spec
+    el, a = math.radians(elev), math.radians(az)
+    # The camera looks north from the south: the fill stands south of the
+    # person, turned `az` toward the east (positive) or west.
+    d = Vector((math.sin(a) * math.cos(el), -math.cos(a) * math.cos(el), math.sin(el)))
+    target = Vector((0.0, 0.0, FILL_TARGET_Z))
+    loc = target + d * FILL_DISTANCE
+    data = bpy.data.lights.new("PeopleFill", "AREA")
+    data.energy = power
+    data.color = hex_rgb(color)[:3]
+    data.shape = "DISK"
+    data.size = FILL_SIZE
+    obj = bpy.data.objects.new("PeopleFill", data)
+    scene.collection.objects.link(obj)
+    obj.location = loc
+    obj.rotation_euler = d.to_track_quat("Z", "Y").to_euler()
+    return obj
+
+
 def _gradient_sky(nt, colors, strength):
     """An even sky (no sun disc): `ground` below the horizon, `horizon`, and
     `zenith` overhead, blended by the height of the direction looked in."""
