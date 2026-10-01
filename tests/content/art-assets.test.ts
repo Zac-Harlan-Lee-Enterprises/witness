@@ -510,7 +510,11 @@ describe('pre-rendered people', () => {
     for (const sheet of Object.values(people))
       for (const file of Object.values(sheet.sheets))
         for (const [name, [, , w, h, ox, oy]] of Object.entries(sheet.atlas[file] ?? {}))
-          if (ox <= 0 || oy <= 0 || ox + w >= sheet.frameWidth || oy + h >= sheet.frameHeight)
+          // (An overlay's frame where the body hides its mark is empty.)
+          if (
+            w * h > 1 &&
+            (ox <= 0 || oy <= 0 || ox + w >= sheet.frameWidth || oy + h >= sheet.frameHeight)
+          )
             cut.push(`${file} ${name}`);
     expect(cut).toEqual([]);
   });

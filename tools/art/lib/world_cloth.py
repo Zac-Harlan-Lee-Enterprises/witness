@@ -754,34 +754,43 @@ class Wardrobe:
         return g
 
     def _blanket(self, name, mat, mark):
-        """A cloak laid over someone lying on their back: a flat sheet held
-        a hand's breadth over the front of the body (which faces the sky
-        once they lie down), which falls over them and down their sides."""
+        """A cloak laid over someone lying on their back: it covers the front
+        of the body (which faces the sky once they lie down) from the
+        shoulders to below the knees, over the arms, spanning the hollows
+        between them, and follows the body as it lies."""
         J = self.body.J
-        pts = self.dressed_points()
-        top = float(J["shoulder_L"][2]) + 0.02
-        bottom = float(J["knee_L"][2]) - 0.12
-        span = pts[(pts[:, 2] < top) & (pts[:, 2] > bottom)]
-        y = float(span[:, 1].min()) - 0.16
-        nx, nz = 26, 32
-        xs = np.linspace(-0.45, 0.45, nx)
-        zs = np.linspace(top, bottom, nz)
-        V = np.array([(x, y, z) for z in zs for x in xs], F)
-        Q = np.array([(i * nx + j, i * nx + j + 1, (i + 1) * nx + j + 1, (i + 1) * nx + j) for i in range(nz - 1) for j in range(nx - 1)], np.int64)
-        pin = np.zeros(len(V), F)
-        pin[:nx] = 0.25 * (np.abs(xs) < 0.2)
-        g = Garment(name, V, Q, mat, sim=True, fabric="heavy", pin=pin, mark=mark, colliders=("dressed", "skirt"), collide_as=name)
-        # Carried with the whole body as it lies down (not by the arms beside it).
-        g.bone = "root"
-        return g
+        base = mh.Base.get()
+        co = self.co
+        N = self.p.look.normals
+        top = float(J["shoulder_L"][2]) + 0.03
+        bottom = float(J["knee_L"][2]) - 0.15
+        hands = self.bone_weight(*[n for n in self.names if n.startswith(("wrist", "finger", "metacarpal"))])
+        ok = (co[:, 2] < top) & (co[:, 2] > bottom) & (N[:, 1] < 0.25) & (hands < 0.5)
+        Q = base.quads[base.faces_of("body")]
+        Q = Q[ok[Q].all(1)]
+        used = np.unique(Q)
+        remap = -np.ones(len(co), np.int64)
+        remap[used] = np.arange(len(used))
+        legs = np.clip((float(J["pelvis"][2]) - co[used, 2]) / 0.2, 0, 1)
+        V = co[used] + N[used] * (0.045 + 0.03 * legs)[:, None]
+        V = bridge(V, remap[Q], N[used], iterations=80, soften=20)
+        return Garment(name, V, remap[Q], mat, mark=mark, weights=self.W[used], thickness=0.004, subsurf=1)
 
     def _bandages(self, mat, mark):
         J = self.body.J
         out = []
         head_z = float(J["head"][2])
-        # Round the forehead, just under the edge of a turban or head cloth (so it shows).
-        z = head_z + (self.body.height - head_z) * 0.52 - 0.018
-        rings = self._head_rings([z + 0.012, z - 0.012], 0.008)
+        brow = head_z + (self.body.height - head_z) * 0.52
+        if self.a["headwear"] == "wrap":
+            # Bound on over the turban (which comes down to the brows), on a
+            # slant, so it shows.
+            z, pad = brow + 0.025, 0.045
+        else:
+            # Round the forehead, above the eyes.
+            z, pad = brow + 0.004, 0.008
+        rings = self._head_rings([z + 0.014, z - 0.014], pad)
+        for rg in rings:
+            rg[:, 2] += 0.012 * np.sin(angles(40) + 0.6)
         V, Q = ring_grid(rings)
         W = np.zeros((len(V), self.W.shape[1]), F)
         W[:, self.idx["head"]] = 1.0

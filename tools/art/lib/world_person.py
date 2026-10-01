@@ -387,6 +387,18 @@ class Person(people.Person):
         if cloak:
             self.marks.add("wrapped-in-cloak")
         for part in self.parts[n_before:]:
+            if part.bone == "chest" and any(k in part.obj.name for k in ("-tablet0", "-tablet1", "-tablet-cord", "-stylus")):
+                # A scribe's tablets held against the chest: in front of it
+                # (people.py placed them for a shallower chest).
+                co = self.bodyd.co[mh.Base.get().verts_of("body")]
+                ys = [v.co.y for v in part.obj.data.vertices]
+                zs = [v.co.z for v in part.obj.data.vertices]
+                near = co[(np.abs(co[:, 2] - float(np.mean(zs))) < 0.08) & (np.abs(co[:, 0]) < 0.12)]
+                front = float(near[:, 1].min()) - 0.03
+                shift = min(0.0, front - max(ys))
+                for v in part.obj.data.vertices:
+                    v.co.y += shift
+                part.rest[:, 1] += shift
             if part.obj.name.endswith("-bundle"):
                 # The bundle rests against the back (people.py placed it for a
                 # thinner body): its front touches the shoulder blades.
@@ -401,10 +413,10 @@ class Person(people.Person):
             if part.upright is not None and part.obj.name.endswith(("-oar", "-oar-blade", "-staff")):
                 # A tall person's oar or staff (sized to their height) would
                 # rise out of the top of the frame (raised in the hand, and seen
-                # from above, it stands higher still): kept under 1.66 m.
+                # from above, it stands higher still): kept under 1.52 m.
                 # (Both pieces of an oar by the same measure: its blade's top.)
                 top = (1.13 if "-oar" in part.obj.name else 1.02) * self.H
-                limit = 1.66
+                limit = 1.52
                 if top > limit:
                     k = limit / top
                     for v in part.obj.data.vertices:
@@ -527,7 +539,7 @@ class Person(people.Person):
         carry = self.a.get("carry", "none")
         busy = carry in ("staff", "spindle", "bread", "lamp", "tablet", "lamb", "oar")
         hand = "L" if busy else "R"
-        R, root = world_motion.pose(walk, breath, talk, hand=hand, rest=rest, carry=carry, J=self.bodyd.J, height=self.H)
+        R, root = world_motion.pose(walk, breath, talk, hand=hand, rest=rest, carry=carry, J=self.bodyd.J, height=self.H, stride=1.0 if float(self.bodyd.J["hip_L"][2]) <= 0.88 else 0.8)
         R = world_motion.carry_pose(R, carry if rest is None or carry == "lamb" else "none", rest, breath)
         if rest == "sit":
             # Cross-legged: the thighs out and forward, lying low, each shin

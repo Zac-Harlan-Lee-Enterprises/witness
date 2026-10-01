@@ -87,7 +87,7 @@ def curl(R, hand, amount):
     return R
 
 
-def pose(walk=None, breath=0.0, talk=0, hand="R", rest=None, carry="none", J=None, height=1.7):
+def pose(walk=None, breath=0.0, talk=0, hand="R", rest=None, carry="none", J=None, height=1.7, stride=1.0):
     """(rotations {MakeHuman bone: 3x3}, root 4x4) for one frame. `J` is the
     body's landmarks (world_body.Body.J), `height` its height (m)."""
     R = {}
@@ -134,9 +134,9 @@ def pose(walk=None, breath=0.0, talk=0, hand="R", rest=None, carry="none", J=Non
     if walk is not None:
         p = walk
         for side, q in (("L", p), ("R", (p + 0.5) % 1.0)):
-            hip = _curve("hip", q) * STRIDE
+            hip = _curve("hip", q) * STRIDE * stride
             knee = _curve("knee", q) * 0.88
-            ankle = _curve("ankle", q) * STRIDE
+            ankle = _curve("ankle", q) * STRIDE * stride
             R[f"upperleg01.{side}"] = rot(x=-hip)
             R[f"lowerleg01.{side}"] = rot(x=knee)
             R[f"foot.{side}"] = rot(x=-ankle)
@@ -144,7 +144,7 @@ def pose(walk=None, breath=0.0, talk=0, hand="R", rest=None, carry="none", J=Non
             for t in range(1, 6):
                 R[f"toe{t}-1.{side}"] = rot(x=-toe)
             # The arm swings with the opposite leg: forward as that leg does.
-            opp = _curve("hip", (q + 0.5) % 1.0) * STRIDE
+            opp = _curve("hip", (q + 0.5) % 1.0) * STRIDE * stride
             sgn = 1 if side == "L" else -1
             R[f"upperarm01.{side}"] = rot(x=-0.62 * opp + 1.5, y=sgn * 3.0)
             R[f"lowerarm01.{side}"] = rot(x=-(8.0 + 0.45 * max(0.0, opp)))
@@ -202,17 +202,17 @@ def carry_pose(R, carry, rest, breath=0.0):
             curl(R, side, 0.4)
     elif carry == "tablets":
         R["upperarm01.L"] = rot(x=-14.0 + (2.0 if breath else 0.0), y=6.0)
-        R["lowerarm01.L"] = rot(x=-116.0, z=-38.0)
+        R["lowerarm01.L"] = rot(x=-96.0, z=-34.0)
         curl(R, "L", 0.3)
     elif carry in ("staff", "oar"):
-        R["upperarm01.R"] = rot(x=-12.0, y=-4.0)
-        R["lowerarm01.R"] = rot(x=-38.0)
+        R["upperarm01.R"] = rot(x=-6.0, y=-4.0)
+        R["lowerarm01.R"] = rot(x=-24.0)
         curl(R, "R", 0.85)
     elif carry in ("basket", "jar"):
         curl(R, "L", 0.8)
     elif carry == "bread":
-        R["upperarm01.R"] = rot(x=-8.0)
-        R["lowerarm01.R"] = rot(x=-70.0, z=-8.0)
+        R["upperarm01.R"] = rot(x=-2.0)
+        R["lowerarm01.R"] = rot(x=-48.0, z=-6.0)
         curl(R, "R", 0.3)
     elif carry == "spindle":
         R["upperarm01.L"] = rot(x=-18.0, y=4.0)
