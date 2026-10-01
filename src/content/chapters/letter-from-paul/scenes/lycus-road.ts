@@ -3,6 +3,7 @@ import type { Condition } from '@/domain/conditions';
 
 const flag = (name: string): Condition => ({ type: 'flag', flag: name });
 const not = (condition: Condition): Condition => ({ type: 'not', condition });
+const all = (...of: Condition[]): Condition => ({ type: 'all', of });
 const kallias = (option: string): Condition => ({
   type: 'choiceMade',
   choice: 'choice-kallias',
@@ -166,8 +167,70 @@ export const LYCUS_ROAD: ChapterInput['scenes'][number] = {
       x: 11,
       y: 12,
       facing: 'down',
-      // Once he has set off home with you, his place at the vat is empty.
-      visibleWhen: not(kallias('come-now')),
+      // Back at his vat once you have found him and read him the letter;
+      // once he has set off home with you, his place is empty again.
+      visibleWhen: all(flag('read-to-kallias'), not(kallias('come-now'))),
+      interaction: { verb: 'talk', dialogue: 'd-kallias' },
+    },
+    // ── Kallias ran when he saw you: where did he go? ─────────────────────
+    {
+      id: 'empty-vat',
+      kind: 'feature',
+      label: 'Kallias’s vat',
+      sprite: 'none',
+      x: 11,
+      y: 12,
+      solid: false,
+      visibleWhen: not({ type: 'puzzleSolved', puzzle: 'p-hiding' }),
+      interaction: { verb: 'examine', dialogue: 'd-hiding' },
+    },
+    {
+      id: 'red-prints',
+      kind: 'clue',
+      label: 'Footprints by the vat',
+      sprite: 'none',
+      x: 11,
+      y: 11,
+      solid: false,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          { type: 'discoverClue', clue: 'clue-red-prints' },
+          {
+            type: 'showMessage',
+            text: 'Wet red footprints lead from the vat round the end of the works, toward the bridge. None go up the road.',
+          },
+        ],
+      },
+    },
+    {
+      id: 'shed-door',
+      kind: 'clue',
+      label: 'The drying shed door',
+      sprite: 'none',
+      x: 5,
+      y: 13,
+      solid: false,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          { type: 'discoverClue', clue: 'clue-cloak-peg' },
+          {
+            type: 'showMessage',
+            text: 'Just inside the shed door, a cloak and a bundle of food hang on a peg. The cloak has a red stain on its hem: Kallias’s.',
+          },
+        ],
+      },
+    },
+    {
+      id: 'kallias-bank',
+      kind: 'npc',
+      label: 'Kallias, on the riverbank',
+      characterId: 'kallias',
+      x: 10,
+      y: 10,
+      facing: 'up',
+      visibleWhen: all({ type: 'puzzleSolved', puzzle: 'p-hiding' }, not(flag('read-to-kallias'))),
       interaction: { verb: 'talk', dialogue: 'd-kallias' },
     },
     {
@@ -335,9 +398,10 @@ export const LYCUS_ROAD: ChapterInput['scenes'][number] = {
       area: { x: 2, y: 13, w: 18, h: 2 },
       onceFlag: 'reached-dye-works',
       effects: [
+        { type: 'setFlag', flag: 'kallias-fled', value: true },
         {
           type: 'showMessage',
-          text: 'The bridge, and beside it a dye works: vats, wet wool on the lines, and someone you know bent over a vat.',
+          text: 'The bridge, and beside it a dye works: vats, wet wool on the lines. At the nearest vat a man straightens up, sees you coming down the road — and is gone.',
         },
       ],
     },

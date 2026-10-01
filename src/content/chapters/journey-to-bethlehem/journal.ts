@@ -129,6 +129,24 @@ export const JOURNAL: ChapterInput['journal'] = [
     order: 3,
   },
   {
+    id: 'je-kid',
+    category: 'events',
+    title: 'Hagit’s runaway kid',
+    summary: 'Milk for Dodi',
+    recordIds: ['rec-e-kid'],
+    unlockWhen: flag('kid-missing'),
+    order: 6,
+  },
+  {
+    id: 'je-supper',
+    category: 'events',
+    title: 'Supper by the fire',
+    summary: 'The last loaf',
+    recordIds: ['rec-e-supper'],
+    unlockWhen: flag('supper-eaten'),
+    order: 7,
+  },
+  {
     id: 'je-stranger',
     category: 'events',
     title: 'A knock at the door',
@@ -241,6 +259,16 @@ export const JOURNAL: ChapterInput['journal'] = [
     recordIds: ['rec-2sam-23-15', 'rec-para-well'],
     unlockWhen: flag('heard-well'),
     order: 2,
+  },
+
+  {
+    id: 'js-ruth',
+    category: 'scripture',
+    title: 'Ruth 1:1, 1:19 and 3:2',
+    summary: 'Naomi and Ruth come home',
+    recordIds: ['rec-ruth-bethlehem', 'rec-para-ruth'],
+    unlockWhen: flag('heard-ruth'),
+    order: 3,
   },
 
   // Themes and interpretation

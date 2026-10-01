@@ -109,7 +109,7 @@ def rock_material(name="teaser-rock", base="#bdb3a2", dark="#7d7163", red=0.0, l
     return _cached(name, build)
 
 
-def shrub_material(name="teaser-shrub", color="#7d7c62", dry="#a39a7c"):
+def shrub_material(name="teaser-shrub", color="#8a8a6c", dry="#b0a688"):
     def build():
         g = Graph(name)
         pos = g.coords("Object")

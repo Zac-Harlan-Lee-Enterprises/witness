@@ -1,5 +1,6 @@
 """The game's people (people.py) in the teaser: placed anywhere in a set,
-walking along paths with their feet planted, standing, or lying down.
+walking along paths with their feet planted, or standing (the man lying in
+the shade is a body of his own: teaser_body.py).
 
 `Figure(appearance)` builds a person exactly as the game's sheets do and
 `place(W, **pose)` poses them and puts them at the world transform W.
@@ -128,12 +129,6 @@ class Walker:
         W = Matrix.Translation(Vector((x, y, z))) @ facing(self.heading(s))
         self.figure.place(W, walk=frac)
         return Vector((x, y, z))
-
-
-def lying(figure, at, theta, breath=0.0):
-    """A person lying on their back, head toward angle theta."""
-    W = Matrix.Translation(Vector(at)) @ Matrix.Rotation(theta - math.pi / 2, 4, "Z")
-    figure.place(W, rest="lie", breath=breath)
 
 
 def standing(figure, at, theta, breath=0.0, talk=0):

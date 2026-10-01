@@ -18,6 +18,7 @@ from mathutils import noise as mnoise
 import common
 import materials as M
 import teaser_city as C
+import teaser_clay as TC
 from teaser_nodes import Graph
 
 
@@ -212,13 +213,13 @@ class Market:
         rng = self.rng
         s = (0.55 if small else 1.0) * (0.8 + rng.random() * 0.4)
         prof = [(0.06 * s, 0.0), (0.16 * s, 0.08 * s), (0.2 * s, 0.25 * s), (0.17 * s, 0.42 * s), (0.08 * s, 0.52 * s), (0.065 * s, 0.6 * s), (0.08 * s, 0.63 * s)]
-        objs.append(lathe("jar", prof, (x, y, z), M.terracotta(rng.choice(["#b06c46", "#a8663f", "#c08a5e", "#9e6a48"]), 0.3), 24))
+        objs.append(lathe("jar", prof, (x, y, z), TC.fired_clay(*rng.choice([("market-jar-a", "#b06c46"), ("market-jar-b", "#a8663f"), ("market-jar-c", "#c08a5e"), ("market-jar-d", "#9e6a48")]), dust=0.35, scale=1.4), 24))
 
     def _bowls(self, x, y, z, objs):
         rng = self.rng
         n = 3 + rng.randrange(4)
         for k in range(n):
-            objs.append(lathe("bowl", [(0.04, 0.0), (0.1, 0.03), (0.13, 0.06), (0.125, 0.065), (0.09, 0.035)], (x, y, z + k * 0.028), M.terracotta("#b8764a", 0.1), 20))
+            objs.append(lathe("bowl", [(0.04, 0.0), (0.1, 0.03), (0.13, 0.06), (0.125, 0.065), (0.09, 0.035)], (x, y, z + k * 0.028), TC.fired_clay("market-bowl", "#b8764a", dust=0.1), 20))
 
     def _cloth_roll(self, x, y, z, objs):
         rng = self.rng
@@ -285,6 +286,56 @@ class Market:
                 cm.from_mesh(me)
                 bpy.data.meshes.remove(me)
         self.objects.append(_obj("olive-canopy", cm, leaves))
+
+    def yard_trees(self, count=60, radius=260.0):
+        """Trees in the city's open yards (City.yards) nearest the market:
+        old olives, a few palms, and dark Mediterranean cypresses rising
+        over the roofs, so the city is not only stone."""
+        rng = random.Random(77)
+        city = self.city
+        cx = (city.market[0] + city.market[1]) / 2
+        yards = [p for p in city.yards if math.hypot(p[0] - cx, p[1] - city.gy) < radius and abs(p[1] - city.gy) > 8.0]
+        rng.shuffle(yards)
+        for x, y in yards[:count]:
+            x += rng.uniform(-2.0, 2.0)
+            y += rng.uniform(-2.0, 2.0)
+            kind = rng.random()
+            if kind < 0.55:
+                self.olive(x, y, 3.0 + rng.random() * 1.8)
+            elif kind < 0.8:
+                self.cypress(x, y, 7.0 + rng.random() * 5.0)
+            else:
+                self.palm(x, y, 8.0 + rng.random() * 4.0)
+        return self
+
+    def cypress(self, x, y, h):
+        """A Mediterranean cypress: a narrow dark flame of dense foliage,
+        tapering to a point, its surface broken into sprays."""
+        rng = self.rng
+        z = self.city.z(x, y)
+        bm = bmesh.new()
+        n = int(h * 7) if not self.preview else int(h * 3)
+        for k in range(n):
+            t = k / max(1, n - 1)
+            r = (0.55 + 0.25 * rng.random()) * (1.0 - t) ** 0.8 * (0.5 + 0.5 * math.sin(math.pi * min(1.0, t * 1.6 + 0.2)))
+            a = rng.random() * math.tau
+            c = Vector((x + math.cos(a) * r * 0.6, y + math.sin(a) * r * 0.6, z + 0.6 + t * (h - 0.6)))
+            s = 0.25 + 0.35 * (1.0 - t)
+            sub = bmesh.new()
+            bmesh.ops.create_icosphere(sub, subdivisions=2, radius=1.0)
+            o = Vector((rng.random() * 40, rng.random() * 40, rng.random() * 40))
+            for v in sub.verts:
+                d = 1.0 + 0.4 * mnoise.noise(v.co * 2.6 + o)
+                v.co = c + Vector((v.co.x * s * d, v.co.y * s * d, v.co.z * s * 1.5 * d))
+            me = bpy.data.meshes.new("t")
+            sub.to_mesh(me)
+            sub.free()
+            bm.from_mesh(me)
+            bpy.data.meshes.remove(me)
+        self.objects.append(_obj("cypress", bm, cypress_leaves()))
+        tb = bmesh.new()
+        _tube(tb, [Vector((x, y, z - 0.1)), Vector((x, y, z + 1.2))], [0.14, 0.11], 8)
+        self.objects.append(_obj("cypress-trunk", tb, olive_bark()))
 
     def palm(self, x, y, h):
         rng = self.rng
@@ -354,6 +405,20 @@ def olive_leaves():
     return C._cached("olive-leaves", build)
 
 
+def cypress_leaves():
+    def build():
+        g = Graph("cypress-leaves")
+        pos = g.coords("Object")
+        n = g.voronoi(pos, 18.0)
+        gaps = g.map(n, 0.0, 0.4)
+        col = g.mix(g.map(g.noise(pos, 5.0, 3.0), 0.3, 0.7), "#27301f", "#44502f")
+        col = g.mix(g.mul(g.sub(1.0, gaps), 0.5), col, "#161c12")
+        g.principled(col, 0.7, 0.3, g.bump(gaps, 1.0, 0.06))
+        return g.mat
+
+    return C._cached("cypress-leaves", build)
+
+
 def palm_bark():
     def build():
         g = Graph("palm-bark")
@@ -381,57 +446,5 @@ def palm_leaves():
 
 
 # ── pigeons ──────────────────────────────────────────────────────────────────
-class Pigeon:
-    """A rock dove: grey body, darker head, iridescent neck, two dark wing
-    bars. Pecks and bobs on the ground, or flies with beating wings."""
-
-    def __init__(self, name, seed=0):
-        rng = random.Random(seed)
-        self.rng = rng
-        grey = pigeon_material("#8c8a86", "#615d58")
-        dark = pigeon_material("#5c5b5a", "#403e3c")
-        s = 0.9 + rng.random() * 0.2
-        self.body = blob(f"{name}-body", (0, 0, 0.11 * s), (0.075 * s, 0.14 * s, 0.07 * s), grey, seed, 0.03, 2)
-        self.head = blob(f"{name}-head", (0, 0, 0), (0.028 * s, 0.034 * s, 0.03 * s), dark, seed + 1, 0.02, 2)
-        self.tail = blob(f"{name}-tail", (0, 0.16 * s, 0.1 * s), (0.04 * s, 0.07 * s, 0.012 * s), dark, seed + 2, 0.02, 1)
-        self.wings = [blob(f"{name}-wing{k}", (0, 0, 0), (0.05 * s, 0.12 * s, 0.012 * s), grey, seed + 3 + k, 0.02, 1) for k in (0, 1)]
-        self.legs = blob(f"{name}-legs", (0, 0, 0.03 * s), (0.02 * s, 0.02 * s, 0.03 * s), plain_pink(), seed + 5, 0.0, 1)
-        self.s = s
-        self.parts = [self.body, self.head, self.tail, *self.wings, self.legs]
-
-    def place(self, at, heading, peck=0.0, fly=None, bank=0.0):
-        """Ground: peck 0..1 lowers the head. Flying: fly = wing phase."""
-        s = self.s
-        W = Matrix.Translation(Vector(at)) @ Matrix.Rotation(heading + math.pi / 2, 4, "Z")
-        if fly is not None:
-            W = W @ Matrix.Rotation(bank, 4, "Y") @ Matrix.Rotation(-0.15, 4, "X")
-        self.body.matrix_world = W
-        self.tail.matrix_world = W
-        self.legs.matrix_world = W if fly is None else W @ Matrix.Translation((0, 0.05, 0.05)) @ Matrix.Scale(0.01, 4)
-        neck = Vector((0, -0.12 * s, 0.2 * s)) if fly is None else Vector((0, -0.14 * s, 0.15 * s))
-        if fly is None:
-            neck = neck + Vector((0, -0.03 * peck * s, -0.12 * peck * s))
-        self.head.matrix_world = W @ Matrix.Translation(neck)
-        for k, w in enumerate(self.wings):
-            sgn = 1 if k == 0 else -1
-            if fly is None:
-                M_ = Matrix.Translation((sgn * 0.055 * s, 0.02 * s, 0.13 * s)) @ Matrix.Rotation(sgn * 0.12, 4, "Y")
-            else:
-                beat = math.sin(fly * math.tau) * 1.1 + 0.2
-                M_ = Matrix.Translation((sgn * 0.04 * s, 0.0, 0.13 * s)) @ Matrix.Rotation(sgn * beat, 4, "Y") @ Matrix.Translation((sgn * 0.11 * s, 0, 0)) @ Matrix.Scale(1.5, 4, (1, 0, 0))
-            w.matrix_world = W @ M_
-
-
-def pigeon_material(a, b):
-    def build():
-        g = Graph(f"pigeon-{a}")
-        pos = g.coords("Object")
-        col = g.mix(g.map(g.noise(pos, 30.0, 3.0), 0.3, 0.7), b, a)
-        g.principled(col, 0.7, 0.4, g.bump(g.noise(pos, 120.0, 2.0), 0.3, 0.003), **{"Sheen Weight": 0.3})
-        return g.mat
-
-    return C._cached(f"pigeon-{a}", build)
-
-
-def plain_pink():
-    return C.plain("pigeon-legs", "#b5635a", 0.6)
+# Rock doves on the paving: modelled in teaser_birds.py.
+from teaser_birds import Pigeon  # noqa: E402,F401

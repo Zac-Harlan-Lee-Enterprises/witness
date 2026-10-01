@@ -1,5 +1,5 @@
 {
-  "$comment": "MakeHuman data used by the portrait build and the world figures (tools/art/lib/makehuman.py), pinned by commit and SHA-256. Downloaded into tools/art/.cache/makehuman by `npm run art:fetch-makehuman`; never committed. Data only (base mesh, morph targets, the default skeleton and its skin weights, licence text): no MakeHuman code. Approved by Zac Harlan on 2026-09-26 (docs/adr/0016-makehuman-base-for-portraits.md). The skeleton and its weights (rigs/) were added for the world figures, within the scope the owner approved on 2026-09-26 (docs/adr/0017-makehuman-bodies-for-world-figures.md).",
+  "$comment": "MakeHuman data used by the portrait build, the world figures and the teaser film's man in the shade (tools/art/lib/makehuman.py, teaser_body.py), pinned by commit and SHA-256. Downloaded into tools/art/.cache/makehuman by `npm run art:fetch-makehuman`; never committed. Data only (base mesh, morph targets, the default skeleton and its skin weights, licence text): no MakeHuman code. Approved by Zac Harlan on 2026-09-26 (docs/adr/0016-makehuman-base-for-portraits.md). The skeleton and its weights (rigs/) were added for the world figures, within the scope the owner approved on 2026-09-26 (docs/adr/0017-makehuman-bodies-for-world-figures.md).",
   "source": {
     "project": "MakeHuman",
     "repository": "makehumancommunity/makehuman",

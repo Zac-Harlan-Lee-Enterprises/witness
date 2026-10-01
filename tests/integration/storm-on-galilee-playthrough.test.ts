@@ -24,8 +24,15 @@ async function opening(p: Player): Promise<void> {
   await p.choose('c-who');
   await p.choose('c-ready');
   await p.choose('c-go');
+  await p.choose('c-knots');
   await p.finish();
   expect(p.h.state().quests['q-crossing']?.status).toBe('active');
+  // Grandmother's corner: tie the last knots of the family's mark.
+  expect(p.h.ui.getState().puzzleId).toBe('p-corner');
+  expect(p.mendNet('p-corner')?.solved).toBe(true);
+  p.h.controller.closePuzzle();
+  await flush();
+  expect(p.h.state().quests['q-crossing']?.completedObjectives).toContain('corner');
   expect(p.h.state().inventory).toMatchObject({ lamp: 1, bread: 1, cloak: 1, 'water-skin': 1 });
   await p.exit('house-door');
   expect(p.scene()).toBe('capernaum-shore');
@@ -175,20 +182,42 @@ async function decide(p: Player, choice: string): Promise<void> {
   expect(p.h.world.weather).toBe('clear');
 }
 
-async function goHome(p: Player): Promise<void> {
+/** See to the others at the port rail once the wind has dropped (if not done already). */
+async function seeToOthers(p: Player): Promise<void> {
+  if (p.h.state().flags['saw-to-others']) return;
+  await p.interact('port-rail');
+  await p.advance();
+  if (p.dialogueView?.choices.some((c) => c.id === 'call')) await p.choose('call');
+  await p.finish();
+  expect(p.h.state().flags['saw-to-others']).toBe(true);
+}
+
+async function goHome(p: Player, net?: 'set' | 'home'): Promise<void> {
+  await seeToOthers(p);
   await p.interact('elazar-lake');
   await p.choose('home');
+  if (net) await p.choose(net);
   await p.finish();
   await p.finish();
   expect(p.scene()).toBe('capernaum-shore');
-  expect(p.h.state().counters.hour).toBe(26);
+  expect(p.h.state().counters.hour).toBe(net === 'set' ? 27 : 26);
   expect(p.h.state().conversations).toContain('d-homecoming');
   expect(shown(p.h, 'shelomit-night')).toBeDefined();
   expect(shown(p.h, 'hanina')).toBeUndefined();
   expect(p.h.world.weather).toBe('clear');
 }
 
+/** Tell Nikanor everyone is safe, and what became of his jars. */
+async function tellNikanor(p: Player, ...choices: string[]): Promise<void> {
+  await p.interact('nikanor-night');
+  await p.choose('all');
+  for (const c of choices) await p.choose(c);
+  await p.finish();
+  expect(p.h.state().flags['told-nikanor']).toBe(true);
+}
+
 async function ending(p: Player): Promise<void> {
+  if (!p.h.state().flags['told-nikanor']) await tellNikanor(p);
   await p.interact('shelomit-night');
   await p.choose('storm');
   await p.choose('stopped');
@@ -284,9 +313,10 @@ describe('A Storm on Galilee — full playthroughs', () => {
     expect(shown(h, 'jars-ashore')).toBeDefined(); // the jar you left for Ami
     await p.interact('nikanor-night');
     expect(p.dialogueView?.nodeId).toBe('night');
-    h.dialogue.advance();
-    await flush();
+    await p.choose('all');
+    await p.advance();
     expect(p.dialogueView?.nodeId).toBe('night-lost');
+    await p.choose('why');
     await p.finish();
     await ending(p);
     expect(h.state().quests['q-crossing']?.outcomeId).toBe('cargo-lost');
@@ -328,7 +358,7 @@ describe('A Storm on Galilee — full playthroughs', () => {
     expect(p.dialogueView?.choices.find((c) => c.id === 'pass-cloak')?.available).toBe(false);
     await p.choose('call');
     await p.finish();
-    await goHome(p);
+    await goHome(p, 'home');
     await ending(p);
     const summary = buildChapterSummary(h.chapter, h.state());
     expect(summary.consequences.join(' ')).toMatch(/You kept your own boat afloat/);
@@ -434,5 +464,201 @@ describe('A Storm on Galilee — full playthroughs', () => {
     expect(h.state().quests['q-brine']?.status).toBe('failed');
     const summary = buildChapterSummary(h.chapter, h.state());
     expect(summary.consequences).toContain('Nikanor’s jar net was left torn when you cast off.');
+  });
+
+  it('won’t leave the house until Grandmother’s knots are tied, and explains why', async () => {
+    const h = await storm();
+    const p = new Player(h);
+    await p.choose('c-who');
+    await p.choose('c-ready');
+    await p.choose('c-go');
+    await p.choose('c-knots');
+    await p.finish();
+    expect(h.ui.getState().puzzleId).toBe('p-corner');
+    h.controller.closePuzzle(); // walk away without tying them
+    await flush();
+    await p.exit('house-door');
+    expect(p.scene()).toBe('shelomit-house');
+    expect(h.ui.getState().toasts.some((t) => t.text.includes('last knots'))).toBe(true);
+    await p.interact('shelomit');
+    expect(p.dialogueView?.nodeId).toBe('corner');
+    await p.choose('later');
+    await p.finish();
+    await p.interact('mending');
+    await p.choose('tie');
+    await p.finish();
+    expect(h.ui.getState().puzzleId).toBe('p-corner');
+    expect(p.mendNet('p-corner')?.solved).toBe(true);
+    h.controller.closePuzzle();
+    await flush();
+    expect(h.state().flags['mended-with-grandmother']).toBe(true);
+    await p.exit('house-door');
+    expect(p.scene()).toBe('capernaum-shore');
+    await p.interact('mending'); // nothing to do: the house is behind you
+    expect(h.state().journal.unlocked).toContain('je-corner');
+  });
+
+  it('readies the little boat before the storm: Hodaya’s old bailer and a sealed seam keep it afloat', async () => {
+    const h = await storm();
+    const p = new Player(h);
+    await opening(p);
+    await getGear(p);
+    await getJars(p);
+    // Hodaya of the Magdala crew: her reading of the night, and the haul.
+    await p.interact('hodaya');
+    await p.choose('why');
+    await p.choose('help');
+    await p.choose('bye');
+    await p.finish();
+    expect(h.state().clues).toContain('clue-magdala-crew');
+    expect(h.state().inventory['spare-bailer']).toBe(1);
+    // Oded's leaking boat: ask Elazar how, get pitch from Nikanor, seal it together.
+    await p.interact('oded');
+    await p.choose('seal');
+    await p.choose('find');
+    await p.finish();
+    expect(h.state().quests['q-leak']?.stageId).toBe('ask');
+    await p.interact('elazar');
+    await p.choose('seam');
+    await p.choose('bye');
+    await p.finish();
+    expect(h.state().quests['q-leak']?.stageId).toBe('pitch');
+    await p.interact('nikanor');
+    await p.choose('pitch');
+    await p.choose('bye');
+    await p.finish();
+    expect(h.state().inventory.pitch).toBe(1);
+    await p.interact('oded');
+    await p.choose('give-bailer');
+    await p.choose('patch');
+    await p.finish();
+    expect(h.state().flags['oded-bailer']).toBe(true);
+    expect(h.ui.getState().puzzleId).toBe('p-patch');
+    const patch = h.puzzles.find('p-patch');
+    if (patch?.type !== 'sequence') throw new Error('expected sequence');
+    const first = h.puzzles.submitSequence('p-patch', patch.initialOrder);
+    expect(first?.correct).toBe(false);
+    expect(first?.feedback).toMatch(/wet cloth/);
+    expect(h.puzzles.submitSequence('p-patch', patch.correctOrder)?.correct).toBe(true);
+    expect(h.puzzles.submitConclusion('p-patch', 'forever')?.correct).toBe(false);
+    expect(h.puzzles.submitConclusion('p-patch', 'mostly')?.correct).toBe(true);
+    h.controller.closePuzzle();
+    await flush();
+    expect(h.state().quests['q-leak']?.status).toBe('completed');
+    expect(h.state().inventory.pitch).toBeUndefined();
+    await p.interact('oded');
+    expect(p.dialogueView?.nodeId).toBe('patched');
+    await p.choose('bye');
+    await p.finish();
+
+    await readSky(p);
+    await loadBoat(p, { bailer: 1, 'fish-jar': 4, lamp: 1, net: 1, cloak: 1 });
+    await castOff(p);
+    // Hang the lamp at the stern, for the little boats behind.
+    await p.interact('elazar-lake');
+    await p.choose('lamp');
+    await p.advance();
+    expect(h.state().flags['lamp-hung']).toBe(true);
+    expect(p.dialogueView?.dialogueId).toBe('d-gust');
+    await p.choose('now');
+    await p.finish();
+    const sail = h.puzzles.find('p-sail');
+    if (sail?.type !== 'sequence') throw new Error('expected sequence');
+    h.puzzles.submitSequence('p-sail', sail.correctOrder);
+    h.puzzles.submitConclusion('p-sail', 'steady');
+    h.controller.closePuzzle();
+    await flush();
+    await p.finish();
+    await p.interact('port-rail');
+    await p.advance();
+    expect(p.dialogueView?.nodeId).toBe('decide');
+    await p.choose('hold');
+    await p.finish();
+    await p.finish(); // the calm
+    // Elazar won't turn for home until you've seen to the others.
+    await p.interact('elazar-lake');
+    await p.advance();
+    expect(p.dialogueView?.choices.find((c) => c.id === 'home')).toMatchObject({
+      available: false,
+      unavailableText: 'First see to the others, at the port rail.',
+    });
+    await p.choose('wait');
+    await p.finish();
+    await p.interact('port-rail');
+    await p.advance();
+    await p.choose('call');
+    await p.finish();
+    expect(h.state().flags['followed-lamp']).toBe(true);
+    // The net is aboard: set it on the still water on the way home.
+    await goHome(p, 'set');
+    expect(h.state().flags['net-set']).toBe(true);
+    // Grandmother sends you to Nikanor first.
+    await p.interact('shelomit-night');
+    await p.finish();
+    await p.interact('shelomit-night');
+    expect(p.dialogueView?.nodeId).toBe('first3');
+    await p.finish();
+    await tellNikanor(p);
+    await p.interact('hanina-night');
+    await p.choose('right');
+    await p.finish();
+    await p.interact('hodaya');
+    await p.choose('bailer');
+    await p.finish();
+    await p.interact('oded');
+    await p.finish();
+    await ending(p);
+    const summary = buildChapterSummary(h.chapter, h.state());
+    expect(summary.consequences).toEqual(
+      expect.arrayContaining([
+        'You kept your own boat afloat. When the wind dropped, you found the little boat low in the water but still afloat, with everyone in it.',
+        'The seam you sealed on Oded’s boat held through the storm: not a drop came up through it.',
+        'Shifra bailed through the storm with the old scoop you brought her from the Magdala crew.',
+        'Shifra’s family kept your lamp in sight all through the storm.',
+        'The trammel net came home full, and Nikanor will buy the catch for salting.',
+      ]),
+    );
+    expect(summary.sideQuests).toContainEqual({
+      name: 'Oded’s Leaking Boat',
+      outcome: 'The seam is sealed',
+    });
+    expect(summary.choices.find((c) => c.prompt.startsWith('On the still water'))?.chosen).toMatch(
+      /set the trammel net/,
+    );
+    expect(h.state().quests['q-crossing']?.completedObjectives).toEqual(
+      expect.arrayContaining(['others', 'nikanor']),
+    );
+  });
+
+  it('casting off with the seam unsealed leaves the little boat swamped', async () => {
+    const h = await storm();
+    const p = new Player(h);
+    await opening(p);
+    await getGear(p);
+    await getJars(p);
+    await meetShifra(p);
+    await p.interact('oded');
+    await p.choose('seal');
+    await p.choose('find');
+    await p.finish();
+    await readSky(p);
+    await loadBoat(p, { bailer: 1, 'fish-jar': 4, lamp: 1, rope: 1 });
+    await p.choose('stay');
+    await castOff(p);
+    expect(h.state().quests['q-leak']?.status).toBe('failed');
+    await squall(p, 'walk');
+    await p.interact('port-rail');
+    await p.advance();
+    expect(p.dialogueView?.nodeId).toBe('decide');
+    await p.choose('hold');
+    await p.finish();
+    await p.finish();
+    await goHome(p);
+    await ending(p);
+    const summary = buildChapterSummary(h.chapter, h.state());
+    expect(summary.consequences).toContain(
+      'Oded’s boat put out with a rag still stuffed in its cracked seam.',
+    );
+    expect(summary.consequences.join(' ')).toMatch(/swamped but afloat/);
   });
 });

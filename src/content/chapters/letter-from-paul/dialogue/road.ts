@@ -9,7 +9,11 @@ import {
   solved,
   type DialogueInput,
 } from '../../road-to-jericho/dialogue/helpers';
+import { HIDING_CLUES } from '../clues';
 
+/** Kallias has run off, and you haven't yet worked out where. */
+const searching = all(flag('kallias-fled'), not(solved('p-hiding')));
+const discover = (id: string) => ({ type: 'discoverClue' as const, clue: id });
 const bundleDone = {
   type: 'questStatus' as const,
   quest: 'q-bundle',
@@ -34,10 +38,16 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say(
         'k1',
         'narrator',
-        'Kallias looks up from the vat. His arms are stained red to the elbow. For a moment he doesn’t move.',
-        { next: 'k2' },
+        'Kallias is standing on the wet bank beside the bridge, arms stained red to the elbow, staring at the river. He doesn’t turn round.',
+        { next: 'k1b' },
       ),
-      say('k2', 'kallias', '{player}? From Ammia’s? Is she — has something happened?', {
+      say(
+        'k1b',
+        'kallias',
+        'I saw you coming down the road in Ammia’s red, and my legs just… went. I’ve been practising what I’d say to her all winter. I still don’t know it.',
+        { expression: 'sad', next: 'k2' },
+      ),
+      say('k2', 'kallias', 'You came from Ammia’s. Is she — has something happened?', {
         expression: 'worried',
         choices: [opt('letter', 'Your letter reached her. She has answered it.', 'k3')],
       }),
@@ -72,8 +82,14 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'So you read him Ammia’s answer, all of it: the hard things, the “come home”, and the debt.',
         {
           effects: [{ type: 'setFlag', flag: 'read-to-kallias', value: true }],
-          next: 'k8',
+          next: 'k7b',
         },
+      ),
+      say(
+        'k7b',
+        'narrator',
+        'Then he climbs back up the bank beside you and stands at his vat again, turning the letter over in his red hands.',
+        { next: 'k8' },
       ),
       say(
         'k8',
@@ -227,7 +243,57 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         expression: 'surprised',
         next: 'walk',
       }),
-      say('walk', 'narrator', 'You set off up the road together.', {
+      say('walk', 'narrator', 'You set off up the road together, heads down against the rain.', {
+        next: 'walk-talk',
+      }),
+      say('walk-talk', 'kallias', 'Talk to me. If it’s quiet, I’ll turn round.', {
+        expression: 'worried',
+        choices: [
+          opt('why', 'Why did you run when you saw me?', 'w-why', { once: true }),
+          opt('batch', 'What really happened with the red batch?', 'w-batch', { once: true }),
+          opt('tell', 'I have to tell you something about this morning.', 'w-tell', {
+            once: true,
+            when: chose('choice-reading', 'softened'),
+          }),
+          opt('afraid', 'Are you afraid?', 'w-afraid', { once: true }),
+          opt('on', 'Let’s keep walking.', 'on'),
+        ],
+      }),
+      say(
+        'w-why',
+        'kallias',
+        'You were wearing her red. For a moment I thought she had come down the road herself, and I wasn’t ready. I don’t think I’d ever have been ready.',
+        { expression: 'sad', next: 'walk-talk' },
+      ),
+      say(
+        'w-batch',
+        'kallias',
+        'I left the madder vat to watch the festival procession. Only for a little while, I told myself. When I came back the colour had gone dull and blotchy, with twenty coins of wool in it. I said the madder was bad. It was me.',
+        { expression: 'sad', next: 'walk-talk' },
+      ),
+      say(
+        'w-tell',
+        'player',
+        'When I read your letter to Ammia this morning, I left out the part where you said you lied. It felt kinder.',
+        { next: 'w-tell2' },
+      ),
+      say(
+        'w-tell2',
+        'kallias',
+        'You left it out? …Then she doesn’t know I said it. Then I’ll have to say it to her face. Tonight. Don’t let me forget.',
+        {
+          expression: 'surprised',
+          effects: [{ type: 'setFlag', flag: 'told-kallias', value: true }],
+          next: 'walk-talk',
+        },
+      ),
+      say(
+        'w-afraid',
+        'kallias',
+        'Of Ammia? Of the whole street looking at me? …Yes. Keep walking. If we stop, I’ll run again, and this time you won’t find me.',
+        { expression: 'worried', next: 'walk-talk' },
+      ),
+      say('on', 'narrator', 'You keep walking.', {
         branches: [{ when: bundleDone, next: 'walk-mule' }],
         next: 'walk-foot',
       }),
@@ -324,9 +390,34 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'Looking for Kallias? Good worker, when his head is here. Today it isn’t.',
         {
           choices: [
+            opt('where', 'Kallias ran off when he saw me. Where has he gone?', 'n-where', {
+              once: true,
+              when: searching,
+            }),
             opt('work', 'Who does he work for?', 'n2', { once: true }),
+            opt('good', 'Is Kallias a good dyer?', 'n-good', { once: true }),
             opt('bye', 'Thank you.'),
           ],
+        },
+      ),
+      say(
+        'n-good',
+        'nikon',
+        'When he stays by the vat. He came here in the winter and hasn’t left it once since, rain or festival. I used to wonder why a man would stand over a vat like it might run away. Now I’ve met you, I think I know.',
+        { next: 'n1' },
+      ),
+      say(
+        'n-where',
+        'nikon',
+        'Ran off? He’ll be at the waystation again, stuffing his face, I expect. That boy eats more than he dyes.',
+        { effects: [discover('clue-nikon-guess')], next: 'n-where2' },
+      ),
+      say(
+        'n-where2',
+        'nikon',
+        'Did I see him go? I was counting amphorae. I see numbers, not boys.',
+        {
+          next: 'n1',
         },
       ),
       say(
@@ -359,8 +450,21 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
           choices: [
             opt('you', 'Do you work here too?', 'c2', { once: true }),
             opt('kallias', 'You know Kallias?', 'c-k', { once: true }),
+            opt(
+              'where',
+              'Kallias ran off when he saw me. Did you see which way he went?',
+              'c-where',
+              {
+                once: true,
+                when: searching,
+              },
+            ),
             opt('bread', 'Would you like some bread?', 'c-bread', {
               when: all(has('bread'), not(flag('shared-bread-chrysis'))),
+            }),
+            opt('ask', 'Is there anything I could do for you?', 'c-m1', {
+              once: true,
+              when: flag('talked-chrysis'),
             }),
             opt('bye', 'I should find him.'),
           ],
@@ -420,6 +524,45 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('c-bread2', 'chrysis', 'Thank you.', { expression: 'glad', next: 'c1' }),
+      say(
+        'c-where',
+        'chrysis',
+        'He saw you coming down the road and went as white as fuller’s clay. He didn’t come past me into the shed. He went round the end of the vats, toward the bridge.',
+        { expression: 'surprised', effects: [discover('clue-saw-him-go')], next: 'c1' },
+      ),
+      say('c-m1', 'chrysis', 'For me?', { expression: 'surprised', next: 'c-m2' }),
+      say(
+        'c-m2',
+        'chrysis',
+        '…There is one thing. My sister Melitta lives in Colossae. She married a baker there, and she goes to the gatherings at Philemon’s house. She’ll be there tonight. Everyone will.',
+        { next: 'c-m3' },
+      ),
+      say(
+        'c-m3',
+        'chrysis',
+        'I can’t write, and I can’t go. Tell her I am well. Tell her the master says perhaps — in two years, perhaps. And tell her I still have our mother’s comb.',
+        {
+          expression: 'sad',
+          choices: [
+            opt('promise', 'I’ll tell her. Every word.', 'c-m4', {
+              effects: [
+                { type: 'startQuest', quest: 'q-message' },
+                { type: 'setFlag', flag: 'chrysis-message', value: true },
+              ],
+            }),
+            opt('cant', 'I can’t promise I’ll find her.', 'c-m5'),
+          ],
+        },
+      ),
+      say(
+        'c-m4',
+        'chrysis',
+        'Every word. Even the perhaps. She will want to know how big a perhaps it is.',
+        { expression: 'glad', next: 'c1' },
+      ),
+      say('c-m5', 'chrysis', 'Then don’t promise. Promises are heavy things to carry up a hill.', {
+        next: 'c1',
+      }),
     ],
   },
   {
@@ -430,6 +573,10 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say('r1', 'attalos', 'Waiting out the rain. The mule and I don’t do wet.', {
         choices: [
           opt('tatia', 'Tatia was glad of her letter.', 'r2', { once: true }),
+          opt('kallias', 'Kallias ran when he saw me coming.', 'r3', {
+            once: true,
+            when: flag('kallias-fled'),
+          }),
           opt('bye', 'Stay dry.'),
         ],
       }),
@@ -439,6 +586,39 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'Good. Most letters in this world get where they’re going on the back of a mule and the word of a stranger.',
         { next: 'r1' },
       ),
+      say(
+        'r3',
+        'attalos',
+        'People do, when a letter comes for them that they’re afraid to read. I’ve seen a man hide in a barley field from his own mother’s letter. He read it in the end. They mostly do.',
+        { expression: 'glad', next: 'r1' },
+      ),
+    ],
+  },
+  {
+    // Kallias's vat, after he runs: explains what to look for, or offers the puzzle.
+    id: 'd-hiding',
+    entries: [
+      {
+        when: { type: 'cluesFound', clues: HIDING_CLUES, min: 2 },
+        node: 'think',
+      },
+    ],
+    start: 'look',
+    nodes: [
+      say(
+        'look',
+        'narrator',
+        'Kallias’s paddle is still in the vat, and the dye is still moving. He can’t have gone far. Look around the works, and ask Nikon and Chrysis which way he went.',
+        { kind: 'instruction', effects: [{ type: 'setFlag', flag: 'kallias-fled', value: true }] },
+      ),
+      say('think', 'narrator', 'You’ve found enough to work out where Kallias went.', {
+        choices: [
+          opt('now', 'Decide now.', undefined, {
+            effects: [{ type: 'openPuzzle', puzzle: 'p-hiding' }],
+          }),
+          opt('later', 'Keep looking first.'),
+        ],
+      }),
     ],
   },
 ];

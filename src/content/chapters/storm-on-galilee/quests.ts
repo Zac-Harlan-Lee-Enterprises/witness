@@ -18,8 +18,14 @@ export const QUESTS: ChapterInput['quests'] = [
         id: 'prepare',
         title: 'Ready the Boat',
         description:
-          'Ask Old Hanina what the sky is saying, collect the jars and the gear, and load the boat.',
+          'Help Grandmother with her net, ask Old Hanina what the sky is saying, collect the jars and the gear, and load the boat.',
         objectives: [
+          {
+            id: 'corner',
+            description: 'Help Grandmother tie the last knots of her net',
+            completeWhen: { type: 'puzzleSolved', puzzle: 'p-corner' },
+            optional: false,
+          },
           {
             id: 'look-around',
             description: 'Optional: look for signs of the weather along the shore',
@@ -102,6 +108,12 @@ export const QUESTS: ChapterInput['quests'] = [
         description: 'The wind has dropped. See to the others, then talk to Uncle Elazar.',
         objectives: [
           {
+            id: 'others',
+            description: 'See to the others at the port rail',
+            completeWhen: flag('saw-to-others'),
+            optional: false,
+          },
+          {
             id: 'return',
             description: 'Head home with Uncle Elazar',
             completeWhen: flag('returned'),
@@ -114,8 +126,15 @@ export const QUESTS: ChapterInput['quests'] = [
       {
         id: 'home',
         title: 'Home Before Dawn',
-        description: 'Grandmother is waiting on the jetty.',
+        description:
+          'Grandmother is waiting on the jetty, and Nikanor is waiting for news of his jars.',
         objectives: [
+          {
+            id: 'nikanor',
+            description: 'Tell Nikanor what happened to his jars',
+            completeWhen: flag('told-nikanor'),
+            optional: false,
+          },
           {
             id: 'hear',
             description: 'Talk to Grandmother Shelomit',
@@ -225,5 +244,99 @@ export const QUESTS: ChapterInput['quests'] = [
     eventsConsumed: ['FlagChanged', 'PuzzleCompleted', 'SceneEntered'],
     eventsEmitted: [...QUEST_EMITTED_EVENTS],
     journal: { onStart: 'je-brine' },
+  },
+  {
+    id: 'q-leak',
+    name: 'Oded’s Leaking Boat',
+    description:
+      'Oded has stuffed a rag into a cracked seam of his borrowed boat. Before evening, could it be sealed properly?',
+    kind: 'side',
+    autoStart: false,
+    stages: [
+      {
+        id: 'ask',
+        title: 'Ask How',
+        description: 'Find out how a leaking seam is sealed.',
+        objectives: [
+          {
+            id: 'ask',
+            description: 'Ask Uncle Elazar how to seal a seam (on the jetty)',
+            completeWhen: { type: 'clueFound', clue: 'clue-elazar-seam' },
+            optional: false,
+          },
+        ],
+        next: 'pitch',
+        onEnter: [],
+      },
+      {
+        id: 'pitch',
+        title: 'Pitch and Tow',
+        description: 'Nikanor keeps pitch for sealing his jars.',
+        objectives: [
+          {
+            id: 'pitch',
+            description: 'Ask Nikanor for pitch and tow (at the salting racks)',
+            completeWhen: {
+              type: 'any',
+              of: [{ type: 'hasItem', item: 'pitch' }, flag('boat-patched')],
+            },
+            optional: false,
+          },
+        ],
+        next: 'patch',
+        onEnter: [],
+      },
+      {
+        id: 'patch',
+        title: 'Seal the Seam',
+        description: 'Seal the seam with Oded, by his boat.',
+        objectives: [
+          {
+            id: 'patch',
+            description: 'Seal the seam with Oded',
+            completeWhen: { type: 'puzzleSolved', puzzle: 'p-patch' },
+            optional: false,
+          },
+        ],
+        onEnter: [],
+      },
+    ],
+    failWhen: {
+      type: 'all',
+      of: [
+        { type: 'visited', scene: 'open-lake' },
+        { type: 'not', condition: flag('boat-patched') },
+      ],
+    },
+    failOutcome: 'unpatched',
+    outcomes: [
+      {
+        id: 'patched',
+        kind: 'success',
+        title: 'The seam is sealed',
+        description:
+          'You sealed the cracked seam of Oded’s borrowed boat before the boats put out.',
+        rewards: [
+          { type: 'adjustTrust', character: 'oded', delta: 1 },
+          { type: 'adjustTrust', character: 'shifra', delta: 1 },
+        ],
+      },
+      {
+        id: 'unpatched',
+        kind: 'alternate',
+        title: 'Still leaking',
+        description: 'The boats put out before the seam was sealed.',
+        rewards: [],
+      },
+    ],
+    eventsConsumed: [
+      'FlagChanged',
+      'PuzzleCompleted',
+      'SceneEntered',
+      'ClueDiscovered',
+      'ItemCollected',
+    ],
+    eventsEmitted: [...QUEST_EMITTED_EVENTS],
+    journal: { onStart: 'je-leak' },
   },
 ];

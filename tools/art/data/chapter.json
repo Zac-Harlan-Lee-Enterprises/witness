@@ -101,6 +101,30 @@
       ]
     },
     {
+      "id": "eli",
+      "chapter": "road-to-jericho",
+      "key": "#8e5c38|#241810|#a08a62|#6a4a2c|scarf|#ddd2b8|clean|child|staff",
+      "appearance": {
+        "skin": "#8a5d3c",
+        "hair": "#241810",
+        "robe": "#98876a",
+        "accent": "#70553b",
+        "headwear": "scarf",
+        "headwearColor": "#cdc3aa",
+        "beard": false,
+        "build": "child",
+        "carry": "staff"
+      },
+      "appears": [
+        {
+          "scene": "jericho-road",
+          "entity": "eli",
+          "poses": ["stand"],
+          "marks": []
+        }
+      ]
+    },
+    {
       "id": "tobiah",
       "chapter": "road-to-jericho",
       "key": "#a0704a|#2a1a10|#5f6f3a|#c9a45a|band|#8a2f2f|beard|adult|none",
@@ -468,6 +492,36 @@
           "scene": "capernaum-shore",
           "entity": "hanina",
           "poses": ["sit"],
+          "marks": []
+        },
+        {
+          "scene": "capernaum-shore",
+          "entity": "hanina-night",
+          "poses": ["sit"],
+          "marks": []
+        }
+      ]
+    },
+    {
+      "id": "hodaya",
+      "chapter": "storm-on-galilee",
+      "key": "#9a6844|#2a1a10|#6a5a44|#3f6f7f|scarf|#b8a27a|clean|adult|net",
+      "appearance": {
+        "skin": "#966948",
+        "hair": "#2a1a10",
+        "robe": "#6e6250",
+        "accent": "#4c767f",
+        "headwear": "scarf",
+        "headwearColor": "#ac9b7c",
+        "beard": false,
+        "build": "adult",
+        "carry": "net"
+      },
+      "appears": [
+        {
+          "scene": "capernaum-shore",
+          "entity": "hodaya",
+          "poses": ["stand"],
           "marks": []
         }
       ]
@@ -2041,6 +2095,20 @@
           "marks": []
         },
         {
+          "id": "eli",
+          "kind": "npc",
+          "x": 31,
+          "y": 3,
+          "facing": "down",
+          "characterId": "eli",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
           "id": "single-prints",
           "kind": "clue",
           "x": 36,
@@ -2352,6 +2420,20 @@
           "solid": true,
           "pose": "stand",
           "conditional": true,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
+          "id": "striped-cloak",
+          "kind": "feature",
+          "x": 1,
+          "y": 6,
+          "facing": "down",
+          "characterId": null,
+          "sprite": "none",
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
           "poses": ["stand"],
           "marks": []
         },
@@ -2687,6 +2769,20 @@
           "marks": []
         },
         {
+          "id": "hanina-night",
+          "kind": "npc",
+          "x": 19,
+          "y": 24,
+          "facing": "down",
+          "characterId": "hanina",
+          "sprite": null,
+          "solid": true,
+          "pose": "sit",
+          "conditional": true,
+          "poses": ["sit"],
+          "marks": []
+        },
+        {
           "id": "lake-view",
           "kind": "sign",
           "x": 20,
@@ -2743,6 +2839,20 @@
           "marks": []
         },
         {
+          "id": "hodaya",
+          "kind": "npc",
+          "x": 8,
+          "y": 13,
+          "facing": "down",
+          "characterId": "hodaya",
+          "sprite": null,
+          "solid": true,
+          "pose": "stand",
+          "conditional": false,
+          "poses": ["stand"],
+          "marks": []
+        },
+        {
           "id": "waters-edge",
           "kind": "clue",
           "x": 16,
@@ -2777,7 +2887,7 @@
           "y": 8,
           "facing": "down",
           "characterId": null,
-          "sprite": "vessels",
+          "sprite": "net-pile",
           "solid": true,
           "pose": "stand",
           "conditional": true,

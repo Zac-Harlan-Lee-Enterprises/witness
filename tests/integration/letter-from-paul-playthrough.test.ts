@@ -125,13 +125,83 @@ async function toTheBridge(p: Player): Promise<void> {
   await p.step(12, 14); // the dye works
 }
 
-/** Meet Kallias and read him Ammia's letter; ends at the debt question. */
+type Sign = 'chrysis' | 'prints' | 'shed';
+
+/** Find out one thing about where Kallias went. */
+async function lookFor(p: Player, sign: Sign): Promise<void> {
+  if (sign === 'prints') await p.interact('red-prints');
+  else if (sign === 'shed') await p.interact('shed-door');
+  else {
+    await p.interact('chrysis');
+    await p.choose('where');
+    await p.choose('bye');
+    await p.finish();
+  }
+}
+
+/**
+ * Kallias runs when he sees you. His vat says what to look for; Nikon's
+ * confident guess is wrong; two reliable signs point to the riverbank.
+ */
+async function findKallias(p: Player, signs: readonly [Sign, Sign]): Promise<void> {
+  const { h } = p;
+  expect(h.state().flags['kallias-fled']).toBe(true);
+  expect(shown(h, 'kallias')).toBeUndefined();
+  expect(shown(h, 'kallias-bank')).toBeUndefined();
+  await p.interact('empty-vat');
+  expect(p.dialogueView?.nodeId).toBe('look');
+  await p.finish();
+  await p.interact('nikon');
+  await p.choose('where');
+  await p.choose('bye');
+  await p.finish();
+  for (const sign of signs) await lookFor(p, sign);
+  await p.interact('empty-vat');
+  await p.choose('now');
+  await p.finish();
+  expect(h.ui.getState().puzzleId).toBe('p-hiding');
+  // Nikon never saw him go: his guess spoils the argument.
+  const guess = h.puzzles.submitDeduction('p-hiding', 'waystation', [
+    'clue-nikon-guess',
+    'clue-red-prints',
+  ]);
+  expect(guess?.correct).toBe(false);
+  const clueOf: Record<Sign, string> = {
+    chrysis: 'clue-saw-him-go',
+    prints: 'clue-red-prints',
+    shed: 'clue-cloak-peg',
+  };
+  const right = h.puzzles.submitDeduction(
+    'p-hiding',
+    'bank',
+    signs.map((s) => clueOf[s]),
+  );
+  expect(right?.correct, right?.feedback.join(' | ')).toBe(true);
+  h.controller.closePuzzle();
+  await flush();
+  expect(shown(h, 'kallias-bank')).toBeDefined();
+  expect(shown(h, 'empty-vat')).toBeUndefined();
+}
+
+/** Meet Kallias on the riverbank and read him Ammia's letter; ends at the debt question. */
 async function meetKallias(p: Player): Promise<void> {
-  await p.interact('kallias');
+  await p.interact('kallias-bank');
   await p.choose('letter');
   await p.advance();
   expect(p.dialogueView?.nodeId).toBe('k9');
   expect(p.h.state().flags['read-to-kallias']).toBe(true);
+  // Back at his vat, with you.
+  expect(shown(p.h, 'kallias-bank')).toBeUndefined();
+  expect(shown(p.h, 'kallias')).toBeDefined();
+}
+
+/** The walk home with Kallias: talk, then keep walking. */
+async function walkHome(p: Player, topics: readonly string[]): Promise<void> {
+  await p.advance();
+  expect(p.dialogueView?.nodeId).toBe('walk-talk');
+  for (const topic of topics) await p.choose(topic);
+  await p.choose('on');
+  await p.finish();
 }
 
 function solveAlum(h: Harness): void {
@@ -210,6 +280,7 @@ describe('A Letter from Paul — full playthroughs', () => {
     await toTheBridge(p);
     // Attalos waits out the rain at the waystation, as he said he would.
     expect(shown(h, 'attalos-road')).toBeDefined();
+    await findKallias(p, ['prints', 'chrysis']);
     await meetKallias(p);
     await p.choose('account');
     expect(h.state().inventory.coins).toBeUndefined();
@@ -223,7 +294,9 @@ describe('A Letter from Paul — full playthroughs', () => {
     await p.interact('kallias');
     await p.choose('come');
     await p.choose('give');
-    await p.finish();
+    // On the road home, he talks so he won't turn round.
+    await walkHome(p, ['why', 'batch', 'afraid']);
+    expect(h.state().flags['told-kallias']).toBeUndefined(); // you read every word
     expect(h.state().flags['kallias-paid']).toBe(true);
     expect(h.state().flags['rode-mule']).toBe(true);
     expect(playerMarks(h)).toEqual(['letter-case']); // the cloak went to Kallias
@@ -287,6 +360,8 @@ describe('A Letter from Paul — full playthroughs', () => {
     await toTheBridge(p);
     expect(h.state().flags['letter-wet']).toBeUndefined(); // under the hooded cloak
     expect(shown(h, 'attalos-road')).toBeUndefined(); // you didn't help him
+    // His cloak on the peg rules out Laodicea; the footprints lead to the bank.
+    await findKallias(p, ['prints', 'shed']);
     await meetKallias(p);
     await p.choose('speak');
     await p.choose('bread');
@@ -327,10 +402,15 @@ describe('A Letter from Paul — full playthroughs', () => {
     await p.choose('you');
     await p.choose('leave');
     await p.choose('bread');
+    await p.choose('ask');
+    await p.choose('promise');
     await p.choose('bye');
     await p.finish();
     expect(h.state().flags['talked-chrysis']).toBe(true);
     expect(h.state().inventory.bread).toBeUndefined();
+    expect(h.state().quests['q-message']?.status).toBe('active');
+    expect(h.state().journal.unlocked).toContain('je-message');
+    await findKallias(p, ['chrysis', 'prints']);
     await meetKallias(p);
     expect(p.dialogueView?.nodeId).toBe('k9');
     await p.choose('theirs');
@@ -344,8 +424,20 @@ describe('A Letter from Paul — full playthroughs', () => {
     await p.exit('to-colossae');
     await arriveAtGathering(p);
     expect(shown(h, 'ammia-gathering')?.facing).toBe('down'); // watching the door
+    // Ammia sees you looking for someone, and lets you go and find her.
+    await p.interact('ammia-gathering');
+    await p.choose('find');
+    await p.finish();
+    expect(h.state().flags['heard-the-letters']).toBeUndefined();
+    await p.interact('melitta');
+    await p.choose('every');
+    await p.finish();
+    expect(h.state().quests['q-message']?.status).toBe('completed');
+    expect(h.state().journal.unlocked).toContain('jp-melitta');
     await p.interact('ammia-gathering');
     await p.choose('ready');
+    // She wants to know how he looked; you can tell her he ran.
+    await p.choose('scared');
     await advanceAll(p);
     await finishTheChapter(p);
     expect(h.state().quests['q-letters']?.outcomeId).toBe('left-to-him');
@@ -356,6 +448,11 @@ describe('A Letter from Paul — full playthroughs', () => {
     expect(text).toMatch(/The rain blurred Ammia’s letter/);
     expect(text).toMatch(/Chrysis told you/);
     expect(text).toMatch(/back to Laodicea, unread/);
+    expect(text).toMatch(/Melitta heard every word her sister sent her/);
+    expect(summary.sideQuests).toContainEqual({
+      name: 'Words for Melitta',
+      outcome: 'Words delivered',
+    });
   });
 
   it('keeping a promise at the gathering: speak up for Kallias when he comes home with you', async () => {
@@ -365,15 +462,28 @@ describe('A Letter from Paul — full playthroughs', () => {
     await readToAmmia(p, 'soften');
     await prepare(p, ['spare-cloak', 'letter-case']);
     await toTheBridge(p);
+    await p.interact('chrysis');
+    await p.choose('you');
+    await p.choose('sorry');
+    await p.choose('ask');
+    await p.choose('promise');
+    await p.choose('bye');
+    await p.finish();
+    await findKallias(p, ['chrysis', 'prints']);
     await meetKallias(p);
     await p.choose('speak');
     await p.choose('come');
     await p.choose('keep');
-    await p.finish();
+    // You tell him on the road what you left out this morning.
+    await walkHome(p, ['tell']);
+    expect(h.state().flags['told-kallias']).toBe(true);
     expect(h.state().flags['kallias-paid']).toBeUndefined(); // he gave up his wage
     await arriveAtGathering(p);
     expect(shown(h, 'kallias-gathering')?.marks).toEqual([]);
     await p.interact('ammia-gathering');
+    // The message for Melitta can wait — and so it goes home unspoken.
+    await p.choose('later');
+    expect(h.state().quests['q-message']?.status).toBe('failed');
     await advanceAll(p);
     // Kallias tells Ammia the part you left out.
     expect(h.state().flags['kallias-confessed']).toBe(true);
@@ -386,6 +496,8 @@ describe('A Letter from Paul — full playthroughs', () => {
     expect(text).toMatch(/At the gathering, he told Ammia himself/);
     expect(text).toMatch(/Kallias lost a day’s wage/);
     expect(text).toMatch(/spoke up for Kallias/);
+    expect(text).toMatch(/you told Kallias what you had left out/);
+    expect(text).toMatch(/Chrysis’s words for her sister went home with you, unspoken/);
   });
 
   it('never sends the player down the road unprepared, and explains why', async () => {

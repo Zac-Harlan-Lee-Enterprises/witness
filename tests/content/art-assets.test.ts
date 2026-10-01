@@ -617,3 +617,87 @@ describe('pre-rendered people', () => {
     });
   }
 });
+
+describe('the half-resolution set phones load', () => {
+  // It was box-filtered and saved at WebP 84, which smeared the grit of the
+  // ground and a drying net's mesh into a mottled blur. It is now halved
+  // with a Lanczos filter and a light unsharp mask and saved at 88
+  // (imageio.downsample_sharp, docs/performance.md §2c). Detail costs bits: a
+  // half ground that kept its detail carries more bits per pixel than the
+  // full ground it was made from (the old ones carried 0.89-1.45 times as
+  // many; the sharp ones 1.21-1.92).
+  const bpp = (dir: string, tiles: readonly ArtTile[]): number => {
+    let bytes = 0;
+    let px = 0;
+    for (const t of tiles) {
+      const f = join(dir, t.file);
+      const { w, h } = webpSize(f);
+      bytes += statSync(f).size;
+      px += w * h;
+    }
+    return (bytes * 8) / px;
+  };
+  for (const id of PLACES_WITH_ART) {
+    it(`${id}: its half-resolution ground keeps the full ground's detail`, () => {
+      const dir = join(ART, id);
+      const { art } = parsePlaceArt(JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')));
+      for (const [name, v] of Object.entries(art?.variants ?? {})) {
+        const ratio = bpp(dir, v.groundLow) / bpp(dir, v.ground);
+        expect(ratio, `${name}: half/full bits per pixel`).toBeGreaterThan(1.15);
+      }
+    });
+  }
+});
+
+describe("the lake's story sails", () => {
+  // The other boats' sails are story sprites (shown until the squall), so they
+  // must carry their own shadow; for a while they carried none, and the set
+  // sails lost their moon shadow on the water (2026-09-26 → 2026-09-30).
+  it('carry their own shadow, caught on the water rather than the lake bed', () => {
+    const boats = readFileSync(join(ROOT, 'tools', 'art', 'lib', 'lake_boats.py'), 'utf8');
+    const yard = boats.slice(boats.indexOf('def _story_yard'), boats.indexOf('def _furled'));
+    expect(yard).toContain('"shadow": True');
+    expect(yard).toContain('"catch": "water"');
+    const build = readFileSync(join(ROOT, 'tools', 'art', 'build_place.py'), 'utf8');
+    expect(build).toContain('def catcher_at');
+  });
+
+  it('are wider than the sail alone in the night set (their shadow lies beside them)', () => {
+    const { art } = parsePlaceArt(
+      JSON.parse(readFileSync(join(ART, 'open-lake', 'manifest.json'), 'utf8')),
+    );
+    const sprites = art?.variants.night?.sprites ?? [];
+    for (const id of ['entity:teacher-boat-sail', 'entity:fishing-boat-sail']) {
+      const s = sprites.find((x) => x.id === id);
+      expect(s, id).toBeDefined();
+      // Rendered without a shadow these were 308 and 359 px wide.
+      expect(s?.w ?? 0, id).toBeGreaterThan(440);
+    }
+  });
+});
+
+describe("Chapter 4's dye works", () => {
+  // The hot vats' stoke-holes were once flat white slabs; they are coals now,
+  // each with a small flickering light at the vat's foot. The Laodicea road
+  // kept the old slabs until it was rendered again (2026-09-30).
+  for (const id of ['ammia-workshop', 'lycus-road']) {
+    it(`${id}: its hot vats burn coals that flicker at their stoke-holes`, () => {
+      const { art } = parsePlaceArt(
+        JSON.parse(readFileSync(join(ART, id, 'manifest.json'), 'utf8')),
+      );
+      expect(art).toBeDefined();
+      for (const [name, v] of Object.entries(art?.variants ?? {})) {
+        const vats = v.sprites.filter((s) => s.id.startsWith('vat-'));
+        const hearths = v.lights.filter((l) => l.kind === 'hearth');
+        expect(vats.length, `${name}: vats`).toBeGreaterThan(0);
+        expect(hearths.length, `${name}: a hot vat's coals`).toBeGreaterThan(0);
+        for (const l of hearths) {
+          const atVat = vats.some((s) =>
+            s.tiles.some(([x, y]) => l.x === (x + 0.5) * 32 && l.y === (y + 1) * 32),
+          );
+          expect(atVat, `${name}: hearth light at ${l.x},${l.y} is at a vat's foot`).toBe(true);
+        }
+      }
+    });
+  }
+});

@@ -57,6 +57,13 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await choose(page, 'Goodbye, Shimon.');
   await endDialogue(page);
 
+  // Aunt Miriam's errand: Rivka's linen, from Hadassah the weaver.
+  await goTo(page, 'Talk to Hadassah the weaver');
+  await choose(page, 'Aunt Miriam sent me for Rivka’s linen.');
+  await choose(page, 'I’ll keep it safe.');
+  await choose(page, 'Goodbye.');
+  await endDialogue(page);
+
   // 6–8: the packing puzzle IS the preparation choice; its consequence is what you carry.
   await goTo(page, 'Go to Aunt Miriam’s house');
   await goTo(page, 'Use Travel satchel');
@@ -73,6 +80,7 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await page.getByRole('button', { name: /^Satchel/ }).click();
   const satchel = page.getByRole('dialog', { name: 'Satchel' });
   await expect(satchel).toContainText('Bread and dates');
+  await expect(satchel).toContainText('Linen for Rivka');
   await expect(satchel).not.toContainText('Spare cloak'); // left at home — a consequence of the choice
   await page.keyboard.press('Escape');
 
@@ -114,6 +122,22 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await expect(route.getByText('Solved!')).toBeVisible();
   await route.getByRole('button', { name: 'Continue' }).click();
 
+  // Eli, by the cistern on the ridge: walking up to him starts the conversation.
+  await goTo(page, 'Talk to Eli, the shepherd boy');
+  await choose(page, 'Sorry — I need mine for the road.'); // the bread may be needed below the bend
+  await snap(page, '06b-eli');
+  await choose(page, 'I have to keep going.');
+  await endDialogue(page);
+  // "Go to…" walks through the meeting on the way; arriving, Eli may add a parting line.
+  const parting = page.locator('section.dialogue');
+  if (
+    await parting.waitFor({ timeout: 3_000 }).then(
+      () => true,
+      () => false,
+    )
+  )
+    await endDialogue(page);
+
   await goTo(page, 'Examine Broken jar');
   await endDialogue(page); // the ridge-end narration fires on the way down
   await goTo(page, 'Examine Many footprints');
@@ -148,8 +172,35 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await choose(page, /A man was robbed below the bend/);
   await endDialogue(page);
 
+  // Whose Cloak? A striped cloak on the sacks by the inn gate.
+  await goTo(page, 'Examine A cloak with a blue stripe, on the sacks');
+  await choose(page, 'Think it through.');
+  await endDialogue(page);
+  const cloak = page.getByRole('dialog', { name: 'Whose Cloak?' });
+  await cloak.getByLabel(/The robbed traveler’s/).check();
+  await cloak.getByLabel(/A strip torn from the hem/).check();
+  await cloak.getByLabel(/It smells of olive oil/).check();
+  await snap(page, '09b-cloak');
+  await cloak.getByRole('button', { name: 'Present my reasoning' }).click();
+  await expect(cloak.getByText('Solved!')).toBeVisible();
+  await cloak.getByRole('button', { name: 'Continue' }).click();
+  await goTo(page, 'Talk to Salome the innkeeper');
+  await choose(page, 'I know whose that striped cloak is.');
+  await choose(page, 'The man who was robbed below the bend. Menashe.');
+  await choose(page, 'Thank you.');
+  await endDialogue(page);
+
   await goTo(page, 'Talk to Rivka');
   await choose(page, 'I found a man who’d been robbed below the bend.');
+  await endDialogue(page); // Rivka goes to prepare the remedy
+
+  // While it steeps, keep Natan company; Yair comes in at the end.
+  await goTo(page, 'Talk to Natan');
+  await choose(page, 'Not quite. I met a shepherd boy on the ridge — Eli.');
+  await choose(page, 'No robbers. But I found a man they had robbed.');
+  await choose(page, 'His name is Menashe. He sells olive oil. He’s a Samaritan.');
+  await choose(page, 'Like anyone. He was hurt, and frightened, and thirsty.');
+  await choose(page, 'Yes. More than once.');
   await snap(page, '10-yair');
   await choose(page, 'A Samaritan?');
   await continueDialogue(page);
@@ -174,6 +225,8 @@ test('play The Road to Jericho from a new profile to the chapter summary', async
   await expect(summary).toBeVisible();
   await snap(page, '12-summary');
   await expect(summary).toContainText('Salome’s son Asher brought Menashe to the inn');
+  await expect(summary).toContainText('Menashe’s own cloak, thrown away by the robbers');
+  await expect(summary).toContainText('Hadassah’s linen reached Rivka whole');
   await expect(summary.getByRole('heading', { name: 'Scripture references' })).toBeVisible();
   await expect(summary).toContainText('Luke 10:25–37');
   await expect(summary).toContainText('Leviticus 19:18');

@@ -27,17 +27,18 @@ import teaser_noise as N
 X0, Y0, X1, Y1 = -8000.0, -9000.0, 16000.0, 9000.0
 CELL = 16.0
 FLOW_CELL = 32.0
+# The cached height field's version (see Land.__init__). "866f66c80d" is the
+# field every shot of the first final film was rendered on.
+FIELD_VERSION = "866f66c80d"
 
 
 class Land:
     def __init__(self, seed=7, cache=None):
         self.seed = seed
-        # The cache is keyed by this file's own text: any change rebuilds it.
-        import hashlib
-
-        with open(__file__, "rb") as fh:
-            key = hashlib.sha1(fh.read()).hexdigest()[:10]
-        path = os.path.join(cache, f"land-{seed}-{key}.npz") if cache else None
+        # The cache is keyed by FIELD_VERSION: bump it whenever the field
+        # itself changes (_build, _erode, _carve, the constants above), not
+        # for detail added at sampling time (height), which is never cached.
+        path = os.path.join(cache, f"land-{seed}-{FIELD_VERSION}.npz") if cache else None
         if path and os.path.exists(path):
             d = np.load(path)
             self.field, self.flow = d["field"], d["flow"]
@@ -94,30 +95,83 @@ class Land:
 
     def gorge_wall(self, d, x, y, fine=False):
         """Height of the gorge's walls above its floor at distance d: cliff
-        bands of hard limestone over talus slopes, wandering along the gorge."""
+        bands of hard limestone over talus slopes, never the same twice.
+
+        A real wall of the Wadi Qelt is not a set of even ribbons: each band
+        thickens and pinches out along the gorge, its face is cut into
+        blocks by vertical joints (some standing proud, some fallen back),
+        its beds weather into small ledges, and chutes notch the cliffs
+        back, each spilling a cone of scree onto the talus below. The two
+        walls differ (`side`)."""
         x = np.asarray(x, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
-        w0 = 9.0 + 5.0 * N.perlin(x / 400.0, 3.1, self.seed + 5)
-        t = np.maximum(np.asarray(d) - w0, 0.0)
+        d = np.asarray(d, dtype=np.float64)
+        s = self.seed
+        side = np.where(y >= self.gorge_y(x), 1.0, -1.0)
+        w0 = 9.0 + 5.0 * N.perlin(x / 400.0, 3.1 + side, s + 5)
+        t = np.maximum(d - w0, 0.0)
         # Each band's edge wanders along the gorge (spurs and bays).
-        t = t + 7.0 * N.fbm(x / 160.0, y / 160.0, 3, seed=self.seed + 9)
-        t = np.maximum(t, 0.0)
+        t = t + 7.0 * N.fbm(x / 160.0, y / 160.0, 3, seed=s + 9)
+        # Chutes: every 40-90 m a gully notches the cliffs back, deepest at
+        # the lip, and spills a cone of scree onto the talus below it.
+        q = (x + 25.0 * N.fbm(x / 90.0, side * 3.3, 2, seed=s + 80)) / 62.0
+        qi = np.floor(q)
+        centre = 0.25 + 0.5 * N.cell_random(qi, side, s + 81)
+        size = N.cell_random(qi, side + 5.0, s + 82)
+        halfw = (3.5 + 6.0 * size) / 62.0
+        v = np.clip(1.0 - np.abs(q - qi - centre) / halfw, 0.0, 1.0)
+        chute = v ** 1.6 * (size > 0.3) * (4.0 + 10.0 * size)
+        # Vertical joints: blocks 3-8 m along the face, each standing a
+        # little proud of the face or fallen back from it.
+        jq = (x + 6.0 * N.fbm(x / 40.0, y / 40.0, 2, seed=s + 83)) / 5.2
+        ji = np.floor(jq)
+        jf = jq - ji
+        own = N.cell_random(ji, side, s + 84) - 0.5
+        nxt = N.cell_random(ji + 1.0, side, s + 84) - 0.5
+        block = own + (nxt - own) * N.smoothstep(0.9, 1.0, jf)
         h = np.zeros_like(t)
         start = 0.0
         for k, (run0, rise0) in enumerate(self.WALL):
-            vary = N.fbm(x / 700.0, np.full_like(x, k * 3.7), 2, seed=self.seed + 50 + k)
-            run = run0 * (1.0 + 0.45 * vary)
-            rise = rise0 * (1.0 + 0.4 * N.fbm(x / 500.0, np.full_like(x, k * 5.1), 2, seed=self.seed + 60 + k))
-            u = np.clip((t - start) / run, 0.0, 1.0)
+            vary = N.fbm(x / 260.0, np.full_like(x, k * 3.7) + side * 11.0, 3, seed=s + 50 + k)
+            run = run0 * np.clip(1.0 + 0.6 * vary, 0.35, 2.2)
+            rise = rise0 * np.clip(1.0 + 0.5 * N.fbm(x / 330.0, np.full_like(x, k * 5.1) + side * 7.0, 3, seed=s + 60 + k), 0.4, 2.0)
+            tk = t
             if run0 < 10.0:
-                # A cliff: nearly sheer, rounded a little at its lip.
-                u = u ** 0.8
+                # The chute bites into the cliffs, most into the top ones;
+                # the joints stand proud or fall back by up to a metre and a half.
+                tk = t - chute * (0.5 + 0.5 * k / len(self.WALL)) + 1.5 * block
+            u = np.clip((tk - start) / run, 0.0, 1.0)
+            if run0 < 10.0:
+                # A cliff: beds 1.5-3 m thick, each weathered back into a
+                # narrow ledge at its foot, rounded a little at the lip.
+                beds = np.maximum(2.0, np.round(rise / 2.2))
+                bu = u * beds + 0.35 * N.fbm(x / 30.0, np.full_like(x, k * 2.3) + side, 2, seed=s + 70 + k)
+                bi = np.floor(bu)
+                bf = bu - bi
+                shelf = 0.18 + 0.2 * N.cell_random(bi, ji, s + 90 + k)
+                u = np.clip((bi + N.smoothstep(shelf, 1.0, bf)) / beds, 0.0, 1.0) ** 0.85
             else:
-                # Talus: concave, steepest under the cliff above.
+                # Talus: concave, steepest under the cliff above; a scree
+                # cone fans out below each chute.
                 u = 1.0 - (1.0 - u) ** 1.4
+                h = h + chute * 0.35 * np.clip(1.0 - np.abs(t - start - run * 0.35) / (run * 0.6), 0.0, 1.0)
             h = h + rise * u
-            start += run
+            start = start + run
         return h + 0.25 * np.maximum(t - start, 0.0)
+
+    def rim_distance(self, x, side=1.0, margin=0.0):
+        """Distance from the gorge's centre line to the lip of its top cliff
+        (where the wall stops standing steep), at each x, on one side."""
+        x = np.asarray(x, dtype=np.float64)
+        ds = np.arange(0.0, 320.0, 0.5)
+        X = np.repeat(x[:, None], len(ds), axis=1)
+        dydx = (self.gorge_y(x + 2.0) - self.gorge_y(x - 2.0)) / 4.0
+        Y = self.gorge_y(x)[:, None] + side * ds[None, :] * np.sqrt(1.0 + dydx * dydx)[:, None]
+        D = np.repeat(ds[None, :], len(x), axis=0)
+        H = self.gorge_wall(D, X, Y)
+        steep = np.diff(H, axis=1) / 0.5 > 0.8
+        last = np.where(steep.any(axis=1), len(ds) - 2 - np.argmax(steep[:, ::-1], axis=1), 0)
+        return ds[last] + margin
 
     # ── the field ──────────────────────────────────────────────────────────
     def _build(self):
@@ -202,7 +256,7 @@ class Land:
     def wetness(self, x, y):
         return N.bilinear(self.flow, X0, Y0, CELL, x, y)
 
-    def height(self, x, y, detail=1.0):
+    def height(self, x, y, detail=1.0, res=None):
         """Height at any points, with detail below the field's 16 m cells."""
         x = np.asarray(x, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
@@ -232,6 +286,7 @@ class Land:
         broken = N.smoothstep(0.05, 0.35, N.fbm(x / 55.0, y / 55.0, 3, seed=s + 33))
         ledge = (g - f) * step * broken * N.smoothstep(0.12, 0.4, sl) * (1.0 - 0.6 * N.smoothstep(1.2, 2.0, sl))
         h = h + ledge * 0.75 * detail
+        h = h + detail * self.slope_detail(x, y, h, sl, res)
         # The gorge again, crisp at this resolution.
         d = self.gorge_distance(x, y)
         near = (d < 1500) & (x < 13000.0)
@@ -250,6 +305,36 @@ class Land:
         for mark in self.marks:
             h = mark(x, y, h)
         return h
+
+    def slope_detail(self, x, y, h, sl, res=None):
+        """The skin of the hillsides at the scale of a few metres, so no slope
+        reads as a smooth dune: the ground broken into lumps and hollows,
+        bedrock cropping out in low stepped patches, and the sheep tracks
+        (terracettes) that contour every grazed Judean slope, small treads a
+        metre or so apart in height."""
+        s = self.seed
+        hilly = N.smoothstep(0.06, 0.25, sl)
+        steep = N.smoothstep(0.2, 0.5, sl) * (1.0 - N.smoothstep(1.1, 1.8, sl))
+        lump_w = 1.0 if res is None else N.smoothstep(1.4, 0.6, res)
+        out = hilly * (0.22 * N.fbm(x / 3.1, y / 3.1, 3, seed=s + 100) * lump_w + 0.35 * N.fbm(x / 11.0, y / 11.0, 2, seed=s + 101))
+        # Outcrops: patches of bedrock whose beds (0.4-0.8 m) step out of the soil.
+        patch = N.smoothstep(0.15, 0.55, N.fbm(x / 26.0, y / 26.0, 3, seed=s + 102))
+        bed = 0.55 + 0.2 * N.perlin(x / 300.0, y / 300.0, s + 103)
+        k = (h + 0.5 * N.fbm(x / 9.0, y / 9.0, 2, seed=s + 104)) / bed
+        f = k - np.floor(k)
+        riser = 0.3
+        g = np.where(f < riser, f / riser * 0.7, 0.7 + (f - riser) / (1 - riser) * 0.3)
+        crop_w = 1.0 if res is None else N.smoothstep(0.45, 0.18, res)
+        out = out + (g - f) * bed * patch * hilly * 0.9 * crop_w
+        # Terracettes: level treads along the contours, broken, on the steeper grazing.
+        step = 1.25 + 0.2 * N.perlin(x / 150.0, y / 150.0, s + 105)
+        k = (h + 0.6 * N.fbm(x / 14.0, y / 14.0, 2, seed=s + 106)) / step
+        f = k - np.floor(k)
+        tread = np.where(f < 0.35, f / 0.35 * 0.15, 0.15 + (f - 0.35) / 0.65 * 0.85)
+        broken = N.smoothstep(-0.1, 0.3, N.fbm(x / 20.0, y / 20.0, 2, seed=s + 107))
+        tread_w = 1.0 if res is None else N.smoothstep(0.4, 0.15, res)
+        out = out + (tread - f) * step * 0.35 * steep * broken * (1.0 - patch) * tread_w
+        return out
 
     # ── routes ─────────────────────────────────────────────────────────────
     def route(self, start, end, cell=48.0, slope_cost=60.0, avoid_gorge=45.0):
@@ -540,7 +625,10 @@ def grid_mesh(name, X, Y, Z, attrs, material, collection=None):
 def land_mesh(land, name, cx, cy, heading, fov, r0=0.5, r1=24000.0, n_theta=900, material=None, detail=1.0, extra=None):
     """The land seen from round (cx, cy): fine near, coarse far."""
     X, Y = polar_grid(cx, cy, r0, r1, heading, fov, n_theta)
-    Z = land.height(X, Y, detail)
+    # How far apart the mesh's points are here (m): detail finer than that is
+    # left out, rather than aliasing into facets (Land.slope_detail).
+    res = np.hypot(X - cx, Y - cy) * (fov / (n_theta - 1)) * 2.0
+    Z = land.height(X, Y, detail, res=res)
     attrs = land_attributes(land, X, Y, Z, grid_slope(X, Y, Z))
     if extra:
         attrs.update(extra(X, Y, Z))
@@ -561,7 +649,9 @@ def grid_slope(X, Y, Z):
 
 
 def land_attributes(land, X, Y, Z, slope=None):
-    sl = land.slope(X, Y) if slope is None else slope
+    # A mesh's own slope, smoothed over its neighbours: point to point it is
+    # noisy, and thresholds on it drew the triangles into the colours.
+    sl = land.slope(X, Y) if slope is None else N.blur(slope, 1)
     wet = land.wetness(X, Y)
     gd = land.gorge_distance(X, Y)
     road = land.road.mask(X, Y).reshape(X.shape) if land.road is not None else np.zeros_like(X)

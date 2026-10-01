@@ -87,6 +87,10 @@ export const SCRIPTURE_CONNECTION: ChapterInput['scriptureConnection'] = {
       when: reading('softened'),
       text: 'You left out the hard part when you read Kallias’s letter aloud. Zenon read Paul’s letters to the whole assembly, hard parts and all.',
     },
+    {
+      when: flag('message-delivered'),
+      text: 'You carried Chrysis’s words to her sister by word of mouth. Colossians says its carriers would bring news as well as the letter, and tell the assembly everything that was happening (Colossians 4:7–9).',
+    },
   ],
 };
 
@@ -115,7 +119,15 @@ export const SUMMARY: ChapterInput['summary'] = {
       when: { type: 'puzzleSolved', puzzle: 'p-alum' },
       text: 'At the dye works, you helped Kallias match the buyer’s shade.',
     },
+    {
+      when: { type: 'puzzleSolved', puzzle: 'p-hiding' },
+      text: 'Kallias ran when he saw you coming. You worked out where he had gone and found him on the riverbank.',
+    },
     { when: flag('read-to-kallias'), text: 'You read Ammia’s letter to Kallias yourself.' },
+    {
+      when: flag('chrysis-message'),
+      text: 'Chrysis asked you to carry a message up the valley to her sister.',
+    },
     {
       when: flag('heard-the-letters'),
       text: 'At lamp-lighting, you heard the letters from Paul read aloud at Philemon’s house.',
@@ -216,6 +228,26 @@ export const SUMMARY: ChapterInput['summary'] = {
       id: 'chrysis',
       when: flag('talked-chrysis'),
       text: 'At the dye works, Chrysis told you what Kallias’s freedom to walk away meant to someone who had none.',
+    },
+    {
+      id: 'told-kallias',
+      when: flag('told-kallias'),
+      text: 'On the road home, you told Kallias what you had left out of his letter that morning.',
+    },
+    {
+      id: 'message-every',
+      when: { type: 'choiceMade', choice: 'choice-message', option: 'every-word' },
+      text: 'Melitta heard every word her sister sent her, the master’s “perhaps” included.',
+    },
+    {
+      id: 'message-softened',
+      when: { type: 'choiceMade', choice: 'choice-message', option: 'softened' },
+      text: 'Melitta heard that her sister was well and still had their mother’s comb. You kept the master’s “perhaps” to yourself.',
+    },
+    {
+      id: 'message-unspoken',
+      when: { type: 'questStatus', quest: 'q-message', status: 'failed' },
+      text: 'Chrysis’s words for her sister went home with you, unspoken.',
     },
     {
       id: 'always',

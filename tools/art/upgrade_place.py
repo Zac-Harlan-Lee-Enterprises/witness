@@ -10,16 +10,53 @@ For each variant in a place's manifest.json:
     (imageio.save_tiles), recorded as a list of tiles, and the whole file
     removed.
 build_place.py writes both itself. Idempotent.
+
+With --sharpen-low, the half-resolution set is made again from the full
+one: the ground reassembled from its tiles and every sprite page halved
+with a Lanczos filter and a light unsharp mask (imageio.downsample_sharp),
+written at the half set's qualities (imageio.LOW_GROUND_Q, LOW_PAGE_Q).
+The textures keep their sizes, so the GPU memory is unchanged.
 """
 import json
 import os
 import sys
 
+import numpy as np
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "lib"))
 import imageio  # noqa: E402
 
-for folder in sys.argv[sys.argv.index("--") + 1 :]:
+argv = sys.argv[sys.argv.index("--") + 1 :]
+sharpen = "--sharpen-low" in argv
+folders = [f for f in argv if not f.startswith("--")]
+
+
+def whole_ground(folder, tiles):
+    """The full ground, put back together from its tiles."""
+    imgs = [(t, imageio.load(os.path.join(folder, t["file"]))) for t in tiles]
+    w = max(t["x"] + img.shape[1] for t, img in imgs)
+    h = max(t["y"] + img.shape[0] for t, img in imgs)
+    out = np.zeros((h, w, 4), np.float32)
+    for t, img in imgs:
+        out[t["y"] : t["y"] + img.shape[0], t["x"] : t["x"] + img.shape[1]] = img
+    return out
+
+
+def sharpen_low(folder, name, v):
+    stem = f"ground-{name}-low"
+    for t in v["groundLow"]:
+        os.remove(os.path.join(folder, t["file"]))
+    v["groundLow"] = imageio.save_tiles(imageio.downsample_sharp(whole_ground(folder, v["ground"])), folder, stem, imageio.LOW_GROUND_Q)
+    for page, low in zip(v["pages"], v["pagesLow"]):
+        img = imageio.load(os.path.join(folder, page))
+        if img.shape[0] % 2:
+            img = img[:-1]
+        imageio.save(imageio.downsample_sharp(img), os.path.join(folder, low), "WEBP", imageio.LOW_PAGE_Q)
+    print("SHARPENED LOW", folder, name, [t["file"] for t in v["groundLow"]], v["pagesLow"])
+
+
+for folder in folders:
     path = os.path.join(folder, "manifest.json")
     manifest = json.load(open(path))
     for name, v in manifest["variants"].items():
@@ -46,4 +83,6 @@ for folder in sys.argv[sys.argv.index("--") + 1 :]:
                 v[key] = imageio.save_tiles(img, folder, whole[: -len(".webp")], quality)
                 os.remove(os.path.join(folder, whole))
             print("GROUND TILES", folder, name, key, [t["file"] for t in v[key]])
+        if sharpen:
+            sharpen_low(folder, name, v)
     json.dump(manifest, open(path, "w"), indent=1)

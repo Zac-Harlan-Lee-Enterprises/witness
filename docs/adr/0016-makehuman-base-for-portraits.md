@@ -49,7 +49,7 @@ On 2026-09-26 the owner, Zac Harlan, approved using **MakeHuman's CC0 anatomical
 
 - **Faces become believable people.** Skulls, noses, lids, lips and ears have real anatomy, and about 170 target weights per person make every face distinct. Everyone is also cast by type: face, nose, eyes and lips. Ages, sexes and builds follow the story.
 - **Expressions become possible.** Dialogue lines carry an optional `expression` (glad, worried, sad, angry, surprised, afraid). Each person's portrait is rendered in every expression their lines use.
-- **Authoring now needs the cache.** Before rendering portraits, run `npm run art:fetch-makehuman` (25.5 MB, 497 files) once. Nothing else in the project depends on it.
+- **Authoring now needs the cache.** Before rendering portraits, run `npm run art:fetch-makehuman` (25.5 MB, 497 files) once. Only the portraits and one shot of the teaser film (addendum below) depend on it.
 - **The project's no-download rule stands everywhere else.** Places, people sprites, props, audio and icons remain original work. Any further exception needs the owner's approval and its own ADR.
 - **Provenance is recorded** in [`docs/art/asset-manifest.json`](../art/asset-manifest.json):
   - an entry for the MakeHuman data (source, commit, licence, the pinned list);
@@ -63,3 +63,7 @@ On 2026-09-26 the owner, Zac Harlan, approved using **MakeHuman's CC0 anatomical
 - **MPFB2 (MakeHuman's Blender add-on).** It would load the same data. But it is GPL code that would have to be installed into Blender for every rebuild, its asset packs bundle skin textures this decision excludes, and a small loader for two plain file formats is more reliable and fully under our control.
 - **Scanned heads, photogrammetry or commercial character kits (MetaHuman, Character Creator, Daz).** Restrictive licences, photographic textures, and a borrowed look. All excluded by the owner's terms.
 - **Image-generation models.** Excluded outright: provenance, consistency across expressions, and the owner's rule.
+
+## Addendum, 2026-09-30: the man in the teaser film
+
+The brief for the art polish of 2026-09-30 put the MakeHuman exception at **heads and bodies**. Under it, the man lying in the shade in the Chapter 1 teaser film (shot 7) is MakeHuman's hm08 **body** ([`teaser_body.py`](../../tools/art/lib/teaser_body.py)): the same pinned CC0 data, geometry only (the base mesh, its eye helpers, the macro key shapes), within every limit above. His pose, skin, hair, tunic (simulated cloth) and light are made here; no MakeHuman proxies, textures, poses or code. The game's own small figure had read as a blocky shape at film scale. **For the owner to confirm:** his approval of 2026-09-26 named the portraits. If he means it for them only, shot 7 goes back to a body made in code; nothing else in the film uses MakeHuman.

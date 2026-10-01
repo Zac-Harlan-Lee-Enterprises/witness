@@ -64,15 +64,7 @@ export const SHELOMIT_HOUSE: ChapterInput['scenes'][number] = {
       x: 4,
       y: 5,
       solid: false,
-      interaction: {
-        verb: 'examine',
-        effects: [
-          {
-            type: 'showMessage',
-            text: 'A torn net across the mat, with the mended part pulled tight in neat new knots. Every family on the shore mends nets like this, all year round.',
-          },
-        ],
-      },
+      interaction: { verb: 'use', dialogue: 'd-mending' },
     },
     {
       id: 'dried-fish',
@@ -101,8 +93,8 @@ export const SHELOMIT_HOUSE: ChapterInput['scenes'][number] = {
       w: 2,
       h: 1,
       to: { scene: 'capernaum-shore', spawn: 'from-house' },
-      requires: { type: 'questStatus', quest: 'q-crossing', status: 'active' },
-      blockedText: 'Grandmother is still talking to you.',
+      requires: { type: 'objectiveDone', quest: 'q-crossing', objective: 'corner' },
+      blockedText: 'Grandmother is waiting for you to tie the last knots of her net.',
     },
   ],
   ambience: 'indoor',

@@ -1,4 +1,8 @@
-import { APPROVALS } from '@/content/shared/approvals';
+import { APPROVALS, draftedOn } from '@/content/shared/approvals';
+import { LATER_RECORDS } from '@/content/chapters/road-to-jericho/records';
+import { LONGER_CHAPTERS_DRAFTED } from '@/content/shared/governance';
+import { checkPacking } from '@/domain/puzzles';
+import { makeState } from '../support/state';
 import { TEASER_RECORD_ID } from '@/content/chapters/road-to-jericho/teaser';
 import { describe, expect, it } from 'vitest';
 import { chapterSource, parseChapter } from '@/content';
@@ -88,7 +92,8 @@ describe('Road to Jericho content', () => {
     const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
     // The teaser's words came later and need their own approval
     // (tests/content/teaser.test.ts): that approval doesn't cover them.
-    for (const r of chapter.records.filter((x) => x.id !== TEASER_RECORD_ID)) {
+    const later = new Set(LATER_RECORDS.map((r) => r.id));
+    for (const r of chapter.records.filter((x) => x.id !== TEASER_RECORD_ID && !later.has(x.id))) {
       expect(r.governance.status, r.id).toBe('approved');
       expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
       expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');
@@ -109,5 +114,68 @@ describe('Road to Jericho content', () => {
     decide?.choices.forEach((c) =>
       expect(c.text).not.toMatch(/\b(good|evil|right thing|wrong thing|sin)\b/i),
     );
+  });
+
+  it('keeps what was added after the approval (the longer chapter) awaiting review, never approved', () => {
+    expect(LATER_RECORDS.length).toBeGreaterThanOrEqual(6);
+    for (const r of LATER_RECORDS) {
+      const loaded = chapter.records.find((x) => x.id === r.id);
+      expect(loaded?.kind, r.id).toBe('fiction');
+      expect(draftedOn(r), r.id).toBe(LONGER_CHAPTERS_DRAFTED);
+      expect(loaded?.governance.status, r.id).toBe('ai-draft');
+      expect(loaded?.governance.reviewer, r.id).toBeUndefined();
+    }
+    // Every new person, errand and discovery is labelled story.
+    for (const id of ['rec-p-eli', 'rec-e-linen', 'rec-e-eli', 'rec-e-cloak', 'rec-e-natan'])
+      expect(
+        LATER_RECORDS.some((r) => r.id === id),
+        id,
+      ).toBe(true);
+  });
+
+  it('packs Rivka’s linen with the remedy: the satchel still has room to choose', () => {
+    const satchel = chapter.puzzles.find((p) => p.id === 'p-satchel');
+    if (satchel?.type !== 'packing') throw new Error('expected packing');
+    const weight = (id: string) => chapter.items.find((i) => i.id === id)?.weight ?? 0;
+    const known = makeState({ clues: ['clue-cistern'] });
+    const load = { remedy: 1, 'linen-bundle': 1, 'water-skin': 1, bread: 1, lamp: 1 };
+    expect(checkPacking(satchel, load, known, weight).valid).toBe(true);
+    // Without knowing about the cistern, two water skins fill the satchel exactly.
+    const cautious = { remedy: 1, 'linen-bundle': 1, 'water-skin': 2 };
+    expect(checkPacking(satchel, cautious, makeState(), weight).valid).toBe(true);
+    expect(chapter.items.find((i) => i.id === 'linen-bundle')?.essential).toBe(true);
+  });
+
+  it('lets the cloak be identified from the cloak itself, even by a player who skipped the road’s clues', () => {
+    const cloak = chapter.puzzles.find((p) => p.id === 'p-cloak');
+    if (cloak?.type !== 'deduction') throw new Error('expected deduction');
+    const fromTheCloak = ['clue-cloak-hem', 'clue-cloak-oil'];
+    const backing = cloak.evidence.filter(
+      (e) =>
+        fromTheCloak.includes(e.clueId) &&
+        e.reliable &&
+        e.bearsOn.some((b) => b.option === cloak.answer && b.stance === 'supports'),
+    );
+    expect(backing.length).toBeGreaterThanOrEqual(cloak.requiredEvidence);
+    // Salome's shrug is marked for what it is.
+    expect(cloak.evidence.find((e) => e.clueId === 'clue-blue-stripes')?.reliable).toBe(false);
+    expect(chapter.clues.find((c) => c.id === 'clue-blue-stripes')?.reliability).toBe('unreliable');
+  });
+
+  it('keeps the new people fictional and gives each a story record', () => {
+    const eli = chapter.characters.find((c) => c.id === 'eli');
+    expect(eli?.fictional).toBe(true);
+    expect(eli?.biblicalFigure).toBe(false);
+    for (const c of chapter.characters.filter((x) => x.journalEntry))
+      expect(chapter.records.find((r) => r.id === `rec-p-${c.id}`)?.kind, c.id).toBe('fiction');
+  });
+
+  it('makes the new choices real ones, never morality buttons', () => {
+    const texts = chapter.dialogues
+      .filter((d) => ['d-eli', 'd-menashe-road', 'd-natan'].includes(d.id))
+      .flatMap((d) => d.nodes.flatMap((n) => n.choices.map((c) => c.text)));
+    texts.forEach((t) => expect(t).not.toMatch(/\b(good|evil|right thing|wrong thing|sin)\b/i));
+    for (const id of ['choice-eli', 'choice-bandage'])
+      expect(chapter.choices.find((c) => c.id === id)?.options.length, id).toBe(2);
   });
 });

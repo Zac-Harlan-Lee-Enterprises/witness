@@ -85,6 +85,15 @@ export const JOURNAL: ChapterInput['journal'] = [
     characterId: 'chrysis',
     order: 8,
   },
+  {
+    id: 'jp-melitta',
+    category: 'people',
+    title: 'Melitta',
+    summary: 'A baker’s wife, and Chrysis’s sister',
+    recordIds: ['rec-p-melitta'],
+    characterId: 'melitta',
+    order: 12,
+  },
   // People named in the New Testament: unlocked when you see them.
   {
     id: 'jp-philemon',
@@ -195,6 +204,23 @@ export const JOURNAL: ChapterInput['journal'] = [
     recordIds: ['rec-e-road'],
     unlockWhen: flag('read-to-kallias'),
     order: 4,
+  },
+  {
+    id: 'je-hiding',
+    category: 'events',
+    title: 'Kallias runs',
+    summary: 'Down to the riverbank',
+    recordIds: ['rec-e-hiding'],
+    unlockWhen: { type: 'puzzleSolved', puzzle: 'p-hiding' },
+    order: 6,
+  },
+  {
+    id: 'je-message',
+    category: 'events',
+    title: 'Words for Melitta',
+    summary: 'A message from Chrysis',
+    recordIds: ['rec-e-message'],
+    order: 7,
   },
   {
     id: 'je-gathering',

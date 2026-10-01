@@ -12,8 +12,19 @@ import {
   solved,
   type DialogueInput,
 } from './helpers';
+import { KID_CLUES } from '../clues';
 
 const startQueue = { type: 'startQuest' as const, quest: 'q-queue' };
+/** Hagit's kid is out, and you are looking for it (to get Dodi's milk). */
+const kidHunt = all(flag('kid-missing'), not(flag('kid-home')));
+const discover = (id: string) => ({ type: 'discoverClue' as const, clue: id });
+/** Uncle Asa's "lamb with little horns" turns out to have been Hagit's kid. */
+export const KID_SEEN_BY_ASA =
+  'A goat? …Oh. My “lamb” with the little horns. It came back past the line with a scrap of blue cloth in its mouth, bold as a king, and went straight on to the well.';
+const kidQuestion = opt('kid', 'Did you see a little white goat go past?', 'kid', {
+  once: true,
+  when: kidHunt,
+});
 
 /**
  * The crowded lanes during the registration. Saba Amram's retelling of the
@@ -38,6 +49,10 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
           opt('job', 'What are you doing here?', 'job', { once: true }),
           opt('slow', 'Why is the line so slow?', 'slow', { once: true }),
           opt('well', 'Tell me about the well.', 'well', { once: true }),
+          opt('kid', 'Have you seen Hagit’s little white kid?', 'kid', {
+            once: true,
+            when: kidHunt,
+          }),
           opt('bye', 'Goodbye, Saba.'),
         ],
       }),
@@ -68,6 +83,12 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'Whether it was this very well, nobody really knows. But we like to think so.',
         { next: 'hub' },
       ),
+      say(
+        'kid',
+        'amram',
+        'That little thief? The travellers by the cart were shouting about their nibbled barley long before anybody’s washing got chewed. Whatever else she did, the barley came first.',
+        { expression: 'glad', effects: [discover('clue-kid-amram')], next: 'hub' },
+      ),
     ],
   },
   {
@@ -88,10 +109,14 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
       say('hub', 'kallias', 'Next! …Not you. You’re fine.', {
         choices: [
           opt('who', 'Who are you?', 'who', { once: true }),
+          opt('home', 'Where do you sleep tonight, with every house full?', 'home', {
+            once: true,
+          }),
           opt('help', 'Could I help? My uncle has been waiting since midday.', 'help', {
             when: not(flag('kallias-help')),
             effects: [startQueue],
           }),
+          kidQuestion,
           opt('bye', 'Goodbye.'),
         ],
       }),
@@ -108,15 +133,36 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         { effects: [setFlag('kallias-help')] },
       ),
       say(
+        'home',
+        'kallias',
+        'Where the registration sends me. Last night it was a storeroom full of onions, and tonight I expect it will be something worse. A clerk goes where the lists go.',
+        { next: 'hub' },
+      ),
+      say(
+        'kid',
+        'kallias',
+        'I see everything that goes past this table; I have nothing else to look at. A white kid came to drink at the well trough — already chewing something when it got there. Then it wandered off again. Somewhere with more to eat, I expect.',
+        { effects: [discover('clue-kid-kallias')], next: 'kid2' },
+      ),
+      say('kid2', 'kallias', 'Name? Household? Property? …Sorry. Habit.', {
+        expression: 'glad',
+        branches: [
+          { when: solved('p-register'), next: 'done' },
+          { when: flag('kallias-help'), next: 'waiting' },
+        ],
+        next: 'hub',
+      }),
+      say(
         'waiting',
         'kallias',
         'Found the order on my finished tablet? The blank one is ready for your uncle.',
+        { choices: [kidQuestion, opt('bye', 'I’ll look.')] },
       ),
       say(
         'done',
         'kallias',
         'Asa son of Amram — written down and done. If only every household were so tidy.',
-        { expression: 'glad' },
+        { expression: 'glad', choices: [kidQuestion, opt('bye', 'Goodbye, Kallias.')] },
       ),
     ],
   },
@@ -138,6 +184,10 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
           opt('help', 'Maybe I can help speed things up.', 'help', {
             once: true,
             when: not(flag('kallias-help')),
+          }),
+          opt('kid', 'Have you seen a little white goat kid?', 'kid', {
+            once: true,
+            when: kidHunt,
           }),
           opt('bye', 'Hang in there, Uncle.'),
         ],
@@ -164,6 +214,11 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
         'If you can make that clerk go any faster, I’ll carve you a donkey like Dodi’s.',
         { next: 'hub' },
       ),
+      say('kid', 'asa', KID_SEEN_BY_ASA, {
+        expression: 'surprised',
+        effects: [discover('clue-asa-lamb'), discover('clue-kid-asa')],
+        next: 'hub',
+      }),
     ],
   },
   {
@@ -172,6 +227,8 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
     entries: [
       { when: all(flag('evening'), chose('choice-stranger', 'hagit')), node: 'night-zerah' },
       { when: flag('evening'), node: 'night' },
+      { when: flag('carrying-kid'), node: 'return' },
+      { when: all(solved('p-kid'), not(flag('kid-home'))), node: 'fetch' },
     ],
     start: 'h1',
     nodes: [
@@ -183,15 +240,38 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
       ),
       say('hub', 'hagit', 'Well? What is it?', {
         choices: [
+          opt('milk', 'Mother asks if you could spare a jar of milk for little Dodi.', 'milk', {
+            when: all(flag('supper-given'), not(flag('asked-milk')), not(flag('got-milk'))),
+            effects: [setFlag('asked-milk')],
+          }),
+          opt('think', 'I think I know where your kid went.', undefined, {
+            when: all(flag('kid-missing'), not(solved('p-kid'))),
+            requires: { type: 'cluesFound', clues: KID_CLUES, min: 3 },
+            unavailableText:
+              'You don’t know enough yet. Saba Amram, Uncle Asa and Kallias the clerk have been in the lanes all afternoon — ask each of them.',
+            effects: [{ type: 'openPuzzle', puzzle: 'p-kid' }],
+          }),
           opt('full', 'Is your house full of guests too?', 'full', { once: true }),
           opt('flock', 'Do you know our family’s sheep?', 'flock', { once: true }),
           opt('kid', 'Did one of your goats get out today?', 'kid', {
             once: true,
-            when: clue('clue-asa-lamb'),
+            when: all(clue('clue-asa-lamb'), not(flag('kid-missing'))),
           }),
           opt('bye', 'Goodbye, Hagit.'),
         ],
       }),
+      say(
+        'milk',
+        'hagit',
+        'Milk? Gladly — if I could get near my nanny goat. Her little white kid is off again, and she won’t stand still for anyone while she’s calling for it. And I can’t go chasing up the lanes on these knees.',
+        { expression: 'surprised', effects: [setFlag('kid-missing')], next: 'milk2' },
+      ),
+      say(
+        'milk2',
+        'hagit',
+        'Find my kid and bring her home, and you’ll have your milk. Ask around — somebody always sees a white kid. Your grandfather, the clerk, your uncle in that line: they’ve been standing in the lanes all afternoon.',
+        { next: 'hub' },
+      ),
       say(
         'full',
         'hagit',
@@ -213,7 +293,42 @@ export const VILLAGE_DIALOGUES: DialogueInput[] = [
       say(
         'kid',
         'hagit',
-        'My little white kid? She’s been up the lane and back three times this afternoon, the rascal. Why?',
+        'My little white kid? She’s been up the lane three times this afternoon, the rascal — and this time she hasn’t come back. Why?',
+        { expression: 'glad', effects: [setFlag('kid-missing')], next: 'hub' },
+      ),
+      say(
+        'fetch',
+        'hagit',
+        'The threshing floor? The little thief — she’ll eat the chaff and the edging stones with it. Go and fetch her, child, before she does.',
+        { expression: 'glad' },
+      ),
+      say(
+        'return',
+        'narrator',
+        'You set the kid down inside the yard gate. Her mother butts her once, hard, and then licks her ears.',
+        {
+          effects: [
+            { type: 'setFlag', flag: 'carrying-kid', value: false },
+            setFlag('kid-home'),
+            { type: 'adjustTrust', character: 'hagit', delta: 1 },
+          ],
+          next: 'return2',
+        },
+      ),
+      say(
+        'return2',
+        'hagit',
+        'There. Now she’ll stand for me. …A jar of milk for little Dodi, still warm. Tell Tamar it’s the least a neighbor can do.',
+        {
+          expression: 'glad',
+          effects: [{ type: 'giveItem', item: 'milk' }, setFlag('got-milk')],
+          next: 'return3',
+        },
+      ),
+      say(
+        'return3',
+        'hagit',
+        'When I was your age I lost a kid for a whole night. My father found her in the morning, asleep on top of the olive press, fat as a sack. He didn’t say a word to me. He carried her home and gave me the first cup of milk. I’ve never forgotten it.',
         { expression: 'glad', next: 'hub' },
       ),
       say('night', 'hagit', 'Go home to bed, child. It’s late, even for me.'),

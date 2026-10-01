@@ -18,9 +18,10 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    # A run takes about 20 minutes; shared runners are sometimes half again as
+    # A run takes about 45 minutes since the chapters grew (each playthrough is
+    # 6-10 minutes on a runner); shared runners are sometimes half again as
     # slow, and a failing test is retried once.
-    timeout-minutes: 50
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 

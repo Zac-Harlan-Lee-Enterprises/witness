@@ -1,6 +1,6 @@
 import type { ChapterInput } from '@/domain/chapter';
 import type { ScriptureRef } from '@/domain/scripture';
-import { draft, STORY } from './governance';
+import { draft, LATER_STORY, STORY } from './governance';
 
 /**
  * Content records for "A Letter from Paul".
@@ -40,6 +40,16 @@ const fiction = (id: string, title: string, body: string): Record => ({
   body,
   sources: [],
   governance: STORY,
+});
+
+/** Fiction added when the chapter was made longer (in review; see governance.ts). */
+const newFiction = (id: string, title: string, body: string): Record => ({
+  id,
+  kind: 'fiction',
+  title,
+  body,
+  sources: [],
+  governance: LATER_STORY,
 });
 
 const SLAVERY_NOTE =
@@ -612,5 +622,22 @@ export const RECORDS: ChapterInput['records'] = [
     'rec-e-gathering',
     'The letters read aloud',
     'At lamp-lighting, the assembly gathered at Philemon’s house to hear the letters from Paul read aloud.',
+  ),
+
+  // ── Added when the chapter was made longer (in review) ────────────────────
+  newFiction(
+    'rec-p-melitta',
+    'Melitta',
+    'A baker’s wife in Colossae and a member of the assembly that meets at Philemon’s house. Her sister Chrysis works the vats at the dye works down the valley, and they seldom see each other.',
+  ),
+  newFiction(
+    'rec-e-hiding',
+    'Kallias runs',
+    'At the dye works, Kallias saw you coming down the road in Ammia’s red and ran. You worked out from his footprints, his cloak and what Chrysis saw that he had gone down to the riverbank by the bridge.',
+  ),
+  newFiction(
+    'rec-e-message',
+    'Words for Melitta',
+    'Chrysis, who cannot write and cannot leave the dye works, asked you to carry three things to her sister Melitta at the gathering: that she is well, that her master says “perhaps”, and that she still has their mother’s comb.',
   ),
 ];
