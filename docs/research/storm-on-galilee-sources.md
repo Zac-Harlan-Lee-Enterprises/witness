@@ -4,6 +4,7 @@ The claim-by-claim record behind the historical, geographical and interpretive n
 
 > **Provenance and status**
 >
+> - **Today (2026-10-01):** the owner approved the chapter's records drafted by 2026-09-26, and the World English Bible text is displayed; the status notes below are as of the research. Current approval status, record by record: [the chapter document, §12](../chapters/storm-on-galilee.md#12-content-and-approval-status).
 > - **Retrieval and checking were done by AI research assistants on 2026-09-25.** Every source below was fetched in that session. Most quotations were checked against the page's raw text (downloaded with curl and searched). A few pages were only read through a summarising fetch; these are marked *(summarised fetch)* and their wording must be spot-checked.
 > - **Human citation verification is still required.** `verified: true` in `sources.ts` records only that the AI retrieval took place. Every educational record is at governance status `sources-attached`, shows "Awaiting editorial review" in the game, and can't be published until a named human approves it ([content-governance.md](../content-governance.md)).
 > - Bible text was taken verbatim from the public-domain World English Bible (eBible.org, "World English Bible Classic") and the SBL Greek New Testament. **No verse text is stored in the game**: Scripture records hold references only, and the WEB text of Mark 4 is not added to the translation registry.
@@ -117,7 +118,7 @@ The claim-by-claim record behind the historical, geographical and interpretive n
 
 - **Verdict:** VERIFIED / PARTLY · **Confidence:** established (fishing village, basalt) / probable (roofs, population, harbour in use)
 - **Sources:** [Wikipedia: Capernaum](https://en.wikipedia.org/wiki/Capernaum): "fishing village"; "population of about 1,500 in the 1st century AD" (Reed 2002); "local black basalt"; roofs of "light wooden beams and thatch mixed with mud"; an ancient harbour west of the modern pier. Bolen, [Jerusalem Perspective](https://www.jerusalemperspective.com/1476/): "The Capernaum harbor … extended for more than 2500 feet (800 m.) along the shore". WEB [Matthew 4:13](https://ebible.org/eng-web/MAT04.htm), [Mark 1:21](https://ebible.org/eng-web/MRK01.htm), [Mark 2:1–4](https://ebible.org/eng-web/MRK02.htm) ("they removed the roof where he was").
-- **Notes:** Wikipedia tags the mortarless-basalt sentence "citation needed"; the basalt itself is well attested. The game's jetty, houses and layout are fiction (`rec-recon-shore`). **For the 3D pass:** houses should be dark basalt fieldstone, not the painted placeholder's mudbrick (see [the chapter doc](../chapters/storm-on-galilee.md#notes-for-the-3d-realism-pass)).
+- **Notes:** Wikipedia tags the mortarless-basalt sentence "citation needed"; the basalt itself is well attested. The game's jetty, houses and layout are fiction (`rec-recon-shore`). **For the 3D pass:** houses should be dark basalt fieldstone, not the painted placeholder's mudbrick (the houses are now rendered in basalt: see [the chapter doc](../chapters/storm-on-galilee.md#10-art)).
 
 ### 13. Fish of the lake
 
