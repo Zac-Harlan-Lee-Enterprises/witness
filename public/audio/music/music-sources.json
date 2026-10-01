@@ -1,0 +1,69 @@
+{
+  "downloadedDate": "2026-10-01",
+  "license": "Pixabay Content License",
+  "licenseSummaryUrl": "https://pixabay.com/service/license-summary/",
+  "termsUrl": "https://pixabay.com/service/terms/",
+  "contentIdGuidanceUrl": "https://pixabay.com/blog/posts/how-to-clear-a-youtube-content-id-claim-with-a-pix-190/",
+  "notes": [
+    "Downloaded using the official track pages and Free download controls.",
+    "Free use and adaptation for commercial/noncommercial projects subject to Pixabay terms; attribution not required but appreciated. Do not redistribute as standalone music.",
+    "This manifest is provenance documentation, not an official Pixabay License Certificate. No signed-in license certificates were obtained.",
+    "Content ID claims may affect gameplay videos; absence of a displayed badge is not a guarantee of no claims.",
+    "Flute track explicitly lists P.R.O. and Content ID registration; creator prohibits standalone distribution to music streaming services.",
+    "Music files have not yet been integrated. No loop points or loudness adjustments have been applied."
+  ],
+  "tracks": [
+    {
+      "file": "cinematic-oud-and-qanun.mp3",
+      "title": "Cinematic Oud and Qanun",
+      "artist": "vjgalaxy",
+      "source": "https://pixabay.com/music/arabic-cinematic-oud-and-qanun-588125/",
+      "suggestedMood": "home",
+      "aiGeneratedLabelObserved": true,
+      "contentIdRegisteredLabelObserved": false,
+      "proRegistration": null,
+      "bytes": 3943680,
+      "sha256": "8afd3874ade48326e3a1ee15291cb135e7a01893a266ac409b31d6c61c6cc9ec",
+      "audioInfo": "estimated duration: 123.240000 sec"
+    },
+    {
+      "file": "sacred-sands.mp3",
+      "title": "Sacred Sands Arabic Background Music with Ancient Desert Vibes",
+      "artist": "DesiFreeMusic",
+      "source": "https://pixabay.com/music/world-sacred-sands-arabic-background-music-with-ancient-desert-vibes-504051/",
+      "suggestedMood": "journey",
+      "aiGeneratedLabelObserved": true,
+      "contentIdRegisteredLabelObserved": false,
+      "proRegistration": null,
+      "bytes": 5480448,
+      "sha256": "08aff38437ea1f7a46f2946d36bd66a24ca65c6ff511684d86cb5961ff112427",
+      "audioInfo": "estimated duration: 171.264000 sec"
+    },
+    {
+      "file": "middle-eastern-cinematic-mystery.mp3",
+      "title": "Middle Eastern Cinematic Mystery",
+      "artist": "Sonican",
+      "source": "https://pixabay.com/music/world-middle-eastern-cinematic-mystery-532031/",
+      "suggestedMood": "tension",
+      "aiGeneratedLabelObserved": false,
+      "contentIdRegisteredLabelObserved": true,
+      "proRegistration": null,
+      "bytes": 2368992,
+      "sha256": "29a6be70d21f826a022b35354105e2d05dbc9461daf3eca4a88ee757e1b90c7e",
+      "audioInfo": "estimated duration: 74.031000 sec"
+    },
+    {
+      "file": "meditative-middle-eastern-flute.mp3",
+      "title": "Meditative Middle Eastern Flute",
+      "artist": "Ashot_Danielyan",
+      "source": "https://pixabay.com/music/meditationspiritual-meditative-middle-eastern-flute-113656/",
+      "suggestedMood": "reflection",
+      "aiGeneratedLabelObserved": false,
+      "contentIdRegisteredLabelObserved": true,
+      "proRegistration": "BMI / IPI 00855552512",
+      "bytes": 7152953,
+      "sha256": "6cc46493bba468536b3ab260eb0fda3a022cf3e2863270a29761ec1dd76eab05",
+      "audioInfo": "estimated duration: 223.529781 sec"
+    }
+  ]
+}

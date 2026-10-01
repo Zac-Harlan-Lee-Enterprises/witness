@@ -529,3 +529,5 @@ NEXT   : The owner judges the before/after captures. If he wants faces lighter s
          re-render (`node scripts/art-build.mjs people --only <ids> --force`, three ids per run). Hodaya's carried
          net (people.py) reads as a fluted blob on the shoulder; a softer, draped net would help.
 BLOCKED: none.
+
+2026-10-01 | Codex GPT-6 | DONE: Downloaded four owner-requested Pixabay MP3s to public/audio/music with music-sources.json; no game code changed. TESTS: afinfo successfully parsed all four MP3s; recorded sizes and SHA-256 hashes. Application suites not run (asset staging only). NEXT: Integrate recorded soundtrack via AudioPort, preserve existing effects and ambience, verify offline caching and scene/state transitions. BLOCKED: None; official signed-in license certificates not obtained.
