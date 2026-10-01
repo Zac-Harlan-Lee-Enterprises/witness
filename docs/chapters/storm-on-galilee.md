@@ -3,7 +3,7 @@
 **Passage:** Mark 4:35–41 (parallels: Matthew 8:23–27; Luke 8:22–25). **Play time:** about 23 minutes on the main quest alone and 39 for a curious first run, at a steady reading pace (see [§11](#11-how-long-it-plays)). **Status:** playable end to end; approval status in [§12](#12-content-and-approval-status).
 **Content:** [`src/content/chapters/storm-on-galilee/`](../../src/content/chapters/storm-on-galilee/) is the source of truth; this document describes the chapter as built. Engine-wide design (controls, puzzle types, the ending contract, the play-time model): [game-design.md](../game-design.md).
 
-Chapter id `storm-on-galilee`, number 2, subtitle *One of the other boats*, `contentVersion` `1.0.0-draft`, `estimatedMinutes` 20–30. Setting (as the chapter states it): Capernaum and the Sea of Galilee, early first century AD, during the years of Jesus' public ministry (dates approximate).
+Chapter id `storm-on-galilee`, number 2, subtitle *A night on the lake, in one of the other boats*, `contentVersion` `1.0.0-draft`, `estimatedMinutes` 20–30. Setting (as the chapter states it): Capernaum and the Sea of Galilee, early first century AD, during the years of Jesus' public ministry (dates approximate).
 
 ## 1. The idea and the passage
 

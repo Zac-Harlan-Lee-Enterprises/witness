@@ -8,7 +8,7 @@ giving its ending away.
 |----|-------|
 | title | Dawn over Jerusalem: the flat roofs of the lower city, the wall, and the road east winding down into the wilderness (the teaser's sets) |
 | road-to-jericho | The player alone on the path along the gorge's rim, going down toward Jericho (the teaser's sets) |
-| storm-on-galilee | The family's boat on the open lake at dusk as storm cloud rolls in over the far hills; the other boats, one with its sail set |
+| storm-on-galilee | The family's boat on the open lake at dusk as the squall comes: a towering shelf cloud over the far hills, the last light low beneath it, rain falling, the water rougher toward the storm; another boat shortening its sail |
 | journey-to-bethlehem | Tamar's house at night, seen from inside: every corner full of guests and their bedding, the animals at the far end, a late stranger come in with his lamp |
 | letter-from-paul | Philemon's house at lamp-lighting: the household gathered round a sealed letter, Zenon ready to read it, Tychicus who carried it beside him |
 """
@@ -92,7 +92,40 @@ def squall(scene, p):
     S.hills(scene, centre, z)
     S.rain_curtain(scene, centre, z, heading=math.radians(8.0), dist=2000.0)
     S.storm_sky(scene)
+    link(scene, shortened_sail(p, 29, 18))
     scene.view_settings.exposure = -1.4 + p.exposure + 1.9
+
+
+def shortened_sail(p, x, y):
+    """The other boat's square sail being shortened as the squall comes: its
+    yard up and braced round, the upper part of the sail gathered up on it by
+    the brails, the rest still drawing in a smooth curve (the lake kit's own
+    yard, sail and furl builders, lake_boats.py)."""
+    import lake_materials as LM
+
+    rig = next(r for r in getattr(p, "_story_rigs", []) if (x, y) in r["tiles"])
+    L, B, xf = rig["L"], rig["B"], rig["xf"]
+    u_mast = 0.64
+    _hb, sheer, keel = p.hull_shape(u_mast, L, B)
+    mast_h = min(7.2, 0.82 * L + 0.4)
+    length = min(7.5, 0.86 * L)
+    base = Vector((-L / 2 + u_mast * L, 0.0, keel + 0.2))
+    brace = math.radians(30.0)
+    d = Vector((math.sin(brace), math.cos(brace), 0.0))
+    c = base + Vector((0.08, 0.0, mast_h - 0.35))
+    ya = xf @ (c + d * length / 2)
+    yb = xf @ (c - d * length / 2)
+    along = (ya - yb).normalized()
+    fwd = (xf.to_3x3() @ Vector((1.0, 0.0, 0.0))).normalized()
+    spar = M.wood("#6a5238", 3.5)
+    linen = LM.linen("#e4d8bd", "key-sail-linen")
+    drop = min(2.6, 0.4 * L) * 0.62
+    mid = (ya + yb) / 2
+    return [
+        p._branch("key-sail-yard", ya, yb, 0.05, 0.045, spar, 8, bow=-0.06),
+        p._furled("key-sail-furl", ya + Vector((0, 0, -0.12)) - along * 0.15, yb + Vector((0, 0, -0.12)) + along * 0.15, linen, common.rng(7), r=0.12),
+        p.square_sail("key-sail", mid + Vector((0, 0, -0.26)), along, length - 0.4, drop, fwd, linen, brails=1, belly=0.55),
+    ]
 
 
 CH2 = "storm-on-galilee"
@@ -102,7 +135,7 @@ shot(
         "open-lake",
         "night",
         chapter=CH2,
-        show={"teacher-boat-sail-furled", "fishing-boat-sail", "cargo-jars", "cargo-jars-more", "net-cargo", "rope-coil", "bailer-deck"},
+        show={"teacher-boat-sail-furled", "cargo-jars", "cargo-jars-more", "net-cargo", "rope-coil", "bailer-deck"},
         cast=[
             Cast("elazar", (18.4, 10.7), 95.0),
             Cast("yoezer", (20.6, 12.6), 120.0),
@@ -111,9 +144,9 @@ shot(
             Cast("ami", (14.8, 13.6), 60.0, pose="sit", marks=("wrapped-in-cloak",)),
         ],
         sky=squall,
-        eye=(5.2, 15.8, 5.0),
-        target=(36.0, 8.6, 3.0),
-        lens=26.0,
+        eye=(4.6, 16.2, 6.2),
+        target=(36.0, 8.6, 4.4),
+        lens=23.0,
         samples=128,
         grade={"exposure": 0.2, "contrast": 1.12, "balance": (1.02, 1.0, 1.0), "saturation": 0.92, "vignette": 0.3, "bloom": 0.12},
     )

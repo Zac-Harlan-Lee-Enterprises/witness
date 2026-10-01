@@ -587,3 +587,13 @@ TESTS  : Vitest 789 -> 806 (tests/content/chapter-docs.test.ts: doc per chapter,
 NEXT   : Pin Chapters 3 and 4 in tests/integration/play-time.test.ts (direct + curious runs, as for Chapters 1-2), then
          replace the word-count estimates in docs/chapters/journey-to-bethlehem.md §11 and letter-from-paul.md §11.
 BLOCKED: none.
+--- 2026-10-01  Claude Opus 5.5 (menu key art agent) — Chapter 2 key art: the squall (feat/key-art-storm) ---
+DONE   : storm-on-galilee key art re-rendered: storm_sky (tools/art/lib/key_art_storm.py) now paints a towering shelf
+         cloud over the far hills with rolled bands and a warm lip, a band of last light under it broken by curtains of
+         rain, dark overcast above; the water darkens and breaks more toward the storm; lower far hills. The other
+         boat's sail is a real square sail on its yard, part-furled (shortened_sail in key_art_shots.py, built with the
+         lake kit's yard/furl/sail builders) instead of the game's festooned "sail-set" sprite. Chapter 2 subtitle is
+         now "A night on the lake, in one of the other boats" (registry, chapter, chapter doc); alt text updated.
+TESTS  : Vitest suite, typecheck, lint, knip, content:validate, prettier; e2e smoke + a11y on 4499/5499.
+NEXT   : none for the key art; if the owner wants more, the same hook (squall) can add rain streaks to the near water.
+BLOCKED: none.
