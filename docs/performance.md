@@ -201,6 +201,32 @@ A phone now holds **31–41%** of the textures it did: 5–30 MB a place instead
 
 **Download:** the half-resolution people are 306 files, 7.6 MB (the full colour sheets: 12.4 MB); a phone downloads them instead of the full ones for every person it meets. `people.json` grows from 1.39 to 2.32 MB (85 → 141 KB gzip) with their frame tables. The service worker precaches the morning and indoor ones too, as it does both resolutions of the places' morning sets: the precache grows from 356 files, 17.3 MB, to 458 files, 20.7 MB (`npm run build`).
 
+## 2d. People on MakeHuman bodies ([ADR-0017](adr/0017-makehuman-bodies-for-world-figures.md))
+
+Measured on 2026-10-01. **Before:** the procedural mannequins (`people.py`), commit `c843e5c`. **After:** every sheet rendered again on MakeHuman bodies with simulated clothes. The sheet contract is unchanged: the same 110 entries, frame sizes, lights and files. Only what each frame covers changes.
+
+**Files** (every entry in `people.json`; texture memory as the GPU holds them: colour sheets RGBA, shadow sheets one byte a pixel):
+
+| Set | Files | Download, before → after | Texture memory, before → after |
+|---|---:|---:|---:|
+| Full colour sheets and overlays (desktops, tablets) | 306 | 12.97 → **13.03 MB** | 277.0 → **259.9 MB** (−6%) |
+| Half-resolution copies (`-low`: phones, low memory) | 306 | 8.01 → **7.99 MB** | 70.0 → **64.6 MB** (−8%) |
+| Cast-shadow sheets (shared by both) | 177 | 0.86 → **0.85 MB** | 49.6 → **49.3 MB** |
+| `people.json` | 1 | 2.33 → 2.33 MB | — |
+
+The download is the same within 0.5%. Real bodies are narrower than the mannequins' tubes, so the trimmed frames pack into slightly smaller atlases: 6–8% less texture memory for the same frames.
+
+**In the game** (`data-texture-mb`, the review captures of [`e2e/people-art.spec.ts`](../e2e/people-art.spec.ts) on the Mac's GPU: Miriam's house and the market, the same route before and after):
+
+| View | Aunt Miriam's house | Lower market |
+|---|---:|---:|
+| Desktop 1280×720 (full set) | 18.0 → **17.0 MB** | 77.4 → **76.6 MB** |
+| Phone, Pixel 7 (half-resolution set) | 6.0 → **5.9 MB** | 22.0 → **21.4 MB** |
+
+Phones keep the gains of §2c. Nothing costs more memory at runtime: a person is still one trimmed atlas page per light, plus the overlays their marks need.
+
+**Build time** (authoring only): a standing sheet takes about a minute of cloth simulation before its frames; all 110 sheets take about 3 hours of rendering on an M3 Pro.
+
 ## 3. How to reproduce
 
 ```bash
@@ -216,6 +242,10 @@ VITE_FORCE_WEATHER=storm PERF_GPU=1 PERF_MARKET=1 PERF_LABEL=storm npx playwrigh
 E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/place-art.spec.ts e2e/storm-art.spec.ts \
   e2e/bethlehem-art.spec.ts e2e/letter-art.spec.ts --project=desktop-chromium -g phone
 #   → test-results/<spec>/after/phone-*-art.txt
+
+# People in the game (§2d): desktop and phone, the house and the market, data-texture-mb with every shot
+E2E_SHOTS=1 ART_SHOTS=after npx playwright test e2e/people-art.spec.ts --project=desktop-chromium
+#   → test-results/people-art/after/<viewport>-<nn>-<name>.png (and -crop.png), <viewport>-art.txt
 
 # Sizes
 npm run build && npm run perf:bundle

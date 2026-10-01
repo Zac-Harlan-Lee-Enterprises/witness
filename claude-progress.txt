@@ -424,3 +424,23 @@ NEXT   : Record the owner's approval of rec-teaser (a person, not an agent): an 
          test that rec-teaser is approved by that entry. For more realism: re-render with `node scripts/art-build.mjs
          teaser --shots <n>` after improving the city's houses (teaser_city.py) and the market's walls.
 BLOCKED: none (the approval is for a person to record).
+
+--- 2026-10-01  Claude Opus 5.5 (world-people agent) — realistic world figures (feat/realistic-world-people) ---
+DONE   : The people in the world are rebuilt on MakeHuman bodies (ADR-0017, within the owner's 2026-09-26 approval):
+         tools/art/lib/world_body.py (the portrait's identity weights, MakeHuman's default skeleton and skin weights
+         pinned in makehuman-files.json, re-posed to a relaxed stance), world_person.py (the portrait's skin maps and
+         measured correction, hair and beard shells, eyes, props from people.py bound to MakeHuman bones),
+         world_cloth.py (tunic body let out from the body surface and hung from the chest, skirt/veils/head cloths/
+         mantles/the story's cloak simulated with Blender cloth; sit and lie start from the posed body),
+         world_motion.py (normative gait walk, contrapposto, talk, cross-legged sit, lie). build_people.py uses them,
+         gains --force; sheet contract unchanged. All 110 sheets re-rendered (every light, overlays, shadows, -low);
+         shadow_edges WHITE 0.985 -> 0.992 (WebP darkened a near-white edge). e2e/people-art.spec.ts review captures.
+         Docs: ADR-0017, technical-art-guide §7, performance §2d, asset manifest, portraits.md.
+TESTS  : Vitest 723 -> 728 (MakeHuman rig pinned/scope/provenance; nobody cut off by the frame; people's heights).
+         typecheck, lint, content:validate, knip, prettier clean. e2e on 4493/5493: chapter, smoke, mobile,
+         people-shadows, a11y: 20 passed, 1 skipped.
+NEXT   : Realism still short at game size: faces are dark and featureless under the 32° figure camera and headwear;
+         try a soft fill light for people (lighting.setup_* for figures) and re-render with
+         `node scripts/art-build.mjs people --force`. Head bandage over a turban is thin; a cloak worn standing is a
+         stiff cape (world_cloth._curtain for mark garments: less pad, lighter fabric).
+BLOCKED: none.
