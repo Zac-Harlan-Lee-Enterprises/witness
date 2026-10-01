@@ -3,8 +3,8 @@ import { z } from 'zod';
 /**
  * A chapter's teaser: a short film that plays before the chapter the first
  * time a profile starts it, with the words as real text cued to the film's
- * time (never burned into the picture), and an original score cued to the
- * same timeline. Content data (src/content/chapters/<id>/teaser.ts); the
+ * time (never burned into the picture), and music cued to the same
+ * timeline. Content data (src/content/chapters/<id>/teaser.ts); the
  * words are a content record like any other and need a human editor's
  * approval (docs/content-governance.md).
  */
@@ -25,9 +25,9 @@ export const TeaserCueSchema = z
 export type TeaserCue = z.infer<typeof TeaserCueSchema>;
 
 /**
- * The moods of a film's score, each composed by the game's own synthesiser
- * (src/infrastructure/audio/film-score.ts): a section plays from its `at`
- * until the next one starts.
+ * The moods of a film's music: a section plays from its `at` until the next
+ * one starts, each with one of the game's recorded tracks
+ * (src/application/music.ts: FILM_MOOD_MUSIC).
  */
 export const FILM_MOODS = [
   'dawn',

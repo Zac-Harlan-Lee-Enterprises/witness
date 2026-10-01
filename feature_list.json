@@ -371,8 +371,8 @@
   {
     "id": "chapter-1-teaser",
     "category": "functional",
-    "description": "A teaser film plays before a profile's first new game of Chapter 1 (and again from chapter select): a silent 3D film with the words as real text cued to its time, a synthesised score cued to it, Skip always available (button, Escape, Enter, Space), pause and play; under reduced motion or when the film can't load, the poster with the words stepped by Next; never replayed on its own once watched or skipped (profile.seenTeasers); the film is never cached by the service worker.",
-    "verification": "npx --no-install vitest run tests/unit/domain/teaser.test.ts tests/content/teaser.test.ts tests/ui/teaser.test.tsx tests/unit/infrastructure/film-score.test.ts tests/unit/app/art-cache.test.ts",
+    "description": "A teaser film plays before a profile's first new game of Chapter 1 (and again from chapter select): a silent 3D film with the words as real text cued to its time, the recorded music cued to it (ADR-0018), Skip always available (button, Escape, Enter, Space), pause and play; under reduced motion or when the film can't load, the poster with the words stepped by Next; never replayed on its own once watched or skipped (profile.seenTeasers); the film is never cached by the service worker.",
+    "verification": "npx --no-install vitest run tests/unit/domain/teaser.test.ts tests/content/teaser.test.ts tests/ui/teaser.test.tsx tests/unit/infrastructure/recorded-music.test.ts tests/unit/app/art-cache.test.ts",
     "priority": 2,
     "hermetic": true,
     "passes": true
@@ -391,6 +391,15 @@
     "category": "functional",
     "description": "Chapters 1 and 2 play 20–30 minutes for a first-time player. Chapter 1 adds Rivka's linen (packed with the remedy; a strip can bind Menashe), Eli the shepherd boy on the ridge (bread, what he saw, Shimon's message), Whose Cloak? (a deduction at the inn) and sitting with Natan before Yair's story. Chapter 2 adds Grandmother's corner (a first net), Hodaya of the Magdala crew, Oded's Leaking Boat (a sequence puzzle whose result shows in the storm), the lamp at the stern, seeing to the others, the net on the way home and telling Nikanor. Play time is measured headlessly; content added after the owner's approval stays awaiting review.",
     "verification": "npx --no-install vitest run tests/integration/play-time.test.ts tests/integration/playthrough.test.ts tests/integration/storm-on-galilee-playthrough.test.ts tests/content/road-to-jericho.test.ts tests/content/storm-on-galilee.test.ts tests/unit/content/approvals.test.ts",
+    "priority": 2,
+    "hermetic": true,
+    "passes": true
+  },
+  {
+    "id": "recorded-music",
+    "category": "functional",
+    "description": "Background music is four recorded Pixabay tracks (owner's decision 2026-10-01, ADR-0018) chosen by mood through AudioPort: oud and qanun for home, markets and menus; Sacred Sands for journeys; the mystery for danger and the storm; the flute for reflection, Scripture, Paul's letter and the endings. Cross-fades, no needless restarts, last request wins, loops, ducking under dialogue and reading, silence before Galilee's calm, tension that stops with the story, teaser music cued to the film; starts on a gesture, silent on failure, paused when muted or hidden, offline from its own range-request cache; credits in About this game; provenance checked by SHA-256.",
+    "verification": "npx --no-install vitest run tests/unit/application/music.test.ts tests/unit/infrastructure/recorded-music.test.ts tests/unit/infrastructure/media-deck.test.ts tests/unit/infrastructure/audio.test.ts tests/content/music.test.ts tests/ui/music.test.tsx",
     "priority": 2,
     "hermetic": true,
     "passes": true

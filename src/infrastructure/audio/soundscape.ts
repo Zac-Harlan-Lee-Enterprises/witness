@@ -1,8 +1,8 @@
-import type { AmbienceId, FootstepSurface, MusicId, SfxId } from '@/application/ports';
+import type { AmbienceId, FootstepSurface, SfxId } from '@/application/ports';
 
 /**
  * Sound design as data (pure, unit-tested); synth-audio.ts turns it into
- * WebAudio. Everything is original and synthesised.
+ * WebAudio. Every effect and ambience is original and synthesised.
  *
  * - Effects have recipes of plucked (lyre-like), bell and breath (noise)
  *   partials, so each moment has its own voice: a bright bell for a clue,
@@ -10,7 +10,8 @@ import type { AmbienceId, FootstepSurface, MusicId, SfxId } from '@/application/
  * - Each place has a bed of filtered noise plus sparse events: voices and
  *   pottery clinks in the market, a crackling hearth at home, whistling
  *   gusts on the road, birdsong and trickling water in Jericho.
- * - Music plays short modal phrases over a drone rather than random notes.
+ *
+ * The background music is recorded (recorded-music.ts), not synthesised.
  */
 export interface Tone {
   /** pluck: lyre-like string; bell: inharmonic partials; breath: filtered noise; knock: a short falling thud. */
@@ -163,69 +164,4 @@ export function scheduleAmbience(
     }
   }
   return out.sort((a, b) => a.at - b.at);
-}
-
-export interface MusicStyle {
-  /** MIDI notes of the mode, low to high. */
-  notes: readonly number[];
-  beat: number;
-  drone: readonly number[];
-  /** Phrases as indices into `notes`; −1 is a rest. */
-  phrases: ReadonlyArray<readonly number[]>;
-  /** A soft frame-drum pulse on the first beat of each phrase. */
-  drum: boolean;
-}
-
-// D dorian and neighbours, in a lyre-like range.
-export const MUSIC: Record<Exclude<MusicId, 'none'>, MusicStyle> = {
-  home: {
-    notes: [62, 64, 65, 67, 69, 71, 72, 74],
-    beat: 0.42,
-    drone: [38, 45],
-    phrases: [
-      [0, 2, 4, 3, 2, -1, 1, 0],
-      [4, 5, 4, 2, 3, -1, 2, -1],
-      [2, 4, 7, 6, 4, -1, 3, 2],
-    ],
-    drum: false,
-  },
-  journey: {
-    notes: [62, 64, 65, 69, 72, 74, 76],
-    beat: 0.34,
-    drone: [38, 45],
-    phrases: [
-      [0, 1, 3, 1, 2, 1, 0, -1],
-      [3, 4, 3, 1, 2, -1, 1, -1],
-      [0, 3, 5, 4, 3, 1, 2, 0],
-    ],
-    drum: true,
-  },
-  tension: {
-    notes: [50, 51, 55, 57, 58, 62],
-    beat: 0.6,
-    drone: [38, 39],
-    phrases: [
-      [0, -1, 1, -1, 0, -1, -1, -1],
-      [2, -1, 1, 0, -1, -1, 3, -1],
-    ],
-    drum: false,
-  },
-  reflection: {
-    notes: [62, 65, 67, 69, 72, 74],
-    beat: 0.7,
-    drone: [38, 50],
-    phrases: [
-      [0, 2, 3, -1, 2, -1, 1, -1],
-      [3, 4, 5, -1, 4, 3, -1, -1],
-    ],
-    drum: false,
-  },
-};
-
-/** The next phrase to play: never the same one twice in a row. */
-export function nextPhrase(style: MusicStyle, previous: number, r: () => number): number {
-  if (style.phrases.length < 2) return 0;
-  let i = Math.floor(r() * style.phrases.length);
-  if (i === previous) i = (i + 1) % style.phrases.length;
-  return i;
 }

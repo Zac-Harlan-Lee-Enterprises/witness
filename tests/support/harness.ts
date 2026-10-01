@@ -3,8 +3,11 @@ import { DialogueController } from '@/application/dialogue-controller';
 import { GameController } from '@/application/game-controller';
 import { GameSession } from '@/application/game-session';
 import type {
+  AmbienceId,
   AnalyticsEvent,
   FootstepSurface,
+  MusicId,
+  MusicOptions,
   WorldConversation,
   WorldEmphasis,
   WorldEntityView,
@@ -50,11 +53,24 @@ export function loadJericho(): Chapter {
   return loadChapter(ROAD_TO_JERICHO);
 }
 
-/** An AudioPort double that records footsteps (everything else is silent). */
+/** An AudioPort double that records footsteps, ambience and music (and plays nothing). */
 export class RecordingAudio extends SilentAudio {
   footsteps: FootstepSurface[] = [];
+  ambience: AmbienceId[] = [];
+  /** Every setMusic call: the mood, and the options when there were any. */
+  music: Array<MusicId | [MusicId, MusicOptions]> = [];
+  ducks: boolean[] = [];
   override playFootstep(surface: FootstepSurface): void {
     this.footsteps.push(surface);
+  }
+  override setAmbience(id: AmbienceId): void {
+    this.ambience.push(id);
+  }
+  override setMusic(id: MusicId, options?: MusicOptions): void {
+    this.music.push(options ? [id, options] : id);
+  }
+  override setMusicDucked(ducked: boolean): void {
+    this.ducks.push(ducked);
   }
 }
 

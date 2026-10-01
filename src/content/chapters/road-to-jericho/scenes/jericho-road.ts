@@ -416,5 +416,11 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
   ],
   ambience: 'wind',
   mood: 'wilderness',
+  // Uneasy music from the moment you find the man by the road, until you
+  // have chosen what to do for him.
   music: 'journey',
+  musicChanges: [
+    { when: { type: 'flag', flag: 'incident-seen' }, music: 'tension' },
+    { when: { type: 'choiceMade', choice: 'choice-traveler' }, music: 'journey' },
+  ],
 };

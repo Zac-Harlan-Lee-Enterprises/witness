@@ -163,6 +163,7 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   // narration, if it opens at once: the lake's art is already loaded).
   await continueDialogue(page);
   await expectScene(page, 'Out on the lake');
+  await expect(page.locator('html')).toHaveAttribute('data-music', 'sacred-sands');
   await readNarration(page); // under way
   await expect(weather(page)).toHaveAttribute('data-weather', 'clear');
   await snap(page, 'storm-06-lake-dusk');
@@ -171,6 +172,11 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await goTo(page, 'Examine The view from the bow');
   await readUntilChoice(page, 'Get the sail in!');
   await expect(weather(page)).toHaveAttribute('data-weather', 'wind');
+  // Tension music once the wind rises, in the same place.
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-music',
+    'middle-eastern-cinematic-mystery',
+  );
   await snap(page, 'storm-07-gust');
   await choose(page, 'Get the sail in!');
   await endDialogue(page);
@@ -201,6 +207,14 @@ test('play A Storm on Galilee from a new profile to the chapter summary', async 
   await endDialogue(page);
   await readNarration(page); // the calm
   await expect(weather(page)).toHaveAttribute('data-weather', 'clear');
+  // The tension stops: a few seconds of silence, then quiet music returns.
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-music',
+    'meditative-middle-eastern-flute',
+  );
+  await expect(page.locator('html')).toHaveAttribute('data-music-playing', 'true', {
+    timeout: 20_000,
+  });
   await snap(page, 'storm-11-calm');
   // See to the others before Uncle Elazar will turn for home.
   await goTo(page, 'Talk to The little boat off the port side');

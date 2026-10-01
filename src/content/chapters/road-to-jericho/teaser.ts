@@ -5,7 +5,7 @@ import { withTeaserApproval } from '../../shared/approvals';
 /**
  * The teaser that plays before Chapter 1 the first time a profile starts it:
  * a 57-second film (rendered offline by tools/art/build_teaser.py) with its
- * words as text cues and a score from the game's own synthesiser.
+ * words as text cues and the game's recorded music, section by section.
  *
  * Every story detail follows the chapter itself: Aunt Miriam's friend
  * Rivka's son Natan has a fever in Jericho, Miriam has made a remedy and

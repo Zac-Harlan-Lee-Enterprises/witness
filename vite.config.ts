@@ -10,6 +10,7 @@ import {
   CACHED_ON_FIRST_USE_PORTRAITS,
   TEASER_FILM,
 } from './src/app/art-cache';
+import { MUSIC_CACHE, MUSIC_FILE } from './src/infrastructure/audio/music-cache';
 
 /**
  * Static-host friendly build.
@@ -99,6 +100,21 @@ export default defineConfig(({ mode }) => {
               // A RegExp (not a function): Workbox copies it into the worker.
               urlPattern: TEASER_FILM,
               handler: 'NetworkOnly',
+            },
+            {
+              // Music: served from its own cache with range-request support (the
+              // <audio> element asks for byte ranges, answered as 206 slices of the
+              // whole cached file). The page fills the cache with whole files the
+              // first time music plays (src/infrastructure/audio/music-cache.ts);
+              // partial responses are never cached. Offline before that, the
+              // music is silent and the game plays on.
+              urlPattern: MUSIC_FILE,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: MUSIC_CACHE,
+                rangeRequests: true,
+                cacheableResponse: { statuses: [200] },
+              },
             },
             {
               // Art manifests say which files make up a place (and version their

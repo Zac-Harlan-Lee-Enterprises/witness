@@ -383,7 +383,14 @@ export const OPEN_LAKE: ChapterInput['scenes'][number] = {
   ],
   ambience: 'wind',
   mood: 'wilderness',
-  music: 'tension',
+  // Travelling music as the boat puts out, tension once the wind rises, and
+  // when the wind stops all at once, a few seconds of silence before quiet
+  // music returns.
+  music: 'journey',
+  musicChanges: [
+    { when: flag('wind-rising'), music: 'tension' },
+    { when: flag('great-calm'), music: 'reflection', silence: 5 },
+  ],
   weather: 'clear',
   weatherChanges: [
     { when: flag('wind-rising'), weather: 'wind' },

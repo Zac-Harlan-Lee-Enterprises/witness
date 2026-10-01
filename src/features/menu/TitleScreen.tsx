@@ -3,6 +3,7 @@ import { useStore } from '../common/hooks';
 import { Modal } from '../common/Modal';
 import { useServices } from '../common/services';
 import { JourneyArt } from './JourneyArt';
+import { MusicCredits } from './MusicCredits';
 
 export function TitleScreen({
   onPlay,
@@ -115,6 +116,7 @@ function AboutDialog({ onClose }: { onClose: () => void }) {
         against sources, and they are labeled “Awaiting editorial review” until a human editor
         approves them.
       </p>
+      <MusicCredits />
     </Modal>
   );
 }
