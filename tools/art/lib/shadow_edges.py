@@ -23,8 +23,9 @@ MARGIN = 12
 INSET = 4
 # A frame whose outermost ring is at least this white needs no margin (a
 # little above what the browser check allows, 248/255: WebP compression can
-# darken a near-white edge by a few levels).
-WHITE = 0.992
+# darken a near-white edge by a few levels: at 0.992, two lamp shadows
+# came out at 247 once compressed).
+WHITE = 0.996
 
 
 def ring_is_white(frame):
