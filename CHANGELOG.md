@@ -2,6 +2,12 @@
 
 Witness follows [semantic versioning](https://semver.org/). Before 1.0, a minor version adds player-facing features and a patch fixes things. 1.0 comes when the owner has approved all the chapters' content. The version shows on the title screen (`package.json`).
 
+## 0.9.0 — 2026-10-01
+- Realistic people in the world: every character rebuilt on a MakeHuman body that matches their portrait, with simulated linen and wool clothes and a real gait (#23).
+- Art polish: sharper phone art, the lake sails' moon shadows, a portrait pass (skin texture, distinct veils, shaped hair) and the Laodicea dye works (#21).
+- The teaser film re-rendered: shot 7 in focus, a detailed city, rock doves, cliffs, clouds and fired clay (#22).
+- Pylance analyses only the art tools (#17).
+
 ## 0.8.0 — 2026-09-30
 - Longer chapters: new errands, side quests, people, puzzles and conversations in all four chapters (20–30+ minutes each for a player who explores) (#18, #19).
 - New story text stays in review until the owner approves it.
