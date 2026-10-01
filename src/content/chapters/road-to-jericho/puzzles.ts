@@ -1,11 +1,13 @@
 import type { ChapterInput } from '@/domain/chapter';
 
 /**
- * Four puzzles, each growing out of the story:
+ * Five puzzles, each growing out of the story:
  *  1. p-satchel         — what to carry (resource allocation; knowledge changes what's "enough")
  *  2. p-measure         — settle a market dispute fairly (environmental logic; optional side quest)
  *  3. p-route           — which way down? (evidence-backed deduction; uses what you learned in Jerusalem)
  *  4. p-what-happened   — read the scene (ordering evidence; a conclusion that admits uncertainty)
+ *  5. p-cloak           — whose cloak is this? (deduction at the inn; optional side quest that
+ *                         reads the road's evidence again)
  */
 export const PUZZLES: ChapterInput['puzzles'] = [
   {
@@ -13,7 +15,7 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     type: 'packing',
     title: 'Pack the Satchel',
     intro:
-      'Your satchel holds a load of 6. The remedy must come. Everything else is a choice: what will you need on a hot road — and what might someone else need?',
+      'Your satchel holds a load of 6. The remedy and Rivka’s linen must come. Everything else is a choice: what will you need on a hot road — and what might someone else need?',
     capacity: 6,
     choiceId: 'choice-packing',
     rules: [
@@ -22,6 +24,13 @@ export const PUZZLES: ChapterInput['puzzles'] = [
         description: 'Bring Aunt Miriam’s remedy',
         rule: { type: 'includes', item: 'remedy' },
         failureHint: 'You can’t leave without the remedy — it’s the whole reason for the journey.',
+      },
+      {
+        id: 'linen',
+        description: 'Bring Rivka’s linen',
+        rule: { type: 'includes', item: 'linen-bundle' },
+        failureHint:
+          'Rivka’s linen is already paid for, and Aunt Miriam promised it. It has to come too.',
       },
       {
         id: 'capacity',
@@ -87,7 +96,7 @@ export const PUZZLES: ChapterInput['puzzles'] = [
     hints: [
       {
         tier: 1,
-        text: 'Start with what you MUST carry: the remedy, and enough water. Then look at how much room is left.',
+        text: 'Start with what you MUST carry: the remedy, Rivka’s linen and enough water. Then look at how much room is left.',
       },
       {
         tier: 2,
@@ -95,11 +104,11 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       },
       {
         tier: 3,
-        text: 'There is no single right answer. Any load of 6 or less that includes the remedy and enough water works. Think about what might matter on the road: food, linen and oil, a lamp, or a warm cloak.',
+        text: 'There is no single right answer. Any load of 6 or less that includes the remedy, Rivka’s linen and enough water works. Think about what might matter on the road: food, linen strips and oil, a lamp, or a warm cloak.',
       },
     ],
     explanation:
-      'You packed within your limit and made sure you had the remedy and enough water. Everything else you chose will shape what you can do on the road.',
+      'You packed within your limit and made sure you had the remedy, Rivka’s linen and enough water. Everything else you chose will shape what you can do on the road.',
     recordIds: [],
     onSolved: [
       { type: 'setFlag', flag: 'packed', value: true },
@@ -357,6 +366,102 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       {
         type: 'showMessage',
         text: 'You understand what happened here. Now — the man in the shade.',
+        tone: 'narration',
+      },
+    ],
+  },
+  {
+    id: 'p-cloak',
+    type: 'deduction',
+    title: 'Whose Cloak?',
+    intro:
+      'A goatherd brought Salome a good wool cloak with a blue stripe, and she gave him bread for it. You have seen a blue stripe before today. Whose cloak is it? Choose an answer, and back it with evidence.',
+    question: 'Whose cloak is this?',
+    options: [
+      {
+        id: 'menashe',
+        label: 'The robbed traveler’s: Menashe’s own cloak',
+        description: 'Taken on the road below the bend, then thrown away.',
+      },
+      {
+        id: 'jericho',
+        label: 'Someone from Jericho’s',
+        description: 'Lost or sold by someone from the town.',
+      },
+      {
+        id: 'goatherd',
+        label: 'The goatherd stole it',
+        description: 'He took it himself and made up a story.',
+      },
+    ],
+    answer: 'menashe',
+    requiredEvidence: 2,
+    evidence: [
+      {
+        clueId: 'clue-cloak-hem',
+        reliable: true,
+        bearsOn: [{ option: 'menashe', stance: 'supports' }],
+        note: 'A strip is torn out of the hem, as if it was ripped away on a thorn — just like a cloak pulled roughly off a man.',
+      },
+      {
+        clueId: 'clue-torn-cloth',
+        reliable: true,
+        bearsOn: [
+          { option: 'menashe', stance: 'supports' },
+          { option: 'jericho', stance: 'against' },
+        ],
+        note: 'The blue-striped strip on the thornbush below the bend would fit that gap in the hem.',
+      },
+      {
+        clueId: 'clue-cloak-oil',
+        reliable: true,
+        bearsOn: [{ option: 'menashe', stance: 'supports' }],
+        note: 'It smells of olive oil. Menashe sells oil, and his jar broke where he was robbed.',
+      },
+      {
+        clueId: 'clue-cloak-found',
+        reliable: true,
+        bearsOn: [
+          { option: 'menashe', stance: 'supports' },
+          { option: 'goatherd', stance: 'against' },
+        ],
+        note: 'It was found in the rocks north of the road, below the bend — the way the robbers’ tracks went. And a thief doesn’t usually tell the innkeeper exactly where he found what he sells.',
+      },
+      {
+        clueId: 'clue-blue-stripes',
+        reliable: false,
+        bearsOn: [{ option: 'jericho', stance: 'supports' }],
+        note: 'Plenty of cloaks have blue stripes. That’s a reason to look closely — but it doesn’t tell you whose this one is.',
+      },
+    ],
+    wrongAnswerFeedback: {
+      jericho:
+        'Look at the hem and smell the cloth. And think about where it was found — and what you saw below the bend.',
+      goatherd:
+        'Would a thief bring a stolen cloak to the nearest inn and say exactly where he found it? Think about where it was lying.',
+    },
+    hints: [
+      {
+        tier: 1,
+        text: 'Examine the cloak itself, and ask Salome where it came from. Then remember the road below the bend.',
+      },
+      {
+        tier: 2,
+        text: 'Two things on the cloak tell a story: its hem, and its smell. And a blue-striped strip was caught on a thornbush where the traveler was robbed.',
+      },
+      {
+        tier: 3,
+        text: 'It is very likely Menashe’s. Present two pieces of reliable evidence — for example, the strip torn from the hem and the smell of olive oil.',
+      },
+    ],
+    explanation:
+      'The robbers took Menashe’s cloak and, it seems, threw it away in the rocks as they went north — perhaps it was too easy to recognise. The torn hem, the oil, and where it was found all point the same way. You can’t be certain, but it is the best reading of the evidence, and Menashe can say for sure when he sees it.',
+    recordIds: [],
+    onSolved: [
+      { type: 'setFlag', flag: 'cloak-identified', value: true },
+      {
+        type: 'showMessage',
+        text: 'It’s almost certainly Menashe’s cloak. Tell Salome.',
         tone: 'narration',
       },
     ],

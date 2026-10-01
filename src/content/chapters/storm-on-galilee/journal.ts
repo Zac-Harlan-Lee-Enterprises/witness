@@ -43,6 +43,7 @@ export const JOURNAL: ChapterInput['journal'] = [
   person('jp-ami', 'Ami', 'Shifra’s son', 'ami', 8),
   person('jp-oded', 'Oded', 'Shifra’s brother, a potter', 'oded', 9),
   person('jp-dinah', 'Dinah', 'A listener in the crowd', 'dinah', 10),
+  person('jp-hodaya', 'Hodaya', 'A young fisher from Magdala', 'hodaya', 11),
 
   // Places
   {
@@ -92,12 +93,38 @@ export const JOURNAL: ChapterInput['journal'] = [
     order: 1,
   },
   {
+    id: 'je-corner',
+    category: 'events',
+    title: 'Grandmother’s corner',
+    summary: 'The family’s mark, whole again',
+    recordIds: ['rec-e-corner'],
+    unlockWhen: { type: 'puzzleSolved', puzzle: 'p-corner' },
+    order: 2,
+  },
+  {
     id: 'je-brine',
     category: 'events',
     title: 'Nikanor’s jar net',
     summary: 'Every knot where it should be',
     recordIds: ['rec-p-nikanor'],
-    order: 2,
+    order: 3,
+  },
+  {
+    id: 'je-leak',
+    category: 'events',
+    title: 'A leaking boat',
+    summary: 'Oded’s cracked seam',
+    recordIds: ['rec-e-leak'],
+    order: 4,
+  },
+  {
+    id: 'je-lamp',
+    category: 'events',
+    title: 'A lamp at the stern',
+    summary: 'A light for the boats behind',
+    recordIds: ['rec-e-lamp'],
+    unlockWhen: flag('lamp-hung'),
+    order: 5,
   },
   {
     id: 'je-storm',
@@ -106,7 +133,7 @@ export const JOURNAL: ChapterInput['journal'] = [
     summary: 'A squall in the dark',
     recordIds: ['rec-e-storm'],
     unlockWhen: flag('storm-broke'),
-    order: 3,
+    order: 6,
   },
   {
     id: 'je-calm',
@@ -115,7 +142,7 @@ export const JOURNAL: ChapterInput['journal'] = [
     summary: 'All at once',
     recordIds: ['rec-e-calm'],
     unlockWhen: flag('great-calm'),
-    order: 4,
+    order: 7,
   },
   {
     id: 'je-home',
@@ -123,7 +150,16 @@ export const JOURNAL: ChapterInput['journal'] = [
     title: 'Home before dawn',
     summary: 'Grandmother’s lamp on the jetty',
     recordIds: ['rec-e-home'],
-    order: 5,
+    order: 8,
+  },
+  {
+    id: 'je-nikanor',
+    category: 'events',
+    title: 'News for Nikanor',
+    summary: 'Everyone safe — and the jars?',
+    recordIds: ['rec-e-nikanor'],
+    unlockWhen: flag('told-nikanor'),
+    order: 9,
   },
   {
     id: 'je-story',
@@ -132,7 +168,7 @@ export const JOURNAL: ChapterInput['journal'] = [
     summary: 'Mark 4:35–41',
     recordIds: ['rec-para-mark-4', 'rec-mark-4-35-41'],
     unlockWhen: SEEN,
-    order: 6,
+    order: 10,
   },
 
   // History & culture

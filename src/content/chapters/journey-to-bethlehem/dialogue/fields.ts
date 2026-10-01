@@ -1,4 +1,4 @@
-import { chose, flag, not, opt, say, setFlag, type DialogueInput } from './helpers';
+import { all, chose, flag, has, not, opt, say, setFlag, type DialogueInput } from './helpers';
 
 const lambFound = { type: 'recordChoice' as const, choice: 'choice-lamb', option: 'found' };
 const lambLeft = { type: 'recordChoice' as const, choice: 'choice-lamb', option: 'left' };
@@ -114,8 +114,36 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
         next: 'return3',
       }),
       say('return3', 'yonatan', 'Now go home — it’s nearly dark, and Aunt Tamar will worry.'),
-      say('after-found', 'yonatan', 'Forty, all asleep. Go home, {player}.'),
-      say('after-left', 'yonatan', 'Go on home — Yoram’s gone looking. We’ll manage.'),
+      say('after-found', 'yonatan', 'Forty, all asleep. Go home, {player}.', { next: 'watch' }),
+      say('after-left', 'yonatan', 'Go on home — Yoram’s gone looking. We’ll manage.', {
+        next: 'watch',
+      }),
+      say('watch', 'yonatan', 'Unless you want to keep me company a moment?', {
+        choices: [
+          opt('night', 'What do you do out here all night?', 'w-night', { once: true }),
+          opt('afraid', 'Do you ever get scared in the dark?', 'w-afraid', { once: true }),
+          opt('cloak', 'Is the cloak warm enough?', 'w-cloak', { once: true }),
+          opt('go', 'I’d better go home.'),
+        ],
+      }),
+      say(
+        'w-night',
+        'yonatan',
+        'Keep the fire in, listen, count them again when I can’t sleep. Yoram takes the first half of the night and I take the second. Mostly it’s stars, and sheep breathing, and Yoram snoring.',
+        { next: 'watch' },
+      ),
+      say(
+        'w-afraid',
+        'yonatan',
+        'Sometimes. A jackal calls, or a stone rolls down the gully, and your heart jumps. Then you remember the sheep are more scared than you are, and somebody has to be the brave one.',
+        { expression: 'worried', next: 'watch' },
+      ),
+      say(
+        'w-cloak',
+        'yonatan',
+        'Aunt Tamar’s cloak could keep a donkey warm. Tell her I said so. Tell her I said thank you, too — I always forget.',
+        { expression: 'glad', next: 'watch' },
+      ),
     ],
   },
   {
@@ -136,6 +164,9 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
             when: { type: 'all', of: [flag('lamb-missing'), not(chose('choice-lamb'))] },
           }),
           opt('newborn', 'Whose lamb is that you’re holding?', 'newborn', { once: true }),
+          opt('milk', 'I have a jar of goat’s milk. Could the lamb have some?', 'milk', {
+            when: all(has('milk'), flag('asked-newborn'), not(chose('choice-milk'))),
+          }),
           opt('bye', 'Rest well, Yoram.'),
         ],
       }),
@@ -154,8 +185,51 @@ export const FIELDS_DIALOGUES: DialogueInput[] = [
       say('lamb', 'yoram', 'Wherever the signs say. Don’t guess, child — look.', { next: 'hub' }),
       say('newborn', 'yoram', 'Born this morning. Its mother is sulking, so I’m keeping it warm.', {
         expression: 'glad',
-        next: 'hub',
+        effects: [setFlag('asked-newborn')],
+        next: 'newborn2',
       }),
+      say(
+        'newborn2',
+        'yoram',
+        'She won’t let it feed yet. She will, by morning, most likely. But it’s a long, cold night to be hungry in.',
+        { next: 'hub' },
+      ),
+      say(
+        'milk',
+        'yoram',
+        'Goat’s milk? …It would take it. It’s hungry enough to take anything. But that jar is for somebody, isn’t it?',
+        {
+          choices: [
+            opt('share', 'Pour some for the lamb. Dodi can have the rest.', 'shared', {
+              effects: [
+                { type: 'recordChoice', choice: 'choice-milk', option: 'shared' },
+                { type: 'adjustTrust', character: 'yoram', delta: 1 },
+              ],
+            }),
+            opt('keep', 'It’s for my little cousin. I’d better not.', 'kept', {
+              effects: [{ type: 'recordChoice', choice: 'choice-milk', option: 'kept' }],
+            }),
+          ],
+        },
+      ),
+      say(
+        'shared',
+        'narrator',
+        'Yoram dips a corner of his cloak in the milk and lets the lamb suck it. Then again. Then again, until half the jar is gone.',
+        { next: 'shared2' },
+      ),
+      say(
+        'shared2',
+        'yoram',
+        'Look at it go. Tell your little cousin he shared his supper with a lamb tonight. He can boast about it when he’s older.',
+        { expression: 'glad', next: 'hub' },
+      ),
+      say(
+        'kept',
+        'yoram',
+        'Quite right. A promise is a promise. Its mother will come round; they usually do.',
+        { next: 'hub' },
+      ),
     ],
   },
   {

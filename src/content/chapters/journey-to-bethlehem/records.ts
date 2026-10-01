@@ -41,6 +41,28 @@ function draft(options: DraftOptions): Governance {
   };
 }
 
+/**
+ * Text added on 2026-09-30, when the chapter was made longer. It was written
+ * after the owner's approval of 2026-09-26, which therefore does not cover it
+ * (see withApprovals): it stays in review until a named person approves it.
+ */
+const LONGER = '2026-09-30';
+
+/** The AI-draft preset for the longer chapter's new text, dated to when it was written. */
+function longerDraft(options: DraftOptions): Governance {
+  const g = aiDraft(options);
+  return {
+    ...g,
+    history: g.history.map((h) => ({
+      ...h,
+      date: LONGER,
+      summary: options.sourced
+        ? 'Added when Chapter 3 was made longer; checked against the WEB text by an AI assistant. Needs human review.'
+        : 'Added when Chapter 3 was made longer. Needs human review.',
+    })),
+  };
+}
+
 const ref = (
   book: ScriptureRef['book'],
   chapter: number,
@@ -59,6 +81,15 @@ const scripture = (id: string, title: string, refs: ScriptureRef[], sources: str
 });
 
 const FICTION = draft({ confidence: 'not-applicable' });
+const LONGER_FICTION = longerDraft({ confidence: 'not-applicable' });
+const newFiction = (id: string, title: string, body: string): Record => ({
+  id,
+  kind: 'fiction',
+  title,
+  body,
+  sources: [],
+  governance: LONGER_FICTION,
+});
 const fiction = (id: string, title: string, body: string): Record => ({
   id,
   kind: 'fiction',
@@ -165,6 +196,17 @@ export const RECORDS: ChapterInput['records'] = [
     sources: ['src-web-1sa16', 'src-web-1sa17'],
     body: 'Saba Amram’s remark is a paraphrase: 1 Samuel 16:11 says the youngest son of Jesse was keeping the sheep, and 1 Samuel 17:15 says David went back and forth to feed his father’s sheep at Bethlehem.',
     governance: draft({ confidence: 'not-applicable', sourced: true }),
+  },
+
+  {
+    id: 'rec-para-ruth',
+    kind: 'paraphrase',
+    title: 'Naomi and Ruth come home to Bethlehem',
+    scripture: [ref('Ruth', 1, 1), ref('Ruth', 1, 19), ref('Ruth', 3, 2)],
+    checkedAgainstTranslation: 'WEB',
+    sources: ['src-web-rut01', 'src-web-rut03'],
+    body: 'Saba Amram retells three verses of Ruth in his own words: in the days of the judges a famine came, and a man of Bethlehem went to live in Moab with his wife and two sons (Ruth 1:1); later Naomi came back to Bethlehem with Ruth, and the whole town was stirred at their coming (1:19); and Naomi said that Boaz would be winnowing barley on the threshing floor that night (3:2). Whether Bethlehem’s threshing floor in this game is the one in the story, nobody knows; Saba says so.',
+    governance: longerDraft({ confidence: 'not-applicable', sourced: true }),
   },
 
   // ── Historical and cultural background ─────────────────────────────────
@@ -619,5 +661,17 @@ export const RECORDS: ChapterInput['records'] = [
     'rec-pl-fields',
     'The fold on the terraces',
     'A fictional sheepfold on the terraces below the village, where your family’s sheep spend the night with the village flock. It is not meant to be the place in Luke’s story.',
+  ),
+
+  // ── Added when the chapter was made longer (in review) ─────────────────
+  newFiction(
+    'rec-e-kid',
+    'Hagit’s runaway kid',
+    'When you asked Hagit for milk for Dodi, her little white kid was out in the lanes again, and she couldn’t chase it on her old knees. You asked who had seen it and worked out where it had gone.',
+  ),
+  newFiction(
+    'rec-e-supper',
+    'Supper by the fire',
+    'At nightfall the whole household ate Tamar’s bread around the eating mat, in the places you had set, and heard about your day. There was one loaf left, and Tamar let you decide what to do with it.',
   ),
 ];

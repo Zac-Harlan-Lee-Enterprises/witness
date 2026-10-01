@@ -1,10 +1,10 @@
 # Game design: Chapter 1, "The Road to Jericho"
 
 **Game:** *Witness: A Journey Through Scripture* (working title, configurable through `VITE_GAME_TITLE`)
-**Slice:** Chapter 1, "The Road to Jericho". About 20–30 minutes of play.
+**Slice:** Chapter 1, "The Road to Jericho". About 20–30 minutes of play for a first-time player; measured in [How long it plays](#17-how-long-it-plays).
 **Status:** Playable end to end on every major branch (see [testing](#where-this-is-verified)). All educational content is an AI-assisted draft that no human has reviewed yet (see [content-governance.md](content-governance.md)).
 
-This document describes the game **as built**. Every rule, number and line of dialogue it mentions comes from the content files in [`src/content/chapters/road-to-jericho/`](../src/content/chapters/road-to-jericho/) and the engine in [`src/domain/`](../src/domain/) and [`src/application/`](../src/application/). Where the code does something different from what the content seems to intend, the difference is called out in [Known design gaps](#17-known-design-gaps-in-the-current-build).
+This document describes the game **as built**. Every rule, number and line of dialogue it mentions comes from the content files in [`src/content/chapters/road-to-jericho/`](../src/content/chapters/road-to-jericho/) and the engine in [`src/domain/`](../src/domain/) and [`src/application/`](../src/application/). Where the code does something different from what the content seems to intend, the difference is called out in [Known design gaps](#18-known-design-gaps-in-the-current-build).
 
 ---
 
@@ -26,7 +26,8 @@ This document describes the game **as built**. Every rule, number and line of di
 14. [Choices and consequences](#14-choices-and-consequences)
 15. [The Good Samaritan connection](#15-the-good-samaritan-connection)
 16. [Reflection and summary](#16-reflection-and-summary)
-17. [Known design gaps in the current build](#17-known-design-gaps-in-the-current-build)
+17. [How long it plays](#17-how-long-it-plays)
+18. [Known design gaps in the current build](#18-known-design-gaps-in-the-current-build)
 
 ---
 
@@ -34,7 +35,7 @@ This document describes the game **as built**. Every rule, number and line of di
 
 The player walks the same road as a well-known Bible story and has to make the kinds of decisions its characters faced, before they learn what the story says.
 
-Aunt Miriam, a healer in Jerusalem, asks the player to carry a fever remedy to her friend Rivka in Jericho. The road down has a reputation for robbers. The player gathers advice, packs a satchel that cannot hold everything, reads the terrain to pick a route, and finds a robbed traveler lying below the bend. That traveler is a Samaritan oil merchant the player may already have met in the market. Whatever the player chooses, the remedy reaches Jericho. There, a fictional fig grower named Yair retells a story he once heard Jesus tell about this same road. The game then shows what Luke 10:25–37 contains, keeping Scripture, paraphrase, history and interpretation clearly apart.
+Aunt Miriam, a healer in Jerusalem, asks the player to carry a fever remedy to her friend Rivka in Jericho, with fine linen for Natan's bed. The road down has a reputation for robbers. The player gathers advice, packs a satchel that cannot hold everything, reads the terrain to pick a route, meets a shepherd boy on the ridge who saw men go down toward the bend at dawn, and finds a robbed traveler lying below the bend. That traveler is a Samaritan oil merchant the player may already have met in the market. Whatever the player chooses, the remedy reaches Jericho. There, a fictional fig grower named Yair retells a story he once heard Jesus tell about this same road. The game then shows what Luke 10:25–37 contains, keeping Scripture, paraphrase, history and interpretation clearly apart.
 
 The game never tells the player what the right answer was. It shows what happened because of their choices and asks them to think.
 
@@ -104,11 +105,11 @@ The code names Acts 6 and 7 ([`ending.ts`](../src/content/chapters/road-to-jeric
 
 | Act | Where | What happens | Main-quest stage | Puzzle / choice |
 |---|---|---|---|---|
-| **1. The errand** | Aunt Miriam's house | Miriam explains that Natan has a fever, hands over the remedy and a letter, and tells the player to ask travelers about the road before packing. | `prepare` starts | — |
-| **2. The market** | Lower market, Jerusalem | The player gathers advice from Shimon, Malik and Tobiah, some reliable and some not. They can shop (map, linen, oil), talk to Hadassah (a prejudice about Samaritans) and Hanan (a question about the Law), and take up the optional side quest *An Honest Measure*. | `prepare` | `p-measure` (optional), `choice-malik`, `choice-prejudice` |
-| **3. Packing and setting out** | Miriam's house → east gate | The satchel holds a load of 6 and the starting kit weighs 9, so something stays home. The east gate opens once packing is done. | `prepare` → `depart` | `p-satchel` → `choice-packing` |
-| **4. The road down** | The road to Jericho | At the fork, the player weighs evidence and proves the ridge path is safe. Along the ridge they drink and can refill at a cistern. Where the path drops back to the road they find a broken jar, footprints and a man lying in the shade. They work out what happened, then decide what to do. | `route` → `descend` → `traveler` | `p-route`, `p-what-happened`, `choice-traveler`, `choice-cloak` |
-| **5. Jericho** | Wayside inn, spring, Rivka's courtyard | The decision plays out at the inn (who brings Menashe in, who pays). If it is dark and the player has no lamp, they rest until dawn. The remedy goes to Rivka, and Yair tells the story he heard. | `deliver` → `listen` | `choice-inn` |
+| **1. The errand** | Aunt Miriam's house | Miriam explains that Natan has a fever, hands over the remedy and a letter, asks the player to collect the linen Rivka ordered from Hadassah, and tells them to ask travelers about the road before packing. | `prepare` starts | — |
+| **2. The market** | Lower market, Jerusalem | The player gathers advice from Shimon, Malik and Tobiah, some reliable and some not, and collects Rivka's linen from Hadassah. They can shop (map, linen strips, oil), hear Hadassah's prejudice about Samaritans, ask Hanan about the Law, press Tobiah on his claim, take a message from Shimon to his grandson (*A Message for Eli*), and take up *An Honest Measure*. | `prepare` | `p-measure` (optional), `choice-malik`, `choice-prejudice` |
+| **3. Packing and setting out** | Miriam's house → east gate | The satchel holds a load of 6; the starting kit and Rivka's linen weigh 10, so something stays home. Miriam can send a greeting to Salome. The east gate opens once packing is done. | `prepare` → `depart` | `p-satchel` → `choice-packing` |
+| **4. The road down** | The road to Jericho | At the fork, the player weighs evidence and proves the ridge path is safe. Along the ridge they drink and can refill at a cistern, where Eli, Old Shimon's grandson, asks for bread and tells what he saw at dawn. Where the path drops back to the road they find a broken jar, footprints and a man lying in the shade. They work out what happened, then decide what to do; with no linen strips, they choose whether to cut Rivka's linen to bind his wounds. | `route` → `descend` → `traveler` | `p-route`, `p-what-happened`, `choice-eli`, `choice-traveler`, `choice-bandage`, `choice-cloak` |
+| **5. Jericho** | Wayside inn, spring, Rivka's courtyard | The decision plays out at the inn (who brings Menashe in, who pays). A striped cloak on the sacks by the gate raises a question: whose is it (*Whose Cloak?*)? If it is dark and the player has no lamp, they rest until dawn. The remedy and the linen go to Rivka; while it steeps, the player sits with Natan and tells him about the road; then Yair comes in from the orchard and tells the story he heard. | `deliver` → `natan` → `listen` | `p-cloak` (optional), `choice-inn` |
 | **6. Scripture Connection** | Full-screen panel | The passage (placeholder text plus a labelled paraphrase), its background in the Law, the historical world, and how Christians have read it. Then comparisons that respond to what the player actually did. | `listen` completes | — |
 | **7. Reflection and summary** | Full-screen panels | An optional private reflection, then a summary of the journey, choices, consequences, relationships, discoveries, themes, Scripture references and history. Nothing is graded. | Chapter complete | — |
 
@@ -167,8 +168,8 @@ These are content looks (`Entity.looks`, `Chapter.playerLooks`) and features wit
 |---|---|
 | Spawns | `start` (7,4) at the beginning of the chapter; `from-market` (7,8) |
 | Opening | The chapter's `opening` effect starts `d-opening` automatically on first load |
-| Aunt Miriam (npc) | `d-miriam`. Her advice changes with progress: who to ask, then how much you can carry, then goodbye. |
-| Travel satchel (use) | Opens `p-satchel`. **Gated:** needs objective `ask-road`. Otherwise the player sees: "Better to learn about the road before deciding what to carry. Ask travelers in the market." Hidden once packed. |
+| Aunt Miriam (npc) | `d-miriam`. Her advice changes with progress: who to ask, then Rivka's linen, then how much you can carry, then goodbye (and, if asked, a greeting for Salome at the inn). |
+| Travel satchel (use) | Opens `p-satchel`. **Gated:** needs objectives `ask-road` and `collect-linen`. Otherwise the player sees why: learn about the road first, and have Rivka's linen to pack with it. Hidden once packed. |
 | Herb baskets (examine) | Flavour message |
 | Exit `house-door` → market | Needs `q-remedy` active (started by the opening conversation) |
 
@@ -178,14 +179,14 @@ These are content looks (`Entity.looks`, `Chapter.playerLooks`) and features wit
 
 | Element | Position | Details |
 |---|---|---|
-| Hadassah, weaver (npc) | (12,7) | `d-hadassah`: sells linen (1 coin) and raises the Samaritan prejudice |
+| Hadassah, weaver (npc) | (12,7) | `d-hadassah`: hands over Rivka's linen (Miriam's errand), sells linen strips (1 coin) and raises the Samaritan prejudice |
 | Ezer, baker (npc) | (20,7) | `d-ezer`: starts and settles the side quest |
 | Menashe, oil merchant (npc) | (17,8) | `d-menashe`: his side of the dispute, sells oil (2 coins) |
 | Ezer's measuring vessels (use) | (22,7) | Opens `p-measure`. **Gated:** side quest must be in its `measure` stage |
 | Hanan, Levite (npc) | (18,2) | `d-hanan`: by the Temple steps, answers questions about the Law (paraphrase lines) |
 | Malik, trader (npc) | (27,14) | `d-malik`: road advice, caravan, map for sale (2 coins) |
-| Old Shimon, shepherd (npc) | (30,9) | `d-shimon`: the bend and the ridge cistern |
-| Tobiah, carter (npc) | (26,13) | `d-tobiah`: confident, unreliable advice |
+| Old Shimon, shepherd (npc) | (30,9) | `d-shimon`: the bend and the ridge cistern; once you know about the cistern, a message for his grandson Eli (starts `q-message`) |
+| Tobiah, carter (npc) | (26,13) | `d-tobiah`: confident, unreliable advice; pressed, he promises to say "ask a shepherd" instead |
 | Signs and features | — | Temple steps sign, market well, east gate sign, donkeys, trade goods, Tobiah's cart |
 | Trigger `market-intro` | around the door | One-time hint: "Travelers here may know about the road — try talking to people." |
 | Exit `to-house` | (5,4) | Back to Miriam's house |
@@ -216,6 +217,7 @@ The routes are gated by the route puzzle, not by invisible walls. The bend and t
 | Shepherds' path up the ridge | (15,9) | Opens `p-route`. Blocks the ridge until solved. |
 | Trigger `drink` | (20, 4–5) | Once, if carrying water: "You drink deeply — and empty a water skin." **−1 water skin.** |
 | Trigger `cistern-near` | (24, 4–5) | Once: points out the cistern and cairn |
+| Eli, the shepherd boy (npc) | (31,3) | `d-eli`: asks for bread (`choice-eli`), tells what he saw at first light (`clue-eli-men`), takes Shimon's message. Trigger `eli` (x 30, rows 3–5) starts the conversation as you pass. |
 | Stone cistern (use) | (27,3) | Once: **+1 water skin**, `clue-cistern`, flag `refilled` |
 | Trigger `ridge-end` | (38–39, 9) | Once: flag `incident-seen`, **+2 hours**, `d-incident-arrival` |
 | Sandal prints, many footprints, broken jar, empty purse, torn cloth, drag marks | (36–43, 11–16) | The six incident clues |
@@ -232,14 +234,15 @@ The routes are gated by the route puzzle, not by invisible walls. The bend and t
 |---|---|---|
 | Spawn `from-road` | (1,10) | |
 | Trigger `inn-arrival` | (1–2, 9–11) | Once: `d-inn-arrival`, which varies by `choice-traveler` |
-| Salome, innkeeper (npc) | (8,7) | `d-salome`: arranging care, sending Asher, general welcome |
+| Salome, innkeeper (npc) | (8,7) | `d-salome`: arranging care, sending Asher, general welcome; where the striped cloak came from; Miriam's greeting |
+| A cloak with a blue stripe (feature) | (1,6) | `d-cloak`: examine it (`clue-cloak-hem`, `clue-cloak-oil`), then think it through (`p-cloak`). A state trigger points it out once you have arrived. |
 | Menashe (npc) + sleeping mat | (5,7), (4,7) | Visible only after `tend-walk` or `tend-caravan`. `d-menashe-inn` |
 | Malik (npc) | (10,8) | Visible only after `tend-caravan`. `d-malik-inn` |
 | The dark road to Jericho (lamp marker) | (14,10) | **Night blocker.** Visible, and solid on the only gap, when hour ≥ 18 **and** no lamp **and** the player has not rested. Examining it starts `d-night`. |
 | The spring (sign) | (17,4) | Flavour message |
 | Rivka (npc) | (27,16) | `d-rivka`: delivery, then hands over to Yair |
-| Natan (npc) + mat | (29,17) | `d-natan`: before and after the remedy |
-| Yair (npc) | (25,16) | `d-yair`: waits until the remedy is delivered, then tells the story |
+| Natan (npc) + mat | (29,17) | `d-natan`: before the remedy; then, while it steeps, a conversation about the road (a main-quest stage) that ends as Yair comes in |
+| Yair (npc) | (25,16) | `d-yair`: waits until the remedy is delivered and you have sat with Natan, then tells the story |
 | Exits | — | None. The chapter ends here. After the summary the player may keep exploring Jericho. |
 
 ### Gating summary
@@ -247,7 +250,7 @@ The routes are gated by the route puzzle, not by invisible walls. The bend and t
 | Gate | Condition | What the player sees if blocked |
 |---|---|---|
 | Leave the house | `q-remedy` active | "Aunt Miriam is still talking to you." |
-| Use the satchel | Objective `ask-road` done (2 of 6 advice clues) | Toast telling them to ask travelers in the market |
+| Use the satchel | Objectives `ask-road` (2 of 6 advice clues) and `collect-linen` done | Toast: ask travelers in the market, and bring Rivka's linen |
 | East gate | `p-satchel` solved | `d-gate-blocked`: which step is missing |
 | Measuring vessels | Side quest in stage `measure` | A description of the crock and pitcher |
 | Ridge path | `p-route` solved | The marker opens the route puzzle |
@@ -255,18 +258,19 @@ The routes are gated by the route puzzle, not by invisible walls. The bend and t
 | Exit to Jericho | `choice-traveler` recorded | `d-road-exit-blocked`: go back, or keep walking (= `hurry-on`) |
 | Cistern | Once only | "You've already filled your water skin here." |
 | Road to Rivka at night | Hour < 18, or a lamp, or has rested | The night blocker offers `d-night`, which lets the player rest |
-| Yair's story | Remedy delivered | "Go on in to Rivka first" |
+| Yair's story | Remedy delivered, and you have sat with Natan | "Go on in to Rivka first", then "Go and sit with the boy" |
 
 ## 8. Characters
 
-**Everyone the player meets is fictional** (`fictional: true, biblicalFigure: false` for all 12). Their names are ordinary names of the period. **Jesus does not appear as a character.** The chapter only reports that Yair heard a story he told. A content test enforces all of this. Characters are drawn procedurally from appearance data ([`characters.ts`](../src/content/chapters/road-to-jericho/characters.ts)). Player looks are four non-gendered presets.
+**Everyone the player meets is fictional** (`fictional: true, biblicalFigure: false` for all 13). Their names are ordinary names of the period. **Jesus does not appear as a character.** The chapter only reports that Yair heard a story he told. A content test enforces all of this. Characters are drawn procedurally from appearance data ([`characters.ts`](../src/content/chapters/road-to-jericho/characters.ts)). Player looks are four non-gendered presets.
 
 | Character | id | Role | Where | Motivation and function |
 |---|---|---|---|---|
 | Aunt Miriam | `miriam` | Healer, the player's aunt | House | Wants the remedy to reach Natan but can no longer manage the road. Teaches preparation: "Water is heavy. Knowing where to find more is lighter than carrying it." Her good name later backs the player's promise at the inn. |
 | Malik | `malik` | Nabataean trader | Market; inn (caravan branch) | Practical and funny, and generous with advice, though sometimes for a price. Warns about the wadi, sells a map, and says his caravan leaves at midday by the main road. If asked, his people watch for the player. In the caravan branch he carries Menashe and pays the inn himself. |
 | Old Shimon | `shimon` | Shepherd | Market | Slow and observant. Shares the shepherds' ridge path and cistern freely: "Anyone who asks can know it. Most people just don't ask." The most reliable witness. |
-| Tobiah | `tobiah` | Carter | Market | Confidently repeats that the wadi is fastest, then admits he has never walked it. He is the lesson in weighing testimony. |
+| Tobiah | `tobiah` | Carter | Market | Confidently repeats that the wadi is fastest, then admits he has never walked it. He is the lesson in weighing testimony. Pressed on why he says it, he promises to tell people to "ask a shepherd". |
+| Eli | `eli` | Shepherd boy, Old Shimon's grandson | The ridge, by the cistern | Eats his bread too early and watches hawks instead of the sun. Asks for food, and tells what he saw at first light: four men with nothing to carry going down the gully toward the bend. If he gets his grandfather's message he brings the flock down early, and finds Menashe when no one else was told. |
 | Hadassah | `hadassah` | Weaver | Market | Sells linen. Repeats an inherited prejudice about Samaritans ("My mother always said it"), and the player can gently challenge it. |
 | Ezer | `ezer` | Baker | Market | Believes Menashe short-changed him. His own test is flawed. He is quick-tempered but quick to make things right. |
 | Menashe | `menashe` | Samaritan oil merchant (from near Shechem) | Market; road; inn | Wants to keep his good name in a city where "not everyone here is glad to see a Samaritan." Later he is the robbed traveler below the bend. |
@@ -280,15 +284,16 @@ The routes are gated by the route puzzle, not by invisible walls. The bend and t
 
 ## 9. Items
 
-The satchel's capacity is **6**. The starting kit already weighs **9**, so packing is a real trade-off. Weightless items (letter, coins, map) never count. Anything with weight that isn't packed "stays safely at home".
+The satchel's capacity is **6**. The starting kit already weighs **9**, and Rivka's linen adds 1, so packing is a real trade-off. Weightless items (letter, coins, map) never count. Anything with weight that isn't packed "stays safely at home".
 
 | Item | id | Weight | How you get it | Why it exists |
 |---|---|---|---|---|
 | Aunt Miriam's remedy | `remedy` | 1 | From Miriam in the opening | The errand itself. Essential: packing fails without it. Handed to Rivka at the end. |
 | Letter to Rivka | `letter` | 0 | From Miriam | Explains how to prepare the remedy. Handed over with it. |
+| Linen for Rivka | `linen-bundle` | 1 | From Hadassah (Miriam's errand) | Fine sheets for Natan's bed. Essential: packing fails without it. With no linen strips, a strip can be cut from it to bind Menashe (`choice-bandage`); Rivka answers either way. Handed over with the remedy. |
 | Bronze coins | `coins` | 0 | 5 at start | Buy the map (2), linen (1) or oil (2). Pay the inn (2) or share Malik's cost (1). Spending in the market limits the options at the inn. |
 | Water skin | `water-skin` | 2 each (2 at start, max 3) | Start. +1 at the ridge cistern | The central packing tension. One is drunk on the hot ridge. Needed to give Menashe a sip and to wash his wound (both tend options). Can be left with him. |
-| Bread and dates | `bread` | 1 | Start | Food to share. Enables `send-help` even with no water left. |
+| Bread and dates | `bread` | 1 | Start | Food to share: with Eli on the ridge, or with Menashe. Enables `send-help` even with no water left. |
 | Flask of olive oil | `oil` | 1 | Buy from Menashe (2 coins), or his gift for settling the dispute | Soothes the wound, the way Miriam taught. Echoes the oil in the parable. Unlocks the *Oil and wine* history entry. |
 | Linen strips | `linen` | 1 | Buy from Hadassah (1 coin) | Binds his wounds. Without it the player tears a strip from their own tunic. |
 | Clay oil lamp | `lamp` | 1 | Start | Lets the player walk the last stretch after dark (delivery "by lamplight"). Without it, a late arrival means resting at the inn until dawn. |
@@ -297,7 +302,7 @@ The satchel's capacity is **6**. The starting kit already weighs **9**, so packi
 
 ## 10. Clues
 
-Sixteen clues, each with a source and an explicit reliability. The disagreement between Tobiah and Malik about the wadi is deliberate, so the route puzzle is about **weighing** testimony and not just collecting it ([`clues.ts`](../src/content/chapters/road-to-jericho/clues.ts)).
+Twenty-one clues, each with a source and an explicit reliability. The disagreement between Tobiah and Malik about the wadi is deliberate, so the route puzzle is about **weighing** testimony and not just collecting it ([`clues.ts`](../src/content/chapters/road-to-jericho/clues.ts)).
 
 | Group | Clue | Source | Reliability | Used by |
 |---|---|---|---|---|
@@ -308,7 +313,10 @@ Sixteen clues, each with a source and an explicit reliability. The disagreement 
 | | `clue-wadi-fastest`: "the wadi is fastest" | Tobiah | **unreliable** (never walked it) | `ask-road`; presenting it spoils a route argument |
 | | `clue-map`: the ridge rejoins below the bend, and the wadi ends at "the drop" | Malik's map | reliable | `ask-road`; `p-route` (for ridge, against wadi) |
 | At the fork | `clue-cairn`, `clue-mud-line`, `clue-clouds`, `clue-empty-road` | The fork | reliable | `p-route`; optional objective `look` |
-| Below the bend | `clue-single-prints`, `clue-many-prints`, `clue-broken-jar`, `clue-cut-purse`, `clue-torn-cloth`, `clue-drag-marks` | Below the bend | reliable | `p-what-happened` (3 needed to open it) |
+| On the ridge | `clue-eli-men`: four men went down the gully toward the bend at first light | Eli | **uncertain** (seen from far off, in the half-dark) | The narrator's careful reading before the decision |
+| Below the bend | `clue-single-prints`, `clue-many-prints`, `clue-broken-jar`, `clue-cut-purse`, `clue-torn-cloth`, `clue-drag-marks` | Below the bend | reliable | `p-what-happened` (3 needed to open it); `clue-torn-cloth` also in `p-cloak` |
+| At the inn | `clue-cloak-hem`, `clue-cloak-oil` (the cloak itself), `clue-cloak-found` (Salome: found in the rocks north of the road) | The striped cloak, Salome | reliable | `p-cloak` |
+| | `clue-blue-stripes`: "half the cloaks in Jericho have a blue stripe" | Salome | **unreliable** (true, but says nothing about whose it is) | Presenting it spoils a `p-cloak` argument |
 
 ## 11. Quest flow
 
@@ -318,13 +326,14 @@ Quests are declarative data run by a deterministic engine ([`src/domain/quests.t
 
 | # | Stage | Objectives (**required**, *optional*) | Advances when |
 |---|---|---|---|
-| 1 | `prepare`: Get Ready for the Road | **ask-road**: at least 2 of the 6 road-advice clues · *shop*: own linen, map or oil · **pack**: `p-satchel` solved | Both required objectives are done |
+| 1 | `prepare`: Get Ready for the Road | **ask-road**: at least 2 of the 6 road-advice clues · **collect-linen**: Rivka's linen from Hadassah · *shop*: own linen strips, map or oil · **pack**: `p-satchel` solved | All required objectives are done |
 | 2 | `depart`: Set Out | **leave**: visited `jericho-road` | The player walks through the east gate |
 | 3 | `route`: Find a Safe Way Down | *look*: 2 of the 4 fork clues · **choose**: `p-route` solved | The route is proved |
-| 4 | `descend`: Along the Ridge | *cistern*: refilled · **rejoin**: `incident-seen`, or any incident clue, or `choice-traveler` made | The player reaches the incident |
+| 4 | `descend`: Along the Ridge | *cistern*: refilled · *meet-eli*: talked with Eli · **rejoin**: `incident-seen`, or any incident clue, or `choice-traveler` made | The player reaches the incident |
 | 5 | `traveler`: Someone on the Road | *examine*: 3 incident clues · *understand*: `p-what-happened` solved · **decide**: `choice-traveler` recorded | A decision is made |
-| 6 | `deliver`: Bring the Remedy to Rivka | **deliver**: flag `remedy-delivered` | Rivka receives the jar and letter |
-| 7 | `listen`: A Story on the Same Road | **hear**: flag `seen:scripture-connection` | The Scripture Connection panel is finished |
+| 6 | `deliver`: Bring the Remedy to Rivka | **deliver**: flag `remedy-delivered` | Rivka receives the jar, the letter and the linen |
+| 7 | `natan`: While the Remedy Steeps | **keep-company**: flag `sat-with-natan` | You have sat with Natan and told him about the road |
+| 8 | `listen`: A Story on the Same Road | **hear**: flag `seen:scripture-connection` | The Scripture Connection panel is finished |
 
 Outcomes are picked when the quest completes: **Delivered before nightfall** (`remedy-on-time`), **Delivered by lamplight** (`remedy-lamplight`), or **Delivered at dawn** (`remedy-morning`, an *alternate* outcome). Journal hooks: `je-mission` on start, `je-arrival` on completion.
 
@@ -332,12 +341,13 @@ Outcomes are picked when the quest completes: **Delivered before nightfall** (`r
 stateDiagram-v2
   state outcome <<choice>>
   [*] --> prepare: Aunt Miriam's opening conversation starts the quest
-  prepare --> depart: ask-road (2 of 6 advice clues) and pack (p-satchel solved)
+  prepare --> depart: ask-road (2 of 6 advice clues), collect-linen, pack (p-satchel solved)
   depart --> route: leave by the east gate (visited jericho-road)
   route --> descend: choose (p-route solved)
   descend --> traveler: rejoin the road (incident seen, a clue found, or a choice made)
   traveler --> deliver: decide (choice-traveler recorded)
-  deliver --> listen: give Rivka the remedy (remedy-delivered)
+  deliver --> natan: give Rivka the remedy and the linen (remedy-delivered)
+  natan --> listen: sit with Natan while it steeps (sat-with-natan)
   listen --> outcome: hear Yair and finish the Scripture Connection
   outcome --> OnTime: flag remedy-on-time
   outcome --> ByLamplight: flag remedy-lamplight
@@ -377,9 +387,29 @@ stateDiagram-v2
   Unresolved --> [*]
 ```
 
+### 11.3 Side quest: *A Message for Eli* (`q-message`)
+
+Offered by Old Shimon once you know about the ridge cistern ("If I take your path, can I do anything for you up there?"): tell his grandson Eli to bring the flock down the gully before the sun is low. One stage, **tell** (`eli-told`), given in Eli's conversation.
+
+| Outcome | Kind | When | Consequence |
+|---|---|---|---|
+| **Message delivered** | success | You told Eli | Shimon trust +1. If no one at the inn was told about Menashe (hurried on and said nothing, or sent help and never told Salome), Eli, bringing the flock down early, finds him in the afternoon and runs for the shepherds, instead of shepherds finding him at sunset. |
+| **Not delivered** | alternate (`failed`) | You reached Jericho without telling him | Shepherds find Menashe at sunset, as before. |
+
+### 11.4 Side quest: *Whose Cloak?* (`q-cloak`)
+
+A good wool cloak with a blue stripe lies on the sacks by the inn gate (a state trigger points it out as you arrive). Examining it (`d-cloak`) or asking Salome where it came from starts the quest.
+
+| # | Stage | Objectives | Advances when |
+|---|---|---|---|
+| 1 | `look`: Look Closely | *examine*: 2 of the cloak clues · **identify**: `p-cloak` solved | The player has worked out whose it is |
+| 2 | `return`: Tell Salome | **tell**: `cloak-returned` | Salome keeps it for Menashe, or gives it to him if he is at the inn |
+
+Outcome **Back with its owner** (success): Salome trust +1, journal *Whose cloak?*. If Menashe is at the inn he says so ("Torn at the hem and smelling of my own oil — but mine"), and still promises to return your cloak if you gave it.
+
 ## 12. Dialogue flow
 
-23 conversations and 170 nodes. Dialogue is data: entry conditions, hidden choices (`when`), visible-but-unavailable choices (`requires` + `unavailableText`), one-time choices (`once`), conditional branches and effects ([`src/domain/dialogue.ts`](../src/domain/dialogue.ts)). Every node has a kind. Lines retelling Scripture are `paraphrase` lines linked to a paraphrase record, and the dialogue box labels them.
+25 conversations and 246 nodes. Dialogue is data: entry conditions, hidden choices (`when`), visible-but-unavailable choices (`requires` + `unavailableText`), one-time choices (`once`), conditional branches and effects ([`src/domain/dialogue.ts`](../src/domain/dialogue.ts)). Every node has a kind. Lines retelling Scripture are `paraphrase` lines linked to a paraphrase record, and the dialogue box labels them.
 
 ### 12.1 Opening (`d-opening`)
 
@@ -487,7 +517,7 @@ Notes:
 
 - **Walking past without deciding.** Using the exit before deciding opens `d-road-exit-blocked`. "Keep walking to Jericho" records `hurry-on` with the same time and trust cost as choosing it in the conversation.
 - **Malik's caravan.** When the player reminds Malik that he said "travelers must look after each other" (or just says the man needs help), he agrees and carries Menashe on a donkey.
-- **Greeting variants.** The diagram shows the variants as authored. In the current build the **stranger** variant is never reached (see [Known design gaps](#17-known-design-gaps-in-the-current-build)).
+- **Greeting variants.** The diagram shows the variants as authored. In the current build the **stranger** variant is never reached (see [Known design gaps](#18-known-design-gaps-in-the-current-build)).
 
 ### 12.4 Jericho
 
@@ -519,10 +549,21 @@ flowchart TD
 - **Promising to pay later.** Salome asks who the player is to make promises. Naming Miriam the healer earns her trust: "She set my husband's broken arm years ago."
 - **Hurrying on, then telling Salome.** Salome sends Asher and says being afraid on that road is nothing to be ashamed of, and that telling someone was a good next step. The game never scolds.
 - **Rivka's response to the road story.** "And you stopped for him? … Miriam raised you well" (tended); "And you found a way to get help to him" (sent help); "Oh, child. That road frightens grown men. I'm glad you're safe" (hurried).
+- **Rivka and the linen.** If a strip was cut from it for Menashe: "Then it has already done more good than any bed sheet. I'll hem the edge myself."
+
+### 12.5 New people and conversations
+
+| Conversation | What happens | What it changes |
+|---|---|---|
+| `d-eli` (the ridge) | Eli scrambles up from behind the cistern wall, asks for food (share your bread and dates, keep them, or you have none), introduces himself and tells what he saw at first light. Then: Shimon's message, where the flock is, goodbye. | `choice-eli` (bread gone before the bend, or kept for Menashe), `clue-eli-men` (the narrator adds it to the careful reading before the decision: node `d0-eli`), `eli-told` |
+| `d-menashe-road`, node `bundle` | With water but no linen strips, tending him asks: cut a strip from Rivka's linen, or tear your own tunic? | `choice-bandage`; `cut-bundle` shows as clean linen on him at the inn, and Rivka answers it |
+| `d-cloak`, `d-salome` (`c1`–`ct2`) | The striped cloak: its torn hem and oil stain, where the goatherd found it, and Salome's shrug. After `p-cloak`, telling Salome gives it back. | `q-cloak`, Menashe's `own` greeting at the inn |
+| `d-natan` (`sit1`–`sit7`) | While the remedy steeps, Natan asks: did you walk alone (or with Eli)? Did you see robbers? Who was the man; what are Samaritans like? Did you help him (honest answers in every branch, and no scolding)? Were you scared? Then Yair comes in with a basket of figs. | `sat-with-natan` (main quest), `natan-knows-menashe` |
+| `d-salome` (`g1`) | Miriam's greeting: Salome remembers Miriam coming out at night to set her husband's arm. | Salome trust +1, a summary line |
 
 ## 13. Puzzle specifications
 
-Chapter 1 uses the four original puzzle types, each growing out of the story; each later chapter has two puzzle types of its own (see §13.5). Checkers are pure functions that return feedback about the reasoning ([`src/domain/puzzles.ts`](../src/domain/puzzles.ts) and one `src/domain/puzzle-*.ts` module per newer type). Every puzzle has **three hint tiers**: early tiers nudge, and only the last one explains the answer. Attempts and hints are counted only for optional anonymous statistics. **There is no penalty and no score.** After solving, an explanation says *why* the answer is right.
+Chapter 1 uses the four original puzzle types in five puzzles, each growing out of the story; each later chapter has two puzzle types of its own (see §13.5). Checkers are pure functions that return feedback about the reasoning ([`src/domain/puzzles.ts`](../src/domain/puzzles.ts) and one `src/domain/puzzle-*.ts` module per newer type). Every puzzle has **three hint tiers**: early tiers nudge, and only the last one explains the answer. Attempts and hints are counted only for optional anonymous statistics. **There is no penalty and no score.** After solving, an explanation says *why* the answer is right.
 
 ### 13.1 `p-satchel`: Pack the Satchel (packing, resource allocation)
 
@@ -580,31 +621,59 @@ Chapter 1 uses the four original puzzle types, each growing out of the story; ea
 | **On success** | Flag `scene-understood`. **This unlocks the decision:** Menashe's conversation moves to the narrator's summary ("the danger has passed — though you can't be completely sure") and then to the choice. |
 | **How prior choices change it** | Which clues were examined determines which cards are backed by evidence. Because the puzzle comes before the decision, the choice to stop is made with an honest, uncertain reading of the risk rather than a guarantee of safety. |
 
+### 13.4a `p-cloak`: Whose Cloak? (deduction, optional)
+
+| | |
+|---|---|
+| **Goal** | Say whose the striped cloak is, and back it with evidence. |
+| **Where / when** | The cloak on the sacks by the inn gate (`d-cloak`, "Think it through"), any time after arriving in Jericho. |
+| **Options** | The robbed traveler's (Menashe's) · someone from Jericho's · the goatherd stole it. **Answer: Menashe's.** |
+| **Evidence** | For Menashe: `clue-cloak-hem` (a strip torn from the hem), `clue-cloak-oil` (it smells of olive oil), `clue-cloak-found` (found in the rocks north of the road, below the bend; also against the goatherd), `clue-torn-cloth` (the strip on the thornbush; also against Jericho). **Unreliable:** `clue-blue-stripes` (Salome's "half the cloaks in Jericho"), which spoils the argument. Two reliable pieces are needed; the cloak itself gives two, so a player who skipped the road's clues can still solve it. |
+| **Hints** | T1: examine the cloak and ask Salome. T2: the hem and the smell, and the thornbush below the bend. T3: Menashe's, with the hem and the oil as an example pair. |
+| **Explanation** | The robbers seem to have thrown it away in the rocks as they went north. "You can't be certain, but it is the best reading of the evidence, and Menashe can say for sure when he sees it." |
+| **On success** | Flag `cloak-identified`; telling Salome completes *Whose Cloak?*. |
+
 ### 13.5 Puzzle types across the chapters
 
 The owner asked for different puzzles in each chapter rather than jar filling everywhere. Chapter 1 keeps the four originals. In Chapters 2–4 the packing and measuring puzzles were replaced by two new types per chapter, each used in only one chapter; deduction and sequence puzzles appear in every chapter. A content test ([`tests/content/puzzle-variety.test.ts`](../tests/content/puzzle-variety.test.ts)) pins this.
 
 | Chapter | Puzzle | Type | How it plays |
 |---|---|---|---|
-| 1 The Road to Jericho | `p-satchel`, `p-measure`, `p-route`, `p-what-happened` | packing, measuring, deduction, sequence | As above (§13.1–13.4). |
+| 1 The Road to Jericho | `p-satchel`, `p-measure`, `p-route`, `p-what-happened`, `p-cloak` | packing, measuring, deduction, sequence | As above (§13.1–13.4a). |
 | 2 A Storm on Galilee | `p-load` Load the Boat | **trim** | Choose what goes aboard and where (bow, port, starboard, stern), so the boat sits level with her crew in their places, within 10 loads. |
 | 2 | `p-brine` Nikanor's Jar Net (optional) | **netting** | A picture logic grid: tie the torn knots so every row and column matches its runs of knots. |
+| 2 | `p-corner` Grandmother's Corner | **netting** | A small first net before you leave the house: the family's mark, a little boat under sail. |
+| 2 | `p-patch` Seal the Seam (optional) | sequence | Seal the cracked seam of Oded's borrowed boat in an order that works. |
 | 3 A Journey to Bethlehem | `p-bread` Places for Supper | **logicGrid** | Four people, four places along the mat, four clues; mark ✗ and ✓ in a grid. |
 | 3 | `p-room` Room in the Guest Room | **floorplan** | Fit shaped pieces (bedding, jars, loom, tools) onto a floor grid around fixed things, turning them; what fits is what stays. |
+| 3 | `p-kid` The Kid's Afternoon | **logicGrid** | Four places the runaway kid went, four times (first to last), three witnesses; the last place is where she is now. |
 | 4 A Letter from Paul | `p-pack` The Way to the Bridge | **map** | Follow written directions (left, right, count the milestones) on a sketch map to the right dye works. |
 | 4 | `p-alum` The Buyer's Shade (optional) | **dyeing** | Reach a named target shade in four dips of madder, blue and rinse. |
 
 Every replacement kept its puzzle id, its place in the story and its `onSolved` effects and flags, so quests, dialogue and the ending read them as before. The loading and guest room puzzles still record `choice-load` and `choice-room` from what you chose. Chapter 4's loadout is no longer a puzzle: the travel bag is a choice made in conversation (`d-bag`), which records `choice-packing` and sets `packed` exactly as the packing puzzle did; the map puzzle sets `knows-the-way`, and the west gate needs both. All six are playable from the keyboard alone (arrow keys and Space/Enter, no dragging), announce each move to screen readers, and never rely on colour alone (the dye shades are named and numbered).
 
+### 13.6 Chapters 3 and 4 made longer (2026-09-30)
+
+The owner found Chapters 3 and 4 "playing pretty quick" against the 20–30 minute target. Each gained main-path substance, not padding, and an optional thread; the chapter documents give the acts, quests, choices and time of day in full, and a measured play-time estimate ([Chapter 3 §13](chapters/journey-to-bethlehem.md#13-play-time), [Chapter 4 §15](chapters/letter-from-paul.md#15-play-time)).
+
+| Chapter | Added on the main path | Added as options |
+|---|---|---|
+| 3 A Journey to Bethlehem | Dodi's milk: Hagit's runaway kid, found by asking three people and ordering their accounts (`p-kid`, logic grid). Supper by the fire (new stage `hearth`): the day comes back in what you tell the household, Saba retells three verses of Ruth (labelled paraphrase), and you decide about the last loaf (`choice-loaf`), which feeds Zerah if you kept it. | Half the milk for Old Yoram's newborn lamb (`choice-milk`); conversations with Zerah, Tamar, Yonatan and Kallias. |
+| 4 A Letter from Paul | Kallias runs when he sees you, and is found by deduction (`p-hiding`); a talk on the walk home, where you can tell him what you left out of his letter. | *Words for Melitta* (`q-message`): Chrysis's spoken message to her sister, passed on whole or softened (`choice-message`); more of Ammia, Tatia, Zenon, Nikon and Attalos. |
+
+Nothing new needed rendering: no new places, people, poses or props (the kid hides in an existing chaff heap). The clock doesn't move for any of it, so every place is lit as before. The new text is dated 2026-09-30 and stays in review: the owner's approval of 2026-09-26 covers only records drafted and last changed on or before that day (`coveredBy` in [`approvals.ts`](../src/content/shared/approvals.ts)).
+
 ## 14. Choices and consequences
 
-Six recorded choices ([`choices.ts`](../src/content/chapters/road-to-jericho/choices.ts)). Each option carries a plain consequence sentence shown in the summary under "Your choices". Themes are descriptive tags, not virtue points: *Who is my neighbor?, Mercy, Courage and fear, Stewardship, Hospitality, Reconciliation, Discernment*.
+Eight recorded choices ([`choices.ts`](../src/content/chapters/road-to-jericho/choices.ts)). Each option carries a plain consequence sentence shown in the summary under "Your choices". Themes are descriptive tags, not virtue points: *Who is my neighbor?, Mercy, Courage and fear, Stewardship, Hospitality, Reconciliation, Discernment*.
 
 | Choice | Where | Options | Immediate effects | Later consequences |
 |---|---|---|---|---|
 | `choice-packing` | `p-satchel` | care-kit · some-care · provisions · warmth-light · water-only (classified from the load) | Unpacked items stay home | Decides which care is possible (water to wash, linen to bind, oil to soothe, cloak to give, bread to leave) and whether a late arrival can walk on by lamplight |
 | `choice-malik` | Malik, after the caravan question | asked | `malik-watching`, Malik trust +1 | Unlocks **tend-caravan**. Summary: "Malik's caravan kept watch for you on the road." |
 | `choice-prejudice` | Hadassah, about the argument | challenged · listened | challenged: Hadassah trust +1, and she reconsiders | challenged adds the summary line "Hadassah started to rethink what she'd always said about Samaritans." |
+| `choice-eli` | Eli, on the ridge (only if you carry bread) | shared · kept | shared: −bread, Eli trust +1 | Without bread, `send-help` needs water, and there is nothing to leave with Menashe but water. |
+| `choice-bandage` | Tending Menashe with no linen strips | rivka-linen · tunic | rivka-linen: `cut-bundle`, `bound-wounds`; tunic: `improvised-bandage` | Clean linen or strips of your tunic on him at the inn; Rivka's answer; a Scripture Connection comparison (Luke 10:34) for rivka-linen. |
 | `choice-traveler` | Menashe on the road, or the road exit | tend-walk · tend-caravan · send-help · hurry-on | See [the decision tree](#123-the-injured-traveler-d-menashe-road) for water, time and trust effects | Who reaches the inn and how. Salome's, Rivka's and Menashe's responses. Summary lines. Which comparisons appear in the Scripture Connection. Whether night falls. |
 | `choice-cloak` | While tending, if a cloak was packed | given | −cloak, Menashe trust +1 | Menashe promises to return it in Jerusalem. Summary line. |
 | `choice-inn` | Salome, at the inn | paid (2 coins) · promised · worked (+1 h) · malik-paid · sent-asher | Coins, trust or time as listed | Summary lines ("Your coins paid…", "You owe Salome two coins — a promise to keep…", "You worked…", "Malik paid…", "Asher brought Menashe…"). Scripture Connection comparisons for *paid* and *promised*. |
@@ -619,6 +688,7 @@ Six recorded choices ([`choices.ts`](../src/content/chapters/road-to-jericho/cho
 | send-help | Never told anyone | Shepherds found him near sunset and brought him in |
 | hurry-on | Told Salome | Asher went to bring him in |
 | hurry-on | Said nothing | Shepherds found him near sunset and carried him to the inn |
+| send-help or hurry-on | Never told anyone, but gave Eli his grandfather's message | Eli, bringing the flock down early, found him in the afternoon and ran for the shepherds |
 
 In every branch Menashe is found and cared for. The branches differ in who helped, how long he waited and what it cost. One line always closes the list: "The remedy reached Jericho because you carried it."
 
@@ -650,7 +720,7 @@ Hours on arrival at Rivka, from headless runs of the real application layer:
 | tend-walk, no side quest, **work** at inn | 9 | 11 | 17 | 18 | Lamp: by lamplight · no lamp: rest, **at dawn** |
 | tend-walk, side quest settled | 10 | 12 | 18 | 18+ | Lamp: by lamplight · no lamp: rest, **at dawn** |
 
-The two slowest kinds of help, settling the quarrel and walking Menashe to the inn, together cost the daylight. Whether the player packed a lamp decides what that means. Natan is "no worse" at dawn: a late delivery is a real cost, not a catastrophe.
+None of the new errands (Rivka's linen, Eli, the cloak, sitting with Natan) moves the clock: they add play, not hours, so the arrivals above are unchanged. The two slowest kinds of help, settling the quarrel and walking Menashe to the inn, together cost the daylight. Whether the player packed a lamp decides what that means. Natan is "no worse" at dawn: a late delivery is a real cost, not a catastrophe.
 
 ## 15. The Good Samaritan connection
 
@@ -697,9 +767,38 @@ The chapter never presents fiction as Scripture. The connection works in three l
 
 The player can think about them, talk about them, or write up to 2,000 characters. The text is saved **only on the device**, is shown in the journal's Reflections tab, and is never sent anywhere. A unit test checks that it never reaches analytics even with consent on.
 
-**Summary** ("Chapter complete: The Road to Jericho"; [`chapter-summary.ts`](../src/domain/chapter-summary.ts)): play time; *Your journey* (a recap filtered by what happened); *Your choices* (prompt, chosen option, consequence); *What happened because of your choices*; *People you met* (trust as words); *Side quests* (outcome title); *Discoveries* (clues found, journal entries out of 36); *Themes*; *Scripture references* (Luke 10:25–37, Deuteronomy 6:5, Leviticus 19:18, Leviticus 19:34, John 4:9, Matthew 20:2, Joshua 15:7 and 18:17, Deuteronomy 34:3); *Historical context* (expandable). There is **no score, rank, grade or "best ending"**. The player can return to the title screen or keep exploring Jericho.
+**Summary** ("Chapter complete: The Road to Jericho"; [`chapter-summary.ts`](../src/domain/chapter-summary.ts)): play time; *Your journey* (a recap filtered by what happened); *Your choices* (prompt, chosen option, consequence); *What happened because of your choices*; *People you met* (trust as words); *Side quests* (outcome title); *Discoveries* (clues found, journal entries out of 42); *Themes*; *Scripture references* (Luke 10:25–37, Deuteronomy 6:5, Leviticus 19:18, Leviticus 19:34, John 4:9, Matthew 20:2, Joshua 15:7 and 18:17, Deuteronomy 34:3); *Historical context* (expandable). There is **no score, rank, grade or "best ending"**. The player can return to the title screen or keep exploring Jericho.
 
-## 17. Known design gaps in the current build
+## 17. How long it plays
+
+The owner found the chapter "playing pretty quick. Much shorter than the projected 20 to 30 minutes" (2026-09-30), so it was measured and made longer. The measure is [`tests/integration/play-time.test.ts`](../tests/integration/play-time.test.ts): it plays the chapter headlessly and counts what the player is shown (every dialogue line and choice once, every message, each puzzle's intro and explanation, the Scripture Connection), then turns it into minutes with the model in [`tests/support/play-time.ts`](../tests/support/play-time.ts):
+
+| | Steady first-timer | Brisk adult |
+|---|---|---|
+| Reading | 230 words a minute, every line | 320 words a minute |
+| Choosing | 3 s per set of choices | 2 s |
+| Walking and looking | 6 s per thing gone to, 20 s per new place (walking is 4.5 tiles a second) | 4 s, 12 s |
+| Puzzles (first solve) | packing 75 s, measuring 120 s, deduction 90 s, sequence 75 s | 60% of those |
+| Ending | a third of the Scripture Connection read, 45 s reflection, 45 s summary | a fifth; 30 s, 30 s |
+
+Two runs: **direct** does only what the main quest asks (every line of it read), **curious** talks to everyone the story points to, takes up the errands and looks at what it passes.
+
+| Run | Before (steady · brisk) | After (steady · brisk) |
+|---|---|---|
+| Direct | 16 min · 10 min | 19 min · 12 min |
+| Curious | 29 min · 19 min | 38 min · 26 min |
+
+Before, a fast adult reader finished in 10–19 minutes, which matches the owner's report. Now a first-time player who follows the story's invitations plays about 26 (brisk) to 38 (steady) minutes, and one who only follows the main quest 12–19. The test pins the floor: the main quest alone at least 18 steady minutes, a curious run 30–45 steady and at least 20 brisk.
+
+**What was added, and why it isn't padding:**
+
+- *Rivka's linen* (main quest): a real packing weight, Hadassah's scene for every player, a new dilemma at the traveler (use linen that isn't yours?) and Rivka's answer.
+- *Eli* (a new person on the ridge): the lonely road gets a witness, a small generous-or-not choice that changes what you can leave with Menashe, and his grandfather's message changes who finds Menashe if no one was told.
+- *Whose Cloak?* (deduction): reads the road's evidence again at the inn, and gives Menashe his own cloak back.
+- *Sitting with Natan* (main quest): the player tells a child what happened on the road, honestly, before hearing Yair's story about that road.
+- Smaller threads: Tobiah pressed on his claim, a second question for Hanan, Miriam's greeting for Salome.
+
+## 18. Known design gaps in the current build
 
 Found while writing this document by reading the code and running the headless harness. None of them blocks completing the chapter.
 
@@ -712,8 +811,9 @@ Found while writing this document by reading the code and running the headless h
 
 ## Where this is verified
 
-- **Headless playthroughs** of four complete branches through the real application layer ([`tests/integration/playthrough.test.ts`](../tests/integration/playthrough.test.ts)): *thorough* (side quest, map, caravan, Malik pays, on time); *hurried* (walk past, tell Salome); *long* (tend and walk, work at the inn, night, rest, **dawn**); *send-help* (leave supplies, Salome sends Asher). Two more tests cover leaving unprepared and the water-rule edge cases.
-- **Browser end to end** ([`e2e/chapter.spec.ts`](../e2e/chapter.spec.ts)): new profile → conversation → quest → item → packing → save → reload → restore → route → sequence → decision → inn → Rivka → Yair → Scripture Connection (placeholder and paraphrase label) → reflection → summary (no score language).
+- **Headless playthroughs** of the complete branches through the real application layer ([`tests/integration/playthrough.test.ts`](../tests/integration/playthrough.test.ts)): *thorough* (side quest, map, caravan, Malik pays, on time); *hurried* (walk past, tell Salome); *long* (tend and walk, your tunic for bandages, work at the inn, night, rest, **dawn**); *send-help* (leave supplies, Salome sends Asher); *Eli* (the message, the bread, hurry on, and Eli finds Menashe); *an undelivered message*; *Rivka's linen* (cut a strip, the cloak returned to Menashe at the inn); *Miriam's greeting* (and a cloak kept for a man not yet found). Two more tests cover leaving unprepared and the water-rule edge cases, and one the new gates (the satchel waits for the linen, Yair for Natan).
+- **Play time** ([`tests/integration/play-time.test.ts`](../tests/integration/play-time.test.ts)): see [How long it plays](#17-how-long-it-plays).
+- **Browser end to end** ([`e2e/chapter.spec.ts`](../e2e/chapter.spec.ts)): new profile → conversation → quest → item → Rivka's linen → packing → save → reload → restore → route → Eli → sequence → decision → inn → the striped cloak → Rivka → Natan → Yair → Scripture Connection (paraphrase label) → reflection → summary (no score language).
 - **Content rules** ([`tests/content/road-to-jericho.test.ts`](../tests/content/road-to-jericho.test.ts)): integrity, reachability, all characters fictional, no Jesus character, no scoring language, no priest/Levite motive, no self-approval, only retrieved sources, and a real choice at the traveler.
 
 See also [executive-summary.md](executive-summary.md), [backlog.md](backlog.md), [risks.md](risks.md), [content-governance.md](content-governance.md) and [chapter-authoring-guide.md](chapter-authoring-guide.md).

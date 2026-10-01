@@ -1,10 +1,20 @@
 import { INCIDENT_CLUES } from '../clues';
-import { any, chose, flag, has, opt, say, solved, type DialogueInput } from './helpers';
+import { all, any, chose, flag, has, not, opt, say, solved, type DialogueInput } from './helpers';
 
 const trustAtLeast = (n: number) => ({ type: 'trust' as const, character: 'menashe', gte: n });
 const noWater = 'You have no water left to clean his wounds.';
 /** Menashe recognises the player only if they actually spoke in the market. */
 const MET_IN_MARKET = { type: 'conversationDone' as const, dialogue: 'd-menashe' };
+const HEARD_ELI = { type: 'clueFound' as const, clue: 'clue-eli-men' };
+const CARRYING_MESSAGE = {
+  type: 'questStatus' as const,
+  quest: 'q-message',
+  status: 'active' as const,
+};
+const WHO_HE_IS = [
+  { when: trustAtLeast(2), next: 'friend' },
+  { when: MET_IN_MARKET, next: 'known' },
+];
 
 /**
  * The injured-traveler encounter. The decision weighs safety, supplies,
@@ -119,12 +129,15 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
         'narrator',
         'The robbers’ tracks lead away north, and the spilled oil dried long ago. As far as you can tell, the danger has passed — though you can’t be completely sure.',
         {
-          branches: [
-            { when: trustAtLeast(2), next: 'friend' },
-            { when: MET_IN_MARKET, next: 'known' },
-          ],
+          branches: [{ when: HEARD_ELI, next: 'd0-eli' }, ...WHO_HE_IS],
           next: 'stranger',
         },
+      ),
+      say(
+        'd0-eli',
+        'narrator',
+        'Four men, Eli said, going down toward the bend at first light. Whoever they were, their tracks lead away north now.',
+        { branches: WHO_HE_IS, next: 'stranger' },
       ),
       say(
         'friend',
@@ -214,9 +227,37 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
 
       // ── Giving care (shared by both "tend" options) ────────────────────────
       say('care', 'narrator', 'You kneel beside him and wash the cut with water from your skin.', {
-        branches: [{ when: has('linen'), next: 'linen' }],
+        branches: [
+          { when: has('linen'), next: 'linen' },
+          { when: has('linen-bundle'), next: 'bundle' },
+        ],
         next: 'no-linen',
       }),
+      say(
+        'bundle',
+        'narrator',
+        'You have no bandages of your own. But in your satchel is Rivka’s linen: clean, fine — and not yours.',
+        {
+          choices: [
+            opt('cut', 'Cut a strip from Rivka’s linen.', 'bundle-cut', {
+              effects: [
+                { type: 'recordChoice', choice: 'choice-bandage', option: 'rivka-linen' },
+                { type: 'setFlag', flag: 'cut-bundle', value: true },
+                { type: 'setFlag', flag: 'bound-wounds', value: true },
+              ],
+            }),
+            opt('tunic', 'Tear a strip from your own tunic instead.', 'no-linen', {
+              effects: [{ type: 'recordChoice', choice: 'choice-bandage', option: 'tunic' }],
+            }),
+          ],
+        },
+      ),
+      say(
+        'bundle-cut',
+        'narrator',
+        'You cut a long strip from one of the sheets and bind his forehead and his swollen ankle. Hadassah’s linen is every bit as good as she said.',
+        { branches: [{ when: has('oil'), next: 'oil' }], next: 'cloak-check' },
+      ),
       say(
         'linen',
         'narrator',
@@ -356,6 +397,138 @@ export const ROAD_DIALOGUES: DialogueInput[] = [
       say('hurry2', 'menashe', '…Go, then.', { expression: 'sad' }),
 
       say('after', 'menashe', 'Please… hurry.', { expression: 'worried' }),
+    ],
+  },
+  // ── Eli, Old Shimon's grandson, minding the flock on the ridge ──────────
+  {
+    id: 'd-eli',
+    characterId: 'eli',
+    // Going to him with "Go to…" walks through the trigger that starts this conversation, then
+    // arrives: coming back is a parting line (or the message still to give), not the whole talk.
+    entries: [
+      {
+        when: all(
+          { type: 'conversationDone', dialogue: 'd-eli' },
+          CARRYING_MESSAGE,
+          not(flag('eli-told')),
+        ),
+        node: 'again-msg',
+      },
+      { when: { type: 'conversationDone', dialogue: 'd-eli' }, node: 'b1' },
+    ],
+    start: 'e1',
+    nodes: [
+      say(
+        'e1',
+        'narrator',
+        'A boy scrambles up from behind the cistern wall, holding a shepherd’s staff twice as tall as he is.',
+        { next: 'e2' },
+      ),
+      say(
+        'e2',
+        'eli',
+        'Hey! Nobody comes along our path except shepherds. Are you lost? You don’t look lost. You look hot.',
+        { expression: 'glad', next: 'h1' },
+      ),
+      say(
+        'h1',
+        'eli',
+        'Have you got anything to eat? I ate my bread before the sun was over the hills. I always do.',
+        {
+          choices: [
+            opt('share', 'Here — have some of my bread and dates.', 'shared', {
+              when: has('bread'),
+              effects: [
+                { type: 'recordChoice', choice: 'choice-eli', option: 'shared' },
+                { type: 'takeItem', item: 'bread' },
+                { type: 'adjustTrust', character: 'eli', delta: 1 },
+              ],
+            }),
+            opt('keep', 'Sorry — I need mine for the road.', 'kept', {
+              when: has('bread'),
+              effects: [{ type: 'recordChoice', choice: 'choice-eli', option: 'kept' }],
+            }),
+            opt('none', 'I’m sorry, I didn’t bring any food.', 'none', { when: not(has('bread')) }),
+          ],
+        },
+      ),
+      say('shared', 'eli', 'Dates too! You’re the best traveler who ever came up our path.', {
+        expression: 'glad',
+        next: 'intro',
+      }),
+      say(
+        'kept',
+        'eli',
+        'That’s all right. Grandfather says a traveler who gives everything away is hungry by noon.',
+        { next: 'intro' },
+      ),
+      say('none', 'eli', 'Nobody ever does. I’ll eat when the flock goes home.', {
+        next: 'intro',
+      }),
+      say(
+        'intro',
+        'eli',
+        'I’m Eli. I mind Grandfather Shimon’s sheep up here. Are you going down to the road? Then listen.',
+        { next: 'w1' },
+      ),
+      say('e3', 'eli', 'Anything else? I’ve got all day. So have the sheep.', {
+        choices: [
+          opt(
+            'message',
+            'Your grandfather says: bring the flock down before the sun is low.',
+            'm1',
+            {
+              when: all(CARRYING_MESSAGE, not(flag('eli-told'))),
+            },
+          ),
+          opt('sheep', 'Where’s your flock?', 's1', { once: true }),
+          opt('bye', 'I have to keep going.', 'b1'),
+        ],
+      }),
+      say('m1', 'eli', 'Before the sun is low! He says that every single day.', { next: 'm2' }),
+      say(
+        'm2',
+        'eli',
+        '…Fine. I’ll start them down the gully early. The cairns go all the way to the road — sheep know the way better than I do.',
+        { effects: [{ type: 'setFlag', flag: 'eli-told', value: true }], next: 'e3' },
+      ),
+      say(
+        's1',
+        'eli',
+        'Down the slope, in the shade, where the grass is. Sheep are cleverer than people think. They always know where the shade is.',
+        { expression: 'glad', next: 'e3' },
+      ),
+      say(
+        'w1',
+        'eli',
+        'This morning, when it was still grey, four men came along the top of the hills. No sheep, no donkeys, nothing to carry. I lay flat behind the rocks until they’d gone down the gully toward the bend.',
+        {
+          expression: 'worried',
+          effects: [{ type: 'discoverClue', clue: 'clue-eli-men' }],
+          next: 'w2',
+        },
+      ),
+      say(
+        'w2',
+        'eli',
+        'Grandfather says when men walk the hills with nothing to carry, they’re looking for something to carry.',
+        { expression: 'worried', next: 'w3' },
+      ),
+      say(
+        'w3',
+        'narrator',
+        'Something to carry. The road below the bend suddenly feels much closer.',
+        { next: 'e3' },
+      ),
+      say('b1', 'eli', 'Follow the cairns down the gully. And watch the loose stones!', {
+        expression: 'glad',
+      }),
+      say(
+        'again-msg',
+        'player',
+        'Eli — your grandfather says to bring the flock down before the sun is low.',
+        { next: 'm1' },
+      ),
     ],
   },
   {

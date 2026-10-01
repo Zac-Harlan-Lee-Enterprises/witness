@@ -106,6 +106,48 @@ export const CHOICES: ChoiceDefinition[] = [
     ],
   },
   {
+    id: 'choice-milk',
+    prompt: 'What did you do with Hagit’s milk at the fold?',
+    themes: ['stewardship', 'lost'],
+    options: [
+      {
+        id: 'shared',
+        label: 'You gave some to Old Yoram’s newborn lamb',
+        consequence:
+          'Old Yoram’s newborn lamb had goat’s milk at the fold, and Dodi had half a jar in the morning.',
+      },
+      {
+        id: 'kept',
+        label: 'You kept it all for Dodi',
+        consequence: 'Dodi had a whole jar of Hagit’s milk when he woke.',
+      },
+    ],
+  },
+  {
+    id: 'choice-loaf',
+    prompt: 'What did you do with the last loaf at supper?',
+    themes: ['hospitality', 'stewardship'],
+    options: [
+      {
+        id: 'set-aside',
+        label: 'You kept it by the oven for whoever might knock',
+        consequence:
+          'The last loaf of the guests’ bread waited by the oven for whoever might come.',
+      },
+      {
+        id: 'yonatan',
+        label: 'You saved it for Yonatan’s breakfast',
+        consequence: 'The last loaf was wrapped up for Yonatan’s breakfast at the fold.',
+      },
+      {
+        id: 'shared',
+        label: 'You shared it round at supper',
+        consequence:
+          'The last loaf was shared round the eating mat, and nobody went to bed hungry.',
+      },
+    ],
+  },
+  {
     id: 'choice-stranger',
     prompt: 'Where did Zerah sleep?',
     themes: ['hospitality'],

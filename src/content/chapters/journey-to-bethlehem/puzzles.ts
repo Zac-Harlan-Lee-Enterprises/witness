@@ -4,12 +4,14 @@ import { ROOM_ITEMS } from './items';
 const flag = (name: string) => ({ type: 'flag' as const, flag: name });
 
 /**
- * Four puzzles, each growing out of the day:
+ * Five puzzles, each growing out of the day:
  *  1. p-bread     — places for supper while the guests' bread bakes (logic grid)
  *  2. p-room      — fit the beds, and what else stays, onto the guest room floor (floor plan;
  *                   knowledge changes what is allowed)
  *  3. p-register  — Uncle Asa's declaration in the clerk's order (sequence; optional side quest)
  *  4. p-lamb      — where did the lamb go? (deduction; one confident sighting is not what it seems)
+ *  5. p-kid       — the order of Hagit's runaway kid's afternoon, from what three people saw
+ *                   (logic grid; its last stop is where the kid is now)
  *
  * The logic grid and the floor plan are Chapter 3's own puzzle types: no
  * other chapter uses them.
@@ -346,6 +348,70 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       {
         type: 'showMessage',
         text: 'You scramble down the gully path in the last of the light.',
+        tone: 'narration',
+      },
+    ],
+  },
+  {
+    id: 'p-kid',
+    type: 'logicGrid',
+    title: 'The Kid’s Afternoon',
+    intro:
+      'Hagit’s little white kid went to four places this afternoon, one after another: the travellers’ cart, the washing by the square, the trough by the well and the threshing floor. Work out the order from what Saba Amram, Uncle Asa and Kallias saw. Wherever she went last, she is still there.',
+    subjectsLabel: 'Where',
+    optionsLabel: 'When',
+    subjects: [
+      { id: 'cart', label: 'The travellers’ cart' },
+      { id: 'washing', label: 'The washing by the square' },
+      { id: 'well', label: 'The trough by the well' },
+      { id: 'threshing', label: 'The threshing floor' },
+    ],
+    options: [
+      { id: 'first', label: 'First', position: 1 },
+      { id: 'second', label: 'Second', position: 2 },
+      { id: 'third', label: 'Third', position: 3 },
+      { id: 'last', label: 'Last', position: 4 },
+    ],
+    clues: [
+      {
+        id: 'amram-barley',
+        text: 'Saba Amram: the travellers were shouting about their nibbled barley while the washing was still whole. The cart came before the washing.',
+        rule: { type: 'before', a: 'cart', b: 'washing' },
+      },
+      {
+        id: 'asa-cloth',
+        text: 'Uncle Asa: the kid trotted past the line with a scrap of blue cloth in its mouth, on its way to the well. The washing came before the well.',
+        rule: { type: 'before', a: 'washing', b: 'well' },
+      },
+      {
+        id: 'kallias-trough',
+        text: 'Kallias: the kid arrived at the trough already chewing, and wandered off again afterwards. The well was neither first nor last.',
+        rule: { type: 'noneOf', subject: 'well', options: ['first', 'last'] },
+      },
+    ],
+    answer: { cart: 'first', washing: 'second', well: 'third', threshing: 'last' },
+    hints: [
+      {
+        tier: 1,
+        text: 'Start with the well: Kallias rules out two of its four places.',
+      },
+      {
+        tier: 2,
+        text: 'The washing came before the well, and the cart came before the washing. If the well were second, what would be left for the cart?',
+      },
+      {
+        tier: 3,
+        text: 'Full method: the well is second or third. The washing comes before it and the cart before the washing, so the well needs two places in front of it: it is third, the washing second and the cart first. That leaves the threshing floor last — and that is where the kid is now.',
+      },
+    ],
+    explanation:
+      'The barley came first, then the washing, then a drink at the trough, and last of all the threshing floor, where the chaff is. Each of the three people saw only one part of the kid’s afternoon; put together, their accounts tell you where she is. (Hagit, her kid and the lanes are made up for the game.)',
+    recordIds: ['rec-pl-lanes'],
+    onSolved: [
+      { type: 'setFlag', flag: 'kid-tracked', value: true },
+      {
+        type: 'showMessage',
+        text: 'The threshing floor, at the windy edge of the village. That’s where she’ll be.',
         tone: 'narration',
       },
     ],

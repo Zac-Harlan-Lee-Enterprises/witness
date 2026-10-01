@@ -11,9 +11,17 @@ import {
   solved,
   type DialogueInput,
 } from './helpers';
+import { SUPPER_DIALOGUES } from './supper';
+import { KID_SEEN_BY_ASA } from './village';
 
 const stranger = (option: string) => chose('choice-stranger', option);
 const room = (option: string) => chose('choice-room', option);
+/** You kept the last loaf by the oven at supper, for whoever might knock. */
+const loafKept = chose('choice-loaf', 'set-aside');
+const givenBread = [
+  setFlag('zerah-bread'),
+  { type: 'adjustTrust' as const, character: 'zerah', delta: 1 },
+];
 /** Uncle Asa came home before dark (the side quest). */
 const asaHomeEarly = solved('p-register');
 
@@ -151,8 +159,14 @@ export const HOME_DIALOGUES: DialogueInput[] = [
             { type: 'giveItem', item: 'lamp' },
             setFlag('supper-given'),
           ],
-          next: 'give3',
+          next: 'give-milk',
         },
+      ),
+      say(
+        'give-milk',
+        'tamar',
+        'Oh — and our goat has given all she has today; Dodi drinks like a calf. Ask Hagit next door for a jar of milk on your way. She’ll have some. She always does.',
+        { next: 'give3' },
       ),
       say(
         'give3',
@@ -175,7 +189,58 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say('night', 'tamar', 'What a day. Sit with me by the fire a moment, {player}.', {
         expression: 'glad',
         branches: [{ when: flag('heard-report'), next: 'night-after' }],
+        next: 'fire',
       }),
+      say(
+        'fire',
+        'narrator',
+        'The fire has burned down to a red glow. Tamar pulls her shawl round her.',
+        {
+          choices: [
+            opt('tired', 'Are you tired?', 'tired', { once: true }),
+            opt('grandmother', 'Tell me about your grandmother.', 'grandmother', { once: true }),
+            opt('room', 'Was there really room for everyone today?', 'room-talk', { once: true }),
+            opt('bed', 'Good night, Mother.'),
+          ],
+        },
+      ),
+      say(
+        'tired',
+        'tamar',
+        'To my bones. But it’s the good kind of tired — the kind you get from a full house, not an empty one. Your father used to say a house with no guests is only a roof.',
+        { next: 'fire' },
+      ),
+      say(
+        'grandmother',
+        'tamar',
+        'She was small and fierce, and she baked for half the lane. Whenever anyone knocked, she said the same thing: “Put more water in the soup.” There was always a bowl for one more.',
+        { expression: 'glad', next: 'fire' },
+      ),
+      say('room-talk', 'tamar', 'Room?', {
+        branches: [
+          { when: chose('choice-stranger', 'no-room'), next: 'room-none' },
+          { when: chose('choice-room', 'made-space'), next: 'room-space' },
+        ],
+        next: 'room-full',
+      }),
+      say(
+        'room-space',
+        'tamar',
+        'You left a space in the guest room this afternoon, before anyone knew who would need it. That was well thought of, {player}.',
+        { expression: 'glad', next: 'fire' },
+      ),
+      say(
+        'room-none',
+        'tamar',
+        'Not for everyone, no. I keep thinking of that old man by the well. A house can only hold so much — but it’s hard, isn’t it, saying so at the door.',
+        { next: 'fire' },
+      ),
+      say(
+        'room-full',
+        'tamar',
+        'Just about. The guest room is full to the walls, the donkeys have the loom for company, and your uncle is snoring. That’s what room looks like on a night like this.',
+        { expression: 'glad', next: 'fire' },
+      ),
       say(
         'night-after',
         'tamar',
@@ -296,8 +361,25 @@ export const HOME_DIALOGUES: DialogueInput[] = [
         'early',
         'asa',
         'Registered! Kallias wrote me down in no time, thanks to you. Asa son of Amram, a man with a household and a share of a roof. What can I carry?',
-        { expression: 'glad' },
+        {
+          expression: 'glad',
+          choices: [
+            opt('kid', 'Did you see a little white goat kid while you were in line?', 'kid', {
+              once: true,
+              when: all(flag('kid-missing'), not(flag('kid-home'))),
+            }),
+            opt('bye', 'Nothing yet, Uncle.'),
+          ],
+        },
       ),
+      say('kid', 'asa', KID_SEEN_BY_ASA, {
+        expression: 'surprised',
+        effects: [
+          { type: 'discoverClue', clue: 'clue-asa-lamb' },
+          { type: 'discoverClue', clue: 'clue-kid-asa' },
+        ],
+        next: 'early',
+      }),
       say(
         'tools',
         'asa',
@@ -367,19 +449,12 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say(
         'e2',
         'narrator',
-        'Everyone eats Tamar’s bread by the fire. One by one, the guests settle down to sleep. Then — a knock at the door.',
-        { next: 'e3' },
-      ),
-      say(
-        'e3',
-        'narrator',
-        'An old man stands in the doorway, holding up a little clay lamp and leaning on a stick.',
-        {
-          effects: [setFlag('zerah-arrived'), { type: 'startDialogue', dialogue: 'd-zerah' }],
-        },
+        'Supper is ready. Everyone crowds round the eating mat, in the places you set at midday: Saba Amram nearest the fire, Uncle Asa beside him, Aunt Peninah with Dodi asleep in her lap, and Tamar by the door.',
+        { effects: [{ type: 'startDialogue', dialogue: 'd-supper' }] },
       ),
     ],
   },
+  ...SUPPER_DIALOGUES,
   {
     id: 'd-zerah',
     characterId: 'zerah',
@@ -520,12 +595,69 @@ export const HOME_DIALOGUES: DialogueInput[] = [
       say('none2', 'narrator', 'He lifts his little lamp and goes back out into the lane.', {
         next: 'end',
       }),
-      say('end', 'narrator', 'When you’re ready, lie down to sleep.', { kind: 'instruction' }),
-      say('after-own', 'zerah', 'Go to sleep, child. I’ll keep the fire company.'),
+      say('end', 'narrator', 'Tamar banks the fire for the night.', {
+        branches: [
+          { when: all(loafKept, stranger('no-room')), next: 'bread-out' },
+          { when: loafKept, next: 'bread' },
+        ],
+        next: 'sleep',
+      }),
+      say(
+        'bread',
+        'narrator',
+        'Before anyone lies down, you fetch the loaf you kept by the oven and put it into Zerah’s hands.',
+        { effects: givenBread, next: 'bread2' },
+      ),
+      say(
+        'bread-out',
+        'narrator',
+        'You snatch up the loaf you kept by the oven, run after Zerah and catch him at the corner of the lane.',
+        { effects: givenBread, next: 'bread2' },
+      ),
+      say(
+        'bread2',
+        'zerah',
+        'Bread, at this hour? …Then I have been welcomed in Bethlehem after all. My grandfather always said this town’s bread was the best in Judea.',
+        { expression: 'glad', next: 'sleep' },
+      ),
+      say('sleep', 'narrator', 'When you’re ready, lie down to sleep.', { kind: 'instruction' }),
+      say('after-own', 'zerah', 'Go to sleep, child. I’ll keep the fire company.', {
+        next: 'talk',
+      }),
       say('after-guest', 'zerah', 'Shh. Everyone is asleep. Thank you again.', {
         expression: 'glad',
+        next: 'talk',
       }),
-      say('after-straw', 'zerah', 'The donkey snores. Did you know that?', { expression: 'glad' }),
+      say('after-straw', 'zerah', 'The donkey snores. Did you know that?', {
+        expression: 'glad',
+        next: 'talk',
+      }),
+      say('talk', 'narrator', 'Zerah isn’t asleep yet.', {
+        choices: [
+          opt('tekoa', 'What is it like, where you live?', 'tekoa', { once: true }),
+          opt('grandfather', 'Your grandfather was born here?', 'grandfather', { once: true }),
+          opt('baskets', 'What kind of baskets do you make?', 'baskets', { once: true }),
+          opt('night', 'Good night, Zerah.'),
+        ],
+      }),
+      say(
+        'tekoa',
+        'zerah',
+        'Quiet. A little village on a hill, and dry hills all round it, and sheep. My door looks east. In the mornings I sit in it and weave until the sun gets round to my feet.',
+        { next: 'talk' },
+      ),
+      say(
+        'grandfather',
+        'zerah',
+        'Two lanes from this door, he always said, though he left when he was younger than you. I came to be written down — and to see it. Now I’ve seen it by lamplight, which is the best way to see anything.',
+        { expression: 'glad', next: 'talk' },
+      ),
+      say(
+        'baskets',
+        'zerah',
+        'Big ones for grain, flat ones for bread, and little ones with lids for anything a grandmother wants to hide. You make a basket the way you make a friend: one strand at a time, and you don’t pull too hard.',
+        { expression: 'glad', next: 'talk' },
+      ),
     ],
   },
   {

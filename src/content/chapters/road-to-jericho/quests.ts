@@ -1,7 +1,7 @@
 import type { Condition } from '@/domain/conditions';
 import type { ChapterInput } from '@/domain/chapter';
 import { QUEST_EMITTED_EVENTS } from '@/domain/quests';
-import { INCIDENT_CLUES, ROAD_ADVICE_CLUES } from './clues';
+import { CLOAK_CLUES, INCIDENT_CLUES, ROAD_ADVICE_CLUES } from './clues';
 
 const flag = (name: string): Condition => ({ type: 'flag', flag: name });
 
@@ -17,12 +17,19 @@ export const QUESTS: ChapterInput['quests'] = [
       {
         id: 'prepare',
         title: 'Get Ready for the Road',
-        description: 'Ask travelers in the market about the road, then pack your satchel at home.',
+        description:
+          'Ask travelers in the market about the road, collect Rivka’s linen from Hadassah, then pack your satchel at home.',
         objectives: [
           {
             id: 'ask-road',
             description: 'Ask travelers in the market about the road (at least 2 pieces of advice)',
             completeWhen: { type: 'cluesFound', clues: ROAD_ADVICE_CLUES, min: 2 },
+            optional: false,
+          },
+          {
+            id: 'collect-linen',
+            description: 'Collect Rivka’s linen from Hadassah the weaver',
+            completeWhen: flag('linen-collected'),
             optional: false,
           },
           {
@@ -102,6 +109,12 @@ export const QUESTS: ChapterInput['quests'] = [
             optional: true,
           },
           {
+            id: 'meet-eli',
+            description: 'Optional: talk to the shepherd boy by the cistern',
+            completeWhen: { type: 'conversationDone', dialogue: 'd-eli' },
+            optional: true,
+          },
+          {
             id: 'rejoin',
             description: 'Follow the path down to the road',
             completeWhen: {
@@ -155,6 +168,21 @@ export const QUESTS: ChapterInput['quests'] = [
             id: 'deliver',
             description: 'Give Rivka the remedy',
             completeWhen: flag('remedy-delivered'),
+            optional: false,
+          },
+        ],
+        next: 'natan',
+        onEnter: [],
+      },
+      {
+        id: 'natan',
+        title: 'While the Remedy Steeps',
+        description: 'Rivka is preparing the remedy. Keep Natan company until she comes back.',
+        objectives: [
+          {
+            id: 'keep-company',
+            description: 'Sit with Natan',
+            completeWhen: flag('sat-with-natan'),
             optional: false,
           },
         ],
@@ -305,5 +333,113 @@ export const QUESTS: ChapterInput['quests'] = [
     eventsConsumed: ['FlagChanged', 'PuzzleCompleted', 'SceneEntered'],
     eventsEmitted: [...QUEST_EMITTED_EVENTS],
     journal: { onStart: 'je-dispute' },
+  },
+  {
+    id: 'q-message',
+    name: 'A Message for Eli',
+    description:
+      'Old Shimon’s grandson Eli is minding the flock on the ridge. Shimon wants him to bring it down before the sun is low.',
+    kind: 'side',
+    autoStart: false,
+    stages: [
+      {
+        id: 'deliver',
+        title: 'Find Eli',
+        description: 'Tell Eli, at the cistern on the ridge, to bring the flock down early.',
+        objectives: [
+          {
+            id: 'tell',
+            description: 'Give Eli his grandfather’s message (at the cistern on the ridge)',
+            completeWhen: flag('eli-told'),
+            optional: false,
+          },
+        ],
+        onEnter: [],
+      },
+    ],
+    failWhen: {
+      type: 'all',
+      of: [
+        { type: 'visited', scene: 'jericho' },
+        { type: 'not', condition: flag('eli-told') },
+      ],
+    },
+    failOutcome: 'undelivered',
+    outcomes: [
+      {
+        id: 'delivered',
+        kind: 'success',
+        title: 'Message delivered',
+        description: 'Eli grumbled, and promised to bring the flock down the gully early.',
+        rewards: [{ type: 'adjustTrust', character: 'shimon', delta: 1 }],
+      },
+      {
+        id: 'undelivered',
+        kind: 'alternate',
+        title: 'Not delivered',
+        description: 'You reached Jericho without giving Eli the message.',
+        rewards: [],
+      },
+    ],
+    eventsConsumed: ['FlagChanged', 'SceneEntered'],
+    eventsEmitted: [...QUEST_EMITTED_EVENTS],
+    journal: { onStart: 'je-message' },
+  },
+  {
+    id: 'q-cloak',
+    name: 'Whose Cloak?',
+    description:
+      'Salome has a cloak with a blue stripe that a goatherd brought in this morning. Whose is it?',
+    kind: 'side',
+    autoStart: false,
+    stages: [
+      {
+        id: 'look',
+        title: 'Look Closely',
+        description: 'Examine the cloak and hear where it came from, then decide whose it is.',
+        objectives: [
+          {
+            id: 'examine',
+            description: 'Examine the striped cloak (on the sacks by the inn)',
+            completeWhen: { type: 'cluesFound', clues: CLOAK_CLUES, min: 2 },
+            optional: true,
+          },
+          {
+            id: 'identify',
+            description: 'Work out whose cloak it is',
+            completeWhen: { type: 'puzzleSolved', puzzle: 'p-cloak' },
+            optional: false,
+          },
+        ],
+        next: 'return',
+        onEnter: [],
+      },
+      {
+        id: 'return',
+        title: 'Tell Salome',
+        description: 'Tell Salome whose cloak it is.',
+        objectives: [
+          {
+            id: 'tell',
+            description: 'Talk to Salome',
+            completeWhen: flag('cloak-returned'),
+            optional: false,
+          },
+        ],
+        onEnter: [],
+      },
+    ],
+    outcomes: [
+      {
+        id: 'returned',
+        kind: 'success',
+        title: 'Back with its owner',
+        description: 'Menashe’s own cloak, thrown away by the robbers, is kept for him at the inn.',
+        rewards: [{ type: 'adjustTrust', character: 'salome', delta: 1 }],
+      },
+    ],
+    eventsConsumed: ['FlagChanged', 'PuzzleCompleted', 'ClueDiscovered'],
+    eventsEmitted: [...QUEST_EMITTED_EVENTS],
+    journal: { onComplete: 'je-cloak' },
   },
 ];

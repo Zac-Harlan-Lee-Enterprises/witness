@@ -111,6 +111,10 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         choices: [
           opt('advice', 'I’m going down to Jericho. Any advice?', 's2', { once: true }),
           opt('water', 'Is there any water on the way?', 's4', { once: true }),
+          opt('favor', 'If I take your path, can I do anything for you up there?', 's8', {
+            once: true,
+            when: { type: 'clueFound', clue: 'clue-cistern' },
+          }),
           opt('bye', 'Goodbye, Shimon.'),
         ],
       }),
@@ -153,6 +157,25 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
           next: 's1',
         },
       ),
+      say(
+        's8',
+        'shimon',
+        'Hm. You might. My grandson Eli is minding the flock by the cistern today. Tell him to bring them down the gully before the sun is low. He forgets the time when he’s watching hawks.',
+        {
+          choices: [
+            opt('yes', 'I’ll tell him.', 's9', {
+              effects: [{ type: 'startQuest', quest: 'q-message' }],
+            }),
+            opt('no', 'I don’t know if I’ll see him.', 's1'),
+          ],
+        },
+      ),
+      say(
+        's9',
+        'shimon',
+        'Good. He’s the small one with the big staff. You’ll hear him before you see him.',
+        { next: 's1' },
+      ),
     ],
   },
 
@@ -185,7 +208,29 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
           next: 't3',
         },
       ),
-      say('t3', 'narrator', 'Tobiah sounds very sure — but he has never actually walked the wadi.'),
+      say(
+        't3',
+        'narrator',
+        'Tobiah sounds very sure — but he has never actually walked the wadi.',
+        {
+          choices: [
+            opt('why', 'Then why tell everyone it’s fastest?', 't4'),
+            opt('leave', 'I’ll ask someone who has walked it.'),
+          ],
+        },
+      ),
+      say(
+        't4',
+        'tobiah',
+        'Because it LOOKS fastest! Straight down, no bends… Hm. And if someone took my word and got stuck at the bottom of it…',
+        { next: 't5' },
+      ),
+      say('t5', 'tobiah', 'All right, all right. From now on I’ll say “ask a shepherd.” Happy?', {
+        effects: [
+          { type: 'setFlag', flag: 'tobiah-rethinks', value: true },
+          { type: 'adjustTrust', character: 'tobiah', delta: 1 },
+        ],
+      }),
     ],
   },
 
@@ -198,6 +243,9 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
       say('h1', 'hadassah', 'Linen! Fine linen, clean and strong! Oh — hello, dear. Buying?', {
         expression: 'glad',
         choices: [
+          opt('rivka', 'Aunt Miriam sent me for Rivka’s linen.', 'r1', {
+            when: not(flag('linen-collected')),
+          }),
           opt('use', 'What could I use linen for on a journey?', 'h2', { once: true }),
           opt('buy', 'I’ll buy some linen strips.', 'h3', {
             when: all(not(has('linen')), not(flag('bought-linen'))),
@@ -257,6 +305,36 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         },
       ),
       say('h7', 'hadassah', 'Anyway! Linen?', { next: 'h1' }),
+      say(
+        'r1',
+        'hadassah',
+        'Miriam’s youngster! Of course — I’ve had it folded and waiting since yesterday. Six sheets, the finest I’ve woven this year. Rivka’s boy will sleep cool in these.',
+        {
+          expression: 'glad',
+          effects: [
+            { type: 'giveItem', item: 'linen-bundle' },
+            { type: 'setFlag', flag: 'linen-collected', value: true },
+          ],
+          next: 'r2',
+        },
+      ),
+      say(
+        'r2',
+        'hadassah',
+        'Mind you keep it out of the dust. And don’t let anyone on that road talk you out of it — linen like that is worth stealing.',
+        {
+          choices: [
+            opt('heavy', 'It’s heavier than it looks.', 'r3'),
+            opt('thanks', 'I’ll keep it safe.', 'h1'),
+          ],
+        },
+      ),
+      say(
+        'r3',
+        'hadassah',
+        'Good linen always is. That’s how you know it will last. Pack it well, dear.',
+        { next: 'h1' },
+      ),
     ],
   },
 
@@ -472,6 +550,10 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
           opt('jericho', 'I’m walking down to Jericho.', 'l2', { once: true }),
           opt('temple', 'What do you do at the Temple?', 'l3', { once: true }),
           opt('law', 'Can I ask you a question about the Law?', 'l4', { once: true }),
+          opt('another', 'Can I ask you one more question?', 'l9', {
+            once: true,
+            when: flag('heard-hanan-law'),
+          }),
           opt('bye', 'Goodbye.'),
         ],
       }),
@@ -519,6 +601,19 @@ export const MARKET_DIALOGUES: DialogueInput[] = [
         'l8',
         'hanan',
         'Go safely, friend. If you find an answer on the road, come back and tell me.',
+        { next: 'l1' },
+      ),
+      say('l9', 'hanan', 'Ask. Questions are how a student learns.', {
+        choices: [
+          opt('greatest', 'What’s the most important command?', 'l6'),
+          opt('neighbor', 'Who counts as my neighbor?', 'l7'),
+          opt('hard', 'Is it hard, trying to live by all of it?', 'l10'),
+        ],
+      }),
+      say(
+        'l10',
+        'hanan',
+        'Hard? Some days. My teacher says knowing the words is the easy part. The hard part is the moment on an ordinary day when they ask something of you — and you’re tired, or busy, or afraid.',
         { next: 'l1' },
       ),
     ],

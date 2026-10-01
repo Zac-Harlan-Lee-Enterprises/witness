@@ -43,3 +43,23 @@ export function draft(options: DraftOptions): Governance {
 
 /** The chapter's own fictional story (not educational). */
 export const STORY = draft({ confidence: 'not-applicable' });
+
+/**
+ * Text added on 2026-09-30, when the chapter was made longer. It was written
+ * after the owner's approval of 2026-09-26, which therefore does not cover it
+ * (see withApprovals in src/content/shared/approvals.ts): it stays in review
+ * until a named person approves it.
+ */
+const LONGER = '2026-09-30';
+
+export const LATER_STORY: Governance = {
+  ...STORY,
+  history: [
+    {
+      version: 1,
+      date: LONGER,
+      author: 'Claude (AI-assisted draft)',
+      summary: 'Added when Chapter 4 was made longer. Needs human review.',
+    },
+  ],
+};

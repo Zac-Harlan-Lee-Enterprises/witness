@@ -363,4 +363,99 @@ export const PUZZLES: ChapterInput['puzzles'] = [
       },
     ],
   },
+  {
+    id: 'p-hiding',
+    type: 'deduction',
+    title: 'Where Did Kallias Go?',
+    intro:
+      'Kallias saw you coming down the road and ran. His paddle is still in the vat, and the dye is still moving. Work out where he went — and back it up with what you have found.',
+    question: 'Where is Kallias?',
+    options: [
+      {
+        id: 'laodicea',
+        label: 'Down the road to Laodicea',
+        description: 'Away from everyone who knows what he did.',
+      },
+      {
+        id: 'waystation',
+        label: 'At the waystation',
+        description: 'Back up the road, where there is food and a roof.',
+      },
+      {
+        id: 'shed',
+        label: 'Hiding in the drying shed',
+        description: 'Dark inside, and full of hanging wool.',
+      },
+      {
+        id: 'bank',
+        label: 'Down on the riverbank by the bridge',
+        description: 'Below the works, out of sight of the road.',
+      },
+    ],
+    answer: 'bank',
+    requiredEvidence: 2,
+    evidence: [
+      {
+        clueId: 'clue-red-prints',
+        reliable: true,
+        bearsOn: [
+          { option: 'bank', stance: 'supports' },
+          { option: 'waystation', stance: 'against' },
+        ],
+        note: 'Wet red footprints lead from his vat toward the bridge, not up the road to the waystation.',
+      },
+      {
+        clueId: 'clue-saw-him-go',
+        reliable: true,
+        bearsOn: [
+          { option: 'bank', stance: 'supports' },
+          { option: 'shed', stance: 'against' },
+        ],
+        note: 'Someone working by the shed door saw him go round the end of the vats toward the bridge — not into the shed.',
+      },
+      {
+        clueId: 'clue-cloak-peg',
+        reliable: true,
+        bearsOn: [{ option: 'laodicea', stance: 'against' }],
+        note: 'His cloak and his bundle are still on the peg. Nobody sets off for Laodicea in the rain without them.',
+      },
+      {
+        clueId: 'clue-nikon-guess',
+        reliable: false,
+        bearsOn: [{ option: 'waystation', stance: 'supports' }],
+        note: 'The overseer was counting amphorae and never saw him go. It is a guess about his appetite, not a sighting.',
+      },
+    ],
+    wrongAnswerFeedback: {
+      laodicea:
+        'Would he set off down the road in the rain without his cloak and his food? Look just inside the shed door.',
+      waystation: 'Who actually saw him go — and which way do the red footprints by his vat point?',
+      shed: 'Someone was working right by the shed door when he ran. Ask her which way he went.',
+    },
+    hints: [
+      {
+        tier: 1,
+        text: 'Look where he was standing and around the works — the ground by his vat, the shed door — and ask the people who work here.',
+      },
+      {
+        tier: 2,
+        text: 'Rule places out. Is his cloak still here? Did anyone see him go into the shed? Which way do the footprints go?',
+      },
+      {
+        tier: 3,
+        text: 'The riverbank by the bridge. Present two things — for example the red footprints and what was seen by the shed door.',
+      },
+    ],
+    explanation:
+      'The footprints and what was seen by the shed door both point to the bridge, and his cloak on the peg means he hasn’t set off anywhere. A confident guess from someone who wasn’t looking can’t tell you where a person went. (The dye works, the bridge and everyone at them are made up for the game.)',
+    recordIds: ['rec-rec-road'],
+    onSolved: [
+      { type: 'setFlag', flag: 'kallias-tracked', value: true },
+      {
+        type: 'showMessage',
+        text: 'Down on the riverbank, beside the bridge. That’s where he’ll be.',
+        tone: 'narration',
+      },
+    ],
+  },
 ];

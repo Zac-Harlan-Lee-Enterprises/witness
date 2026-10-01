@@ -2,15 +2,15 @@
 
 A story-driven, local-first adventure game set in the world of the Bible, for ages 10 and up — families, Christian schools, Sunday school and youth groups, and curious adults. You play a fictional young person living near events told in Scripture. You explore, talk with people, gather clues, solve puzzles and make choices with real consequences — and you learn about the Bible and its world **because of** what you explore and decide, not from a quiz bolted on top.
 
-**Chapter 1 — The Road to Jericho** (≈20–30 minutes) is complete and playable: carry a remedy from Jerusalem to a sick child in Jericho, down a road with a dangerous reputation; weigh conflicting advice; pack a satchel that can't hold everything; choose a route from evidence; find a robbed traveler and decide what to do with limited water, time and courage; then hear about a story Jesus told on that very road (Luke 10:25–37).
+**Chapter 1 — The Road to Jericho** (≈20–30 minutes for a first-time player, measured by `tests/integration/play-time.test.ts`) is complete and playable: carry a remedy and a bundle of linen from Jerusalem to a sick child in Jericho, down a road with a dangerous reputation; weigh conflicting advice; pack a satchel that can't hold everything; choose a route from evidence; meet a shepherd boy who saw men go down toward the bend at dawn; find a robbed traveler and decide what to do with limited water, time and courage; work out whose cloak turned up at the inn; then sit with the sick child and hear about a story Jesus told on that very road (Luke 10:25–37).
 
 Three more chapters, each about 20–30 minutes, sit beside other passages without rewriting them:
 
-- **Chapter 2 — A Storm on Galilee** (Mark 4:35–41): a fishing family's boat is one of the "other boats" on the lake the evening the storm comes.
+- **Chapter 2 — A Storm on Galilee** (Mark 4:35–41): a fishing family's boat is one of the "other boats" on the lake the evening the storm comes; help ready a leaking little boat on the shore, and bring the news home.
 - **Chapter 3 — A Journey to Bethlehem** (Luke 2:1–20): a crowded household during the registration hears what the shepherds tell.
 - **Chapter 4 — A Letter from Paul** (Philemon; Colossians 4:7–18): a letter carried by hand and read aloud in Colossae.
 
-Every place is pre-rendered in 3D (Blender, `tools/art/`) and composited by Phaser with live weather, water and light; characters have rendered portraits. All educational content in Chapters 2–4 is an AI draft awaiting human review.
+Every place is pre-rendered in 3D (Blender, `tools/art/`) and composited by Phaser with live weather, water and light; characters have rendered portraits. The owner approved the AI-drafted content of all four chapters on 2026-09-26; what was added to Chapters 1 and 2 on 2026-09-30 to make them longer is an AI draft awaiting his review.
 
 > The working title is configurable (`VITE_GAME_TITLE`).
 

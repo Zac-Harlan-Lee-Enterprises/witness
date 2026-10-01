@@ -1,5 +1,6 @@
 import type { ChapterInput } from '@/domain/chapter';
 import type { ScriptureRef } from '@/domain/scripture';
+import { draftOn, LONGER_CHAPTERS_DRAFTED } from '../../shared/governance';
 import { draft, STORY } from './governance';
 
 /**
@@ -45,6 +46,55 @@ const fiction = (id: string, title: string, body: string): RecordInput => ({
   sources: [],
   governance: STORY,
 });
+
+/**
+ * Fiction added when the chapter was made longer (a new person, errands and
+ * two puzzles). Drafted after the owner's approval of 2026-09-26, which
+ * does not cover it: it stays an AI draft until a named person approves it.
+ */
+const LATER_STORY = draftOn(
+  LONGER_CHAPTERS_DRAFTED,
+  'Drafted to make Chapter 2 longer and richer: Grandmother’s corner, Hodaya of the Magdala crew, Oded’s leaking boat, the lamp at the stern, the net on the way home and telling Nikanor. Needs human review.',
+  { confidence: 'not-applicable' },
+);
+
+const laterFiction = (id: string, title: string, body: string): RecordInput => ({
+  id,
+  kind: 'fiction',
+  title,
+  body,
+  sources: [],
+  governance: LATER_STORY,
+});
+
+/** The records added when the chapter was made longer (see LATER_STORY). */
+export const LATER_RECORDS: ChapterInput['records'] = [
+  laterFiction(
+    'rec-p-hodaya',
+    'Hodaya',
+    'A young fisher from Magdala whose crew hauled their boat high up the shingle at Capernaum and stayed ashore that night, watching the lamps on the water.',
+  ),
+  laterFiction(
+    'rec-e-corner',
+    'Grandmother’s corner',
+    'Before you left, Grandmother had you tie the last knots of the family’s mark in her net: a little boat under sail. (The mark is made up for the game.)',
+  ),
+  laterFiction(
+    'rec-e-leak',
+    'A leaking boat',
+    'Oded’s borrowed rowing boat had a cracked seam with a rag stuffed in it. Uncle Elazar knew how to seal it, and Nikanor had pitch. (How the seam is sealed is simplified for the game.)',
+  ),
+  laterFiction(
+    'rec-e-lamp',
+    'A lamp at the stern',
+    'Out on the dark water, a lamp hung low on the sternpost showed the smaller boats behind where your family’s boat was.',
+  ),
+  laterFiction(
+    'rec-e-nikanor',
+    'News for Nikanor',
+    'Home in the middle of the night, you told Nikanor that everyone was safe — and what had become of his jars.',
+  ),
+];
 
 export const RECORDS: ChapterInput['records'] = [
   // ── Scripture references ─────────────────────────────────────────────
@@ -541,4 +591,5 @@ export const RECORDS: ChapterInput['records'] = [
     'The crossing',
     'From the jetty at Capernaum, the boats headed east across the lake toward the far shore, with the teacher’s boat ahead. Your family’s boat turned back after the storm. (The route and the boats are fiction.)',
   ),
+  ...LATER_RECORDS,
 ];

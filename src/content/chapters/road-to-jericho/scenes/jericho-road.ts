@@ -222,6 +222,16 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
         ],
       },
     },
+    {
+      id: 'eli',
+      kind: 'npc',
+      label: 'Eli, the shepherd boy',
+      characterId: 'eli',
+      x: 31,
+      y: 3,
+      facing: 'down',
+      interaction: { verb: 'talk', dialogue: 'd-eli' },
+    },
     // ── Below the bend ─────────────────────────────────────────────────
     clue(
       'single-prints',
@@ -375,6 +385,13 @@ export const JERICHO_ROAD: ChapterInput['scenes'][number] = {
           text: 'Ahead, beside the path: a stone cistern, and a cairn of three stones.',
         },
       ],
+    },
+    {
+      id: 'eli',
+      area: { x: 30, y: 3, w: 1, h: 3 },
+      onceFlag: 'eli-greeted',
+      when: { type: 'not', condition: { type: 'conversationDone', dialogue: 'd-eli' } },
+      effects: [{ type: 'startDialogue', dialogue: 'd-eli' }],
     },
     {
       id: 'ridge-end',

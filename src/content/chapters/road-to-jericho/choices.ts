@@ -101,6 +101,40 @@ export const CHOICES: ChoiceDefinition[] = [
     ],
   },
   {
+    id: 'choice-eli',
+    prompt: 'When Eli said he was hungry, what did you do?',
+    themes: ['stewardship', 'hospitality'],
+    options: [
+      {
+        id: 'shared',
+        label: 'You shared your bread with him',
+        consequence: 'Eli ate, and your bread and dates were gone before the bend.',
+      },
+      {
+        id: 'kept',
+        label: 'You kept your bread for the road',
+        consequence: 'You still had your bread and dates when you reached the bend.',
+      },
+    ],
+  },
+  {
+    id: 'choice-bandage',
+    prompt: 'With no linen strips of your own, what did you bind Menashe’s wounds with?',
+    themes: ['mercy', 'stewardship'],
+    options: [
+      {
+        id: 'rivka-linen',
+        label: 'A strip cut from Rivka’s linen',
+        consequence: 'One of Rivka’s new sheets reached Jericho a strip short.',
+      },
+      {
+        id: 'tunic',
+        label: 'A strip torn from your own tunic',
+        consequence: 'Rivka’s linen arrived whole; your tunic did not.',
+      },
+    ],
+  },
+  {
     id: 'choice-traveler',
     prompt: 'What did you do for the injured traveler?',
     themes: ['mercy', 'courage', 'neighbor', 'stewardship'],

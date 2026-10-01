@@ -442,4 +442,51 @@ TESTS  : Vitest 723 -> 742 (vats' coals, half-set detail per place, sail shadows
          mobile, storm-on-galilee, letter-from-paul): 24 passed, 1 skipped. Teaser MP4 11.3 MB, WebM 10.7 MB.
 NEXT   : The owner to confirm the MakeHuman body for the teaser's man (ADR-0016 addendum); if not, replace
          teaser_body.LyingMan with a body built in code and run `node scripts/art-build.mjs teaser --shots 7`.
+--- 2026-09-30  Claude Opus 5.5 (longer-chapters agent) — Chapters 1 and 2 made longer (feat/longer-ch1-ch2) ---
+DONE   : Measured play time first (tests/support/play-time.ts + tests/integration/play-time.test.ts: counts what a
+         headless player is shown; steady 230 wpm and brisk 320 wpm readers; direct and curious runs). Before:
+         Ch1 direct 16/10 min (steady/brisk), curious 29/19; Ch2 direct 19/12, curious 30/20. After: Ch1 19/12,
+         38/26; Ch2 23/15, 39/26. Ch1: Rivka's linen (Miriam's errand via Hadassah; essential in the satchel; cut a
+         strip to bind Menashe, choice-bandage; Rivka's answer), Eli (new pre-rendered character on the ridge: bread
+         choice-eli, what he saw at dawn, Shimon's message side quest q-message changes who finds Menashe), Whose
+         Cloak? (q-cloak, deduction p-cloak at the inn), a new main-quest stage sitting with Natan before Yair,
+         Tobiah pressed, Hanan's extra question, Miriam's greeting to Salome. Ch2: Grandmother's corner (netting
+         p-corner, required before the door), Hodaya of the Magdala crew (new pre-rendered character; old bailer for
+         Oded), Oded's Leaking Boat (q-leak, sequence p-patch; results shown in the storm and at night), lamp at the
+         stern, see to the others before home (required), net on the way home (choice-net, home at 27), tell Nikanor
+         before Grandmother (required), Hanina awake at night. Governance: withApprovals now covers only records
+         drafted on or before the approval date (draftOn, LONGER_CHAPTERS_DRAFTED = 2026-09-30); new records
+         (LATER_RECORDS in both chapters) stay ai-draft. No new historical claims or sources. Art: Eli and Hodaya
+         people sheets + portraits (neutral/glad/worried) rendered under the render lock; no place re-rendered.
+         Docs: game-design.md (acts, scenes, quests, puzzles, choices, time model note, new §17 How long it plays),
+         chapters/storm-on-galilee.md (§13), README, executive summary, content-governance approval log,
+         testing-strategy, feature_list.json.
+TESTS  : Vitest 723 -> 748 (69 -> 71 files). e2e on 4489/5489: chapter, storm-on-galilee, a11y, smoke, mobile: 21 passed,
+         1 skipped. typecheck, lint, prettier, knip, content:validate clean. origin/main (PR #16) merged.
+NEXT   : The owner reviews the new content in the game and, if he approves it, a person adds an approval dated on or
+         after 2026-09-30 in src/content/shared/approvals.ts (and the approval log); then update the "keeps what was
+         added after the approval ... awaiting review" tests in tests/content/{road-to-jericho,storm-on-galilee}.test.ts.
+         Then open a PR for feat/longer-ch1-ch2 (already merged with main after PR #16).
+--- 2026-09-30  Claude Opus 5.5 (chapters 3–4 agent) — Chapters 3 and 4 made longer (feat/longer-ch3-ch4) ---
+DONE   : The owner found Chapters 3 and 4 "playing pretty quick" against the 20–30 minute target. Measured the words a
+         player is shown on each headless playthrough (dialogue, choices, messages, puzzle text): Ch3 1,700–2,690 ->
+         2,730–4,130 words, 2–4 -> 3–5 puzzles; Ch4 2,750–3,310 -> 3,240–3,910 words, 2–4 -> 3–5 puzzles. Brisk adult
+         pace: Ch3 about 13–19 -> 18–25 min, Ch4 16–21 -> 20–25 min (docs/chapters/*.md "Play time").
+         Ch3: Dodi's milk from Hagit on the main path (her runaway kid, three witnesses, logic grid p-kid; the kid in
+         the chaff heap), half the milk for Yoram's newborn (choice-milk), supper by the fire (stage `hearth`, the day's
+         topics, Saba's Ruth 1:1/1:19/3:2 paraphrase rec-para-ruth, the last loaf choice-loaf -> bread for Zerah), talks
+         with Zerah, Tamar, Yonatan, Kallias. Ch4: Kallias runs and is found by deduction (p-hiding, main path), a talk
+         on the walk home (tell him what you softened), side quest q-message (Chrysis's words for Melitta; Melitta
+         silent, narration only; Ammia lets you go or it goes home unspoken), more of Ammia, Tatia, Zenon, Nikon,
+         Attalos. withApprovals now covers only records drafted/last changed on or before the approval date
+         (coveredBy): the new records (dated 2026-09-30) stay in review. No rendering needed.
+TESTS  : Vitest 723 -> 736 (approval cutoff; kid grid, milk gate, supper, hiding, message, length guards, review
+         status; every playthrough extended). e2e on 4491/5491: journey-to-bethlehem and letter-from-paul pass (limit
+         raised to 420 s: the machine was loaded by a Blender render and the longer Ch4 run timed out once at 240 s);
+         a11y, smoke, mobile 19 passed, 1 skipped. typecheck, lint, prettier, knip, content:validate clean.
+NEXT   : The owner reviews the new text in the game (Ch3 lanes/supper/night, Ch4 dye works/walk home/gathering), then a
+         person records the approval: an Approval dated on or after 2026-09-30 for journey-to-bethlehem and
+         letter-from-paul in src/content/shared/approvals.ts + the approval log (tests in tests/content/*.test.ts that
+         expect LONGER_RECORDS in review then need updating). tools/art/data/chapter.json was not regenerated (only
+         sprite-less entities were added); run `npm run art:data` before the next re-render of the lanes or the road.
 BLOCKED: none.

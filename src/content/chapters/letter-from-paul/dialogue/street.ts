@@ -125,10 +125,17 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         {
           choices: [
             opt('own', 'Why did Kallias write the last lines himself?', 'own', { once: true }),
+            opt('tonight', 'Are you going to Philemon’s tonight?', 'tonight', { once: true }),
             askZenonAboutBundle('after'),
             opt('bye', 'Thank you, Zenon.'),
           ],
         },
+      ),
+      say(
+        'tonight',
+        'zenon',
+        'Going? They’ve asked me to read the letters aloud. I said yes before I could think, and I’ve felt sick about it since breakfast. Letters are easy. People listening to them are not.',
+        { expression: 'worried', next: 'after' },
       ),
       say(
         'own',
@@ -306,6 +313,7 @@ export const STREET_DIALOGUES: DialogueInput[] = [
         {
           choices: [
             opt('weather', 'Will it rain today?', 't-weather', { once: true }),
+            opt('work', 'What does a fuller do all day?', 't-work', { once: true }),
             opt('gathering', 'Are you going to Philemon’s tonight?', 't-gathering', {
               once: true,
             }),
@@ -321,6 +329,12 @@ export const STREET_DIALOGUES: DialogueInput[] = [
           effects: [{ type: 'discoverClue', clue: 'clue-rain-coming' }],
           next: 't1',
         },
+      ),
+      say(
+        't-work',
+        'tatia',
+        'Wash cloth, scrub it with clay, rinse it, stretch it, dry it, and start again. New cloth comes to me stiff and greasy and goes home soft. Old cloaks come to me filthy and go home looking new — or near enough to fool a husband.',
+        { expression: 'glad', next: 't1' },
       ),
       say(
         't-gathering',
