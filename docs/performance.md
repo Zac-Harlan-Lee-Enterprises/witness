@@ -226,6 +226,18 @@ The download is the same within 0.5%. Real bodies are narrower than the mannequi
 Phones keep the gains of §2c. Nothing costs more memory at runtime: a person is still one trimmed atlas page per light, plus the overlays their marks need.
 
 **Build time** (authoring only): a standing sheet takes about a minute of cloth simulation before its frames; all 110 sheets take about 3 hours of rendering on an M3 Pro.
+
+**The people fill and the new outer garments** (2026-10-01, every sheet rendered again, Eli's and Hodaya's for the first time on MakeHuman bodies; 112 entries; download in MB, texture memory in MiB as the GPU holds them):
+
+| Set | Files | Download, before → after | Texture memory, before → after |
+|---|---:|---:|---:|
+| Full colour sheets and overlays | 310 | 13.24 → **14.10 MB** (+6.5%) | 251.2 → **251.3 MiB** |
+| Half-resolution copies (`-low`) | 310 | 8.11 → **8.55 MB** (+5.4%) | 62.7 → **62.7 MiB** |
+| Cast-shadow sheets | 181 | 0.87 → **0.87 MB** | 48.2 → **49.3 MiB** |
+| `people.json` | 1 | 2.35 → 2.35 MB | — |
+
+Faces, hands and the shaded side of the clothes now carry detail that the dark had hidden, and detail costs WebP bits: the download grows by 0.9 MB (full) and 0.4 MB (half). Frames cover the same area, so memory is unchanged; the longer cloak and mantle widen a few shadow frames. In the game (`data-texture-mb`, the same review route): the house 17.0 → 17.0 MB, the market 76.6 → 76.8 MB, the road 72.7 → 72.8 MB, the shore 103.5 → 103.9 MB on a desktop; 5.9 → 5.8, 21.4 → 21.5, 16.7 → 16.7 and 31.8 → 32.1 MB on a phone. Rendering every sheet took about 1 h 40 min (M3 Pro), three sheets to a Blender run.
+
 ### A sharper half set (2026-09-30)
 
 The softness above came as much from how the half set was made as from its size: each 2 × 2 block of the full set was averaged (a box filter, which blurs detail near the new pixel size) and saved at WebP 84 (the ground) and 86 (sprite pages), which smoothed away much of what was left. Options weighed:

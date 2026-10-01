@@ -508,3 +508,23 @@ NEXT   : The owner reviews the new text in the game (Ch3 lanes/supper/night, Ch4
          expect LONGER_RECORDS in review then need updating). tools/art/data/chapter.json was not regenerated (only
          sprite-less entities were added); run `npm run art:data` before the next re-render of the lanes or the road.
 BLOCKED: none.
+--- 2026-10-01  Claude Opus 5.5 (world-people-polish agent) — people fill, outer garments, Eli and Hodaya (feat/world-people-polish) ---
+DONE   : Faces under headwear read dark at game size: lighting.PEOPLE_FILL / people_fill, a broad disc fill from the
+         camera's side 9-10 deg up (under a brim), coloured and powered per people light (day, late, overcast, indoor,
+         lamp, night; dusk/lamplight too), off for the cast-shadow pass (build_people.py). Faces +15-35 levels of 255,
+         figures about +20 (probes and faces measured from the sheets). Outer garments: FABRIC["mantle"] (supple fulled
+         wool, low compression/bending), DRAPE + _drape (rounded hull, cling to arms/back, flare, seeded folds, pleats
+         gathered at the shoulders); the wrapped cloak reaches above the knee. Found and fixed: the solver let the
+         mantle/cloak slip inside the simulated skirt from the belt down (only a yoke showed): world_cloth.outside()
+         sets them back outside it, standing and walking. FIGURE = 2 recorded per light in people.json; every one of
+         the 112 entries / 310 sheets re-rendered (Eli and Hodaya on MakeHuman bodies for the first time), -low and
+         shadows regenerated. people-art.spec.ts captures Shimon, Eli (the road), Shelomit and Hodaya too.
+         Docs: technical-art-guide §3 (people fill) and §7 (outer garments), performance §2d addendum.
+TESTS  : Vitest 786 -> 789 (every sheet at the current figure build; people fill in every light and off for shadows;
+         outer garments supple, draped and outside the skirt). typecheck, lint, content:validate, knip, prettier clean.
+         e2e on 4493/5493: chapter, storm-on-galilee, smoke, mobile, people-shadows, a11y.
+NEXT   : The owner judges the before/after captures. If he wants faces lighter still or the form stronger, scale
+         PEOPLE_FILL in tools/art/lib/lighting.py, raise FIGURE in build_people.py and run the scratchpad-style batch
+         re-render (`node scripts/art-build.mjs people --only <ids> --force`, three ids per run). Hodaya's carried
+         net (people.py) reads as a fluted blob on the shoulder; a softer, draped net would help.
+BLOCKED: none.
