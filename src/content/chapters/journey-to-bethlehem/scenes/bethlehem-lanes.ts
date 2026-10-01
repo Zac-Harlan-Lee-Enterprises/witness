@@ -219,6 +219,24 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
     },
     // ── Travellers camped in the lane ───────────────────────────────────
     {
+      id: 'camp',
+      kind: 'feature',
+      label: 'Bedrolls in the lane',
+      sprite: 'none',
+      x: 5,
+      y: 9,
+      solid: false,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          {
+            type: 'showMessage',
+            text: 'Bedrolls and bundles along the wall, where travellers who found no room indoors will sleep tonight. A child’s sandal has been left on top of one, to keep the place.',
+          },
+        ],
+      },
+    },
+    {
       id: 'lane-donkey',
       kind: 'feature',
       label: 'A traveller’s donkey',
@@ -236,6 +254,69 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
     },
     { id: 'goat-1', kind: 'feature', label: 'Hagit’s goat', sprite: 'goat', x: 4, y: 19 },
     { id: 'goat-2', kind: 'feature', label: 'Hagit’s goat', sprite: 'goat', x: 6, y: 18 },
+    // ── Where Hagit's kid has been (the kid puzzle's places) ───────────
+    {
+      id: 'cart-barley',
+      kind: 'feature',
+      label: 'Barley spilled by the travellers’ cart',
+      sprite: 'none',
+      x: 8,
+      y: 6,
+      solid: false,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          {
+            type: 'showMessage',
+            text: 'Barley has spilled from a torn sack on the travellers’ cart. Someone small has been nibbling it — there are tiny split hoofprints in the spill.',
+          },
+        ],
+      },
+    },
+    {
+      id: 'washing',
+      kind: 'feature',
+      label: 'Washing by the square',
+      sprite: 'none',
+      x: 17,
+      y: 12,
+      solid: false,
+      interaction: {
+        verb: 'examine',
+        effects: [
+          {
+            type: 'showMessage',
+            text: 'A traveller’s washing hangs out to dry. One blue cloth has a corner chewed ragged.',
+          },
+        ],
+      },
+    },
+    {
+      // Burrowed into the heap of chaff (so there is nothing to draw but the heap).
+      id: 'kid',
+      kind: 'feature',
+      label: 'Something chewing in the chaff heap',
+      sprite: 'none',
+      x: 29,
+      y: 22,
+      solid: false,
+      visibleWhen: all(
+        { type: 'puzzleSolved', puzzle: 'p-kid' },
+        not(flag('carrying-kid')),
+        not(flag('kid-home')),
+      ),
+      interaction: {
+        verb: 'take',
+        effects: [
+          { type: 'setFlag', flag: 'carrying-kid', value: true },
+          { type: 'setFlag', flag: 'saw-threshing', value: true },
+          {
+            type: 'showMessage',
+            text: 'Two small white ears stick up out of the heap of chaff, and the heap is chewing. You dig Hagit’s kid out. She lets you pick her up without a fuss — she’s had a very full afternoon. Take her back to Hagit.',
+          },
+        ],
+      },
+    },
     // ── The threshing floor ─────────────────────────────────────────────
     {
       id: 'threshing-floor',
@@ -293,8 +374,9 @@ export const BETHLEHEM_LANES: ChapterInput['scenes'][number] = {
       w: 1,
       h: 2,
       to: { scene: 'shepherds-fields', spawn: 'from-village' },
-      requires: flag('supper-given'),
-      blockedText: 'Your mother hasn’t sent you anywhere yet.',
+      requires: all(flag('supper-given'), flag('got-milk')),
+      blockedText:
+        'Tamar asked you to get a jar of milk for Dodi from Hagit before you go down to the fold. Hagit lives by the goat yard, at the south-west end of the lanes.',
       effects: [{ type: 'adjustCounter', counter: 'hour', delta: 1 }],
     },
   ],

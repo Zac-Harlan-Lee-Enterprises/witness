@@ -39,6 +39,11 @@
     "expressions": ["afraid", "glad", "surprised", "worried"],
     "kind": "character"
   },
+  "eli": {
+    "appearance": "#8e5c38|#241810|#a08a62|#6a4a2c|scarf|#ddd2b8|clean|child|staff",
+    "expressions": ["glad", "worried"],
+    "kind": "character"
+  },
   "ezer": {
     "appearance": "#9a6040|#2a1a10|#ddd0b2|#8a4f2f|wrap|#f0e6d0|beard|adult|bread",
     "expressions": ["angry", "glad", "sad"],
@@ -62,6 +67,11 @@
   "hanina": {
     "appearance": "#86583a|#d8d0c0|#7a6a52|#4a5a6a|hood|#8b7a5a|beard|elder|staff",
     "expressions": ["glad"],
+    "kind": "character"
+  },
+  "hodaya": {
+    "appearance": "#9a6844|#2a1a10|#6a5a44|#3f6f7f|scarf|#b8a27a|clean|adult|net",
+    "expressions": ["glad", "worried"],
     "kind": "character"
   },
   "kallias": {

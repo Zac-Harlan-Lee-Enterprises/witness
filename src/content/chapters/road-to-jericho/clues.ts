@@ -93,6 +93,17 @@ export const CLUES: ChapterInput['clues'] = [
     reliability: 'reliable',
     text: 'The main road ahead is empty. No other travelers are in sight.',
   },
+  // ── On the ridge ─────────────────────────────────────────────────────────
+  {
+    id: 'clue-eli-men',
+    title: 'Men on the hills at dawn',
+    kind: 'witness',
+    source: 'Eli',
+    reliability: 'uncertain',
+    reliabilityNote:
+      'Eli saw them from a long way off, in the grey before sunrise, while he was lying flat behind the rocks.',
+    text: 'Eli says four men with nothing to carry came along the hills at first light and went down the gully toward the bend.',
+  },
   // ── Below the bend ───────────────────────────────────────────────────────
   {
     id: 'clue-single-prints',
@@ -142,7 +153,44 @@ export const CLUES: ChapterInput['clues'] = [
     reliability: 'reliable',
     text: 'Scuffed drag marks lead off the road into the shade of the rocks. They cross OVER the other footprints.',
   },
+  // ── At the inn: a cloak with a blue stripe ───────────────────────────────
+  {
+    id: 'clue-cloak-hem',
+    title: 'A strip torn from the hem',
+    kind: 'environmental',
+    source: 'The striped cloak',
+    reliability: 'reliable',
+    text: 'The cloak’s blue-striped hem has a strip torn right out of it, as if it caught on a thorn and was pulled away hard.',
+  },
+  {
+    id: 'clue-cloak-oil',
+    title: 'It smells of olive oil',
+    kind: 'environmental',
+    source: 'The striped cloak',
+    reliability: 'reliable',
+    text: 'One side of the cloak is stiff with a dark stain that smells of olive oil.',
+  },
+  {
+    id: 'clue-cloak-found',
+    title: 'Found in the rocks north of the road',
+    kind: 'witness',
+    source: 'Salome',
+    reliability: 'reliable',
+    text: 'Salome says a goatherd brought the cloak in this morning. He found it thrown down among the rocks north of the road, below the bend, and told her so plainly.',
+  },
+  {
+    id: 'clue-blue-stripes',
+    title: '“Half the cloaks in Jericho”',
+    kind: 'witness',
+    source: 'Salome',
+    reliability: 'unreliable',
+    reliabilityNote:
+      'True enough, but it says nothing about whose cloak this one is. It is a reason to look carefully, not evidence.',
+    text: 'Salome shrugs: half the cloaks in Jericho have a blue stripe.',
+  },
 ];
+
+export const CLOAK_CLUES = ['clue-cloak-hem', 'clue-cloak-oil', 'clue-cloak-found'];
 
 export const INCIDENT_CLUES = [
   'clue-single-prints',

@@ -377,6 +377,48 @@
       "target": "#865738"
     }
   },
+  "eli": {
+    "gaze": {
+      "across": [0.488, 0.29],
+      "height": [0.476, 0.233],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.3,
+      "gain": [0.7343, 0.9601, 1.0532],
+      "measured": "#8b5e3d",
+      "target": "#8a5d3c"
+    }
+  },
+  "eli~glad": {
+    "gaze": {
+      "across": [0.488, 0.29],
+      "height": [0.568, 0.292],
+      "miss": 0.0,
+      "yaw": [0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 1.61,
+      "gain": [0.7343, 0.9601, 1.0532],
+      "measured": "#8e603e",
+      "target": "#8a5d3c"
+    }
+  },
+  "eli~worried": {
+    "gaze": {
+      "across": [0.488, 0.29],
+      "height": [0.533, 0.32],
+      "miss": 0.0,
+      "yaw": [-0.0, 0.0]
+    },
+    "skin": {
+      "deltaE": 0.42,
+      "gain": [0.7343, 0.9601, 1.0532],
+      "measured": "#895c3b",
+      "target": "#8a5d3c"
+    }
+  },
   "ezer": {
     "gaze": {
       "across": [0.501, 0.277],
@@ -543,6 +585,48 @@
       "gain": [0.4708, 0.5335, 0.5416],
       "measured": "#835b40",
       "target": "#82593e"
+    }
+  },
+  "hodaya": {
+    "gaze": {
+      "across": [0.474, 0.358],
+      "height": [0.542, 0.276],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.68,
+      "gain": [0.6922, 0.8905, 0.9765],
+      "measured": "#966a49",
+      "target": "#966948"
+    }
+  },
+  "hodaya~glad": {
+    "gaze": {
+      "across": [0.474, 0.358],
+      "height": [0.664, 0.341],
+      "miss": 0.0,
+      "yaw": [-0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 1.2,
+      "gain": [0.6922, 0.8905, 0.9765],
+      "measured": "#996c4a",
+      "target": "#966948"
+    }
+  },
+  "hodaya~worried": {
+    "gaze": {
+      "across": [0.474, 0.358],
+      "height": [0.561, 0.301],
+      "miss": 0.0,
+      "yaw": [0.0, -0.0]
+    },
+    "skin": {
+      "deltaE": 0.56,
+      "gain": [0.6922, 0.8905, 0.9765],
+      "measured": "#956848",
+      "target": "#966948"
     }
   },
   "kallias": {

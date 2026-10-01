@@ -84,6 +84,84 @@ async function toLanes(p: Player): Promise<void> {
   if (p.dialogueView?.dialogueId === 'd-lanes-intro') await p.finish();
 }
 
+/** Ask someone in the lanes about Hagit's kid, then say goodbye. */
+async function askAboutKid(p: Player, entity: string): Promise<void> {
+  await p.interact(entity);
+  await p.choose('kid');
+  await p.choose('bye');
+  await p.finish();
+}
+
+/**
+ * Tamar's errand for Dodi's milk: Hagit's kid is out, three people each saw
+ * part of its afternoon, the logic grid puts it in order, and the kid is on
+ * the threshing floor. Uncle Asa is asked in the line — or at home, if you
+ * helped the clerk and he has gone.
+ */
+async function fetchTheMilk(p: Player, asaAt: 'line' | 'home' = 'line'): Promise<void> {
+  const { h } = p;
+  await p.interact('hagit');
+  await p.choose('milk');
+  await p.advance();
+  // Nobody has been asked yet: the reason is given, and who to ask.
+  const think = p.dialogueView?.choices.find((c) => c.id === 'think');
+  expect(think?.available).toBe(false);
+  expect(think?.unavailableText).toMatch(/Saba Amram, Uncle Asa and Kallias/);
+  await p.choose('bye');
+  await p.finish();
+  expect(h.state().flags['kid-missing']).toBe(true);
+  expect(h.state().journal.unlocked).toContain('je-kid');
+
+  await askAboutKid(p, 'amram');
+  await askAboutKid(p, 'kallias');
+  if (asaAt === 'line') await askAboutKid(p, 'asa-queue');
+  else {
+    await p.exit('to-house');
+    await askAboutKid(p, 'asa-home');
+    await p.exit('to-lanes');
+    expect(p.scene()).toBe('bethlehem-lanes');
+  }
+  expect(h.state().clues).toEqual(
+    expect.arrayContaining(['clue-kid-amram', 'clue-kid-asa', 'clue-kid-kallias']),
+  );
+  // Nothing on the threshing floor until you know where to look.
+  expect(shown(h, 'kid')).toBeUndefined();
+
+  await p.interact('hagit');
+  await p.choose('think');
+  expect(h.ui.getState().puzzleId).toBe('p-kid');
+  // The kid's order: the well can't be second, since the washing and the cart come before it.
+  const wrong = p.matchUp('p-kid', {
+    cart: 'first',
+    washing: 'third',
+    well: 'second',
+    threshing: 'last',
+  });
+  expect(wrong?.correct).toBe(false);
+  expect(wrong?.broken).toEqual(['asa-cloth']);
+  const right = p.matchUp('p-kid', {
+    cart: 'first',
+    washing: 'second',
+    well: 'third',
+    threshing: 'last',
+  });
+  expect(right?.correct).toBe(true);
+  h.controller.closePuzzle();
+  await flush();
+  await p.finish();
+
+  expect(shown(h, 'kid')).toBeDefined();
+  await p.interact('kid');
+  expect(h.state().flags['carrying-kid']).toBe(true);
+  await p.interact('hagit');
+  expect(p.dialogueView?.nodeId).toBe('return');
+  await p.choose('bye');
+  await p.finish();
+  expect(h.state().inventory.milk).toBe(1);
+  expect(h.state().flags['kid-home']).toBe(true);
+  expect(shown(h, 'kid')).toBeUndefined();
+}
+
 async function toFieldsAndDeliver(p: Player): Promise<void> {
   await p.exit('to-fields');
   expect(p.scene()).toBe('shepherds-fields');
@@ -125,16 +203,40 @@ async function findTheLamb(p: Player): Promise<void> {
   expect(p.h.world.weather).toBe('clear'); // the wind drops at nightfall
 }
 
-async function homeAtNight(p: Player): Promise<void> {
-  await p.exit('to-village');
-  expect(p.scene()).toBe('bethlehem-lanes');
+type Loaf = 'aside' | 'yonatan' | 'share';
+
+/**
+ * Supper by the fire: tell the household about the day (the topics offered
+ * follow what you did), then decide about the last loaf. Zerah knocks after.
+ */
+async function supper(p: Player, loaf: Loaf, topics: readonly string[]): Promise<void> {
+  await p.advance();
+  expect(p.dialogueView?.dialogueId).toBe('d-supper');
+  expect(p.h.state().quests['q-room']?.stageId).toBe('hearth');
+  for (const topic of topics) await p.choose(topic);
+  await p.choose('done');
+  await p.choose(loaf);
+  await p.advance();
+  expect(p.h.state().journal.unlocked).toContain('je-supper');
+}
+
+async function homeAtNight(
+  p: Player,
+  loaf: Loaf = 'yonatan',
+  topics: readonly string[] = [],
+  from: 'fields' | 'lanes' = 'fields',
+): Promise<void> {
+  if (from === 'fields') {
+    await p.exit('to-village');
+    expect(p.scene()).toBe('bethlehem-lanes');
+  }
   // The registration has packed up for the night.
   expect(shown(p.h, 'kallias')).toBeUndefined();
   expect(shown(p.h, 'amram')).toBeUndefined();
   await p.exit('to-house');
   expect(p.scene()).toBe('tamar-house');
-  // Supper, lamps, and a knock at the door: Zerah's conversation follows.
-  await p.advance();
+  // Lamps, supper by the fire, and a knock at the door: Zerah's conversation follows.
+  await supper(p, loaf, topics);
   expect(p.dialogueView?.dialogueId).toBe('d-zerah');
   expect(p.dialogueView?.nodeId).toBe('z4');
   expect(hour(p.h)).toBe(20);
@@ -246,18 +348,38 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await p.interact('straw-heap');
     expect(h.state().inventory.straw).toBe(1);
 
+    // Dodi's milk: Uncle Asa has gone home, so he is asked there; Kallias after his work.
+    await fetchTheMilk(p, 'home');
+
     await toFieldsAndDeliver(p);
     await findTheLamb(p);
-    await homeAtNight(p);
+    // Old Yoram's newborn lamb gets half of Dodi's milk.
+    await p.interact('yoram');
+    expect(p.dialogueView?.choices.find((c) => c.id === 'milk')).toBeUndefined();
+    await p.choose('newborn');
+    await p.choose('milk');
+    await p.choose('share');
+    await p.choose('bye');
+    await p.finish();
+    expect(h.state().choices.find((c) => c.choiceId === 'choice-milk')?.optionId).toBe('shared');
+    await homeAtNight(p, 'aside', ['found', 'kid', 'line', 'ruth']);
+    expect(h.state().journal.unlocked).toContain('js-ruth');
+    expect(h.state().inventory.milk).toBeUndefined(); // Aunt Peninah has it for Dodi
 
     // Every door is open tonight: the space, the straw, and Hagit's offer.
     for (const id of ['own', 'guest', 'straw', 'hagit', 'none'])
       expect(strangerOption(p, id)?.available, id).toBe(true);
     await p.choose('guest');
     await p.finish();
+    // The loaf you kept by the oven went to Zerah.
+    expect(h.state().flags['zerah-bread']).toBe(true);
     expect(shown(h, 'zerah-guest')?.pose).toBe('lie');
     expect(shown(h, 'zerah-door')).toBeUndefined();
     expect(shown(h, 'asa-home')?.pose).toBe('lie');
+    // He's not asleep yet, and will talk about home.
+    await p.interact('zerah-guest');
+    for (const topic of ['tekoa', 'grandfather', 'baskets', 'night']) await p.choose(topic);
+    await p.finish();
 
     await hearTheNews(p, 'your-mat', 'tell');
     // Everyone sits up in the lamplight, wondering.
@@ -271,6 +393,12 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     );
     expect(summary.consequences).toContain(
       'Uncle Asa was registered before dark and came home to help.',
+    );
+    expect(summary.consequences).toContain(
+      'The loaf you kept by the oven went to Zerah, the one guest nobody had expected.',
+    );
+    expect(summary.consequences).toContain(
+      'Old Yoram’s newborn lamb drank half of Hagit’s milk at the fold, and Dodi had the other half in the morning.',
     );
     expect(summary.sideQuests).toEqual([
       { name: 'The Long Line', outcome: 'Registered before dark' },
@@ -307,13 +435,15 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await p.choose('why');
     await p.choose('bye');
     await p.finish();
+    await fetchTheMilk(p, 'line');
     await toFieldsAndDeliver(p);
     expect(hour(h)).toBe(16);
     await p.choose('home');
     await p.finish();
     expect(h.state().choices.find((c) => c.choiceId === 'choice-lamb')?.optionId).toBe('left');
     expect(shown(h, 'yoram')).toBeUndefined(); // gone looking with his stick
-    await homeAtNight(p);
+    await homeAtNight(p, 'yonatan', ['left', 'kid', 'waited']);
+    expect(h.state().flags['heard-ruth']).toBeUndefined();
     expect(shown(h, 'asa-home')).toBeDefined(); // home at last, after the line
 
     // The constraints of the day are visible: no space, no straw, no one else with room.
@@ -339,6 +469,10 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     expect(summary.consequences).toContain(
       'Uncle Asa waited in line until the clerk packed up at dusk.',
     );
+    expect(summary.consequences).toContain(
+      'Yonatan had the last of the guests’ bread for breakfast at the fold.',
+    );
+    expect(summary.consequences).toContain('Dodi had a whole jar of Hagit’s milk when he woke.');
     expect(summary.sideQuests).toEqual([{ name: 'The Long Line', outcome: 'Waited in line' }]);
   });
 
@@ -355,9 +489,17 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await p.interact('straw-heap');
     await p.interact('straw-heap'); // only one armful
     expect(h.state().inventory.straw).toBe(1);
+    await fetchTheMilk(p);
     await toFieldsAndDeliver(p);
     await findTheLamb(p);
-    await homeAtNight(p);
+    // Old Yoram's lamb: you keep the milk for Dodi.
+    await p.interact('yoram');
+    await p.choose('newborn');
+    await p.choose('milk');
+    await p.choose('keep');
+    await p.choose('bye');
+    await p.finish();
+    await homeAtNight(p, 'share', ['found']);
     expect(strangerOption(p, 'guest')?.available).toBe(false);
     await p.choose('straw');
     await p.finish();
@@ -365,9 +507,14 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     expect(shown(h, 'zerah-straw')?.pose).toBe('lie');
     expect(shown(h, 'straw-bed')).toBeDefined();
     await hearTheNews(p, 'your-mat', 'tell');
-    expect(buildChapterSummary(h.chapter, h.state()).consequences).toContain(
+    const strawSummary = buildChapterSummary(h.chapter, h.state()).consequences;
+    expect(strawSummary).toContain(
       'Zerah slept on fresh straw beside the animals, warm from their breath.',
     );
+    expect(strawSummary).toContain(
+      'The last loaf was shared round the eating mat, and Uncle Asa took the biggest piece.',
+    );
+    expect(h.state().flags['zerah-bread']).toBeUndefined();
   });
 
   it('neighbor path: Zerah goes to Hagit, and you can see him there', async () => {
@@ -382,13 +529,16 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await p.choose('full');
     await p.choose('bye');
     await p.finish();
+    await fetchTheMilk(p);
     await toFieldsAndDeliver(p);
     await p.choose('home');
     await p.finish();
-    await homeAtNight(p);
+    await homeAtNight(p, 'aside');
     const before = hour(h) ?? 0;
     await p.choose('hagit');
     await p.finish();
+    // Zerah takes the loaf you kept with him next door.
+    expect(h.state().flags['zerah-bread']).toBe(true);
     expect(hour(h)).toBe(before + 1); // you walked him over yourself
     expect(shown(h, 'zerah-door')).toBeUndefined();
     // Next door, Zerah sits at Hagit's fire.
@@ -411,6 +561,7 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await arrangeRoom(p, 'grain');
     await collectSupper(p);
     await toLanes(p);
+    await fetchTheMilk(p);
     await toFieldsAndDeliver(p);
     await p.choose('search');
     await p.finish();
@@ -425,10 +576,11 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await p.finish();
     expect(p.scene()).toBe('bethlehem-lanes');
     expect(h.state().choices.find((c) => c.choiceId === 'choice-lamb')?.optionId).toBe('left');
-    await p.exit('to-house');
-    await p.advance();
-    expect(p.dialogueView?.nodeId).toBe('z4');
+    await homeAtNight(p, 'aside', [], 'lanes');
     await p.choose('none');
+    await p.advance();
+    // No room, but you run after him with the loaf you kept.
+    expect(h.state().flags['zerah-bread']).toBe(true);
     await p.finish();
     expect(shown(h, 'zerah-door')).toBeUndefined();
     await p.exit('to-lanes');
@@ -455,6 +607,11 @@ describe('A Journey to Bethlehem — full playthroughs', () => {
     await arrangeRoom(p, 'grain');
     await collectSupper(p);
     await toLanes(p);
+    // Not down to the fold without Dodi's milk — and the lane says why.
+    await p.exit('to-fields');
+    expect(p.scene()).toBe('bethlehem-lanes');
+    expect(h.state().flags['got-milk']).toBeUndefined();
+    await fetchTheMilk(p);
     await toFieldsAndDeliver(p);
     await p.choose('search');
     await p.finish();

@@ -1,0 +1,21 @@
+{
+  "include": ["tools/art"],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".claude",
+    "tools/art/.cache",
+    "public",
+    "dist",
+    "dev-dist",
+    "coverage",
+    "test-results",
+    "playwright-report",
+    ".logs",
+    ".pids"
+  ],
+  "extraPaths": ["tools/art/lib"],
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none"
+}

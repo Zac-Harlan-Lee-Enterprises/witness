@@ -1,7 +1,7 @@
 # Executive summary
 
 **Product:** *Witness: A Journey Through Scripture*, a local-first Christian narrative adventure for ages 10+, families, Christian schools and youth groups. It is a React + Phaser 3 + TypeScript progressive web app (PWA).
-**This slice:** Chapter 1, *The Road to Jericho*, about 20–30 minutes of play.
+**This slice:** Chapter 1, *The Road to Jericho*, about 20–30 minutes of play for a first-time player (measured: [game-design.md §17](game-design.md#17-how-long-it-plays)).
 **Status (2026-09-24):** Playable from start to finish on every major branch, in a real browser and headlessly. It works offline after the first visit. All educational content is AI-drafted and **awaiting human review**, and Bible text is **switched off** until a human approves a translation.
 
 ---

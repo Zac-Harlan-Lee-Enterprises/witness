@@ -1,4 +1,6 @@
-import { APPROVALS } from '@/content/shared/approvals';
+import { APPROVALS, draftedOn } from '@/content/shared/approvals';
+import { LATER_RECORDS } from '@/content/chapters/storm-on-galilee/records';
+import { LONGER_CHAPTERS_DRAFTED } from '@/content/shared/governance';
 import { describe, expect, it } from 'vitest';
 import { chapterSource, parseChapter } from '@/content';
 import { STORM_ON_GALILEE } from '@/content/chapters/storm-on-galilee';
@@ -87,15 +89,72 @@ describe('A Storm on Galilee — content', () => {
     expect(puzzle.hints.at(-1)?.text).toMatch(/row 2 at columns 2, 4 and 5/);
   });
 
-  it('has a main quest and a genuinely optional side quest with an alternate outcome', () => {
+  it('has a main quest and genuinely optional side quests with alternate outcomes', () => {
     expect(chapter.quests.find((q) => q.kind === 'main')?.id).toBe(chapter.mainQuest);
     const side = chapter.quests.filter((q) => q.kind === 'side');
-    expect(side.map((q) => q.id)).toEqual(['q-brine']);
-    expect(side[0]?.autoStart).toBe(false);
-    expect(side[0]?.outcomes.some((o) => o.kind === 'alternate')).toBe(true);
-    // Nothing in the main quest waits on the side quest.
+    expect(side.map((q) => q.id)).toEqual(['q-brine', 'q-leak']);
+    for (const q of side) {
+      expect(q.autoStart, q.id).toBe(false);
+      expect(
+        q.outcomes.some((o) => o.kind === 'alternate'),
+        q.id,
+      ).toBe(true);
+    }
+    // Nothing in the main quest waits on a side quest.
     const main = JSON.stringify(chapter.quests.find((q) => q.kind === 'main'));
-    expect(main).not.toMatch(/q-brine|p-brine|brine-done/);
+    expect(main).not.toMatch(/q-brine|p-brine|brine-done|q-leak|p-patch|boat-patched/);
+  });
+
+  it('Grandmother’s corner has exactly one mending, the one its full hint describes', () => {
+    const puzzle = chapter.puzzles.find((p) => p.id === 'p-corner') as NettingPuzzle;
+    expect(nettingSolutions(puzzle)).toEqual([puzzle.pattern]);
+    // The last hint's knots are exactly the pattern's knots in the loose part.
+    const knots = puzzle.torn.flatMap((row, r) =>
+      [...row].flatMap((c, col) =>
+        c === '?' && puzzle.pattern[r]?.[col] === '#' ? [[r + 1, col + 1]] : [],
+      ),
+    );
+    expect(knots).toEqual([
+      [1, 3],
+      [2, 3],
+      [2, 4],
+      [3, 3],
+      [4, 2],
+      [4, 3],
+      [4, 4],
+      [5, 2],
+      [5, 3],
+      [5, 4],
+    ]);
+    expect(puzzle.hints.at(-1)?.text).toMatch(
+      /column 3 all the way down; column 4 in rows 2, 4 and 5; and column 2 in rows 4 and 5/,
+    );
+  });
+
+  it('seals the seam only in an order that works, with an honest answer about what a patch can do', () => {
+    const patch = chapter.puzzles.find((p) => p.id === 'p-patch');
+    if (patch?.type !== 'sequence') throw new Error('expected sequence');
+    expect(patch.correctOrder).toEqual(['rag', 'dry', 'tow', 'pitch', 'set']);
+    expect(patch.hints.at(-1)?.text).toMatch(/rag.*dry.*tow.*pitch.*set/);
+    const right = patch.conclusion?.options.filter((o) => o.correct) ?? [];
+    expect(right.map((o) => o.id)).toEqual(['mostly']);
+    // Every card is backed by what Uncle Elazar tells you, and the method is labelled simplified.
+    patch.cards.forEach((c) => expect(c.clueId, c.id).toBe('clue-elazar-seam'));
+    expect(patch.explanation).toMatch(/simplified for the game/);
+  });
+
+  it('keeps what was added after the approval (the longer chapter) awaiting review, never approved', () => {
+    expect(LATER_RECORDS.length).toBeGreaterThanOrEqual(5);
+    for (const r of LATER_RECORDS) {
+      const loaded = chapter.records.find((x) => x.id === r.id);
+      expect(loaded?.kind, r.id).toBe('fiction');
+      expect(draftedOn(r), r.id).toBe(LONGER_CHAPTERS_DRAFTED);
+      expect(loaded?.governance.status, r.id).toBe('ai-draft');
+      expect(loaded?.governance.reviewer, r.id).toBeUndefined();
+    }
+    const hodaya = chapter.characters.find((c) => c.id === 'hodaya');
+    expect(hodaya?.fictional).toBe(true);
+    expect(hodaya?.biblicalFigure).toBe(false);
   });
 
   it('keeps Scripture as references, and labels every retelling as a paraphrase', () => {
@@ -161,7 +220,8 @@ describe('A Storm on Galilee — content', () => {
     expect(report.awaitingReview).toBe(0);
     expect(report.approved).toBe(report.educational);
     const reviewers = new Set(APPROVALS.map((a) => a.reviewer));
-    for (const r of chapter.records) {
+    const later = new Set(LATER_RECORDS.map((r) => r.id));
+    for (const r of chapter.records.filter((x) => !later.has(x.id))) {
       expect(r.governance.status, r.id).toBe('approved');
       expect(reviewers.has(r.governance.reviewer ?? ''), r.id).toBe(true);
       expect(r.governance.reviewedAt, r.id).toBe('2026-09-26');

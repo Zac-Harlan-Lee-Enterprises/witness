@@ -134,7 +134,10 @@ describe('Dialogue overlay', () => {
     const { runtime, harness } = await makeRuntime();
     harness.dialogue.end();
     await flush();
-    harness.session.dispatch([{ type: 'setFlag', flag: 'remedy-delivered', value: true }]);
+    harness.session.dispatch([
+      { type: 'setFlag', flag: 'remedy-delivered', value: true },
+      { type: 'setFlag', flag: 'sat-with-natan', value: true },
+    ]);
     harness.dialogue.start('d-yair');
     harness.dialogue.advance();
     await flush();
@@ -263,14 +266,18 @@ describe('Puzzles', () => {
     const { runtime, harness } = await makeRuntime();
     harness.dialogue.end();
     await flush();
-    harness.session.dispatch([{ type: 'giveItem', item: 'remedy' }]);
+    harness.session.dispatch([
+      { type: 'giveItem', item: 'remedy' },
+      { type: 'giveItem', item: 'linen-bundle' },
+    ]);
     harness.puzzles.open('p-satchel');
     const { container } = await renderWithServices(<PuzzleHost runtime={runtime} />);
     expect(screen.getByLabelText(/Load:/)).toBeInTheDocument();
-    expect(screen.getByText(/Load:/)).toHaveTextContent('Load: 1 of 6');
+    // The remedy and Rivka's linen must go, so they start packed.
+    expect(screen.getByText(/Load:/)).toHaveTextContent('Load: 2 of 6');
     await user.click(screen.getByRole('button', { name: 'Pack one Water skin' }));
     await user.click(screen.getByRole('button', { name: 'Pack one Water skin' }));
-    expect(screen.getByText(/Load:/)).toHaveTextContent('Load: 5 of 6');
+    expect(screen.getByText(/Load:/)).toHaveTextContent('Load: 6 of 6');
     expect(screen.getByText('Carry enough water for the descent')).toHaveTextContent('done');
     await user.click(screen.getByRole('button', { name: 'Pack one Spare cloak' }));
     expect(screen.getByText(/Load:/)).toHaveTextContent('too heavy');

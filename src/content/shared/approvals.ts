@@ -3,9 +3,13 @@ import type { ChapterInput } from '@/domain/chapter';
 /**
  * Editorial approvals by named humans (mirrored in the approval log in
  * docs/content-governance.md). An approval covers every record of the
- * chapters it names that is still awaiting review: each becomes `approved`,
- * naming its reviewer and date. Provenance is unchanged (the content stays
- * recorded as AI-assisted). Rejected records stay rejected.
+ * chapters it names that is still awaiting review AND was drafted, and last
+ * changed, on or before the approval's date (every entry in the record's
+ * history): each becomes `approved`, naming its reviewer and date. A record
+ * drafted or revised later (new content added to an approved chapter) is not
+ * covered: it stays awaiting review until a named person approves it.
+ * Provenance is unchanged (the content stays recorded as AI-assisted).
+ * Rejected records stay rejected.
  *
  * Only a named person adds an entry here; an agent never approves content.
  */
@@ -62,12 +66,31 @@ export function withTeaserApproval(
   };
 }
 
-export function withApprovals(chapterId: string, records: Records): Records {
-  const approval = APPROVALS.find((a) => a.chapters.includes(chapterId));
+/** When a record was first drafted: the date of its first history entry. */
+export function draftedOn(record: ContentRecordInput): string {
+  return record.governance.history[0]?.date ?? '';
+}
+
+/**
+ * Whether an approval can cover a record: only if the record was drafted, and
+ * last changed, on or before the day of the approval. Text written or revised
+ * after it (the longer chapters, for example) waits for a new approval.
+ */
+export function coveredBy(approval: Approval, record: ContentRecordInput): boolean {
+  return record.governance.history.every((h) => h.date <= approval.date);
+}
+
+export function withApprovals(
+  chapterId: string,
+  records: Records,
+  approvals: readonly Approval[] = APPROVALS,
+): Records {
+  const approval = approvals.find((a) => a.chapters.includes(chapterId));
   if (!approval) return records;
   return records.map((r) => {
     const status = r.governance.status;
     if (status === 'approved' || status === 'published' || status === 'rejected') return r;
+    if (!coveredBy(approval, r)) return r;
     return {
       ...r,
       governance: {

@@ -1,0 +1,36 @@
+{
+  "python.analysis.include": ["tools/art"],
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".claude/**",
+    "tools/art/.cache/**",
+    "public/**",
+    "dist/**",
+    "dev-dist/**",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**"
+  ],
+  "python.analysis.extraPaths": ["tools/art/lib"],
+  "python.analysis.indexing": true,
+  "python.analysis.userFileIndexingLimit": 2000,
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.claude/worktrees/**": true,
+    "**/tools/art/.cache/**": true,
+    "**/public/art/**": true,
+    "**/dist/**": true,
+    "**/test-results/**": true,
+    "**/playwright-report/**": true
+  },
+  "search.exclude": {
+    "**/.claude/worktrees": true,
+    "**/tools/art/.cache": true,
+    "**/public/art": true,
+    "**/dist": true,
+    "**/test-results": true,
+    "**/playwright-report": true
+  }
+}

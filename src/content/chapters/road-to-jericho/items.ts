@@ -27,6 +27,17 @@ export const ITEMS: ChapterInput['items'] = [
     description: 'Aunt Miriam’s note explaining how to prepare the remedy.',
   },
   {
+    id: 'linen-bundle',
+    name: 'Linen for Rivka',
+    kind: 'supply',
+    weight: 1,
+    maxStack: 1,
+    essential: true,
+    icon: '🧺',
+    description:
+      'A bundle of fine linen sheets Hadassah the weaver made for Rivka: cool bedding for Natan, because down in Jericho it is too warm for wool. Already paid for.',
+  },
+  {
     id: 'coins',
     name: 'Bronze coins',
     kind: 'currency',

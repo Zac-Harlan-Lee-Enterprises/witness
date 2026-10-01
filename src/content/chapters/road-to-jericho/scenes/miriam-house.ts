@@ -61,9 +61,15 @@ export const MIRIAM_HOUSE: ChapterInput['scenes'][number] = {
       visibleWhen: { type: 'not', condition: { type: 'puzzleSolved', puzzle: 'p-satchel' } },
       interaction: {
         verb: 'use',
-        requires: { type: 'objectiveDone', quest: 'q-remedy', objective: 'ask-road' },
+        requires: {
+          type: 'all',
+          of: [
+            { type: 'objectiveDone', quest: 'q-remedy', objective: 'ask-road' },
+            { type: 'objectiveDone', quest: 'q-remedy', objective: 'collect-linen' },
+          ],
+        },
         blockedText:
-          'Better to learn about the road before deciding what to carry. Ask travelers in the market.',
+          'Better to learn about the road before deciding what to carry — ask travelers in the market — and to have Rivka’s linen from Hadassah to pack with it.',
         effects: [{ type: 'openPuzzle', puzzle: 'p-satchel' }],
       },
     },

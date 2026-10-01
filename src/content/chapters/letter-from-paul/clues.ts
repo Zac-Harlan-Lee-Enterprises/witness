@@ -15,6 +15,41 @@ export const CLUES: ChapterInput['clues'] = [
     reliability: 'reliable',
     text: 'Grey cloud sits on the peak of Mount Cadmus above the town. People who work outdoors say rain will come down the valley by afternoon.',
   },
+  // ── Where Kallias went when he saw you coming ────────────────────────
+  {
+    id: 'clue-red-prints',
+    title: 'Red footprints',
+    kind: 'environmental',
+    source: 'By Kallias’s vat',
+    reliability: 'reliable',
+    text: 'Wet red footprints lead from Kallias’s vat round the end of the works, toward the bridge — not up the road.',
+  },
+  {
+    id: 'clue-cloak-peg',
+    title: 'A cloak on the peg',
+    kind: 'environmental',
+    source: 'The drying shed',
+    reliability: 'reliable',
+    text: 'Kallias’s cloak and his bundle of food still hang on a peg just inside the shed door.',
+  },
+  {
+    id: 'clue-saw-him-go',
+    title: 'Which way he went',
+    kind: 'witness',
+    source: 'Chrysis',
+    reliability: 'reliable',
+    text: 'Chrysis saw Kallias go white when he saw you on the road. He didn’t go past her into the shed; he went round the end of the vats, toward the bridge.',
+  },
+  {
+    id: 'clue-nikon-guess',
+    title: '“At the waystation, eating”',
+    kind: 'witness',
+    source: 'Nikon',
+    reliability: 'unreliable',
+    reliabilityNote:
+      'Nikon was counting amphorae and never saw Kallias go. It is a guess about his appetite, not a sighting.',
+    text: 'Nikon says Kallias will be at the waystation again, eating.',
+  },
   // ── The unaddressed letter (side quest) ──────────────────────────────
   {
     id: 'clue-white-dust',
@@ -66,4 +101,12 @@ export const BUNDLE_CLUES = [
   'clue-cloth-merchant',
   'clue-not-zenon',
   'clue-potter-guess',
+];
+
+/** What tells you where Kallias went (the hiding puzzle needs two reliable ones). */
+export const HIDING_CLUES = [
+  'clue-red-prints',
+  'clue-cloak-peg',
+  'clue-saw-him-go',
+  'clue-nikon-guess',
 ];

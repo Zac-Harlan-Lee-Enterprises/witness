@@ -188,6 +188,7 @@ export const CHARACTERS: ChapterInput['characters'] = [
     role: 'A baker’s wife of the assembly',
     fictional: true,
     biblicalFigure: false,
+    journalEntry: 'jp-melitta',
     appearance: {
       skin: '#b07a50',
       hair: '#2a1a12',
