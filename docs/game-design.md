@@ -78,7 +78,7 @@ Every action has a keyboard, touch and pointer route. The **"Go to…" list** ma
 
 | Action | Keyboard (default, remappable) | Touch | Gamepad (standard mapping) | Pointer |
 |---|---|---|---|---|
-| Move | Arrow keys or W A S D | On-screen d-pad | D-pad or left stick | Click or tap a tile to walk there (pathfinding) |
+| Move | Arrow keys or W A S D | Floating stick: drag anywhere on the world, pace by the tilt | D-pad or left stick | Click or tap a tile to walk there (pathfinding) |
 | Talk / examine / use | E, Space, Enter | ✋ action button | A (button 0) | Click or tap a person or object, or the on-screen prompt |
 | Pause menu | Esc, P | HUD button | Start (B also goes back / closes) | HUD button |
 | Journal | J | HUD button | Y | HUD button |
@@ -88,7 +88,7 @@ Every action has a keyboard, touch and pointer route. The **"Go to…" list** ma
 | Menus, dialogue, puzzles | Tab / Shift+Tab, Enter or Space, Esc | Tap | D-pad or stick moves between buttons (left/right also steps a drop-down), A presses, B goes back | Click or tap |
 
 - Keys are remapped in **Settings** by pressing the new key. Each action keeps up to three keys, and a key can belong to only one action ([`src/domain/settings.ts`](../src/domain/settings.ts)).
-- Touch controls are `auto` by default and can be forced on or off.
+- Touch controls are `auto` by default and can be forced on or off. The stick appears under the thumb wherever it lands (a faint resting stick in the bottom-left corner shows where to touch first); a tap that never steers walks to the spot tapped.
 - The gamepad adapter ([`gamepad-source.ts`](../src/infrastructure/input/gamepad-source.ts)) and menu navigation ([`gamepad-navigation.ts`](../src/infrastructure/input/gamepad-navigation.ts)) are unit-tested with a simulated pad, but they have not been tried with a physical controller (see [deferred-features.md](deferred-features.md)).
 - Dialogue choices are real buttons. Choices that exist but can't be taken right now stay visible, disabled, with the reason (for example, "You need 2 coins.").
 - Every puzzle is playable from the keyboard alone (arrow keys and Space/Enter, no dragging), announces each move to screen readers, and never relies on colour alone.

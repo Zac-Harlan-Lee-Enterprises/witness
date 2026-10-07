@@ -256,6 +256,12 @@ export class GameController {
     this.world?.travelTo(targetId, this.deps.settings().instantTravel);
   }
 
+  /** A tap on the world (from the on-screen controls): walk to what's there. */
+  pointAt(pageX: number, pageY: number): void {
+    if (!this.deps.ui.explorationAllowed) return;
+    this.world?.pointAt(pageX, pageY);
+  }
+
   private travelIfPending(): void {
     const target = this.pendingTravel;
     this.pendingTravel = null;

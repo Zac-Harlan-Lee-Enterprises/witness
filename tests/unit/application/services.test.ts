@@ -239,7 +239,10 @@ describe('UiStore and input', () => {
     input.press('keyboard', 'right');
     input.press('touch', 'right');
     input.press('gamepad', 'up');
-    expect(input.direction()).toEqual({ dx: 1, dy: -1 });
+    // Up and right together: a diagonal at full pace, no faster than straight.
+    const diagonal = input.direction();
+    expect(diagonal.dx).toBeCloseTo(Math.SQRT1_2);
+    expect(diagonal.dy).toBeCloseTo(-Math.SQRT1_2);
     expect(actions).toEqual(['right', 'up']);
     input.releaseAll('keyboard');
     expect(input.isActive('right')).toBe(true);

@@ -114,6 +114,11 @@ export class FakeWorld implements WorldPort {
   travelTo(targetId: string): void {
     this.travels.push(targetId);
   }
+  /** Every tap on the world, in page coordinates. */
+  taps: Array<{ x: number; y: number }> = [];
+  pointAt(pageX: number, pageY: number): void {
+    this.taps.push({ x: pageX, y: pageY });
+  }
   setControlsEnabled(enabled: boolean): void {
     this.controlsEnabled = enabled;
   }

@@ -108,6 +108,7 @@ function createPort(scene: WorldScene, destroy: () => void): WorldHandle {
     setPlayerMarks: (marks) => scene.setPlayerMarks(marks),
     setWeather: (weather) => scene.setWeather(weather),
     travelTo: (targetId, instant) => scene.travelTo(targetId, instant),
+    pointAt: (pageX, pageY) => scene.pointAt(pageX, pageY),
     setControlsEnabled: (enabled) => scene.setControlsEnabled(enabled),
     setMotion: (options) => scene.setMotion(options),
     setLighting: (lighting) => scene.setLighting(lighting),
