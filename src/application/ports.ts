@@ -132,6 +132,12 @@ export interface WorldPort {
   setPlayerMarks(marks: LookMark[]): void;
   /** Walk (or jump, if instant) to a target entity/exit id, then report `arrived`. */
   travelTo(targetId: string, instant: boolean): void;
+  /**
+   * The player tapped a spot on the page (CSS pixels, page coordinates):
+   * walk there, or to whatever is there (a person, an object or an exit).
+   * The on-screen stick forwards its taps here; it takes the touches itself.
+   */
+  pointAt(pageX: number, pageY: number): void;
   setControlsEnabled(enabled: boolean): void;
   setMotion(options: { reducedMotion: boolean; tilesPerSecond: number }): void;
   /** Time-of-day colour grade and lamp glow. */

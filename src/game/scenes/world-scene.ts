@@ -676,6 +676,8 @@ export class WorldScene extends Phaser.Scene {
     if (!this.reducedMotion) this.clock += dt;
     let moving = false;
     let dir: Vec = { x: 0, y: 0 };
+    // The pace asked for: keys walk at full speed, a stick at its tilt.
+    let pace = 1;
 
     if (this.controlsEnabled) {
       const { dx, dy } = this.opts.input.direction();
@@ -683,7 +685,8 @@ export class WorldScene extends Phaser.Scene {
         this.path = null;
         this.pathTarget = null;
         const n = normalise(dx, dy);
-        const step = this.tilesPerSecond * dt;
+        pace = Math.min(1, Math.hypot(dx, dy));
+        const step = this.tilesPerSecond * dt * pace;
         const next = moveWithCollision(this.player, n.x * step, n.y * step, this.blocked);
         moving = next.x !== this.player.x || next.y !== this.player.y;
         if (moving) dir = { x: n.x, y: n.y };
@@ -701,7 +704,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.player.moving = moving;
-    if (moving) this.player.walked += this.tilesPerSecond * dt;
+    if (moving) this.player.walked += this.tilesPerSecond * dt * pace;
     else this.player.walked = 0;
     const walkCol = walkColumn(this.player.walked, WALK_CYCLE_TILES.player);
     const frame = this.actors?.playerFrame(time, this.mover(), walkCol) ?? walkCol;
@@ -1385,8 +1388,22 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private onPointer(pointer: Phaser.Input.Pointer): void {
-    if (!this.controlsEnabled || !this.model) return;
     const world = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
+    this.pointAtWorld(world);
+  }
+
+  /** WorldPort.pointAt: a tap the on-screen controls took, in page coordinates. */
+  pointAt(pageX: number, pageY: number): void {
+    const world = this.cameras.main.getWorldPoint(
+      this.scale.transformX(pageX),
+      this.scale.transformY(pageY),
+    );
+    this.pointAtWorld(world);
+  }
+
+  /** Walk to the tapped tile, or to the person, object or exit there. */
+  private pointAtWorld(world: { x: number; y: number }): void {
+    if (!this.controlsEnabled || !this.model) return;
     const tx = Math.floor(world.x / TILE);
     const ty = Math.floor(world.y / TILE);
     const near = this.model.entities

@@ -9,6 +9,7 @@ import { useSettings, useStore } from '../common/hooks';
 import { Icon, type IconName } from '../common/Icon';
 import { useServices } from '../common/services';
 import type { GameRuntimeLike } from '../game/types';
+import { Joystick } from './Joystick';
 
 interface KeyHint {
   /** What to show on screen, e.g. "Esc" or "↑". */
@@ -212,56 +213,18 @@ export function InteractionPrompt({ runtime }: { runtime: GameRuntimeLike }) {
   );
 }
 
-/** On-screen d-pad + action button for touch devices. */
+/**
+ * On-screen controls for touch devices: the floating stick over the world
+ * (drag anywhere to walk, tap to go there) and the ✋ action button.
+ */
 export function TouchControls({ runtime }: { runtime: GameRuntimeLike }) {
-  const { input } = useServices();
   const ui = useStore(runtime.ui);
   const visible = useTouchControlsVisible();
-  useEffect(() => () => input.releaseAll('touch'), [input]);
   if (!visible) return null;
-
-  const hold = (action: InputAction) => ({
-    onPointerDown: (e: React.PointerEvent) => {
-      e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-      input.press('touch', action);
-    },
-    onPointerUp: () => input.release('touch', action),
-    onPointerCancel: () => input.release('touch', action),
-    onLostPointerCapture: () => input.release('touch', action),
-  });
 
   return (
     <div className="touch-controls" aria-label="Touch controls" role="group">
-      <div className="dpad">
-        <button type="button" className="dpad__btn dpad__up" aria-label="Move up" {...hold('up')}>
-          ▲
-        </button>
-        <button
-          type="button"
-          className="dpad__btn dpad__left"
-          aria-label="Move left"
-          {...hold('left')}
-        >
-          ◀
-        </button>
-        <button
-          type="button"
-          className="dpad__btn dpad__right"
-          aria-label="Move right"
-          {...hold('right')}
-        >
-          ▶
-        </button>
-        <button
-          type="button"
-          className="dpad__btn dpad__down"
-          aria-label="Move down"
-          {...hold('down')}
-        >
-          ▼
-        </button>
-      </div>
+      <Joystick runtime={runtime} />
       <button
         type="button"
         className="action-button"

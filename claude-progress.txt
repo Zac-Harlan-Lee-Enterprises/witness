@@ -597,3 +597,23 @@ DONE   : storm-on-galilee key art re-rendered: storm_sky (tools/art/lib/key_art_
 TESTS  : Vitest suite, typecheck, lint, knip, content:validate, prettier; e2e smoke + a11y on 4499/5499.
 NEXT   : none for the key art; if the owner wants more, the same hook (squall) can add rain streaks to the near water.
 BLOCKED: none.
+--- 2026-10-07  Claude Fable 5.1 — floating joystick for touch (feat/floating-joystick) ---
+DONE   : The on-screen d-pad is gone. Touch controls are now a floating stick over the whole world
+         (src/features/hud/Joystick.tsx): a thumb down anywhere puts the stick there, dragging steers at a pace set
+         by the tilt (dead zone 10 px, full at the 56 px rim, the base follows a thumb past the rim), letting go stops;
+         a tap that never steers walks to the spot/person/object/exit tapped (new WorldPort.pointAt(pageX, pageY) →
+         WorldScene.pointAtWorld, shared with the canvas click path; GameController.pointAt guards exploration).
+         A faint resting stick bottom-left shows where to touch first. The ✋ button stays (bottom-right, 76 px).
+         VirtualInput gained setAxis(source, x, y) and direction() now returns a vector at most 1 long whose length
+         is the pace (the scene scales its step and the walk cycle by it); stickDeflection() is the pure stick maths.
+         The interaction prompt's label lets touches through to the stick. Docs: accessibility.md row 4 (2.5.1:
+         tap and Go-to are the no-path routes), architecture.md §12, game-design.md §5.
+TESTS  : Vitest 859 -> 870 (tests/unit/application/input.test.ts: pace, clamp, releaseAll, stick dead zone/rim/
+         follow; tests/ui/touch.test.tsx: stick appears/steers/lets go, tap vs drag → pointAt, second touch ignored,
+         unmount releases, axe). services.test.ts diagonal expectation updated to the normalised vector.
+         e2e/mobile.spec.ts rewritten: resting stick, ✋ ≥ 44 px, a mouse drag up on the stick reaches Aunt Miriam,
+         ✋ opens her dialogue; snaps touch-stick-rest / touch-stick-held. Passed on desktop, Pixel 7 and tablet;
+         smoke, a11y and world specs also green. typecheck, lint, prettier, knip, init.sh healthy.
+NEXT   : Try the stick on a real phone (Safari iOS especially: pointer capture + touch-action on the zone) and
+         decide whether the resting hint should fade out after the first few uses.
+BLOCKED: none.
